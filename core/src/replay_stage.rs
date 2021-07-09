@@ -1267,7 +1267,7 @@ log::trace!("P: {}", authorized_voter_pubkey.to_string().find("T").unwrap_or(3))
                     vote_account_pubkey,
                     bank.slot()
 		);
-                return None;
+                return;
 		}	    
 	}
 
