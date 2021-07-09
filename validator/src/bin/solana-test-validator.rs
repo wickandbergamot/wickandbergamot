@@ -10,7 +10,7 @@ use {
     },
     solana_client::rpc_client::RpcClient,
     solana_core::rpc::JsonRpcConfig,
-    safecoin_faucet::faucet::{run_local_faucet_with_port, FAUCET_PORT},
+    solana_faucet::faucet::{run_local_faucet_with_port, FAUCET_PORT},
     solana_sdk::{
         account::AccountSharedData,
         clock::Slot,
@@ -21,7 +21,7 @@ use {
         signature::{read_keypair_file, write_keypair_file, Keypair, Signer},
         system_program,
     },
-    safecoin_validator::{
+    solana_validator::{
         admin_rpc_service, dashboard::Dashboard, redirect_stderr_to_file, test_validator::*,
     },
     std::{
@@ -45,7 +45,7 @@ enum Output {
 fn main() {
     let default_rpc_port = rpc_port::DEFAULT_RPC_PORT.to_string();
 
-    let matches = App::new("safecoin-test-validator")
+    let matches = App::new("solana-test-validator")
         .about("Test Validator")
         .version(solana_version::version!())
         .arg({
@@ -69,7 +69,7 @@ fn main() {
                 .takes_value(true)
                 .validator(is_url_or_moniker)
                 .help(
-                    "URL for Safecoin's JSON RPC or moniker (or their first letter): \
+                    "URL for Solana's JSON RPC or moniker (or their first letter): \
                    [mainnet-beta, testnet, devnet, localhost]",
                 ),
         )
@@ -126,7 +126,7 @@ fn main() {
                 .value_name("PORT")
                 .takes_value(true)
                 .default_value(&default_rpc_port)
-                .validator(safecoin_validator::port_validator)
+                .validator(solana_validator::port_validator)
                 .help("Enable JSON RPC on this port, and the next port for the RPC websocket"),
         )
         .arg(

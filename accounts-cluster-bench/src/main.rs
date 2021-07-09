@@ -7,7 +7,7 @@ use solana_account_decoder::parse_token::spl_token_v2_0_pubkey;
 use solana_clap_utils::input_parsers::pubkey_of;
 use solana_client::rpc_client::RpcClient;
 use solana_core::gossip_service::discover;
-use safecoin_faucet::faucet::{request_airdrop_transaction, FAUCET_PORT};
+use solana_faucet::faucet::{request_airdrop_transaction, FAUCET_PORT};
 use solana_measure::measure::Measure;
 use solana_runtime::inline_spl_token_v2_0;
 use solana_sdk::{
@@ -423,7 +423,7 @@ fn main() {
                 .long("entrypoint")
                 .takes_value(true)
                 .value_name("HOST:PORT")
-                .help("RPC entrypoint address. Usually <ip>:8328"),
+                .help("RPC entrypoint address. Usually <ip>:8899"),
         )
         .arg(
             Arg::with_name("faucet_addr")
@@ -489,7 +489,7 @@ fn main() {
 
     let skip_gossip = !matches.is_present("check_gossip");
 
-    let port = if skip_gossip { DEFAULT_RPC_PORT } else { 10015 };
+    let port = if skip_gossip { DEFAULT_RPC_PORT } else { 8001 };
     let mut entrypoint_addr = SocketAddr::from(([127, 0, 0, 1], port));
     if let Some(addr) = matches.value_of("entrypoint") {
         entrypoint_addr = solana_net_utils::parse_host_port(addr).unwrap_or_else(|e| {

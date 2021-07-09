@@ -209,7 +209,7 @@ impl ClusterQuerySubCommands for App<'_, '_> {
             ),
         )
         .subcommand(
-            SubCommand::with_name("supply").about("Get information about the cluster supply of SAFE")
+            SubCommand::with_name("supply").about("Get information about the cluster supply of SOL")
             .arg(
                 Arg::with_name("print_accounts")
                     .long("print-accounts")
@@ -218,7 +218,7 @@ impl ClusterQuerySubCommands for App<'_, '_> {
             ),
         )
         .subcommand(
-            SubCommand::with_name("total-supply").about("Get total number of SAFE")
+            SubCommand::with_name("total-supply").about("Get total number of SOL")
             .setting(AppSettings::Hidden),
         )
         .subcommand(
@@ -331,7 +331,7 @@ impl ClusterQuerySubCommands for App<'_, '_> {
                     Arg::with_name("lamports")
                         .long("lamports")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SAFE"),
+                        .help("Display balance in lamports instead of SOL"),
                 ),
         )
         .subcommand(
@@ -342,7 +342,7 @@ impl ClusterQuerySubCommands for App<'_, '_> {
                     Arg::with_name("lamports")
                         .long("lamports")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SAFE"),
+                        .help("Display balance in lamports instead of SOL"),
                 ),
         )
         .subcommand(
@@ -404,7 +404,7 @@ impl ClusterQuerySubCommands for App<'_, '_> {
                     Arg::with_name("lamports")
                         .long("lamports")
                         .takes_value(false)
-                        .help("Display rent in lamports instead of SAFE"),
+                        .help("Display rent in lamports instead of SOL"),
                 ),
         )
     }
@@ -1215,7 +1215,7 @@ pub fn process_supply(
 
 pub fn process_total_supply(rpc_client: &RpcClient, _config: &CliConfig) -> ProcessResult {
     let total_supply = rpc_client.total_supply()?;
-    Ok(format!("{} SAFE", lamports_to_sol(total_supply)))
+    Ok(format!("{} SOL", lamports_to_sol(total_supply)))
 }
 
 pub fn process_get_transaction_count(rpc_client: &RpcClient, _config: &CliConfig) -> ProcessResult {

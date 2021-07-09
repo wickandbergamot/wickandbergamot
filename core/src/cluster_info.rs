@@ -79,7 +79,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-pub const VALIDATOR_PORT_RANGE: PortRange = (10_001, 12_000);
+pub const VALIDATOR_PORT_RANGE: PortRange = (8000, 10_000);
 pub const MINIMUM_VALIDATOR_PORT_RANGE_WIDTH: u16 = 10; // VALIDATOR_PORT_RANGE must be at least this wide
 
 /// The Data plane fanout size, also used as the neighborhood size
@@ -118,7 +118,7 @@ const PULL_RESPONSE_MIN_SERIALIZED_SIZE: usize = 161;
 const CRDS_UNIQUE_PUBKEY_CAPACITY: usize = 4096;
 /// Minimum stake that a node should have so that its CRDS values are
 /// propagated through gossip (few types are exempted).
-const MIN_STAKE_FOR_GOSSIP: u64 = solana_sdk::native_token::LAMPORTS_PER_SAFE;
+const MIN_STAKE_FOR_GOSSIP: u64 = solana_sdk::native_token::LAMPORTS_PER_SOL;
 /// Minimum number of staked nodes for enforcing stakes in gossip.
 const MIN_NUM_STAKED_NODES: usize = 500;
 
@@ -1929,7 +1929,7 @@ impl ClusterInfo {
             .build()
             .unwrap();
         Builder::new()
-            .name("safecoin-gossip".to_string())
+            .name("solana-gossip".to_string())
             .spawn(move || {
                 let mut last_push = timestamp();
                 let mut last_contact_info_trace = timestamp();
@@ -1947,7 +1947,7 @@ impl ClusterInfo {
                 let mut generate_pull_requests = true;
                 loop {
                     let start = timestamp();
-                    thread_mem_usage::datapoint("safecoin-gossip");
+                    thread_mem_usage::datapoint("solana-gossip");
                     if self.contact_debug_interval != 0
                         && start - last_contact_info_trace > self.contact_debug_interval
                     {

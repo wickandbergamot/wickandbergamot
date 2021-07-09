@@ -1123,9 +1123,9 @@ impl<'a> SyscallObject<BpfError> for SyscallInvokeSignedRust<'a> {
     }
 }
 
-/// Rust representation of C's SafeInstruction
+/// Rust representation of C's SolInstruction
 #[derive(Debug)]
-struct SafeInstruction {
+struct SolInstruction {
     program_id_addr: u64,
     accounts_addr: u64,
     accounts_len: usize,
@@ -1133,17 +1133,17 @@ struct SafeInstruction {
     data_len: usize,
 }
 
-/// Rust representation of C's SafeAccountMeta
+/// Rust representation of C's SolAccountMeta
 #[derive(Debug)]
-struct SafeAccountMeta {
+struct SolAccountMeta {
     pubkey_addr: u64,
     is_writable: bool,
     is_signer: bool,
 }
 
-/// Rust representation of C's SafeAccountInfo
+/// Rust representation of C's SolAccountInfo
 #[derive(Debug)]
-struct SafeAccountInfo {
+struct SolAccountInfo {
     key_addr: u64,
     lamports_addr: u64,
     data_len: u64,
@@ -1155,16 +1155,16 @@ struct SafeAccountInfo {
     executable: bool,
 }
 
-/// Rust representation of C's SafeSignerSeed
+/// Rust representation of C's SolSignerSeed
 #[derive(Debug)]
-struct SafeSignerSeedC {
+struct SolSignerSeedC {
     addr: u64,
     len: u64,
 }
 
-/// Rust representation of C's SafeSignerSeeds
+/// Rust representation of C's SolSignerSeeds
 #[derive(Debug)]
-struct SafeSignerSeedsC {
+struct SolSignerSeedsC {
     addr: u64,
     len: u64,
 }
@@ -1196,7 +1196,7 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
         addr: u64,
         memory_mapping: &MemoryMapping,
     ) -> Result<Instruction, EbpfError<BpfError>> {
-        let ix_c = translate_type::<SafeInstruction>(memory_mapping, addr, self.loader_id)?;
+        let ix_c = translate_type::<SolInstruction>(memory_mapping, addr, self.loader_id)?;
 
         check_instruction_size(
             ix_c.accounts_len,
@@ -1205,7 +1205,7 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
         )?;
         let program_id =
             translate_type::<Pubkey>(memory_mapping, ix_c.program_id_addr, self.loader_id)?;
-        let meta_cs = translate_slice::<SafeAccountMeta>(
+        let meta_cs = translate_slice::<SolAccountMeta>(
             memory_mapping,
             ix_c.accounts_addr,
             ix_c.accounts_len as u64,
@@ -1249,7 +1249,7 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
     ) -> Result<TranslatedAccounts<'a>, EbpfError<BpfError>> {
         let invoke_context = self.invoke_context.borrow();
 
-        let account_infos = translate_slice::<SafeAccountInfo>(
+        let account_infos = translate_slice::<SolAccountInfo>(
             memory_mapping,
             account_infos_addr,
             account_infos_len,
@@ -1263,7 +1263,7 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
             })
             .collect::<Result<Vec<_>, EbpfError<BpfError>>>()?;
 
-        let translate = |account_info: &SafeAccountInfo,
+        let translate = |account_info: &SolAccountInfo,
                          invoke_context: &Ref<&mut dyn InvokeContext>| {
             // Translate the account from user space
 
@@ -1350,7 +1350,7 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
         memory_mapping: &MemoryMapping,
     ) -> Result<Vec<Pubkey>, EbpfError<BpfError>> {
         if signers_seeds_len > 0 {
-            let signers_seeds = translate_slice::<SafeSignerSeedC>(
+            let signers_seeds = translate_slice::<SolSignerSeedC>(
                 memory_mapping,
                 signers_seeds_addr,
                 signers_seeds_len,
@@ -1362,7 +1362,7 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
             Ok(signers_seeds
                 .iter()
                 .map(|signer_seeds| {
-                    let seeds = translate_slice::<SafeSignerSeedC>(
+                    let seeds = translate_slice::<SolSignerSeedC>(
                         memory_mapping,
                         signer_seeds.addr,
                         signer_seeds.len,
@@ -2184,7 +2184,7 @@ mod tests {
 
     #[test]
     fn test_syscall_sol_pubkey() {
-        let pubkey = Pubkey::from_str("BNwVU7MhnDnGEQGAqpJ1dGKVtaYw4SvxbTvoACcdENd2").unwrap();
+        let pubkey = Pubkey::from_str("MoqiU1vryuCGQSxFKA1SZ316JdLEFFhoAu6cKUNk7dN").unwrap();
         let addr = &pubkey.as_ref()[0] as *const _ as u64;
 
         let compute_meter: Rc<RefCell<dyn ComputeMeter>> =
@@ -2215,7 +2215,7 @@ mod tests {
         assert_eq!(log.borrow().len(), 1);
         assert_eq!(
             log.borrow()[0],
-            "Program log: BNwVU7MhnDnGEQGAqpJ1dGKVtaYw4SvxbTvoACcdENd2"
+            "Program log: MoqiU1vryuCGQSxFKA1SZ316JdLEFFhoAu6cKUNk7dN"
         );
         let mut result: Result<u64, EbpfError<BpfError>> = Ok(0);
         syscall_sol_pubkey.call(

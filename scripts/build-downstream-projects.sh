@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Builds known downstream projects against local safecoin source
+# Builds known downstream projects against local solana source
 #
 
 set -e

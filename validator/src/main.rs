@@ -50,7 +50,7 @@ use {
         pubkey::Pubkey,
         signature::{Keypair, Signer},
     },
-    safecoin_validator::{
+    solana_validator::{
         admin_rpc_service, dashboard::Dashboard, new_spinner_progress_bar, println_name_value,
         redirect_stderr_to_file,
     },
@@ -931,7 +931,7 @@ fn rpc_bootstrap(
                 )
                 .unwrap_or_else(|err| {
                     // Consider failures here to be more likely due to user error (eg,
-                    // incorrect `safecoin-validator` command-line arguments) rather than the
+                    // incorrect `solana-validator` command-line arguments) rather than the
                     // RPC node failing.
                     //
                     // Power users can always use the `--no-check-vote-account` option to
@@ -1107,7 +1107,7 @@ pub fn main() {
                 .long("rpc-port")
                 .value_name("PORT")
                 .takes_value(true)
-                .validator(safecoin_validator::port_validator)
+                .validator(solana_validator::port_validator)
                 .help("Enable JSON RPC on this port, and the next port for the RPC websocket"),
         )
         .arg(
@@ -1570,7 +1570,7 @@ pub fn main() {
         .arg(
             Arg::with_name("snapshot_archive_format")
                 .long("snapshot-archive-format")
-                .alias("snapshot-compression") // Legacy name used by Safecoin v1.5.x and older
+                .alias("snapshot-compression") // Legacy name used by Solana v1.5.x and older
                 .possible_values(&["bz2", "gzip", "zstd", "tar", "none"])
                 .default_value("zstd")
                 .value_name("ARCHIVE_TYPE")
@@ -2181,7 +2181,7 @@ pub fn main() {
         let logfile = matches
             .value_of("logfile")
             .map(|s| s.into())
-            .unwrap_or_else(|| format!("safecoin-validator-{}.log", identity_keypair.pubkey()));
+            .unwrap_or_else(|| format!("solana-validator-{}.log", identity_keypair.pubkey()));
 
         if logfile == "-" {
             None

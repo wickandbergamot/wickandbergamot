@@ -1,6 +1,6 @@
 [package]
 name = "solana-core"
-description = "Safecoin: Enterprise Security for the Community by the Community"
+description = "Blockchain, Rebuilt for Scale"
 version = "1.6.1"
 homepage = "https://solana.com/"
 documentation = "https://docs.rs/solana-core"
@@ -56,7 +56,7 @@ solana-account-decoder = { path = "../account-decoder", version = "=1.6.1" }
 solana-banks-server = { path = "../banks-server", version = "=1.6.1" }
 solana-clap-utils = { path = "../clap-utils", version = "=1.6.1" }
 solana-client = { path = "../client", version = "=1.6.1" }
-safecoin-faucet = { path = "../faucet", version = "=1.6.1" }
+solana-faucet = { path = "../faucet", version = "=1.6.1" }
 solana-ledger = { path = "../ledger", version = "=1.6.1" }
 solana-logger = { path = "../logger", version = "=1.6.1" }
 solana-merkle-tree = { path = "../merkle-tree", version = "=1.6.1" }
@@ -72,7 +72,7 @@ solana-frozen-abi-macro = { path = "../frozen-abi/macro", version = "=1.6.1" }
 solana-stake-program = { path = "../programs/stake", version = "=1.6.1" }
 solana-storage-bigtable = { path = "../storage-bigtable", version = "=1.6.1" }
 solana-streamer = { path = "../streamer", version = "=1.6.1" }
-safecoin-sys-tuner = { path = "../sys-tuner", version = "=1.6.1" }
+solana-sys-tuner = { path = "../sys-tuner", version = "=1.6.1" }
 solana-transaction-status = { path = "../transaction-status", version = "=1.6.1" }
 solana-version = { path = "../version", version = "=1.6.1" }
 solana-vote-program = { path = "../programs/vote", version = "=1.6.1" }

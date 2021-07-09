@@ -38,7 +38,7 @@ use solana_sdk::{
     genesis_config::{ClusterType, GenesisConfig},
     hash::Hash,
     inflation::Inflation,
-    native_token::{lamports_to_sol, sol_to_lamports, Safe},
+    native_token::{lamports_to_sol, sol_to_lamports, Sol},
     pubkey::Pubkey,
     rent::Rent,
     shred_version::compute_shred_version,
@@ -78,7 +78,7 @@ fn output_slot_rewards(blockstore: &Blockstore, slot: Slot, method: &LedgerOutpu
                 println!("  Rewards:");
                 for reward in rewards {
                     println!(
-                        "    Account {}: {}{} SAFE",
+                        "    Account {}: {}{} SOL",
                         reward.pubkey,
                         if reward.lamports < 0 { '-' } else { ' ' },
                         lamports_to_sol(reward.lamports.abs().try_into().unwrap())
@@ -381,7 +381,7 @@ fn graph_forks(bank_forks: &BankForks, include_all_votes: bool) -> String {
                         slot_stake_and_vote_count.get(&bank.slot())
                     {
                         format!(
-                            "\nvotes: {}, stake: {:.1} SAFE ({:.1}%)",
+                            "\nvotes: {}, stake: {:.1} SOL ({:.1}%)",
                             votes,
                             lamports_to_sol(*stake),
                             *stake as f64 / *total_stake as f64 * 100.,
@@ -442,7 +442,7 @@ fn graph_forks(bank_forks: &BankForks, include_all_votes: bool) -> String {
         });
 
         dot.push(format!(
-            r#"  "last vote {}"[shape=box,label="Latest validator vote: {}\nstake: {} SAFE\nroot slot: {}\nvote history:\n{}"];"#,
+            r#"  "last vote {}"[shape=box,label="Latest validator vote: {}\nstake: {} SOL\nroot slot: {}\nvote history:\n{}"];"#,
             node_pubkey,
             node_pubkey,
             lamports_to_sol(*stake),
@@ -476,7 +476,7 @@ fn graph_forks(bank_forks: &BankForks, include_all_votes: bool) -> String {
     // Annotate the final "..." node with absent vote and stake information
     if absent_votes > 0 {
         dot.push(format!(
-            r#"    "..."[label="...\nvotes: {}, stake: {:.1} SAFE {:.1}%"];"#,
+            r#"    "..."[label="...\nvotes: {}, stake: {:.1} SOL {:.1}%"];"#,
             absent_votes,
             lamports_to_sol(absent_stake),
             absent_stake as f64 / lowest_total_stake as f64 * 100.,
@@ -1428,7 +1428,7 @@ fn main() {
 
             if let Some(hashes_per_tick) = arg_matches.value_of("hashes_per_tick") {
                 genesis_config.poh_config.hashes_per_tick = match hashes_per_tick {
-                    // Note: Unlike `safecoin-genesis`, "auto" is not supported here.
+                    // Note: Unlike `solana-genesis`, "auto" is not supported here.
                     "sleep" => None,
                     _ => Some(value_t_or_exit!(arg_matches, "hashes_per_tick", u64)),
                 }
@@ -1866,7 +1866,7 @@ fn main() {
 
                         if let Some(hashes_per_tick) = hashes_per_tick {
                             child_bank.set_hashes_per_tick(match hashes_per_tick {
-                                // Note: Unlike `safecoin-genesis`, "auto" is not supported here.
+                                // Note: Unlike `solana-genesis`, "auto" is not supported here.
                                 "sleep" => None,
                                 _ => Some(value_t_or_exit!(arg_matches, "hashes_per_tick", u64)),
                             });
@@ -2088,7 +2088,7 @@ fn main() {
                     for (pubkey, (account, slot)) in accounts.into_iter() {
                         let data_len = account.data().len();
                         println!("{}:", pubkey);
-                        println!("  - balance: {} SAFE", lamports_to_sol(account.lamports));
+                        println!("  - balance: {} SOL", lamports_to_sol(account.lamports));
                         println!("  - owner: '{}'", account.owner);
                         println!("  - executable: {}", account.executable);
                         println!("  - slot: {}", slot);
@@ -2137,7 +2137,7 @@ fn main() {
                         println!("Recalculating capitalization");
                         let old_capitalization = bank.set_capitalization();
                         if old_capitalization == bank.capitalization() {
-                            eprintln!("Capitalization was identical: {}", Safe(old_capitalization));
+                            eprintln!("Capitalization was identical: {}", Sol(old_capitalization));
                         }
                     }
 
@@ -2409,9 +2409,9 @@ fn main() {
                             / warped_bank.epoch_duration_in_years(base_bank.epoch());
                         println!(
                             "Capitalization: {} => {} (+{} {}%; annualized {}%)",
-                            Safe(base_bank.capitalization()),
-                            Safe(warped_bank.capitalization()),
-                            Safe(warped_bank.capitalization() - base_bank.capitalization()),
+                            Sol(base_bank.capitalization()),
+                            Sol(warped_bank.capitalization()),
+                            Sol(warped_bank.capitalization() - base_bank.capitalization()),
                             interest_per_epoch,
                             interest_per_year,
                         );
@@ -2479,9 +2479,9 @@ fn main() {
                                     "{:<45}({}): {} => {} (+{} {:>4.9}%) {:?}",
                                     format!("{}", pubkey), // format! is needed to pad/justify correctly.
                                     base_account.owner,
-                                    Safe(base_account.lamports),
-                                    Safe(warped_account.lamports),
-                                    Safe(delta),
+                                    Sol(base_account.lamports),
+                                    Sol(warped_account.lamports),
+                                    Sol(delta),
                                     ((warped_account.lamports as f64)
                                         / (base_account.lamports as f64)
                                         * 100_f64)
@@ -2614,7 +2614,7 @@ fn main() {
                             }
                         }
                         if overall_delta > 0 {
-                            println!("Sum of lamports changes: {}", Safe(overall_delta));
+                            println!("Sum of lamports changes: {}", Sol(overall_delta));
                         }
                     } else {
                         if arg_matches.is_present("recalculate_capitalization") {
@@ -2627,7 +2627,7 @@ fn main() {
                         }
 
                         assert_capitalization(&bank);
-                        println!("Capitalization: {}", Safe(bank.capitalization()));
+                        println!("Capitalization: {}", Sol(bank.capitalization()));
                     }
                 }
                 Err(err) => {

@@ -1,6 +1,6 @@
 import React from "react";
 import { TableCardBody } from "components/common/TableCardBody";
-import { lamportsToSafeString } from "utils";
+import { lamportsToSolString } from "utils";
 import { Account, useFetchAccountInfo } from "providers/accounts";
 import { Address } from "components/common/Address";
 import {
@@ -52,9 +52,9 @@ export function UpgradeableProgramSection({
           </tr>
         )}
         <tr>
-          <td>Balance (SAFE)</td>
+          <td>Balance (SOL)</td>
           <td className="text-lg-right text-uppercase">
-            {lamportsToSafeString(account.lamports || 0)}
+            {lamportsToSolString(account.lamports || 0)}
           </td>
         </tr>
         <tr>

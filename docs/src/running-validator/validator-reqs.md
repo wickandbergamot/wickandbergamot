@@ -36,7 +36,7 @@ be cost-efficient over the long term.
 
 However, it may be convenient to run non-voting api nodes on VM instances for
 your own internal usage. This use case includes exchanges and services built on
-Safecoin.
+Solana.
 
 In fact, the mainnet-beta validators operated by the team are currently
 (Mar. 2021) run on GCE `n2-standard-32` (32 vCPUs, 128 GB memory) instances with
@@ -59,7 +59,7 @@ We use docker only for development purpose.
 ## Software
 
 - We build and run on Ubuntu 20.04.
-- See [Installing Safecoin](../cli/install-solana-cli-tools.md) for the current Safecoin software release.
+- See [Installing Solana](../cli/install-solana-cli-tools.md) for the current Solana software release.
 
 Be sure to ensure that the machine used is not behind a residential NAT to avoid
 NAT traversal issues. A cloud-hosted machine works best. **Ensure that IP ports 8000 through 10000 are not blocked for Internet inbound and outbound traffic.**
@@ -71,6 +71,6 @@ MacOS or WSL users may build from source.
 
 ## GPU Requirements
 
-CUDA is required to make use of the GPU on your system. The provided Safecoin
+CUDA is required to make use of the GPU on your system. The provided Solana
 release binaries are built on Ubuntu 20.04 with [CUDA Toolkit 10.1 update 1](https://developer.nvidia.com/cuda-toolkit-archive). If your machine is using
 a different CUDA version then you will need to rebuild from source.

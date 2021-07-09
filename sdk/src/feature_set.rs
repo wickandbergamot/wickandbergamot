@@ -7,19 +7,19 @@ use solana_sdk::{
 use std::collections::{HashMap, HashSet};
 
 pub mod instructions_sysvar_enabled {
-    solana_sdk::declare_id!("7TfFp6Tf2XqXQQfx16qvXbjekXtn68kiQj9pPfXZ5Bua");
+    solana_sdk::declare_id!("EnvhHCLvg55P7PDtbvR1NwuTuAeodqpusV3MR5QEK8gs");
 }
 
 pub mod secp256k1_program_enabled {
-    solana_sdk::declare_id!("3tF9nXQrHzTV5jdDqzn6LVWMoJagN1zRgr4APfY6qmpi");
+    solana_sdk::declare_id!("E3PHP7w8kB7np3CTQ1qQ2tW3KCtjRSXBQgW9vM2mWv2Y");
 }
 
 pub mod consistent_recent_blockhashes_sysvar {
-    solana_sdk::declare_id!("ApdySrEmykK3PBLExdN2ehGCRPyVT6athFgu4H7H8e9J");
+    solana_sdk::declare_id!("3h1BQWPDS5veRsq6mDBWruEpgPxRJkfwGexg5iiQ9mYg");
 }
 
 pub mod deprecate_rewards_sysvar {
-    solana_sdk::declare_id!("GVriKcZATdgSzmhmu9PtimfheaKYksK5mhgoN5fbRhXg");
+    solana_sdk::declare_id!("GaBtBJvmS4Arjj5W1NmFcyvPjsHN38UGYDq2MDwbs9Qu");
 }
 
 pub mod pico_inflation {
@@ -28,67 +28,67 @@ pub mod pico_inflation {
 
 pub mod full_inflation {
     pub mod devnet_and_testnet {
-        solana_sdk::declare_id!("JC1GQujpgHz92Am65FxcxByqqDGTdYJs6jLjgebnDpJF");
+        solana_sdk::declare_id!("DT4n6ABDqs6w4bnfwrXT9rsprcPf6cdDga1egctaPkLC");
     }
 
     pub mod mainnet {
         pub mod certusone {
             pub mod vote {
-                solana_sdk::declare_id!("7Ra6gKzEBFyYJ7fdsrCuzihZcxKu7AbmDy2FBEQFzap2");
+                solana_sdk::declare_id!("BzBBveUDymEYoYzcMWNQCx3cd4jQs7puaVFHLtsbB6fm");
             }
             pub mod enable {
-                solana_sdk::declare_id!("54ZqXvMyCKShnBrGj2ni6m4kXTjRUrkc21dFoT9npJZk");
+                solana_sdk::declare_id!("7XRJcS5Ud5vxGB54JbK9N2vBZVwnwdBNeJW1ibRgD9gx");
             }
         }
     }
 }
 
 pub mod spl_token_v2_multisig_fix {
-    solana_sdk::declare_id!("EwSWSBRpzYZSEqdZ215WMmnce6WiEsk57rSEB3e7ghh6");
+    solana_sdk::declare_id!("E5JiFDQCwyC6QfT9REFyMpfK2mHcmv1GUDySU1Ue7TYv");
 }
 
 pub mod no_overflow_rent_distribution {
-    solana_sdk::declare_id!("9TyDRDhs933rTCWGwzSUTSx1XeJT14sc17o1cNQzUaBq");
+    solana_sdk::declare_id!("4kpdyrcj5jS47CZb2oJGfVxjYbsMm2Kx97gFyZrxxwXz");
 }
 
 pub mod ristretto_mul_syscall_enabled {
-    solana_sdk::declare_id!("4mS77eMqwiUZMcV3M6xzDYprbDchxhbNHVyBateEhqST");
+    solana_sdk::declare_id!("HRe7A6aoxgjKzdjbBv6HTy7tJ4YWqE6tVmYCGho6S9Aq");
 }
 
 pub mod pull_request_ping_pong_check {
-    solana_sdk::declare_id!("A9VXyn5BYwNva8zUvfG1qWFEuPq6p6mTWwQ9s3qJFWNp");
+    solana_sdk::declare_id!("5RzEHTnf6D7JPZCvwEzjM19kzBsyjSU3HoMfXaQmVgnZ");
 }
 
 pub mod stake_program_v2 {
-    solana_sdk::declare_id!("BpCWufPmpbYaT1xRbdCeZKXDxQ4Wj1Z8ijaG6tWFrJg1");
+    solana_sdk::declare_id!("Gvd9gGJZDHGMNf1b3jkxrfBQSR5etrfTQSBNKCvLSFJN");
 }
 
 pub mod rewrite_stake {
-    solana_sdk::declare_id!("HpGqShCRhP7QwMBXTs1KbATiHWa383EUWjg3kbQjN2Kf");
+    solana_sdk::declare_id!("6ap2eGy7wx5JmsWUmQ5sHwEWrFSDUxSti2k5Hbfv5BZG");
 }
 
 pub mod filter_stake_delegation_accounts {
-    solana_sdk::declare_id!("HpGqShCRhP7QwMBXTs1KbATiHWa383EUWjg3kbQjN2Kf");
+    solana_sdk::declare_id!("GE7fRxmW46K6EmCD9AMZSbnaJ2e3LfqCZzdHi9hmYAgi");
 }
 
 pub mod bpf_loader_upgradeable_program {
-    solana_sdk::declare_id!("Cv6gGxiakDF6nd9Sxx53MbC4kij69qXpap8guiC6aK9U");
+    solana_sdk::declare_id!("FbhK8HN9qvNHvJcoFVHAEUCNkagHvu7DTWzdnLuVQ5u4");
 }
 
 pub mod stake_program_v3 {
-    solana_sdk::declare_id!("6tYrCsaWbGqgeW9tN3NRbViw6BBLYjnNsJBqLJZZoo5B");
+    solana_sdk::declare_id!("Ego6nTu7WsBcZBvVqJQKp6Yku2N3mrfG8oYCfaLZkAeK");
 }
 
 pub mod turbine_retransmit_peers_patch {
-    solana_sdk::declare_id!("BZJfMk71bwWeYHFo2G6xHrXR2KNWxrAuFLLZi5VoF1fM");
+    solana_sdk::declare_id!("5Lu3JnWSFwRYpXzwDMkanWSk6XqSuF2i5fpnVhzB5CTc");
 }
 
 pub mod require_custodian_for_locked_stake_authorize {
-    solana_sdk::declare_id!("FKWSvfcXATHSBBNvr5VE6ns4tNsTG3EGzcDw2xVtowZQ");
+    solana_sdk::declare_id!("D4jsDcXaqdW8tDAWn8H4R25Cdns2YwLneujSL1zvjW6R");
 }
 
 pub mod spl_token_v2_self_transfer_fix {
-    solana_sdk::declare_id!("2XDc17ZmSTbpqV3B5fmEGac4CKCYnbJj7vnfASvdzqyN");
+    solana_sdk::declare_id!("BL99GYhdjjcv6ys22C9wPgn2aTVERDbPHHo4NbS3hgp7");
 }
 
 pub mod warp_timestamp_again {

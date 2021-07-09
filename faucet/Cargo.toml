@@ -1,12 +1,12 @@
 [package]
-name = "safecoin-faucet"
+name = "solana-faucet"
 version = "1.6.1"
-description = "Safecoin Faucet"
+description = "Solana Faucet"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 repository = "https://github.com/solana-labs/solana"
 license = "Apache-2.0"
 homepage = "https://solana.com/"
-documentation = "https://docs.rs/safecoin-faucet"
+documentation = "https://docs.rs/solana-faucet"
 edition = "2018"
 
 [dependencies]
@@ -26,10 +26,10 @@ tokio = { version = "1.1", features = ["full"] }
 
 [lib]
 crate-type = ["lib"]
-name = "safecoin_faucet"
+name = "solana_faucet"
 
 [[bin]]
-name = "safecoin-faucet"
+name = "solana-faucet"
 path = "src/bin/faucet.rs"
 
 [package.metadata.docs.rs]

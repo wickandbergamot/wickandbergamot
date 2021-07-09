@@ -1,4 +1,4 @@
-//! The `rpc` module implements the Safecoin RPC interface.
+//! The `rpc` module implements the Solana RPC interface.
 
 use crate::{
     cluster_info::ClusterInfo,
@@ -35,7 +35,7 @@ use solana_client::{
     rpc_response::Response as RpcResponse,
     rpc_response::*,
 };
-use safecoin_faucet::faucet::request_airdrop_transaction;
+use solana_faucet::faucet::request_airdrop_transaction;
 use solana_ledger::{blockstore::Blockstore, blockstore_db::BlockstoreError, get_tmp_ledger_path};
 use solana_metrics::inc_new_counter_info;
 use solana_perf::packet::PACKET_DATA_SIZE;
@@ -1824,7 +1824,7 @@ pub mod rpc_minimal {
         #[rpc(meta, name = "getVersion")]
         fn get_version(&self, meta: Self::Metadata) -> Result<RpcVersionInfo>;
 
-        // TODO: Refactor `safecoin-validator wait-for-restart-window` to not require this method, so
+        // TODO: Refactor `solana-validator wait-for-restart-window` to not require this method, so
         //       it can be removed from rpc_minimal
         #[rpc(meta, name = "getVoteAccounts")]
         fn get_vote_accounts(
@@ -1833,7 +1833,7 @@ pub mod rpc_minimal {
             commitment: Option<CommitmentConfig>,
         ) -> Result<RpcVoteAccountStatus>;
 
-        // TODO: Refactor `safecoin-validator wait-for-restart-window` to not require this method, so
+        // TODO: Refactor `solana-validator wait-for-restart-window` to not require this method, so
         //       it can be removed from rpc_minimal
         #[rpc(meta, name = "getLeaderSchedule")]
         fn get_leader_schedule(
@@ -1928,7 +1928,7 @@ pub mod rpc_minimal {
             })
         }
 
-        // TODO: Refactor `safecoin-validator wait-for-restart-window` to not require this method, so
+        // TODO: Refactor `solana-validator wait-for-restart-window` to not require this method, so
         //       it can be removed from rpc_minimal
         fn get_vote_accounts(
             &self,
@@ -1939,7 +1939,7 @@ pub mod rpc_minimal {
             meta.get_vote_accounts(commitment)
         }
 
-        // TODO: Refactor `safecoin-validator wait-for-restart-window` to not require this method, so
+        // TODO: Refactor `solana-validator wait-for-restart-window` to not require this method, so
         //       it can be removed from rpc_minimal
         fn get_leader_schedule(
             &self,
@@ -6125,7 +6125,7 @@ pub mod tests {
         let owner = Pubkey::new_unique();
         assert_eq!(
             get_spl_token_owner_filter(
-                &Pubkey::from_str("HMGr16f8Ct1Zeb9TGPypt9rPgzCkmhCQB8Not8vwiPW1").unwrap(),
+                &Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap(),
                 &[
                     RpcFilterType::Memcmp(Memcmp {
                         offset: 32,
@@ -6141,7 +6141,7 @@ pub mod tests {
 
         // Filtering on mint instead of owner
         assert!(get_spl_token_owner_filter(
-            &Pubkey::from_str("HMGr16f8Ct1Zeb9TGPypt9rPgzCkmhCQB8Not8vwiPW1").unwrap(),
+            &Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap(),
             &[
                 RpcFilterType::Memcmp(Memcmp {
                     offset: 0,
