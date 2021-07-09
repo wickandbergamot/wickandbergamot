@@ -71,11 +71,14 @@ fn test_vote_authorize_and_withdraw() {
         to: vote_account_pubkey,
         from: 0,
         sign_only: false,
+        dump_transaction_message: false,
         no_wait: false,
         blockhash_query: BlockhashQuery::All(blockhash_query::Source::Cluster),
         nonce_account: None,
         nonce_authority: 0,
         fee_payer: 0,
+        derived_address_seed: None,
+        derived_address_program_id: None,
     };
     process_command(&config).unwrap();
     let expected_balance = expected_balance + 1_000;

@@ -1,3 +1,4 @@
+#![allow(clippy::integer_arithmetic)]
 use {
     solana_program::{
         account_info::{next_account_info, AccountInfo},
@@ -57,7 +58,7 @@ async fn clock_sysvar_updated_from_warp() {
 
     let mut context = program_test.start_with_context().await;
     let expected_slot = 5_000_000;
-    let instruction = Instruction::new(
+    let instruction = Instruction::new_with_bincode(
         program_id,
         &expected_slot,
         vec![AccountMeta::new_readonly(clock::id(), false)],
@@ -82,7 +83,7 @@ async fn clock_sysvar_updated_from_warp() {
 
     // Warp to success!
     context.warp_to_slot(expected_slot).unwrap();
-    let instruction = Instruction::new(
+    let instruction = Instruction::new_with_bincode(
         program_id,
         &expected_slot,
         vec![AccountMeta::new_readonly(clock::id(), false)],

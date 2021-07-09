@@ -7,7 +7,6 @@ use thiserror::Error;
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum RpcRequest {
     DeregisterNode,
-    ValidatorExit,
     GetAccountInfo,
     GetBalance,
     GetBlockTime,
@@ -35,6 +34,7 @@ pub enum RpcRequest {
     GetMultipleAccounts,
     GetProgramAccounts,
     GetRecentBlockhash,
+    GetRecentPerformanceSamples,
     GetSnapshotSlot,
     GetSignatureStatuses,
     GetSlot,
@@ -64,7 +64,6 @@ impl fmt::Display for RpcRequest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let method = match self {
             RpcRequest::DeregisterNode => "deregisterNode",
-            RpcRequest::ValidatorExit => "validatorExit",
             RpcRequest::GetAccountInfo => "getAccountInfo",
             RpcRequest::GetBalance => "getBalance",
             RpcRequest::GetBlockTime => "getBlockTime",
@@ -92,6 +91,7 @@ impl fmt::Display for RpcRequest {
             RpcRequest::GetMultipleAccounts => "getMultipleAccounts",
             RpcRequest::GetProgramAccounts => "getProgramAccounts",
             RpcRequest::GetRecentBlockhash => "getRecentBlockhash",
+            RpcRequest::GetRecentPerformanceSamples => "getRecentPerformanceSamples",
             RpcRequest::GetSnapshotSlot => "getSnapshotSlot",
             RpcRequest::GetSignatureStatuses => "getSignatureStatuses",
             RpcRequest::GetSlot => "getSlot",
@@ -127,6 +127,7 @@ pub const MAX_GET_CONFIRMED_BLOCKS_RANGE: u64 = 500_000;
 pub const MAX_GET_CONFIRMED_SIGNATURES_FOR_ADDRESS2_LIMIT: usize = 1_000;
 pub const MAX_MULTIPLE_ACCOUNTS: usize = 100;
 pub const NUM_LARGEST_ACCOUNTS: usize = 20;
+pub const MAX_GET_PROGRAM_ACCOUNT_FILTERS: usize = 4;
 
 // Validators that are this number of slots behind are considered delinquent
 pub const DELINQUENT_VALIDATOR_SLOT_DISTANCE: u64 = 128;

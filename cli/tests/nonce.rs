@@ -293,11 +293,14 @@ fn test_create_account_with_seed() {
         to: to_address,
         from: 0,
         sign_only: true,
+        dump_transaction_message: true,
         no_wait: false,
         blockhash_query: BlockhashQuery::None(nonce_hash),
         nonce_account: Some(nonce_address),
         nonce_authority: 0,
         fee_payer: 0,
+        derived_address_seed: None,
+        derived_address_program_id: None,
     };
     authority_config.output_format = OutputFormat::JsonCompact;
     let sign_only_reply = process_command(&authority_config).unwrap();
@@ -314,6 +317,7 @@ fn test_create_account_with_seed() {
         to: to_address,
         from: 0,
         sign_only: false,
+        dump_transaction_message: true,
         no_wait: false,
         blockhash_query: BlockhashQuery::FeeCalculator(
             blockhash_query::Source::NonceAccount(nonce_address),
@@ -322,6 +326,8 @@ fn test_create_account_with_seed() {
         nonce_account: Some(nonce_address),
         nonce_authority: 0,
         fee_payer: 0,
+        derived_address_seed: None,
+        derived_address_program_id: None,
     };
     process_command(&submit_config).unwrap();
     check_recent_balance(241, &rpc_client, &nonce_address);

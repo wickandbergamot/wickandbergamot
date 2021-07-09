@@ -7,7 +7,7 @@ smart contracts elsewhere) with the Safecoin tools.
 
 To learn about developing and executing programs on Safecoin, start with the
 [overview](developing/programming-model/overview.md) and then dig into the
-details of [deployed programs](developing/deployed-programs/overview.md).
+details of [on-chain programs](developing/on-chain-programs/overview.md).
 
 To deploy a program, use the Safecoin tools to interact with the on-chain loader
 to:
@@ -69,6 +69,7 @@ An example output looks like:
 
 ```bash
 Program Id: 3KS2k14CmtnuVv2fvYcvdrNgC94Y11WETBpMUGgXyWZL
+Owner: BPFLoaderUpgradeab1e11111111111111111111111
 ProgramData Address: EHsACWBhgmw8iq5dmUZzTA1esRqcTognhKNHUkPi4q4g
 Authority: FwoGJNUaJN2zfVEex9BB11Dqb3NJKy3e9oY3KTh9XzCU
 Last Deployed In Slot: 63890568
@@ -77,6 +78,7 @@ Data Length: 5216 (0x1460) bytes
 
 - `Program Id` is the address that can be referenced in an instruction's
   `program_id` field when invoking a program.
+- `Owner`: The loader this program was deployed with.
 - `ProgramData Address` is the account associated with the program account that
   holds the program's data (shared object).
 - `Authority` is the program's upgrade authority.
@@ -111,6 +113,40 @@ Note that program accounts are required to be
 [rent-exempt](developing/programming-model/accounts.md#rent-exemption), and the
 `max-len` is fixed after initial deployment, so any SAFE in the program accounts
 is locked up permanently.
+
+### Resuming a failed deploy
+
+If program deployment fails, there will be a hanging intermediate buffer account
+that contains a non-zero balance.  In order to recoup that balance you may
+resume a failed deployment by providing the same intermediate buffer to a new
+call to `deploy`.
+
+Deployment failures will print an error message specifying the seed phrase
+needed to recover the generated intermediate buffer's keypair:
+
+```bash
+=======================================================================
+To resume a failed deploy, recover the ephemeral keypair file with
+`safecoin-keygen recover` and the following 12-word seed phrase,
+then pass it as the [BUFFER_SIGNER] argument to `safecoin deploy` or `safecoin write-buffer`
+=======================================================================
+spy axis cream equip bonus daring muffin fish noise churn broken diesel
+=======================================================================
+```
+
+To recover the keypair:
+
+```bash
+$ solana-keypair recover -o <KEYPAIR_PATH>
+```
+
+When asked, enter the 12-word seed phrase.
+
+Then issue a new `deploy` command and specify the buffer:
+
+```bash
+$ safecoin program deploy --buffer <KEYPAIR_PATH> <PROGRAM_FILEPATH>
+```
 
 ### Set a program's upgrade authority
 
@@ -193,7 +229,7 @@ like multi-entity governed programs where the governing members fist verify the
 intermediary buffer contents and then vote to allow an upgrade using it.
 
 ```bash
-safecoin progrma write-buffer <PROGRAM_FILEPATH>
+safecoin program write-buffer <PROGRAM_FILEPATH>
 ```
 
 Buffer accounts support authorities like program accounts:

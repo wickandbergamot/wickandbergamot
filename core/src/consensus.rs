@@ -73,7 +73,7 @@ impl SwitchForkDecision {
 }
 
 pub const VOTE_THRESHOLD_DEPTH: usize = 8;
-pub const SWITCH_FORK_THRESHOLD: f64 = 0.005;
+pub const SWITCH_FORK_THRESHOLD: f64 = 0.38;
 
 pub type Result<T> = std::result::Result<T, TowerError>;
 
@@ -475,11 +475,9 @@ impl Tower {
     }
 
     pub fn is_locked_out(&self, slot: Slot, ancestors: &HashMap<Slot, HashSet<Slot>>) -> bool {
-    trace!("is_locked_out: Ancestors_contains_key: {}",ancestors.contains_key(&slot));
         assert!(ancestors.contains_key(&slot));
 
         if !self.is_recent(slot) {
-	trace!("is_locked_out: Is Not Recent");
             return true;
         }
 
@@ -490,7 +488,6 @@ impl Tower {
                 continue;
             }
             if !ancestors[&slot].contains(&vote.slot) {
-	      trace!("is_locked_out: Ancestors doesn't contain vote slot");
                 return true;
             }
         }
@@ -696,14 +693,6 @@ impl Tower {
                     }
                 }
 
-
-
-                trace!(
-                    "switch_fork_threshold: SWITCH_FORK_THRESHOLD: {}, locked_out_stake: {} total_stake: {}",
-                    SWITCH_FORK_THRESHOLD, locked_out_stake, total_stake
-                );
-
-
                 if (locked_out_stake as f64 / total_stake as f64) > SWITCH_FORK_THRESHOLD {
                     SwitchForkDecision::SwitchProof(switch_proof)
                 } else {
@@ -752,14 +741,6 @@ impl Tower {
         voted_stakes: &VotedStakes,
         total_stake: Stake,
     ) -> bool {
-
-        trace!(
-            "check_vote_stake_threshold_init (Slot: {} total_stake: {} threshold_depth {}",
-            slot,
-            total_stake,
-	    self.threshold_depth
-        );
-
         let mut lockouts = self.lockouts.clone();
         lockouts.process_slot_vote_unchecked(slot);
         let vote = lockouts.nth_recent_vote(self.threshold_depth);
@@ -767,8 +748,8 @@ impl Tower {
             if let Some(fork_stake) = voted_stakes.get(&vote.slot) {
                 let lockout = *fork_stake as f64 / total_stake as f64;
                 trace!(
-                    "check_vote_stake_threshold_mid fork_stake slot: {}, vote slot: {}, lockout: {} fork_stake: {} total_stake: {} confirmation_count: {} threshold_size {}",
-                    slot, vote.slot, lockout, fork_stake, total_stake, vote.confirmation_count, self.threshold_size
+                    "fork_stake slot: {}, vote slot: {}, lockout: {} fork_stake: {} total_stake: {}",
+                    slot, vote.slot, lockout, fork_stake, total_stake
                 );
                 if vote.confirmation_count as usize > self.threshold_depth {
                     for old_vote in &self.lockouts.votes {
@@ -864,10 +845,9 @@ impl Tower {
         assert!(
             self.last_vote == Vote::default() && self.lockouts.votes.is_empty()
                 || self.last_vote != Vote::default() && !self.lockouts.votes.is_empty(),
-            format!(
-                "last vote: {:?} lockouts.votes: {:?}",
-                self.last_vote, self.lockouts.votes
-            )
+            "last vote: {:?} lockouts.votes: {:?}",
+            self.last_vote,
+            self.lockouts.votes
         );
 
         if let Some(last_voted_slot) = self.last_voted_slot() {
@@ -1150,7 +1130,7 @@ impl Tower {
 #[derive(Error, Debug)]
 pub enum TowerError {
     #[error("IO Error: {0}")]
-    IOError(#[from] std::io::Error),
+    IoError(#[from] std::io::Error),
 
     #[error("Serialization Error: {0}")]
     SerializeError(#[from] bincode::Error),
@@ -1176,7 +1156,7 @@ pub enum TowerError {
 
 impl TowerError {
     pub fn is_file_missing(&self) -> bool {
-        if let TowerError::IOError(io_err) = &self {
+        if let TowerError::IoError(io_err) = &self {
             io_err.kind() == std::io::ErrorKind::NotFound
         } else {
             false
@@ -1265,7 +1245,7 @@ pub mod test {
     };
     use solana_ledger::{blockstore::make_slot_entries, get_tmp_ledger_path};
     use solana_runtime::{
-        accounts_background_service::ABSRequestSender,
+        accounts_background_service::AbsRequestSender,
         bank::Bank,
         bank_forks::BankForks,
         genesis_utils::{
@@ -1273,7 +1253,11 @@ pub mod test {
         },
     };
     use solana_sdk::{
-        account::Account, clock::Slot, hash::Hash, pubkey::Pubkey, signature::Signer,
+        account::{Account, AccountSharedData, WritableAccount},
+        clock::Slot,
+        hash::Hash,
+        pubkey::Pubkey,
+        signature::Signer,
         slot_history::SlotHistory,
     };
     use solana_vote_program::{
@@ -1436,7 +1420,7 @@ pub mod test {
                 new_root,
                 &self.bank_forks,
                 &mut self.progress,
-                &ABSRequestSender::default(),
+                &AbsRequestSender::default(),
                 None,
                 &mut self.heaviest_subtree_fork_choice,
             )
@@ -1591,10 +1575,10 @@ pub mod test {
     fn gen_stakes(stake_votes: &[(u64, &[u64])]) -> Vec<(Pubkey, (u64, ArcVoteAccount))> {
         let mut stakes = vec![];
         for (lamports, votes) in stake_votes {
-            let mut account = Account {
+            let mut account = AccountSharedData {
                 data: vec![0; VoteState::size_of()],
                 lamports: *lamports,
-                ..Account::default()
+                ..AccountSharedData::default()
             };
             let mut vote_state = VoteState::default();
             for slot in *votes {
@@ -1602,7 +1586,7 @@ pub mod test {
             }
             VoteState::serialize(
                 &VoteStateVersions::new_current(vote_state),
-                &mut account.data,
+                &mut account.data_as_mut_slice(),
             )
             .expect("serialize state");
             stakes.push((
@@ -2271,10 +2255,10 @@ pub mod test {
     #[test]
     fn test_stake_is_updated_for_entire_branch() {
         let mut voted_stakes = HashMap::new();
-        let account = Account {
+        let account = AccountSharedData::from(Account {
             lamports: 1,
             ..Account::default()
-        };
+        });
         let set: HashSet<u64> = vec![0u64, 1u64].into_iter().collect();
         let ancestors: HashMap<u64, HashSet<u64>> = [(2u64, set)].iter().cloned().collect();
         Tower::update_ancestor_voted_stakes(&mut voted_stakes, 2, account.lamports, &ancestors);
@@ -2723,7 +2707,7 @@ pub mod test {
                 remove_file(path).unwrap();
             },
         );
-        assert_matches!(loaded, Err(TowerError::IOError(_)))
+        assert_matches!(loaded, Err(TowerError::IoError(_)))
     }
 
     #[test]

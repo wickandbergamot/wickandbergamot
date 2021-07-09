@@ -17,8 +17,9 @@ use solana_clap_utils::{
     offline::*,
 };
 use solana_cli_output::{
-    display::{build_balance_message, println_name_value, println_transaction},
-    return_signers, CliAccount, CliSignature, CliSignatureVerificationStatus, OutputFormat,
+    display::{build_balance_message, println_name_value},
+    return_signers_with_config, CliAccount, CliSignature, CliSignatureVerificationStatus,
+    CliTransaction, CliTransactionConfirmation, OutputFormat, ReturnSignersConfig,
 };
 use solana_client::{
     blockhash_query::BlockhashQuery,
@@ -40,7 +41,7 @@ use solana_sdk::{
     hash::Hash,
     instruction::InstructionError,
     message::Message,
-    pubkey::{Pubkey, MAX_SEED_LEN},
+    pubkey::Pubkey,
     signature::{Signature, Signer, SignerError},
     system_instruction::{self, SystemError},
     system_program,
@@ -50,9 +51,7 @@ use solana_stake_program::{
     stake_instruction::LockupArgs,
     stake_state::{Lockup, StakeAuthorize},
 };
-use solana_transaction_status::{
-    EncodedTransaction, TransactionConfirmationStatus, UiTransactionEncoding,
-};
+use solana_transaction_status::{EncodedTransaction, UiTransactionEncoding};
 use solana_vote_program::vote_state::VoteAuthorize;
 use std::{
     collections::HashMap,
@@ -91,7 +90,9 @@ pub enum CliCommand {
     },
     Feature(FeatureCliCommand),
     Inflation(InflationCliCommand),
-    Fees,
+    Fees {
+        blockhash: Option<Hash>,
+    },
     FirstAvailableBlock,
     GetBlock {
         slot: Option<Slot>,
@@ -197,6 +198,7 @@ pub enum CliCommand {
         lockup: Lockup,
         amount: SpendAmount,
         sign_only: bool,
+        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -207,6 +209,7 @@ pub enum CliCommand {
         stake_account_pubkey: Pubkey,
         stake_authority: SignerIndex,
         sign_only: bool,
+        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -218,6 +221,7 @@ pub enum CliCommand {
         stake_authority: SignerIndex,
         force: bool,
         sign_only: bool,
+        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -227,6 +231,7 @@ pub enum CliCommand {
         stake_account_pubkey: Pubkey,
         stake_authority: SignerIndex,
         sign_only: bool,
+        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -240,6 +245,7 @@ pub enum CliCommand {
         source_stake_account_pubkey: Pubkey,
         stake_authority: SignerIndex,
         sign_only: bool,
+        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -256,6 +262,7 @@ pub enum CliCommand {
         stake_account_pubkey: Pubkey,
         new_authorizations: Vec<(StakeAuthorize, Pubkey, SignerIndex)>,
         sign_only: bool,
+        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -267,6 +274,7 @@ pub enum CliCommand {
         lockup: LockupArgs,
         custodian: SignerIndex,
         sign_only: bool,
+        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -279,6 +287,7 @@ pub enum CliCommand {
         withdraw_authority: SignerIndex,
         custodian: Option<SignerIndex>,
         sign_only: bool,
+        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -350,11 +359,14 @@ pub enum CliCommand {
         to: Pubkey,
         from: SignerIndex,
         sign_only: bool,
+        dump_transaction_message: bool,
         no_wait: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
         fee_payer: SignerIndex,
+        derived_address_seed: Option<String>,
+        derived_address_program_id: Option<Pubkey>,
     },
 }
 
@@ -366,25 +378,25 @@ pub struct CliCommandInfo {
 
 #[derive(Debug, Error)]
 pub enum CliError {
-    #[error("bad parameter: {0}")]
+    #[error("Bad parameter: {0}")]
     BadParameter(String),
     #[error(transparent)]
     ClientError(#[from] ClientError),
-    #[error("command not recognized: {0}")]
+    #[error("Command not recognized: {0}")]
     CommandNotRecognized(String),
-    #[error("insufficient funds for fee ({0} SAFE)")]
-    InsufficientFundsForFee(f64),
-    #[error("insufficient funds for spend ({0} SAFE)")]
-    InsufficientFundsForSpend(f64),
-    #[error("insufficient funds for spend ({0} SAFE) and fee ({1} SAFE)")]
-    InsufficientFundsForSpendAndFee(f64, f64),
+    #[error("Account {1} has insufficient funds for fee ({0} SAFE)")]
+    InsufficientFundsForFee(f64, Pubkey),
+    #[error("Account {1} has insufficient funds for spend ({0} SAFE)")]
+    InsufficientFundsForSpend(f64, Pubkey),
+    #[error("Account {2} has insufficient funds for spend ({0} SAFE) + fee ({1} SAFE)")]
+    InsufficientFundsForSpendAndFee(f64, f64, Pubkey),
     #[error(transparent)]
     InvalidNonce(nonce_utils::Error),
-    #[error("dynamic program error: {0}")]
+    #[error("Dynamic program error: {0}")]
     DynamicProgramError(String),
-    #[error("rpc request error: {0}")]
+    #[error("RPC request error: {0}")]
     RpcRequestError(String),
-    #[error("keypair file not found: {0}")]
+    #[error("Keypair file not found: {0}")]
     KeypairFileNotFound(String),
 }
 
@@ -592,10 +604,13 @@ pub fn parse_command(
         ("feature", Some(matches)) => {
             parse_feature_subcommand(matches, default_signer, wallet_manager)
         }
-        ("fees", Some(_matches)) => Ok(CliCommandInfo {
-            command: CliCommand::Fees,
-            signers: vec![],
-        }),
+        ("fees", Some(matches)) => {
+            let blockhash = value_of::<Hash>(matches, "blockhash");
+            Ok(CliCommandInfo {
+                command: CliCommand::Fees { blockhash },
+                signers: vec![],
+            })
+        }
         ("first-available-block", Some(_matches)) => Ok(CliCommandInfo {
             command: CliCommand::FirstAvailableBlock,
             signers: vec![],
@@ -841,6 +856,7 @@ pub fn parse_command(
             let amount = SpendAmount::new_from_matches(matches, "amount");
             let to = pubkey_of_signer(matches, "to", wallet_manager)?.unwrap();
             let sign_only = matches.is_present(SIGN_ONLY_ARG.name);
+            let dump_transaction_message = matches.is_present(DUMP_TRANSACTION_MESSAGE.name);
             let no_wait = matches.is_present("no_wait");
             let blockhash_query = BlockhashQuery::new_from_matches(matches);
             let nonce_account = pubkey_of_signer(matches, NONCE_ARG.name, wallet_manager)?;
@@ -858,17 +874,26 @@ pub fn parse_command(
             let signer_info =
                 default_signer.generate_unique_signers(bulk_signers, matches, wallet_manager)?;
 
+            let derived_address_seed = matches
+                .value_of("derived_address_seed")
+                .map(|s| s.to_string());
+            let derived_address_program_id =
+                resolve_derived_address_program_id(matches, "derived_address_program_id");
+
             Ok(CliCommandInfo {
                 command: CliCommand::Transfer {
                     amount,
                     to,
                     sign_only,
+                    dump_transaction_message,
                     no_wait,
                     blockhash_query,
                     nonce_account,
                     nonce_authority: signer_info.index_of(nonce_authority_pubkey).unwrap(),
                     fee_payer: signer_info.index_of(fee_payer_pubkey).unwrap(),
                     from: signer_info.index_of(from_pubkey).unwrap(),
+                    derived_address_seed,
+                    derived_address_program_id,
                 },
                 signers: signer_info.signers,
             })
@@ -898,6 +923,15 @@ pub fn parse_command(
 
 pub type ProcessResult = Result<String, Box<dyn std::error::Error>>;
 
+fn resolve_derived_address_program_id(matches: &ArgMatches<'_>, arg_name: &str) -> Option<Pubkey> {
+    matches.value_of(arg_name).and_then(|v| match v {
+        "NONCE" => Some(system_program::id()),
+        "STAKE" => Some(solana_stake_program::id()),
+        "VOTE" => Some(solana_vote_program::id()),
+        _ => pubkey_of(matches, arg_name),
+    })
+}
+
 pub fn parse_create_address_with_seed(
     matches: &ArgMatches<'_>,
     default_signer: &DefaultSigner,
@@ -910,20 +944,9 @@ pub fn parse_create_address_with_seed(
         vec![default_signer.signer_from_path(matches, wallet_manager)?]
     };
 
-    let program_id = match matches.value_of("program_id").unwrap() {
-        "NONCE" => system_program::id(),
-        "STAKE" => solana_stake_program::id(),
-        "VOTE" => solana_vote_program::id(),
-        _ => pubkey_of(matches, "program_id").unwrap(),
-    };
+    let program_id = resolve_derived_address_program_id(matches, "program_id").unwrap();
 
     let seed = matches.value_of("seed").unwrap().to_string();
-
-    if seed.len() > MAX_SEED_LEN {
-        return Err(CliError::BadParameter(
-            "Address seed must not be longer than 32 bytes".to_string(),
-        ));
-    }
 
     Ok(CliCommandInfo {
         command: CliCommand::CreateAddressWithSeed {
@@ -997,60 +1020,72 @@ fn process_confirm(
 ) -> ProcessResult {
     match rpc_client.get_signature_statuses_with_history(&[*signature]) {
         Ok(status) => {
-            if let Some(transaction_status) = &status.value[0] {
+            let cli_transaction = if let Some(transaction_status) = &status.value[0] {
+                let mut transaction = None;
+                let mut get_transaction_error = None;
                 if config.verbose {
                     match rpc_client
                         .get_confirmed_transaction(signature, UiTransactionEncoding::Base64)
                     {
                         Ok(confirmed_transaction) => {
-                            println!(
-                                "\nTransaction executed in slot {}:",
-                                confirmed_transaction.slot
+                            let decoded_transaction = confirmed_transaction
+                                .transaction
+                                .transaction
+                                .decode()
+                                .expect("Successful decode");
+                            let json_transaction = EncodedTransaction::encode(
+                                decoded_transaction.clone(),
+                                UiTransactionEncoding::Json,
                             );
-                            println_transaction(
-                                &confirmed_transaction
-                                    .transaction
-                                    .transaction
-                                    .decode()
-                                    .expect("Successful decode"),
-                                &confirmed_transaction.transaction.meta,
-                                "  ",
-                                None,
-                            );
+
+                            transaction = Some(CliTransaction {
+                                transaction: json_transaction,
+                                meta: confirmed_transaction.transaction.meta,
+                                block_time: confirmed_transaction.block_time,
+                                slot: Some(confirmed_transaction.slot),
+                                decoded_transaction,
+                                prefix: "  ".to_string(),
+                                sigverify_status: vec![],
+                            });
                         }
                         Err(err) => {
-                            if transaction_status.confirmation_status()
-                                != TransactionConfirmationStatus::Finalized
-                            {
-                                println!();
-                                println!("Unable to get finalized transaction details: not yet finalized")
-                            } else {
-                                println!();
-                                println!("Unable to get finalized transaction details: {}", err)
-                            }
+                            get_transaction_error = Some(format!("{:?}", err));
                         }
                     }
-                    println!();
                 }
-
-                if let Some(err) = &transaction_status.err {
-                    Ok(format!("Transaction failed: {}", err))
-                } else {
-                    Ok(format!("{:?}", transaction_status.confirmation_status()))
+                CliTransactionConfirmation {
+                    confirmation_status: Some(transaction_status.confirmation_status()),
+                    transaction,
+                    get_transaction_error,
+                    err: transaction_status.err.clone(),
                 }
             } else {
-                Ok("Not found".to_string())
-            }
+                CliTransactionConfirmation {
+                    confirmation_status: None,
+                    transaction: None,
+                    get_transaction_error: None,
+                    err: None,
+                }
+            };
+            Ok(config.output_format.formatted_string(&cli_transaction))
         }
         Err(err) => Err(CliError::RpcRequestError(format!("Unable to confirm: {}", err)).into()),
     }
 }
 
 #[allow(clippy::unnecessary_wraps)]
-fn process_decode_transaction(transaction: &Transaction) -> ProcessResult {
-    let sig_stats = CliSignatureVerificationStatus::verify_transaction(&transaction);
-    println_transaction(transaction, &None, "", Some(&sig_stats));
-    Ok("".to_string())
+fn process_decode_transaction(config: &CliConfig, transaction: &Transaction) -> ProcessResult {
+    let sigverify_status = CliSignatureVerificationStatus::verify_transaction(&transaction);
+    let decode_transaction = CliTransaction {
+        decoded_transaction: transaction.clone(),
+        transaction: EncodedTransaction::encode(transaction.clone(), UiTransactionEncoding::Json),
+        meta: None,
+        block_time: None,
+        slot: None,
+        prefix: "".to_string(),
+        sigverify_status,
+    };
+    Ok(config.output_format.formatted_string(&decode_transaction))
 }
 
 fn process_show_account(
@@ -1103,13 +1138,17 @@ fn process_transfer(
     to: &Pubkey,
     from: SignerIndex,
     sign_only: bool,
+    dump_transaction_message: bool,
     no_wait: bool,
     blockhash_query: &BlockhashQuery,
     nonce_account: Option<&Pubkey>,
     nonce_authority: SignerIndex,
     fee_payer: SignerIndex,
+    derived_address_seed: Option<String>,
+    derived_address_program_id: Option<&Pubkey>,
 ) -> ProcessResult {
     let from = config.signers[from];
+    let mut from_pubkey = from.pubkey();
 
     let (recent_blockhash, fee_calculator) =
         blockhash_query.get_blockhash_and_fee_calculator(rpc_client, config.commitment)?;
@@ -1117,8 +1156,28 @@ fn process_transfer(
     let nonce_authority = config.signers[nonce_authority];
     let fee_payer = config.signers[fee_payer];
 
+    let derived_parts = derived_address_seed.zip(derived_address_program_id);
+    let with_seed = if let Some((seed, program_id)) = derived_parts {
+        let base_pubkey = from_pubkey;
+        from_pubkey = Pubkey::create_with_seed(&base_pubkey, &seed, program_id)?;
+        Some((base_pubkey, seed, program_id, from_pubkey))
+    } else {
+        None
+    };
+
     let build_message = |lamports| {
-        let ixs = vec![system_instruction::transfer(&from.pubkey(), to, lamports)];
+        let ixs = if let Some((base_pubkey, seed, program_id, from_pubkey)) = with_seed.as_ref() {
+            vec![system_instruction::transfer_with_seed(
+                from_pubkey,
+                base_pubkey,
+                seed.clone(),
+                program_id,
+                to,
+                lamports,
+            )]
+        } else {
+            vec![system_instruction::transfer(&from_pubkey, to, lamports)]
+        };
 
         if let Some(nonce_account) = &nonce_account {
             Message::new_with_nonce(
@@ -1137,7 +1196,7 @@ fn process_transfer(
         sign_only,
         amount,
         &fee_calculator,
-        &from.pubkey(),
+        &from_pubkey,
         &fee_payer.pubkey(),
         build_message,
         config.commitment,
@@ -1146,7 +1205,13 @@ fn process_transfer(
 
     if sign_only {
         tx.try_partial_sign(&config.signers, recent_blockhash)?;
-        return_signers(&tx, &config.output_format)
+        return_signers_with_config(
+            &tx,
+            &config.output_format,
+            &ReturnSignersConfig {
+                dump_transaction_message,
+            },
+        )
     } else {
         if let Some(nonce_account) = &nonce_account {
             let nonce_account = nonce_utils::get_account_with_commitment(
@@ -1221,7 +1286,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             seed,
             program_id,
         } => process_create_address_with_seed(config, from_pubkey.as_ref(), &seed, &program_id),
-        CliCommand::Fees => process_fees(&rpc_client, config),
+        CliCommand::Fees { ref blockhash } => process_fees(&rpc_client, config, blockhash.as_ref()),
         CliCommand::Feature(feature_subcommand) => {
             process_feature_subcommand(&rpc_client, config, feature_subcommand)
         }
@@ -1398,6 +1463,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             lockup,
             amount,
             sign_only,
+            dump_transaction_message,
             blockhash_query,
             ref nonce_account,
             nonce_authority,
@@ -1413,6 +1479,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             lockup,
             *amount,
             *sign_only,
+            *dump_transaction_message,
             blockhash_query,
             nonce_account.as_ref(),
             *nonce_authority,
@@ -1423,6 +1490,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             stake_account_pubkey,
             stake_authority,
             sign_only,
+            dump_transaction_message,
             blockhash_query,
             nonce_account,
             nonce_authority,
@@ -1433,6 +1501,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             &stake_account_pubkey,
             *stake_authority,
             *sign_only,
+            *dump_transaction_message,
             blockhash_query,
             *nonce_account,
             *nonce_authority,
@@ -1444,6 +1513,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             stake_authority,
             force,
             sign_only,
+            dump_transaction_message,
             blockhash_query,
             nonce_account,
             nonce_authority,
@@ -1456,6 +1526,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             *stake_authority,
             *force,
             *sign_only,
+            *dump_transaction_message,
             blockhash_query,
             *nonce_account,
             *nonce_authority,
@@ -1465,6 +1536,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             stake_account_pubkey,
             stake_authority,
             sign_only,
+            dump_transaction_message,
             blockhash_query,
             nonce_account,
             nonce_authority,
@@ -1478,6 +1550,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             &stake_account_pubkey,
             *stake_authority,
             *sign_only,
+            *dump_transaction_message,
             blockhash_query,
             *nonce_account,
             *nonce_authority,
@@ -1491,6 +1564,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             source_stake_account_pubkey,
             stake_authority,
             sign_only,
+            dump_transaction_message,
             blockhash_query,
             nonce_account,
             nonce_authority,
@@ -1502,6 +1576,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             &source_stake_account_pubkey,
             *stake_authority,
             *sign_only,
+            *dump_transaction_message,
             blockhash_query,
             *nonce_account,
             *nonce_authority,
@@ -1523,6 +1598,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             stake_account_pubkey,
             ref new_authorizations,
             sign_only,
+            dump_transaction_message,
             blockhash_query,
             nonce_account,
             nonce_authority,
@@ -1535,6 +1611,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             new_authorizations,
             *custodian,
             *sign_only,
+            *dump_transaction_message,
             blockhash_query,
             *nonce_account,
             *nonce_authority,
@@ -1545,6 +1622,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             mut lockup,
             custodian,
             sign_only,
+            dump_transaction_message,
             blockhash_query,
             nonce_account,
             nonce_authority,
@@ -1556,6 +1634,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             &mut lockup,
             *custodian,
             *sign_only,
+            *dump_transaction_message,
             blockhash_query,
             *nonce_account,
             *nonce_authority,
@@ -1568,6 +1647,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             withdraw_authority,
             custodian,
             sign_only,
+            dump_transaction_message,
             blockhash_query,
             ref nonce_account,
             nonce_authority,
@@ -1581,6 +1661,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             *withdraw_authority,
             *custodian,
             *sign_only,
+            *dump_transaction_message,
             blockhash_query,
             nonce_account.as_ref(),
             *nonce_authority,
@@ -1714,7 +1795,9 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
         } => process_balance(&rpc_client, config, &pubkey, *use_lamports_unit),
         // Confirm the last client transaction by signature
         CliCommand::Confirm(signature) => process_confirm(&rpc_client, config, signature),
-        CliCommand::DecodeTransaction(transaction) => process_decode_transaction(transaction),
+        CliCommand::DecodeTransaction(transaction) => {
+            process_decode_transaction(config, transaction)
+        }
         CliCommand::ResolveSigner(path) => {
             if let Some(path) = path {
                 Ok(path.to_string())
@@ -1738,11 +1821,14 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             to,
             from,
             sign_only,
+            dump_transaction_message,
             no_wait,
             ref blockhash_query,
             ref nonce_account,
             nonce_authority,
             fee_payer,
+            derived_address_seed,
+            ref derived_address_program_id,
         } => process_transfer(
             &rpc_client,
             config,
@@ -1750,11 +1836,14 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             to,
             *from,
             *sign_only,
+            *dump_transaction_message,
             *no_wait,
             blockhash_query,
             nonce_account.as_ref(),
             *nonce_authority,
             *fee_payer,
+            derived_address_seed.clone(),
+            derived_address_program_id.as_ref(),
         ),
     }
 }
@@ -1934,6 +2023,17 @@ pub fn app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> App<'ab, '
                         .takes_value(true)
                         .required(true)
                         .help("The transaction signature to confirm"),
+                )
+                .after_help(// Formatted specifically for the manually-indented heredoc string
+                   "Note: This will show more detailed information for finalized transactions with verbose mode (-v/--verbose).\
+                  \n\
+                  \nAccount modes:\
+                  \n  |srwx|\
+                  \n    s: signed\
+                  \n    r: readable (always true)\
+                  \n    w: writable\
+                  \n    x: program account (inner instructions excluded)\
+                   "
                 ),
         )
         .subcommand(
@@ -1967,6 +2067,7 @@ pub fn app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> App<'ab, '
                         .value_name("SEED_STRING")
                         .takes_value(true)
                         .required(true)
+                        .validator(is_derived_address_seed)
                         .help("The seed.  Must not take more than 32 bytes to encode as utf-8"),
                 )
                 .arg(
@@ -2087,6 +2188,23 @@ pub fn app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> App<'ab, '
                         .takes_value(false)
                         .help("Return signature immediately after submitting the transaction, instead of waiting for confirmations"),
                 )
+                .arg(
+                    Arg::with_name("derived_address_seed")
+                        .long("derived-address-seed")
+                        .takes_value(true)
+                        .value_name("SEED_STRING")
+                        .requires("derived_address_program_id")
+                        .validator(is_derived_address_seed)
+                        .hidden(true)
+                )
+                .arg(
+                    Arg::with_name("derived_address_program_id")
+                        .long("derived-address-program-id")
+                        .takes_value(true)
+                        .value_name("PROGRAM_ID")
+                        .requires("derived_address_seed")
+                        .hidden(true)
+                )
                 .offline_args()
                 .nonce_args(false)
                 .arg(fee_payer_arg()),
@@ -2136,6 +2254,7 @@ mod tests {
         signature::{keypair_from_seed, read_keypair_file, write_keypair_file, Keypair, Presigner},
         transaction::TransactionError,
     };
+    use solana_transaction_status::TransactionConfirmationStatus;
     use std::path::PathBuf;
 
     fn make_tmp_path(name: &str) -> String {
@@ -2529,6 +2648,7 @@ mod tests {
             },
             amount: SpendAmount::Some(30),
             sign_only: false,
+            dump_transaction_message: false,
             blockhash_query: BlockhashQuery::All(blockhash_query::Source::Cluster),
             nonce_account: None,
             nonce_authority: 0,
@@ -2548,6 +2668,7 @@ mod tests {
             withdraw_authority: 0,
             custodian: None,
             sign_only: false,
+            dump_transaction_message: false,
             blockhash_query: BlockhashQuery::All(blockhash_query::Source::Cluster),
             nonce_account: None,
             nonce_authority: 0,
@@ -2562,6 +2683,7 @@ mod tests {
             stake_account_pubkey,
             stake_authority: 0,
             sign_only: false,
+            dump_transaction_message: false,
             blockhash_query: BlockhashQuery::default(),
             nonce_account: None,
             nonce_authority: 0,
@@ -2576,6 +2698,7 @@ mod tests {
             stake_account_pubkey,
             stake_authority: 0,
             sign_only: false,
+            dump_transaction_message: false,
             blockhash_query: BlockhashQuery::default(),
             nonce_account: None,
             nonce_authority: 0,
@@ -2596,6 +2719,7 @@ mod tests {
             source_stake_account_pubkey,
             stake_authority: 1,
             sign_only: false,
+            dump_transaction_message: false,
             blockhash_query: BlockhashQuery::default(),
             nonce_account: None,
             nonce_authority: 0,
@@ -2783,11 +2907,14 @@ mod tests {
                     to: to_pubkey,
                     from: 0,
                     sign_only: false,
+                    dump_transaction_message: false,
                     no_wait: false,
                     blockhash_query: BlockhashQuery::All(blockhash_query::Source::Cluster),
                     nonce_account: None,
                     nonce_authority: 0,
                     fee_payer: 0,
+                    derived_address_seed: None,
+                    derived_address_program_id: None,
                 },
                 signers: vec![read_keypair_file(&default_keypair_file).unwrap().into()],
             }
@@ -2805,11 +2932,14 @@ mod tests {
                     to: to_pubkey,
                     from: 0,
                     sign_only: false,
+                    dump_transaction_message: false,
                     no_wait: false,
                     blockhash_query: BlockhashQuery::All(blockhash_query::Source::Cluster),
                     nonce_account: None,
                     nonce_authority: 0,
                     fee_payer: 0,
+                    derived_address_seed: None,
+                    derived_address_program_id: None,
                 },
                 signers: vec![read_keypair_file(&default_keypair_file).unwrap().into()],
             }
@@ -2831,11 +2961,14 @@ mod tests {
                     to: to_pubkey,
                     from: 0,
                     sign_only: false,
+                    dump_transaction_message: false,
                     no_wait: true,
                     blockhash_query: BlockhashQuery::All(blockhash_query::Source::Cluster),
                     nonce_account: None,
                     nonce_authority: 0,
                     fee_payer: 0,
+                    derived_address_seed: None,
+                    derived_address_program_id: None,
                 },
                 signers: vec![read_keypair_file(&default_keypair_file).unwrap().into()],
             }
@@ -2861,11 +2994,14 @@ mod tests {
                     to: to_pubkey,
                     from: 0,
                     sign_only: true,
+                    dump_transaction_message: false,
                     no_wait: false,
                     blockhash_query: BlockhashQuery::None(blockhash),
                     nonce_account: None,
                     nonce_authority: 0,
                     fee_payer: 0,
+                    derived_address_seed: None,
+                    derived_address_program_id: None,
                 },
                 signers: vec![read_keypair_file(&default_keypair_file).unwrap().into()],
             }
@@ -2896,6 +3032,7 @@ mod tests {
                     to: to_pubkey,
                     from: 0,
                     sign_only: false,
+                    dump_transaction_message: false,
                     no_wait: false,
                     blockhash_query: BlockhashQuery::FeeCalculator(
                         blockhash_query::Source::Cluster,
@@ -2904,6 +3041,8 @@ mod tests {
                     nonce_account: None,
                     nonce_authority: 0,
                     fee_payer: 0,
+                    derived_address_seed: None,
+                    derived_address_program_id: None,
                 },
                 signers: vec![Presigner::new(&from_pubkey, &from_sig).into()],
             }
@@ -2935,6 +3074,7 @@ mod tests {
                     to: to_pubkey,
                     from: 0,
                     sign_only: false,
+                    dump_transaction_message: false,
                     no_wait: false,
                     blockhash_query: BlockhashQuery::FeeCalculator(
                         blockhash_query::Source::NonceAccount(nonce_address),
@@ -2943,11 +3083,47 @@ mod tests {
                     nonce_account: Some(nonce_address),
                     nonce_authority: 1,
                     fee_payer: 0,
+                    derived_address_seed: None,
+                    derived_address_program_id: None,
                 },
                 signers: vec![
                     read_keypair_file(&default_keypair_file).unwrap().into(),
                     read_keypair_file(&nonce_authority_file).unwrap().into()
                 ],
+            }
+        );
+
+        //Test Transfer Subcommand, with seed
+        let derived_address_seed = "seed".to_string();
+        let derived_address_program_id = "STAKE";
+        let test_transfer = test_commands.clone().get_matches_from(vec![
+            "test",
+            "transfer",
+            &to_string,
+            "42",
+            "--derived-address-seed",
+            &derived_address_seed,
+            "--derived-address-program-id",
+            derived_address_program_id,
+        ]);
+        assert_eq!(
+            parse_command(&test_transfer, &default_signer, &mut None).unwrap(),
+            CliCommandInfo {
+                command: CliCommand::Transfer {
+                    amount: SpendAmount::Some(42_000_000_000),
+                    to: to_pubkey,
+                    from: 0,
+                    sign_only: false,
+                    dump_transaction_message: false,
+                    no_wait: false,
+                    blockhash_query: BlockhashQuery::All(blockhash_query::Source::Cluster),
+                    nonce_account: None,
+                    nonce_authority: 0,
+                    fee_payer: 0,
+                    derived_address_seed: Some(derived_address_seed),
+                    derived_address_program_id: Some(solana_stake_program::id()),
+                },
+                signers: vec![read_keypair_file(&default_keypair_file).unwrap().into(),],
             }
         );
     }

@@ -11,6 +11,7 @@ use crate::{
     completed_data_sets_service::CompletedDataSetsSender,
     consensus::Tower,
     ledger_cleanup_service::LedgerCleanupService,
+    max_slots::MaxSlots,
     optimistically_confirmed_bank_tracker::BankNotificationSender,
     poh_recorder::PohRecorder,
     replay_stage::{ReplayStage, ReplayStageConfig},
@@ -30,7 +31,7 @@ use solana_ledger::{
 };
 use solana_runtime::{
     accounts_background_service::{
-        ABSRequestHandler, ABSRequestSender, AccountsBackgroundService, SendDroppedBankCallback,
+        AbsRequestHandler, AbsRequestSender, AccountsBackgroundService, SendDroppedBankCallback,
         SnapshotRequestHandler,
     },
     bank_forks::{BankForks, SnapshotConfig},
@@ -80,6 +81,9 @@ pub struct TvuConfig {
     pub accounts_hash_fault_injection_slots: u64,
     pub accounts_db_caching_enabled: bool,
     pub test_hash_calculation: bool,
+    pub use_index_hash_calculation: bool,
+    pub rocksdb_compaction_interval: Option<u64>,
+    pub rocksdb_max_compaction_jitter: Option<u64>,
 }
 
 impl Tvu {
@@ -103,7 +107,7 @@ impl Tvu {
         tower: Tower,
         leader_schedule_cache: &Arc<LeaderScheduleCache>,
         exit: &Arc<AtomicBool>,
-        completed_slots_receiver: CompletedSlotsReceiver,
+        completed_slots_receivers: [CompletedSlotsReceiver; 2],
         block_commitment_cache: Arc<RwLock<BlockCommitmentCache>>,
         cfg: Option<Arc<AtomicBool>>,
         transaction_status_sender: Option<TransactionStatusSender>,
@@ -117,6 +121,7 @@ impl Tvu {
         completed_data_sets_sender: CompletedDataSetsSender,
         bank_notification_sender: Option<BankNotificationSender>,
         tvu_config: TvuConfig,
+        max_slots: &Arc<MaxSlots>,
     ) -> Self {
         let keypair: Arc<Keypair> = cluster_info.keypair.clone();
 
@@ -140,6 +145,7 @@ impl Tvu {
             &fetch_sender,
             Some(bank_forks.clone()),
             &exit,
+            None,
         );
 
         let (verified_sender, verified_receiver) = unbounded();
@@ -151,6 +157,8 @@ impl Tvu {
 
         let cluster_slots = Arc::new(ClusterSlots::default());
         let (duplicate_slots_reset_sender, duplicate_slots_reset_receiver) = unbounded();
+        let compaction_interval = tvu_config.rocksdb_compaction_interval;
+        let max_compaction_jitter = tvu_config.rocksdb_max_compaction_jitter;
         let retransmit_stage = RetransmitStage::new(
             bank_forks.clone(),
             leader_schedule_cache,
@@ -160,7 +168,7 @@ impl Tvu {
             repair_socket,
             verified_receiver,
             &exit,
-            completed_slots_receiver,
+            completed_slots_receivers,
             *bank_forks.read().unwrap().working_bank().epoch_schedule(),
             cfg,
             tvu_config.shred_version,
@@ -169,6 +177,8 @@ impl Tvu {
             verified_vote_receiver,
             tvu_config.repair_validators,
             completed_data_sets_sender,
+            max_slots,
+            Some(subscriptions.clone()),
         );
 
         let (ledger_cleanup_slot_sender, ledger_cleanup_slot_receiver) = channel();
@@ -223,9 +233,9 @@ impl Tvu {
             ))));
         }
 
-        let accounts_background_request_sender = ABSRequestSender::new(snapshot_request_sender);
+        let accounts_background_request_sender = AbsRequestSender::new(snapshot_request_sender);
 
-        let accounts_background_request_handler = ABSRequestHandler {
+        let accounts_background_request_handler = AbsRequestHandler {
             snapshot_request_handler,
             pruned_banks_receiver,
         };
@@ -267,6 +277,8 @@ impl Tvu {
                 blockstore.clone(),
                 max_ledger_shreds,
                 &exit,
+                compaction_interval,
+                max_compaction_jitter,
             )
         });
 
@@ -276,6 +288,7 @@ impl Tvu {
             accounts_background_request_handler,
             tvu_config.accounts_db_caching_enabled,
             tvu_config.test_hash_calculation,
+            tvu_config.use_index_hash_calculation,
         );
 
         Tvu {
@@ -343,7 +356,7 @@ pub mod tests {
         let BlockstoreSignals {
             blockstore,
             ledger_signal_receiver,
-            completed_slots_receiver,
+            completed_slots_receivers,
             ..
         } = Blockstore::open_with_signal(&blockstore_path, None, true)
             .expect("Expected to successfully open ledger");
@@ -385,7 +398,7 @@ pub mod tests {
             tower,
             &leader_schedule_cache,
             &exit,
-            completed_slots_receiver,
+            completed_slots_receivers,
             block_commitment_cache,
             None,
             None,
@@ -399,6 +412,7 @@ pub mod tests {
             completed_data_sets_sender,
             None,
             TvuConfig::default(),
+            &Arc::new(MaxSlots::default()),
         );
         exit.store(true, Ordering::Relaxed);
         tvu.join().unwrap();

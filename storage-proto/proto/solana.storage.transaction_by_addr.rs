@@ -114,4 +114,8 @@ pub enum InstructionErrorType {
     ProgramFailedToCompile = 41,
     Immutable = 42,
     IncorrectAuthority = 43,
+    BorshIoError = 44,
+    AccountNotRentExempt = 45,
+    InvalidAccountOwner = 46,
+    ArithmeticOverflow = 47,
 }

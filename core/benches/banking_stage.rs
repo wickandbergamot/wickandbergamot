@@ -1,3 +1,4 @@
+#![allow(clippy::integer_arithmetic)]
 #![feature(test)]
 
 extern crate test;
@@ -28,6 +29,7 @@ use solana_sdk::system_instruction;
 use solana_sdk::system_transaction;
 use solana_sdk::timing::{duration_as_us, timestamp};
 use solana_sdk::transaction::Transaction;
+use std::collections::VecDeque;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::Receiver;
 use std::sync::Arc;
@@ -68,10 +70,10 @@ fn bench_consume_buffered(bencher: &mut Bencher) {
         let len = 4096;
         let chunk_size = 1024;
         let batches = to_packets_chunked(&vec![tx; len], chunk_size);
-        let mut packets = vec![];
+        let mut packets = VecDeque::new();
         for batch in batches {
             let batch_len = batch.packets.len();
-            packets.push((batch, vec![0usize; batch_len]));
+            packets.push_back((batch, vec![0usize; batch_len], false));
         }
         let (s, _r) = unbounded();
         // This tests the performance of buffering packets.
@@ -79,11 +81,13 @@ fn bench_consume_buffered(bencher: &mut Bencher) {
         bencher.iter(move || {
             let _ignored = BankingStage::consume_buffered_packets(
                 &my_pubkey,
+                std::u128::MAX,
                 &poh_recorder,
                 &mut packets,
-                10_000,
                 None,
                 &s,
+                None::<Box<dyn Fn()>>,
+                None,
             );
         });
 
@@ -151,6 +155,9 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
 
     let (verified_sender, verified_receiver) = unbounded();
     let (vote_sender, vote_receiver) = unbounded();
+    let mut bank = Bank::new(&genesis_config);
+    // Allow arbitrary transaction processing time for the purposes of this bench
+    bank.ns_per_slot = std::u128::MAX;
     let bank = Arc::new(Bank::new(&genesis_config));
 
     debug!("threads: {} txs: {}", num_threads, txes);

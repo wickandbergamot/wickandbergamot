@@ -76,6 +76,9 @@ impl<T: Default + Clone + Sized> Reset for PinnedVec<T> {
     fn set_recycler(&mut self, recycler: Weak<RecyclerX<Self>>) {
         self.recycler = Some(recycler);
     }
+    fn unset_recycler(&mut self) {
+        self.recycler = None;
+    }
 }
 
 impl<T: Clone + Default + Sized> Default for PinnedVec<T> {
@@ -182,6 +185,14 @@ impl<'a, T: Clone + Send + Sync + Default + Sized> IntoParallelIterator for &'a 
     type Item = &'a T;
     fn into_par_iter(self) -> Self::Iter {
         self.x.par_iter()
+    }
+}
+
+impl<'a, T: Clone + Send + Sync + Default + Sized> IntoParallelIterator for &'a mut PinnedVec<T> {
+    type Iter = rayon::slice::IterMut<'a, T>;
+    type Item = &'a mut T;
+    fn into_par_iter(self) -> Self::Iter {
+        self.x.par_iter_mut()
     }
 }
 
