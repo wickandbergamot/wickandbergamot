@@ -713,7 +713,7 @@ pub fn process_vote<S: std::hash::BuildHasher>(
 
     let mut vote_state = versioned.convert_to_current();
 
-    let authorized_voter = vote_state.get_and_update_authorized_voter(clock.epoch)?;
+    let authorized_voter = vote_state.get_and_update_authorized_voter(clock.epoch);
 
 
 
