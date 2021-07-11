@@ -169,7 +169,7 @@ pub fn normalize_to_url_if_moniker<T: AsRef<str>>(url_or_moniker: T) -> String {
         "m" | "mainnet-beta" => "https://api.mainnet-beta.safecoin.org",
         "t" | "testnet" => "https://testnet.safecoin.org",
         "d" | "devnet" => "https://devnet.safecoin.org",
-        "l" | "localhost" => "http://localhost:8328",
+        "l" | "localhost" => "http://localhost:8899",
         url => url,
     }
     .to_string()

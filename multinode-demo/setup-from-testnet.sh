@@ -36,22 +36,22 @@ mkdir -p "$SAFECOIN_CONFIG_DIR"/bootstrap-validator
 if [[ -r $FAUCET_KEYPAIR ]]; then
   cp -f "$FAUCET_KEYPAIR" "$SAFECOIN_CONFIG_DIR"/faucet.json
 else
-  $safecoin_keygen new --no-passphrase -fso "$SAFECOIN_CONFIG_DIR"/faucet.json
+  $solana_keygen new --no-passphrase -fso "$SAFECOIN_CONFIG_DIR"/faucet.json
 fi
 
 if [[ -f $BOOTSTRAP_VALIDATOR_IDENTITY_KEYPAIR ]]; then
   cp -f "$BOOTSTRAP_VALIDATOR_IDENTITY_KEYPAIR" "$SAFECOIN_CONFIG_DIR"/bootstrap-validator/identity.json
 else
-  $safecoin_keygen new --no-passphrase -so "$SAFECOIN_CONFIG_DIR"/bootstrap-validator/identity.json
+  $solana_keygen new --no-passphrase -so "$SAFECOIN_CONFIG_DIR"/bootstrap-validator/identity.json
 fi
 
-$safecoin_keygen new --no-passphrase -so "$SAFECOIN_CONFIG_DIR"/bootstrap-validator/vote-account.json
-$safecoin_keygen new --no-passphrase -so "$SAFECOIN_CONFIG_DIR"/bootstrap-validator/stake-account.json
+$solana_keygen new --no-passphrase -so "$SAFECOIN_CONFIG_DIR"/bootstrap-validator/vote-account.json
+$solana_keygen new --no-passphrase -so "$SAFECOIN_CONFIG_DIR"/bootstrap-validator/stake-account.json
 
 $safecoin_ledger_tool create-snapshot \
   --ledger "$SAFECOIN_CONFIG_DIR"/latest-testnet-snapshot \
   --faucet-pubkey "$SAFECOIN_CONFIG_DIR"/faucet.json \
-  --faucet-lamports 1000 \
+  --faucet-lamports 500000000000000000 \
   --bootstrap-validator "$SAFECOIN_CONFIG_DIR"/bootstrap-validator/identity.json \
                         "$SAFECOIN_CONFIG_DIR"/bootstrap-validator/vote-account.json \
                         "$SAFECOIN_CONFIG_DIR"/bootstrap-validator/stake-account.json \

@@ -97,7 +97,7 @@ args=(
   --vote-account "$dataDir"/validator-vote-account.json
   --ledger "$ledgerDir"
   --gossip-port 10015
-  --rpc-port 8328
+  --rpc-port 8899
   --rpc-faucet-address 127.0.0.1:9900
   --log -
   --enable-rpc-exit
