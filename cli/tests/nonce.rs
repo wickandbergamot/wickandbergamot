@@ -10,7 +10,7 @@ use solana_client::{
     rpc_client::RpcClient,
 };
 use solana_core::test_validator::TestValidator;
-use solana_faucet::faucet::run_local_faucet;
+use safecoin_faucet::faucet::run_local_faucet;
 use solana_sdk::{
     commitment_config::CommitmentConfig,
     hash::Hash,
@@ -293,7 +293,6 @@ fn test_create_account_with_seed() {
         to: to_address,
         from: 0,
         sign_only: true,
-        dump_transaction_message: true,
         no_wait: false,
         blockhash_query: BlockhashQuery::None(nonce_hash),
         nonce_account: Some(nonce_address),
@@ -317,7 +316,6 @@ fn test_create_account_with_seed() {
         to: to_address,
         from: 0,
         sign_only: false,
-        dump_transaction_message: true,
         no_wait: false,
         blockhash_query: BlockhashQuery::FeeCalculator(
             blockhash_query::Source::NonceAccount(nonce_address),

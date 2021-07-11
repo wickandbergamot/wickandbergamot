@@ -1,8 +1,6 @@
 use serde::de::{Deserialize, Deserializer};
 use serde::ser::{Serialize, Serializer};
-use solana_sdk::{
-    account::Account, account::AccountSharedData, instruction::InstructionError, pubkey::Pubkey,
-};
+use solana_sdk::{account::Account, instruction::InstructionError, pubkey::Pubkey};
 use solana_vote_program::vote_state::VoteState;
 use std::{
     borrow::Borrow,
@@ -174,24 +172,9 @@ impl<'de> Deserialize<'de> for ArcVoteAccount {
     }
 }
 
-impl From<AccountSharedData> for ArcVoteAccount {
-    fn from(account: AccountSharedData) -> Self {
-        Self(Arc::new(VoteAccount::from(account)))
-    }
-}
 impl From<Account> for ArcVoteAccount {
     fn from(account: Account) -> Self {
         Self(Arc::new(VoteAccount::from(account)))
-    }
-}
-
-impl From<AccountSharedData> for VoteAccount {
-    fn from(account: AccountSharedData) -> Self {
-        Self {
-            account: Account::from(account),
-            vote_state: RwLock::new(INVALID_VOTE_STATE),
-            vote_state_once: Once::new(),
-        }
     }
 }
 
@@ -316,7 +299,7 @@ mod tests {
     fn new_rand_vote_account<R: Rng>(
         rng: &mut R,
         node_pubkey: Option<Pubkey>,
-    ) -> (AccountSharedData, VoteState) {
+    ) -> (Account, VoteState) {
         let vote_init = VoteInit {
             node_pubkey: node_pubkey.unwrap_or_else(Pubkey::new_unique),
             authorized_voter: Pubkey::new_unique(),
@@ -331,7 +314,7 @@ mod tests {
             unix_timestamp: rng.gen(),
         };
         let vote_state = VoteState::new(&vote_init, &clock);
-        let account = AccountSharedData::new_data(
+        let account = Account::new_data(
             rng.gen(), // lamports
             &VoteStateVersions::new_current(vote_state.clone()),
             &Pubkey::new_unique(), // owner

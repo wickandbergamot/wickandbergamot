@@ -1,4 +1,4 @@
-//! The `rpc_service` module implements the Solana JSON RPC service.
+//! The `rpc_service` module implements the Safecoin JSON RPC service.
 
 use crate::{
     bigtable_upload_service::BigTableUploadService,
@@ -6,7 +6,7 @@ use crate::{
     max_slots::MaxSlots,
     optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank,
     poh_recorder::PohRecorder,
-    rpc::{rpc_full::*, rpc_minimal::*, *},
+    rpc::*,
     rpc_health::*,
     send_transaction_service::{LeaderInfo, SendTransactionService},
     validator::ValidatorExit,
@@ -178,8 +178,7 @@ impl RpcRequestMiddleware {
     fn health_check(&self) -> &'static str {
         let response = match self.health.check() {
             RpcHealthStatus::Ok => "ok",
-            RpcHealthStatus::Behind { .. } => "behind",
-            RpcHealthStatus::Unknown => "unknown",
+            RpcHealthStatus::Behind { num_slots: _ } => "behind",
         };
         info!("health check: {}", response);
         response
@@ -268,7 +267,7 @@ impl JsonRpcService {
         poh_recorder: Option<Arc<Mutex<PohRecorder>>>,
         genesis_hash: Hash,
         ledger_path: &Path,
-        validator_exit: Arc<RwLock<ValidatorExit>>,
+        validator_exit: Arc<RwLock<Option<ValidatorExit>>>,
         trusted_validators: Option<HashSet<Pubkey>>,
         override_health_check: Arc<AtomicBool>,
         optimistically_confirmed_bank: Arc<RwLock<OptimisticallyConfirmedBank>>,
@@ -338,7 +337,6 @@ impl JsonRpcService {
                 (None, None)
             };
 
-        let minimal_api = config.minimal_api;
         let (request_processor, receiver) = JsonRpcRequestProcessor::new(
             config,
             snapshot_config.clone(),
@@ -394,11 +392,8 @@ impl JsonRpcService {
             .name("solana-jsonrpc".to_string())
             .spawn(move || {
                 let mut io = MetaIoHandler::default();
-
-                io.extend_with(rpc_minimal::MinimalImpl.to_delegate());
-                if !minimal_api {
-                    io.extend_with(rpc_full::FullImpl.to_delegate());
-                }
+                let rpc = RpcSafeImpl;
+                io.extend_with(rpc.to_delegate());
 
                 let request_middleware = RpcRequestMiddleware::new(
                     ledger_path,
@@ -439,8 +434,9 @@ impl JsonRpcService {
 
         let close_handle = close_handle_receiver.recv().unwrap();
         let close_handle_ = close_handle.clone();
-        validator_exit
-            .write()
+        let mut validator_exit_write = validator_exit.write().unwrap();
+        validator_exit_write
+            .as_mut()
             .unwrap()
             .register_exit(Box::new(move || close_handle_.close()));
         Self {
@@ -697,20 +693,18 @@ mod tests {
 
         let rm = RpcRequestMiddleware::new(PathBuf::from("/"), None, create_bank_forks(), health);
 
-        // No account hashes for this node or any trusted validators
-        assert_eq!(rm.health_check(), "unknown");
+        // No account hashes for this node or any trusted validators == "behind"
+        assert_eq!(rm.health_check(), "behind");
 
-        // No account hashes for any trusted validators
+        // No account hashes for any trusted validators == "behind"
         cluster_info.push_accounts_hashes(vec![(1000, Hash::default()), (900, Hash::default())]);
         cluster_info.flush_push_queue();
-        assert_eq!(rm.health_check(), "unknown");
-
-        // Override health check
+        assert_eq!(rm.health_check(), "behind");
         override_health_check.store(true, Ordering::Relaxed);
         assert_eq!(rm.health_check(), "ok");
         override_health_check.store(false, Ordering::Relaxed);
 
-        // This node is ahead of the trusted validators
+        // This node is ahead of the trusted validators == "ok"
         cluster_info
             .gossip
             .write()
@@ -730,7 +724,7 @@ mod tests {
             .unwrap();
         assert_eq!(rm.health_check(), "ok");
 
-        // Node is slightly behind the trusted validators
+        // Node is slightly behind the trusted validators == "ok"
         cluster_info
             .gossip
             .write()
@@ -746,7 +740,7 @@ mod tests {
             .unwrap();
         assert_eq!(rm.health_check(), "ok");
 
-        // Node is far behind the trusted validators
+        // Node is far behind the trusted validators == "behind"
         cluster_info
             .gossip
             .write()

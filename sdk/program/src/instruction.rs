@@ -117,7 +117,7 @@ pub enum InstructionError {
     DuplicateAccountOutOfSync,
 
     /// Allows on-chain programs to implement program-specific error types and see them returned
-    /// by the Solana runtime. A program-specific error may be any type that is represented as
+    /// by the Safecoin runtime. A program-specific error may be any type that is represented as
     /// or serialized to a u32 integer.
     #[error("custom program error: {0:#x}")]
     Custom(u32),
@@ -198,9 +198,6 @@ pub enum InstructionError {
 
     #[error("Invalid account owner")]
     InvalidAccountOwner,
-
-    #[error("Program arithmetic overflowed")]
-    ArithmeticOverflow,
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -214,19 +211,7 @@ pub struct Instruction {
 }
 
 impl Instruction {
-    #[deprecated(
-        since = "1.6.0",
-        note = "Please use another Instruction constructor instead, such as `Instruction::new_with_bincode`"
-    )]
     pub fn new<T: Serialize>(program_id: Pubkey, data: &T, accounts: Vec<AccountMeta>) -> Self {
-        Self::new_with_bincode(program_id, data, accounts)
-    }
-
-    pub fn new_with_bincode<T: Serialize>(
-        program_id: Pubkey,
-        data: &T,
-        accounts: Vec<AccountMeta>,
-    ) -> Self {
         let data = serialize(data).unwrap();
         Self {
             program_id,
@@ -244,14 +229,6 @@ impl Instruction {
         Self {
             program_id,
             data,
-            accounts,
-        }
-    }
-
-    pub fn new_with_bytes(program_id: Pubkey, data: &[u8], accounts: Vec<AccountMeta>) -> Self {
-        Self {
-            program_id,
-            data: data.to_vec(),
             accounts,
         }
     }

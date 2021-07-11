@@ -8,11 +8,11 @@ import {
   PROGRAM_NAME_BY_ID,
   SYSVAR_IDS,
   LoaderName,
-  programLabel,
+  SEARCHABLE_PROGRAMS,
 } from "utils/tx";
 import { Cluster, useCluster } from "providers/cluster";
 import { useTokenRegistry } from "providers/mints/token-registry";
-import { TokenInfoMap } from "@solana/spl-token-registry";
+import { KnownTokenMap } from "@solana/spl-token-registry";
 
 export function SearchBar() {
   const [search, setSearch] = React.useState("");
@@ -66,14 +66,13 @@ export function SearchBar() {
   );
 }
 
-function buildProgramOptions(search: string, cluster: Cluster) {
+function buildProgramOptions(search: string) {
   const matchedPrograms = Object.entries(PROGRAM_NAME_BY_ID).filter(
-    ([address]) => {
-      const name = programLabel(address, cluster);
-      if (!name) return false;
+    ([address, name]) => {
       return (
-        name.toLowerCase().includes(search.toLowerCase()) ||
-        address.includes(search)
+        SEARCHABLE_PROGRAMS.includes(name) &&
+        (name.toLowerCase().includes(search.toLowerCase()) ||
+          address.includes(search))
       );
     }
   );
@@ -144,14 +143,14 @@ function buildSysvarOptions(search: string) {
 function buildTokenOptions(
   search: string,
   cluster: Cluster,
-  tokenRegistry: TokenInfoMap
+  tokenRegistry: KnownTokenMap
 ) {
   const matchedTokens = Array.from(tokenRegistry.entries()).filter(
     ([address, details]) => {
       const searchLower = search.toLowerCase();
       return (
-        details.name.toLowerCase().includes(searchLower) ||
-        details.symbol.toLowerCase().includes(searchLower) ||
+        details.tokenName.toLowerCase().includes(searchLower) ||
+        details.tokenSymbol.toLowerCase().includes(searchLower) ||
         address.includes(search)
       );
     }
@@ -161,8 +160,8 @@ function buildTokenOptions(
     return {
       label: "Tokens",
       options: matchedTokens.map(([id, details]) => ({
-        label: details.name,
-        value: [details.name, details.symbol, id],
+        label: details.tokenName,
+        value: [details.tokenName, details.tokenSymbol, id],
         pathname: "/address/" + id,
       })),
     };
@@ -172,14 +171,14 @@ function buildTokenOptions(
 function buildOptions(
   rawSearch: string,
   cluster: Cluster,
-  tokenRegistry: TokenInfoMap
+  tokenRegistry: KnownTokenMap
 ) {
   const search = rawSearch.trim();
   if (search.length === 0) return [];
 
   const options = [];
 
-  const programOptions = buildProgramOptions(search, cluster);
+  const programOptions = buildProgramOptions(search);
   if (programOptions) {
     options.push(programOptions);
   }

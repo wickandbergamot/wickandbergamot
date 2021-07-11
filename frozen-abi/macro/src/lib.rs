@@ -1,3 +1,4 @@
+#![allow(clippy::integer_arithmetic)]
 extern crate proc_macro;
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
@@ -256,7 +257,7 @@ pub fn derive_abi_sample(item: TokenStream) -> TokenStream {
 fn do_derive_abi_enum_visitor(input: ItemEnum) -> TokenStream {
     let type_name = &input.ident;
     let mut serialized_variants = quote! {};
-    let mut variant_count: u64 = 0;
+    let mut variant_count = 0;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     for variant in &input.variants {
         // Don't digest a variant with serde(skip)
@@ -264,14 +265,10 @@ fn do_derive_abi_enum_visitor(input: ItemEnum) -> TokenStream {
             continue;
         };
         let sample_variant = quote_sample_variant(&type_name, &ty_generics, &variant);
-        variant_count = if let Some(variant_count) = variant_count.checked_add(1) {
-            variant_count
-        } else {
-            break;
-        };
+        variant_count += 1;
         serialized_variants.extend(quote! {
             #sample_variant;
-            Serialize::serialize(&sample_variant, digester.create_enum_child()?)?;
+            Serialize::serialize(&sample_variant, digester.create_enum_child())?;
         });
     }
 
@@ -284,7 +281,7 @@ fn do_derive_abi_enum_visitor(input: ItemEnum) -> TokenStream {
                 use ::solana_frozen_abi::abi_example::AbiExample;
                 digester.update_with_string(format!("enum {} (variants = {})", enum_name, #variant_count));
                 #serialized_variants
-                digester.create_child()
+                Ok(digester.create_child())
             }
         }
     }).into()
@@ -330,16 +327,16 @@ fn quote_for_test(
                 }
                 result.unwrap();
                 let actual_digest = format!("{}", hash);
-                if ::std::env::var("SOLANA_ABI_BULK_UPDATE").is_ok() {
+                if ::std::env::var("SAFECOIN_ABI_BULK_UPDATE").is_ok() {
                     if #expected_digest != actual_digest {
                         #p!("sed -i -e 's/{}/{}/g' $(git grep --files-with-matches frozen_abi)", #expected_digest, hash);
                     }
-                    ::log::warn!("Not testing the abi digest under SOLANA_ABI_BULK_UPDATE!");
+                    ::log::warn!("Not testing the abi digest under SAFECOIN_ABI_BULK_UPDATE!");
                 } else {
-                    if let Ok(dir) = ::std::env::var("SOLANA_ABI_DUMP_DIR") {
-                        assert_eq!(#expected_digest, actual_digest, "Possibly ABI changed? Examine the diff in SOLANA_ABI_DUMP_DIR!: $ diff -u {}/*{}* {}/*{}*", dir, #expected_digest, dir, actual_digest);
+                    if let Ok(dir) = ::std::env::var("SAFECOIN_ABI_DUMP_DIR") {
+                        assert_eq!(#expected_digest, actual_digest, "Possibly ABI changed? Examine the diff in SAFECOIN_ABI_DUMP_DIR!: $ diff -u {}/*{}* {}/*{}*", dir, #expected_digest, dir, actual_digest);
                     } else {
-                        assert_eq!(#expected_digest, actual_digest, "Possibly ABI changed? Confirm the diff by rerunning before and after this test failed with SOLANA_ABI_DUMP_DIR!");
+                        assert_eq!(#expected_digest, actual_digest, "Possibly ABI changed? Confirm the diff by rerunning before and after this test failed with SAFECOIN_ABI_DUMP_DIR!");
                     }
                 }
             }

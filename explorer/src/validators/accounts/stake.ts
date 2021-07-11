@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-redeclare */
 
-import { Infer, number, nullable, enums, type } from "superstruct";
-import { PublicKeyFromString } from "validators/pubkey";
-import { BigNumFromString } from "validators/bignum";
+import { object, StructType, number, nullable, enums } from "superstruct";
+import { Pubkey } from "validators/pubkey";
+import { BigNum } from "validators/bignum";
 
-export type StakeAccountType = Infer<typeof StakeAccountType>;
+export type StakeAccountType = StructType<typeof StakeAccountType>;
 export const StakeAccountType = enums([
   "uninitialized",
   "initialized",
@@ -12,30 +12,30 @@ export const StakeAccountType = enums([
   "rewardsPool",
 ]);
 
-export type StakeMeta = Infer<typeof StakeMeta>;
-export const StakeMeta = type({
-  rentExemptReserve: BigNumFromString,
-  authorized: type({
-    staker: PublicKeyFromString,
-    withdrawer: PublicKeyFromString,
+export type StakeMeta = StructType<typeof StakeMeta>;
+export const StakeMeta = object({
+  rentExemptReserve: BigNum,
+  authorized: object({
+    staker: Pubkey,
+    withdrawer: Pubkey,
   }),
-  lockup: type({
+  lockup: object({
     unixTimestamp: number(),
     epoch: number(),
-    custodian: PublicKeyFromString,
+    custodian: Pubkey,
   }),
 });
 
-export type StakeAccountInfo = Infer<typeof StakeAccountInfo>;
-export const StakeAccountInfo = type({
+export type StakeAccountInfo = StructType<typeof StakeAccountInfo>;
+export const StakeAccountInfo = object({
   meta: StakeMeta,
   stake: nullable(
-    type({
-      delegation: type({
-        voter: PublicKeyFromString,
-        stake: BigNumFromString,
-        activationEpoch: BigNumFromString,
-        deactivationEpoch: BigNumFromString,
+    object({
+      delegation: object({
+        voter: Pubkey,
+        stake: BigNum,
+        activationEpoch: BigNum,
+        deactivationEpoch: BigNum,
         warmupCooldownRate: number(),
       }),
       creditsObserved: number(),
@@ -43,8 +43,8 @@ export const StakeAccountInfo = type({
   ),
 });
 
-export type StakeAccount = Infer<typeof StakeAccount>;
-export const StakeAccount = type({
+export type StakeAccount = StructType<typeof StakeAccount>;
+export const StakeAccount = object({
   type: StakeAccountType,
   info: StakeAccountInfo,
 });

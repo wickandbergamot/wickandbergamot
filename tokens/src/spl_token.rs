@@ -4,8 +4,7 @@ use crate::{
 };
 use console::style;
 use solana_account_decoder::parse_token::{
-    pubkey_from_spl_token_v2_0, real_number_string, real_number_string_trimmed,
-    spl_token_v2_0_pubkey,
+    pubkey_from_spl_token_v2_0, spl_token_v2_0_pubkey, token_amount_to_ui_amount,
 };
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::{instruction::Instruction, native_token::lamports_to_sol};
@@ -110,7 +109,7 @@ pub fn check_spl_token_balances(
     if fee_payer_balance < fees + account_creation_amount {
         return Err(Error::InsufficientFunds(
             vec![FundingSource::FeePayer].into(),
-            lamports_to_sol(fees + account_creation_amount).to_string(),
+            lamports_to_sol(fees + account_creation_amount),
         ));
     }
     let source_token_account = client
@@ -120,7 +119,7 @@ pub fn check_spl_token_balances(
     if source_token.amount < allocation_amount {
         return Err(Error::InsufficientFunds(
             vec![FundingSource::SplTokenAccount].into(),
-            real_number_string_trimmed(allocation_amount, spl_token_args.decimals),
+            token_amount_to_ui_amount(allocation_amount, spl_token_args.decimals).ui_amount,
         ));
     }
     Ok(())
@@ -143,12 +142,20 @@ pub fn print_token_balances(
     let (actual, difference) = if let Ok(recipient_token) =
         SplTokenAccount::unpack(&recipient_account.data)
     {
-        let actual_ui_amount = real_number_string(recipient_token.amount, spl_token_args.decimals);
-        let delta_string =
-            real_number_string(recipient_token.amount - expected, spl_token_args.decimals);
+        let actual_ui_amount =
+            token_amount_to_ui_amount(recipient_token.amount, spl_token_args.decimals).ui_amount;
+        let expected_ui_amount =
+            token_amount_to_ui_amount(expected, spl_token_args.decimals).ui_amount;
         (
-            style(format!("{:>24}", actual_ui_amount)),
-            format!("{:>24}", delta_string),
+            style(format!(
+                "{:>24.1$}",
+                actual_ui_amount, spl_token_args.decimals as usize
+            )),
+            format!(
+                "{:>24.1$}",
+                actual_ui_amount - expected_ui_amount,
+                spl_token_args.decimals as usize
+            ),
         )
     } else {
         (
@@ -157,11 +164,12 @@ pub fn print_token_balances(
         )
     };
     println!(
-        "{:<44}  {:>24}  {:>24}  {:>24}",
+        "{:<44}  {:>24.4$}  {:>24}  {:>24}",
         allocation.recipient,
-        real_number_string(expected, spl_token_args.decimals),
+        token_amount_to_ui_amount(expected, spl_token_args.decimals).ui_amount,
         actual,
         difference,
+        spl_token_args.decimals as usize
     );
     Ok(())
 }
@@ -169,7 +177,7 @@ pub fn print_token_balances(
 #[cfg(test)]
 mod tests {
     // The following unit tests were written for v1.4 using the ProgramTest framework, passing its
-    // BanksClient into the `solana-tokens` methods. With the revert to RpcClient in this module
+    // BanksClient into the `safecoin-tokens` methods. With the revert to RpcClient in this module
     // (https://github.com/solana-labs/solana/pull/13623), that approach was no longer viable.
     // These tests were removed rather than rewritten to avoid accruing technical debt. Once a new
     // rpc/client framework is implemented, they should be restored.

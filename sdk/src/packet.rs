@@ -12,7 +12,8 @@ use std::{
 ///   8 bytes is the size of the fragment header
 pub const PACKET_DATA_SIZE: usize = 1280 - 40 - 8;
 
-#[derive(Clone, Default, Debug, PartialEq)]
+#[frozen_abi(digest = "9AiPd36yycNg18hDuCBVGwpTfzjX1VV4QtUKUdqeyAKH")]
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize, AbiExample)]
 #[repr(C)]
 pub struct Meta {
     pub size: usize,
@@ -24,7 +25,6 @@ pub struct Meta {
     pub v6: bool,
     pub seed: [u8; 32],
     pub slot: Slot,
-    pub is_tracer_tx: bool,
 }
 
 #[derive(Clone)]

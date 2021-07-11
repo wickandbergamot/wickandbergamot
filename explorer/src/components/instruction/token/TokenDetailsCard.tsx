@@ -1,5 +1,5 @@
 import React from "react";
-import { create } from "superstruct";
+import { coerce } from "superstruct";
 import {
   SignatureResult,
   ParsedTransaction,
@@ -37,12 +37,12 @@ type DetailsProps = {
 
 export function TokenDetailsCard(props: DetailsProps) {
   try {
-    const parsed = create(props.ix.parsed, ParsedInfo);
+    const parsed = coerce(props.ix.parsed, ParsedInfo);
     const { type: rawType, info } = parsed;
-    const type = create(rawType, TokenInstructionType);
+    const type = coerce(rawType, TokenInstructionType);
     const title = `Token: ${IX_TITLES[type]}`;
-    const created = create(info, IX_STRUCTS[type] as any);
-    return <TokenInstruction title={title} info={created} {...props} />;
+    const coerced = coerce(info, IX_STRUCTS[type] as any);
+    return <TokenInstruction title={title} info={coerced} {...props} />;
   } catch (err) {
     reportError(err, {
       signature: props.tx.signatures[0],
@@ -118,7 +118,7 @@ function TokenInstruction(props: InfoProps) {
     const tokenDetails = tokenRegistry.get(mintAddress);
 
     if (tokenDetails) {
-      tokenSymbol = tokenDetails.symbol;
+      tokenSymbol = tokenDetails.tokenSymbol;
     }
 
     attributes.push(

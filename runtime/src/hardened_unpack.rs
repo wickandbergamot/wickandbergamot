@@ -1,24 +1,20 @@
-use {
-    bzip2::bufread::BzDecoder,
-    log::*,
-    rand::{thread_rng, Rng},
-    solana_sdk::genesis_config::GenesisConfig,
-    std::{
-        collections::HashMap,
-        fs::{self, File},
-        io::{BufReader, Read},
-        path::{
-            Component::{CurDir, Normal},
-            Path, PathBuf,
-        },
-        time::Instant,
+use bzip2::bufread::BzDecoder;
+use log::*;
+use solana_sdk::genesis_config::GenesisConfig;
+use std::{
+    fs::{self, File},
+    io::{BufReader, Read},
+    path::{
+        Component::{CurDir, Normal},
+        Path,
     },
-    tar::{
-        Archive,
-        EntryType::{Directory, GNUSparse, Regular},
-    },
-    thiserror::Error,
+    time::Instant,
 };
+use tar::{
+    Archive,
+    EntryType::{Directory, GNUSparse, Regular},
+};
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum UnpackError {
@@ -83,15 +79,16 @@ fn check_unpack_result(unpack_result: bool, path: String) -> Result<()> {
     Ok(())
 }
 
-fn unpack_archive<'a, A: Read, C>(
+fn unpack_archive<A: Read, P: AsRef<Path>, C>(
     archive: &mut Archive<A>,
+    unpack_dir: P,
     apparent_limit_size: u64,
     actual_limit_size: u64,
     limit_count: u64,
-    mut entry_checker: C,
+    entry_checker: C,
 ) -> Result<()>
 where
-    C: FnMut(&[&str], tar::EntryType) -> Option<&'a Path>,
+    C: Fn(&[&str], tar::EntryType) -> bool,
 {
     let mut apparent_total_size: u64 = 0;
     let mut actual_total_size: u64 = 0;
@@ -121,17 +118,13 @@ where
         }
 
         let parts: Vec<_> = parts.map(|p| p.unwrap()).collect();
-        let unpack_dir = match entry_checker(parts.as_slice(), entry.header().entry_type()) {
-            None => {
-                return Err(UnpackError::Archive(format!(
-                    "extra entry found: {:?} {:?}",
-                    path_str,
-                    entry.header().entry_type(),
-                )));
-            }
-            Some(unpack_dir) => unpack_dir,
-        };
-
+        if !entry_checker(parts.as_slice(), entry.header().entry_type()) {
+            return Err(UnpackError::Archive(format!(
+                "extra entry found: {:?} {:?}",
+                path_str,
+                entry.header().entry_type(),
+            )));
+        }
         apparent_total_size = checked_total_size_sum(
             apparent_total_size,
             entry.header().size()?,
@@ -146,7 +139,7 @@ where
 
         // unpack_in does its own sanitization
         // ref: https://docs.rs/tar/*/tar/struct.Entry.html#method.unpack_in
-        check_unpack_result(entry.unpack_in(unpack_dir)?, path_str)?;
+        check_unpack_result(entry.unpack_in(&unpack_dir)?, path_str)?;
         total_entries += 1;
         let now = Instant::now();
         if now.duration_since(last_log_update).as_secs() >= 10 {
@@ -159,41 +152,18 @@ where
     Ok(())
 }
 
-// Map from AppendVec file name to unpacked file system location
-pub type UnpackedAppendVecMap = HashMap<String, PathBuf>;
-
-pub fn unpack_snapshot<A: Read>(
+pub fn unpack_snapshot<A: Read, P: AsRef<Path>>(
     archive: &mut Archive<A>,
-    ledger_dir: &Path,
-    account_paths: &[PathBuf],
-) -> Result<UnpackedAppendVecMap> {
-    assert!(!account_paths.is_empty());
-    let mut unpacked_append_vec_map = UnpackedAppendVecMap::new();
-
+    unpack_dir: P,
+) -> Result<()> {
     unpack_archive(
         archive,
+        unpack_dir,
         MAX_SNAPSHOT_ARCHIVE_UNPACKED_APPARENT_SIZE,
         MAX_SNAPSHOT_ARCHIVE_UNPACKED_ACTUAL_SIZE,
         MAX_SNAPSHOT_ARCHIVE_UNPACKED_COUNT,
-        |parts, kind| {
-            if is_valid_snapshot_archive_entry(parts, kind) {
-                if let ["accounts", file] = parts {
-                    // Randomly distribute the accounts files about the available `account_paths`,
-                    let path_index = thread_rng().gen_range(0, account_paths.len());
-                    account_paths.get(path_index).map(|path_buf| {
-                        unpacked_append_vec_map
-                            .insert(file.to_string(), path_buf.join("accounts").join(file));
-                        path_buf.as_path()
-                    })
-                } else {
-                    Some(ledger_dir)
-                }
-            } else {
-                None
-            }
-        },
+        is_valid_snapshot_archive_entry,
     )
-    .map(|_| unpacked_append_vec_map)
 }
 
 fn all_digits(v: &str) -> bool {
@@ -236,9 +206,7 @@ fn is_valid_snapshot_archive_entry(parts: &[&str], kind: tar::EntryType) -> bool
         (["accounts", file], GNUSparse) if like_storage(file) => true,
         (["accounts", file], Regular) if like_storage(file) => true,
         (["snapshots"], Directory) => true,
-        (["snapshots", "status_cache"], GNUSparse) => true,
         (["snapshots", "status_cache"], Regular) => true,
-        (["snapshots", dir, file], GNUSparse) if all_digits(dir) && all_digits(file) => true,
         (["snapshots", dir, file], Regular) if all_digits(dir) && all_digits(file) => true,
         (["snapshots", dir], Directory) if all_digits(dir) => true,
         _ => false,
@@ -294,23 +262,18 @@ pub fn unpack_genesis_archive(
     Ok(())
 }
 
-fn unpack_genesis<A: Read>(
+fn unpack_genesis<A: Read, P: AsRef<Path>>(
     archive: &mut Archive<A>,
-    unpack_dir: &Path,
+    unpack_dir: P,
     max_genesis_archive_unpacked_size: u64,
 ) -> Result<()> {
     unpack_archive(
         archive,
+        unpack_dir,
         max_genesis_archive_unpacked_size,
         max_genesis_archive_unpacked_size,
         MAX_GENESIS_ARCHIVE_UNPACKED_COUNT,
-        |p, k| {
-            if is_valid_genesis_archive_entry(p, k) {
-                Some(unpack_dir)
-            } else {
-                None
-            }
-        },
+        is_valid_genesis_archive_entry,
     )
 }
 
@@ -462,9 +425,7 @@ mod tests {
     }
 
     fn finalize_and_unpack_snapshot(archive: tar::Builder<Vec<u8>>) -> Result<()> {
-        with_finalize_and_unpack(archive, |a, b| {
-            unpack_snapshot(a, b, &[PathBuf::new()]).map(|_| ())
-        })
+        with_finalize_and_unpack(archive, |a, b| unpack_snapshot(a, b))
     }
 
     fn finalize_and_unpack_genesis(archive: tar::Builder<Vec<u8>>) -> Result<()> {

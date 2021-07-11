@@ -50,7 +50,7 @@ export function TokenBalancesCard({ signature }: SignatureProps) {
 
   const accountRows = rows.map(({ account, delta, balance, mint }) => {
     const key = account.toBase58() + mint;
-    const units = tokenRegistry.get(mint)?.symbol || "tokens";
+    const units = tokenRegistry.get(mint)?.tokenSymbol || "tokens";
 
     return (
       <tr key={key}>
@@ -109,18 +109,8 @@ function generateTokenBalanceRows(
     const preBalance = preBalanceMap[accountIndex];
     const account = accounts[accountIndex].pubkey;
 
-    if (!uiTokenAmount.uiAmountString) {
-      // uiAmount deprecation
-      return;
-    }
-
     // case where mint changes
     if (preBalance && preBalance.mint !== mint) {
-      if (!preBalance.uiTokenAmount.uiAmountString) {
-        // uiAmount deprecation
-        return;
-      }
-
       rows.push({
         account: accounts[accountIndex].pubkey,
         accountIndex,
@@ -129,7 +119,7 @@ function generateTokenBalanceRows(
           amount: "0",
           uiAmount: 0,
         },
-        delta: new BigNumber(-preBalance.uiTokenAmount.uiAmountString),
+        delta: new BigNumber(-preBalance.uiTokenAmount.uiAmount),
         mint: preBalance.mint,
       });
 
@@ -137,7 +127,7 @@ function generateTokenBalanceRows(
         account: accounts[accountIndex].pubkey,
         accountIndex,
         balance: uiTokenAmount,
-        delta: new BigNumber(uiTokenAmount.uiAmountString),
+        delta: new BigNumber(uiTokenAmount.uiAmount),
         mint: mint,
       });
       return;
@@ -146,16 +136,11 @@ function generateTokenBalanceRows(
     let delta;
 
     if (preBalance) {
-      if (!preBalance.uiTokenAmount.uiAmountString) {
-        // uiAmount deprecation
-        return;
-      }
-
-      delta = new BigNumber(uiTokenAmount.uiAmountString).minus(
-        preBalance.uiTokenAmount.uiAmountString
+      delta = new BigNumber(uiTokenAmount.uiAmount).minus(
+        preBalance.uiTokenAmount.uiAmount
       );
     } else {
-      delta = new BigNumber(uiTokenAmount.uiAmountString);
+      delta = new BigNumber(uiTokenAmount.uiAmount);
     }
 
     rows.push({

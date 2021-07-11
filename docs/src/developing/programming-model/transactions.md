@@ -3,7 +3,7 @@ title: "Transactions"
 ---
 
 Program execution begins with a [transaction](terminology.md#transaction) being
-submitted to the cluster. The Solana runtime will execute a program to process
+submitted to the cluster. The Safecoin runtime will execute a program to process
 each of the [instructions](terminology.md#instruction) contained in the
 transaction, in order, and atomically.
 
@@ -15,7 +15,7 @@ This section covers the binary format of a transaction.
 
 A transaction contains a [compact-array](#compact-array-format) of signatures,
 followed by a [message](#message-format). Each item in the signatures array is
-a [digital signature](#signature-format) of the given message. The Solana
+a [digital signature](#signature-format) of the given message. The Safecoin
 runtime verifies that the number of signatures matches the number in the first
 8 bits of the [message header](#message-header-format). It also verifies that
 each signature was signed by the private key corresponding to the public key at
@@ -110,7 +110,7 @@ pub fn create_account(
         AccountMeta::new(*from_pubkey, true),
         AccountMeta::new(*to_pubkey, true),
     ];
-    Instruction::new_with_bincode(
+    Instruction::new(
         system_program::id(),
         &SystemInstruction::CreateAccount {
             lamports,
@@ -133,15 +133,15 @@ program will process this instruction. The program's account's owner specifies
 which loader should be used to load and execute the program and the data
 contains information about how the runtime should execute the program.
 
-In the case of [on-chain BPF programs](developing/on-chain-programs/overview.md),
-the owner is the BPF Loader and the account data holds the BPF bytecode.  Program
-accounts are permanently marked as executable by the loader once they are
-successfully deployed. The runtime will reject transactions that specify programs
-that are not executable.
+In the case of [deployed BPF
+programs](developing/deployed-programs/overview.md), the owner is the BPF Loader
+and the account data holds the BPF bytecode.  Program accounts are permanently
+marked as executable by the loader once they are successfully deployed. The
+runtime will reject transactions that specify programs that are not executable.
 
 
-Unlike on-chain programs, [Native Programs](/developing/runtime-facilities/programs)
-are handled differently in that they are built directly into the Solana runtime.
+Unlike deployed programs, [builtins](developing/builtins/programs.md) are handled
+differently in that they are built directly into the Safecoin runtime.
 
 ### Accounts
 
@@ -163,7 +163,7 @@ overhead of decoding since that step is performed by the program on-chain. It's
 been observed that some common encodings (Rust's bincode for example) are very
 inefficient.
 
-The [Solana Program Library's Token
+The [Safecoin Program Library's Token
 program](https://github.com/solana-labs/solana-program-library/tree/master/token)
 gives one example of how instruction data can be encoded efficiently, but note
 that this method only supports fixed sized types. Token utilizes the

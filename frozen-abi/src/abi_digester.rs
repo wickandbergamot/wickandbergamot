@@ -27,8 +27,6 @@ pub enum DigestError {
     Node(Sstr, Box<DigestError>),
     #[error("leaf error")]
     Leaf(Sstr, Sstr, Box<DigestError>),
-    #[error("arithmetic overflow")]
-    ArithmeticOverflow,
 }
 
 impl SerdeError for DigestError {
@@ -79,30 +77,22 @@ impl AbiDigester {
         }
     }
 
-    pub fn create_child(&self) -> Result<Self, DigestError> {
-        let depth = self
-            .depth
-            .checked_add(1)
-            .ok_or(DigestError::ArithmeticOverflow)?;
-        Ok(Self {
+    pub fn create_child(&self) -> Self {
+        Self {
             data_types: self.data_types.clone(),
-            depth,
+            depth: self.depth + 1,
             for_enum: false,
             opaque_scope: self.opaque_scope.clone(),
-        })
+        }
     }
 
-    pub fn create_enum_child(&self) -> Result<Self, DigestError> {
-        let depth = self
-            .depth
-            .checked_add(1)
-            .ok_or(DigestError::ArithmeticOverflow)?;
-        Ok(Self {
+    pub fn create_enum_child(&self) -> Self {
+        Self {
             data_types: self.data_types.clone(),
-            depth,
+            depth: self.depth + 1,
             for_enum: true,
             opaque_scope: self.opaque_scope.clone(),
-        })
+        }
     }
 
     pub fn digest_data<T: ?Sized + Serialize>(&mut self, value: &T) -> DigestResult {
@@ -130,12 +120,7 @@ impl AbiDigester {
             })
             .collect::<Vec<_>>()
             .join(" ");
-        buf = format!(
-            "{:0width$}{}\n",
-            "",
-            buf,
-            width = self.depth.saturating_mul(INDENT_WIDTH)
-        );
+        buf = format!("{:0width$}{}\n", "", buf, width = self.depth * INDENT_WIDTH);
         info!("updating with: {}", buf.trim_end());
         (*self.data_types.borrow_mut()).push(buf);
     }
@@ -156,7 +141,7 @@ impl AbiDigester {
 
     fn digest_element<T: ?Sized + Serialize>(&mut self, v: &T) -> Result<(), DigestError> {
         self.update_with_type::<T>("element");
-        self.create_child()?.digest_data(v).map(|_| ())
+        self.create_child().digest_data(v).map(|_| ())
     }
 
     fn digest_named_field<T: ?Sized + Serialize>(
@@ -165,7 +150,7 @@ impl AbiDigester {
         v: &T,
     ) -> Result<(), DigestError> {
         self.update_with_string(format!("field {}: {}", key, type_name::<T>()));
-        self.create_child()?
+        self.create_child()
             .digest_data(v)
             .map(|_| ())
             .map_err(|e| DigestError::wrap_by_str(e, key))
@@ -173,7 +158,7 @@ impl AbiDigester {
 
     fn digest_unnamed_field<T: ?Sized + Serialize>(&mut self, v: &T) -> Result<(), DigestError> {
         self.update_with_type::<T>("field");
-        self.create_child()?.digest_data(v).map(|_| ())
+        self.create_child().digest_data(v).map(|_| ())
     }
 
     #[allow(clippy::unnecessary_wraps)]
@@ -197,13 +182,13 @@ impl AbiDigester {
 
         let hash = hasher.result();
 
-        if let Ok(dir) = std::env::var("SOLANA_ABI_DUMP_DIR") {
+        if let Ok(dir) = std::env::var("SAFECOIN_ABI_DUMP_DIR") {
             let thread_name = std::thread::current()
                 .name()
                 .unwrap_or("unknown-test-thread")
                 .replace(':', "_");
             if thread_name == "main" {
-                error!("Bad thread name detected for dumping; Maybe, --test-threads=1? Sorry, SOLANA_ABI_DUMP_DIR doesn't work under 1; increase it");
+                error!("Bad thread name detected for dumping; Maybe, --test-threads=1? Sorry, SAFECOIN_ABI_DUMP_DIR doesn't work under 1; increase it");
             }
 
             let path = format!("{}/{}_{}", dir, thread_name, hash,);
@@ -308,12 +293,12 @@ impl Serializer for AbiDigester {
     {
         // emulate the ABI digest for the Option enum; see TestMyOption
         self.update(&["enum Option (variants = 2)"]);
-        let mut variant_digester = self.create_child()?;
+        let mut variant_digester = self.create_child();
 
         variant_digester.update_with_string("variant(0) None (unit)".to_owned());
         variant_digester
             .update_with_string(format!("variant(1) Some({}) (newtype)", type_name::<T>()));
-        variant_digester.create_child()?.digest_data(v)
+        variant_digester.create_child().digest_data(v)
     }
 
     fn serialize_unit_struct(mut self, name: Sstr) -> DigestResult {
@@ -332,7 +317,7 @@ impl Serializer for AbiDigester {
         T: ?Sized + Serialize,
     {
         self.update_with_string(format!("struct {}({}) (newtype)", name, type_name::<T>()));
-        self.create_child()?
+        self.create_child()
             .digest_data(v)
             .map_err(|e| DigestError::wrap_by_str(e, "newtype_struct"))
     }
@@ -354,7 +339,7 @@ impl Serializer for AbiDigester {
             variant,
             type_name::<T>()
         ));
-        self.create_child()?
+        self.create_child()
             .digest_data(v)
             .map_err(|e| DigestError::wrap_by_str(e, "newtype_variant"))
     }
@@ -366,17 +351,17 @@ impl Serializer for AbiDigester {
             "Exactly 1 seq element is needed to generate the ABI digest precisely"
         );
         self.update_with_string(format!("seq (elements = {})", len));
-        self.create_child()
+        Ok(self.create_child())
     }
 
     fn serialize_tuple(mut self, len: usize) -> DigestResult {
         self.update_with_string(format!("tuple (elements = {})", len));
-        self.create_child()
+        Ok(self.create_child())
     }
 
     fn serialize_tuple_struct(mut self, name: Sstr, len: usize) -> DigestResult {
         self.update_with_string(format!("struct {} (fields = {}) (tuple)", name, len));
-        self.create_child()
+        Ok(self.create_child())
     }
 
     fn serialize_tuple_variant(
@@ -388,7 +373,7 @@ impl Serializer for AbiDigester {
     ) -> DigestResult {
         self.check_for_enum("tuple_variant", variant)?;
         self.update_with_string(format!("variant({}) {} (fields = {})", i, variant, len));
-        self.create_child()
+        Ok(self.create_child())
     }
 
     fn serialize_map(mut self, len: Option<usize>) -> DigestResult {
@@ -398,12 +383,12 @@ impl Serializer for AbiDigester {
             "Exactly 1 map entry is needed to generate the ABI digest precisely"
         );
         self.update_with_string(format!("map (entries = {})", len));
-        self.create_child()
+        Ok(self.create_child())
     }
 
     fn serialize_struct(mut self, name: Sstr, len: usize) -> DigestResult {
         self.update_with_string(format!("struct {} (fields = {})", name, len));
-        self.create_child()
+        Ok(self.create_child())
     }
 
     fn serialize_struct_variant(
@@ -418,7 +403,7 @@ impl Serializer for AbiDigester {
             "variant({}) struct {} (fields = {})",
             i, variant, len
         ));
-        self.create_child()
+        Ok(self.create_child())
     }
 }
 
@@ -479,12 +464,12 @@ impl SerializeMap for AbiDigester {
 
     fn serialize_key<T: ?Sized + Serialize>(&mut self, key: &T) -> Result<(), DigestError> {
         self.update_with_type::<T>("key");
-        self.create_child()?.digest_data(key).map(|_| ())
+        self.create_child().digest_data(key).map(|_| ())
     }
 
     fn serialize_value<T: ?Sized + Serialize>(&mut self, value: &T) -> Result<(), DigestError> {
         self.update_with_type::<T>("value");
-        self.create_child()?.digest_data(value).map(|_| ())
+        self.create_child().digest_data(value).map(|_| ())
     }
 
     fn end(self) -> DigestResult {

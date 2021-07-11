@@ -25,7 +25,7 @@ import {
   useFetchTransactionDetails,
   useTransactionDetailsCache,
 } from "providers/transactions/details";
-import { create } from "superstruct";
+import { coerce } from "superstruct";
 import { ParsedInfo } from "validators";
 import {
   TokenInstructionType,
@@ -50,7 +50,7 @@ import { useCluster, Cluster } from "providers/cluster";
 import { Link } from "react-router-dom";
 import { Location } from "history";
 import { useQuery } from "utils/url";
-import { TokenInfoMap } from "@solana/spl-token-registry";
+import { KnownTokenMap } from "@solana/spl-token-registry";
 import { useTokenRegistry } from "providers/mints/token-registry";
 
 const TRUNCATE_TOKEN_LENGTH = 10;
@@ -366,9 +366,9 @@ function instructionTypeName(
   tx: ConfirmedSignatureInfo
 ): string {
   try {
-    const parsed = create(ix.parsed, ParsedInfo);
+    const parsed = coerce(ix.parsed, ParsedInfo);
     const { type: rawType } = parsed;
-    const type = create(rawType, TokenInstructionType);
+    const type = coerce(rawType, TokenInstructionType);
     return IX_TITLES[type];
   } catch (err) {
     reportError(err, { signature: tx.signature });
@@ -608,7 +608,7 @@ function InstructionDetails({
 function formatTokenName(
   pubkey: string,
   cluster: Cluster,
-  tokenRegistry: TokenInfoMap
+  tokenRegistry: KnownTokenMap
 ): string {
   let display = displayAddress(pubkey, cluster, tokenRegistry);
 

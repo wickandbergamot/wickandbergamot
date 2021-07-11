@@ -20,10 +20,6 @@ impl Measure {
         self.duration = duration_as_ns(&self.start.elapsed());
     }
 
-    pub fn as_ns(&self) -> u64 {
-        self.duration
-    }
-
     pub fn as_us(&self) -> u64 {
         self.duration / 1000
     }

@@ -221,8 +221,7 @@ impl BigTableSubCommand for App<'_, '_> {
         self.subcommand(
             SubCommand::with_name("bigtable")
                 .about("Ledger data on a BigTable instance")
-                .setting(AppSettings::InferSubcommands)
-                .setting(AppSettings::SubcommandRequiredElseHelp)
+                .setting(AppSettings::ArgRequiredElseHelp)
                 .subcommand(
                     SubCommand::with_name("upload")
                         .about("Upload the ledger to BigTable")

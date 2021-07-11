@@ -18,8 +18,8 @@ use solana_clap_utils::{
 };
 use solana_cli_output::{
     display::{build_balance_message, println_name_value},
-    return_signers_with_config, CliAccount, CliSignature, CliSignatureVerificationStatus,
-    CliTransaction, CliTransactionConfirmation, OutputFormat, ReturnSignersConfig,
+    return_signers, CliAccount, CliSignature, CliSignatureVerificationStatus, CliTransaction,
+    CliTransactionConfirmation, OutputFormat,
 };
 use solana_client::{
     blockhash_query::BlockhashQuery,
@@ -30,9 +30,9 @@ use solana_client::{
     rpc_response::RpcKeyedAccount,
 };
 #[cfg(not(test))]
-use solana_faucet::faucet::request_airdrop_transaction;
+use safecoin_faucet::faucet::request_airdrop_transaction;
 #[cfg(test)]
-use solana_faucet::faucet_mock::request_airdrop_transaction;
+use safecoin_faucet::faucet_mock::request_airdrop_transaction;
 use solana_remote_wallet::remote_wallet::RemoteWalletManager;
 use solana_sdk::{
     clock::{Epoch, Slot},
@@ -198,7 +198,6 @@ pub enum CliCommand {
         lockup: Lockup,
         amount: SpendAmount,
         sign_only: bool,
-        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -209,7 +208,6 @@ pub enum CliCommand {
         stake_account_pubkey: Pubkey,
         stake_authority: SignerIndex,
         sign_only: bool,
-        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -221,7 +219,6 @@ pub enum CliCommand {
         stake_authority: SignerIndex,
         force: bool,
         sign_only: bool,
-        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -231,7 +228,6 @@ pub enum CliCommand {
         stake_account_pubkey: Pubkey,
         stake_authority: SignerIndex,
         sign_only: bool,
-        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -245,7 +241,6 @@ pub enum CliCommand {
         source_stake_account_pubkey: Pubkey,
         stake_authority: SignerIndex,
         sign_only: bool,
-        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -262,7 +257,6 @@ pub enum CliCommand {
         stake_account_pubkey: Pubkey,
         new_authorizations: Vec<(StakeAuthorize, Pubkey, SignerIndex)>,
         sign_only: bool,
-        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -274,7 +268,6 @@ pub enum CliCommand {
         lockup: LockupArgs,
         custodian: SignerIndex,
         sign_only: bool,
-        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -287,7 +280,6 @@ pub enum CliCommand {
         withdraw_authority: SignerIndex,
         custodian: Option<SignerIndex>,
         sign_only: bool,
-        dump_transaction_message: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
         nonce_authority: SignerIndex,
@@ -359,7 +351,6 @@ pub enum CliCommand {
         to: Pubkey,
         from: SignerIndex,
         sign_only: bool,
-        dump_transaction_message: bool,
         no_wait: bool,
         blockhash_query: BlockhashQuery,
         nonce_account: Option<Pubkey>,
@@ -378,25 +369,25 @@ pub struct CliCommandInfo {
 
 #[derive(Debug, Error)]
 pub enum CliError {
-    #[error("Bad parameter: {0}")]
+    #[error("bad parameter: {0}")]
     BadParameter(String),
     #[error(transparent)]
     ClientError(#[from] ClientError),
-    #[error("Command not recognized: {0}")]
+    #[error("command not recognized: {0}")]
     CommandNotRecognized(String),
-    #[error("Account {1} has insufficient funds for fee ({0} SOL)")]
-    InsufficientFundsForFee(f64, Pubkey),
-    #[error("Account {1} has insufficient funds for spend ({0} SOL)")]
-    InsufficientFundsForSpend(f64, Pubkey),
-    #[error("Account {2} has insufficient funds for spend ({0} SOL) + fee ({1} SOL)")]
-    InsufficientFundsForSpendAndFee(f64, f64, Pubkey),
+    #[error("insufficient funds for fee ({0} SAFE)")]
+    InsufficientFundsForFee(f64),
+    #[error("insufficient funds for spend ({0} SAFE)")]
+    InsufficientFundsForSpend(f64),
+    #[error("insufficient funds for spend ({0} SAFE) and fee ({1} SAFE)")]
+    InsufficientFundsForSpendAndFee(f64, f64),
     #[error(transparent)]
     InvalidNonce(nonce_utils::Error),
-    #[error("Dynamic program error: {0}")]
+    #[error("dynamic program error: {0}")]
     DynamicProgramError(String),
-    #[error("RPC request error: {0}")]
+    #[error("rpc request error: {0}")]
     RpcRequestError(String),
-    #[error("Keypair file not found: {0}")]
+    #[error("keypair file not found: {0}")]
     KeypairFileNotFound(String),
 }
 
@@ -856,7 +847,6 @@ pub fn parse_command(
             let amount = SpendAmount::new_from_matches(matches, "amount");
             let to = pubkey_of_signer(matches, "to", wallet_manager)?.unwrap();
             let sign_only = matches.is_present(SIGN_ONLY_ARG.name);
-            let dump_transaction_message = matches.is_present(DUMP_TRANSACTION_MESSAGE.name);
             let no_wait = matches.is_present("no_wait");
             let blockhash_query = BlockhashQuery::new_from_matches(matches);
             let nonce_account = pubkey_of_signer(matches, NONCE_ARG.name, wallet_manager)?;
@@ -885,7 +875,6 @@ pub fn parse_command(
                     amount,
                     to,
                     sign_only,
-                    dump_transaction_message,
                     no_wait,
                     blockhash_query,
                     nonce_account,
@@ -1138,7 +1127,6 @@ fn process_transfer(
     to: &Pubkey,
     from: SignerIndex,
     sign_only: bool,
-    dump_transaction_message: bool,
     no_wait: bool,
     blockhash_query: &BlockhashQuery,
     nonce_account: Option<&Pubkey>,
@@ -1205,13 +1193,7 @@ fn process_transfer(
 
     if sign_only {
         tx.try_partial_sign(&config.signers, recent_blockhash)?;
-        return_signers_with_config(
-            &tx,
-            &config.output_format,
-            &ReturnSignersConfig {
-                dump_transaction_message,
-            },
-        )
+        return_signers(&tx, &config.output_format)
     } else {
         if let Some(nonce_account) = &nonce_account {
             let nonce_account = nonce_utils::get_account_with_commitment(
@@ -1463,7 +1445,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             lockup,
             amount,
             sign_only,
-            dump_transaction_message,
             blockhash_query,
             ref nonce_account,
             nonce_authority,
@@ -1479,7 +1460,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             lockup,
             *amount,
             *sign_only,
-            *dump_transaction_message,
             blockhash_query,
             nonce_account.as_ref(),
             *nonce_authority,
@@ -1490,7 +1470,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             stake_account_pubkey,
             stake_authority,
             sign_only,
-            dump_transaction_message,
             blockhash_query,
             nonce_account,
             nonce_authority,
@@ -1501,7 +1480,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             &stake_account_pubkey,
             *stake_authority,
             *sign_only,
-            *dump_transaction_message,
             blockhash_query,
             *nonce_account,
             *nonce_authority,
@@ -1513,7 +1491,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             stake_authority,
             force,
             sign_only,
-            dump_transaction_message,
             blockhash_query,
             nonce_account,
             nonce_authority,
@@ -1526,7 +1503,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             *stake_authority,
             *force,
             *sign_only,
-            *dump_transaction_message,
             blockhash_query,
             *nonce_account,
             *nonce_authority,
@@ -1536,7 +1512,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             stake_account_pubkey,
             stake_authority,
             sign_only,
-            dump_transaction_message,
             blockhash_query,
             nonce_account,
             nonce_authority,
@@ -1550,7 +1525,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             &stake_account_pubkey,
             *stake_authority,
             *sign_only,
-            *dump_transaction_message,
             blockhash_query,
             *nonce_account,
             *nonce_authority,
@@ -1564,7 +1538,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             source_stake_account_pubkey,
             stake_authority,
             sign_only,
-            dump_transaction_message,
             blockhash_query,
             nonce_account,
             nonce_authority,
@@ -1576,7 +1549,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             &source_stake_account_pubkey,
             *stake_authority,
             *sign_only,
-            *dump_transaction_message,
             blockhash_query,
             *nonce_account,
             *nonce_authority,
@@ -1598,7 +1570,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             stake_account_pubkey,
             ref new_authorizations,
             sign_only,
-            dump_transaction_message,
             blockhash_query,
             nonce_account,
             nonce_authority,
@@ -1611,7 +1582,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             new_authorizations,
             *custodian,
             *sign_only,
-            *dump_transaction_message,
             blockhash_query,
             *nonce_account,
             *nonce_authority,
@@ -1622,7 +1592,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             mut lockup,
             custodian,
             sign_only,
-            dump_transaction_message,
             blockhash_query,
             nonce_account,
             nonce_authority,
@@ -1634,7 +1603,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             &mut lockup,
             *custodian,
             *sign_only,
-            *dump_transaction_message,
             blockhash_query,
             *nonce_account,
             *nonce_authority,
@@ -1647,7 +1615,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             withdraw_authority,
             custodian,
             sign_only,
-            dump_transaction_message,
             blockhash_query,
             ref nonce_account,
             nonce_authority,
@@ -1661,7 +1628,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             *withdraw_authority,
             *custodian,
             *sign_only,
-            *dump_transaction_message,
             blockhash_query,
             nonce_account.as_ref(),
             *nonce_authority,
@@ -1765,7 +1731,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
 
         // Wallet Commands
 
-        // Request an airdrop from Solana Faucet;
+        // Request an airdrop from Safecoin Faucet;
         CliCommand::Airdrop {
             faucet_host,
             faucet_port,
@@ -1821,7 +1787,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             to,
             from,
             sign_only,
-            dump_transaction_message,
             no_wait,
             ref blockhash_query,
             ref nonce_account,
@@ -1836,7 +1801,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             to,
             *from,
             *sign_only,
-            *dump_transaction_message,
             *no_wait,
             blockhash_query,
             nonce_account.as_ref(),
@@ -1978,7 +1942,7 @@ pub fn app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> App<'ab, '
                         .long("faucet-port")
                         .value_name("PORT_NUMBER")
                         .takes_value(true)
-                        .default_value(solana_faucet::faucet::FAUCET_PORT_STR)
+                        .default_value(safecoin_faucet::faucet::FAUCET_PORT_STR)
                         .help("Faucet port to use"),
                 )
                 .arg(
@@ -1988,7 +1952,7 @@ pub fn app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> App<'ab, '
                         .takes_value(true)
                         .validator(is_amount)
                         .required(true)
-                        .help("The airdrop amount to request, in SOL"),
+                        .help("The airdrop amount to request, in SAFE"),
                 )
                 .arg(
                     pubkey!(Arg::with_name("to")
@@ -2010,7 +1974,7 @@ pub fn app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> App<'ab, '
                     Arg::with_name("lamports")
                         .long("lamports")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SOL"),
+                        .help("Display balance in lamports instead of SAFE"),
                 ),
         )
         .subcommand(
@@ -2023,17 +1987,6 @@ pub fn app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> App<'ab, '
                         .takes_value(true)
                         .required(true)
                         .help("The transaction signature to confirm"),
-                )
-                .after_help(// Formatted specifically for the manually-indented heredoc string
-                   "Note: This will show more detailed information for finalized transactions with verbose mode (-v/--verbose).\
-                  \n\
-                  \nAccount modes:\
-                  \n  |srwx|\
-                  \n    s: signed\
-                  \n    r: readable (always true)\
-                  \n    w: writable\
-                  \n    x: program account (inner instructions excluded)\
-                   "
                 ),
         )
         .subcommand(
@@ -2119,7 +2072,7 @@ pub fn app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> App<'ab, '
                     Arg::with_name("allow_excessive_balance")
                         .long("allow-excessive-deploy-account-balance")
                         .takes_value(false)
-                        .help("Use the designated program id, even if the account already holds a large balance of SOL")
+                        .help("Use the designated program id, even if the account already holds a large balance of SAFE")
                 ),
         )
         .subcommand(
@@ -2139,7 +2092,7 @@ pub fn app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> App<'ab, '
                         .takes_value(true)
                         .validator(is_amount_or_all)
                         .required(true)
-                        .help("The amount to send, in SOL; accepts keyword ALL"),
+                        .help("The amount to send, in SAFE; accepts keyword ALL"),
                 )
                 .offline_args()
                 .nonce_args(false)
@@ -2174,7 +2127,7 @@ pub fn app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> App<'ab, '
                         .takes_value(true)
                         .validator(is_amount_or_all)
                         .required(true)
-                        .help("The amount to send, in SOL; accepts keyword ALL"),
+                        .help("The amount to send, in SAFE; accepts keyword ALL"),
                 )
                 .arg(
                     pubkey!(Arg::with_name("from")
@@ -2232,7 +2185,7 @@ pub fn app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> App<'ab, '
                     Arg::with_name("lamports")
                         .long("lamports")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SOL"),
+                        .help("Display balance in lamports instead of SAFE"),
                 ),
         )
         .validator_info_subcommands()
@@ -2374,7 +2327,7 @@ mod tests {
             CliCommandInfo {
                 command: CliCommand::Airdrop {
                     faucet_host: None,
-                    faucet_port: solana_faucet::faucet::FAUCET_PORT,
+                    faucet_port: safecoin_faucet::faucet::FAUCET_PORT,
                     pubkey: Some(pubkey),
                     lamports: 50_000_000_000,
                 },
@@ -2569,7 +2522,7 @@ mod tests {
         // Success cases
         let mut config = CliConfig {
             rpc_client: Some(RpcClient::new_mock("succeeds".to_string())),
-            json_rpc_url: "http://127.0.0.1:8899".to_string(),
+            json_rpc_url: "http://127.0.0.1:8328".to_string(),
             ..CliConfig::default()
         };
 
@@ -2589,7 +2542,7 @@ mod tests {
             pubkey: None,
             use_lamports_unit: false,
         };
-        assert_eq!(process_command(&config).unwrap(), "0.00000005 SOL");
+        assert_eq!(process_command(&config).unwrap(), "0.00000005 SAFE");
 
         let good_signature = Signature::new(&bs58::decode(SIGNATURE).into_vec().unwrap());
         config.command = CliCommand::Confirm(good_signature);
@@ -2648,7 +2601,6 @@ mod tests {
             },
             amount: SpendAmount::Some(30),
             sign_only: false,
-            dump_transaction_message: false,
             blockhash_query: BlockhashQuery::All(blockhash_query::Source::Cluster),
             nonce_account: None,
             nonce_authority: 0,
@@ -2668,7 +2620,6 @@ mod tests {
             withdraw_authority: 0,
             custodian: None,
             sign_only: false,
-            dump_transaction_message: false,
             blockhash_query: BlockhashQuery::All(blockhash_query::Source::Cluster),
             nonce_account: None,
             nonce_authority: 0,
@@ -2683,7 +2634,6 @@ mod tests {
             stake_account_pubkey,
             stake_authority: 0,
             sign_only: false,
-            dump_transaction_message: false,
             blockhash_query: BlockhashQuery::default(),
             nonce_account: None,
             nonce_authority: 0,
@@ -2698,7 +2648,6 @@ mod tests {
             stake_account_pubkey,
             stake_authority: 0,
             sign_only: false,
-            dump_transaction_message: false,
             blockhash_query: BlockhashQuery::default(),
             nonce_account: None,
             nonce_authority: 0,
@@ -2719,7 +2668,6 @@ mod tests {
             source_stake_account_pubkey,
             stake_authority: 1,
             sign_only: false,
-            dump_transaction_message: false,
             blockhash_query: BlockhashQuery::default(),
             nonce_account: None,
             nonce_authority: 0,
@@ -2889,7 +2837,7 @@ mod tests {
             arg_name: "".to_string(),
         };
 
-        //Test Transfer Subcommand, SOL
+        //Test Transfer Subcommand, SAFE
         let from_keypair = keypair_from_seed(&[0u8; 32]).unwrap();
         let from_pubkey = from_keypair.pubkey();
         let from_string = from_pubkey.to_string();
@@ -2907,7 +2855,6 @@ mod tests {
                     to: to_pubkey,
                     from: 0,
                     sign_only: false,
-                    dump_transaction_message: false,
                     no_wait: false,
                     blockhash_query: BlockhashQuery::All(blockhash_query::Source::Cluster),
                     nonce_account: None,
@@ -2932,7 +2879,6 @@ mod tests {
                     to: to_pubkey,
                     from: 0,
                     sign_only: false,
-                    dump_transaction_message: false,
                     no_wait: false,
                     blockhash_query: BlockhashQuery::All(blockhash_query::Source::Cluster),
                     nonce_account: None,
@@ -2961,7 +2907,6 @@ mod tests {
                     to: to_pubkey,
                     from: 0,
                     sign_only: false,
-                    dump_transaction_message: false,
                     no_wait: true,
                     blockhash_query: BlockhashQuery::All(blockhash_query::Source::Cluster),
                     nonce_account: None,
@@ -2994,7 +2939,6 @@ mod tests {
                     to: to_pubkey,
                     from: 0,
                     sign_only: true,
-                    dump_transaction_message: false,
                     no_wait: false,
                     blockhash_query: BlockhashQuery::None(blockhash),
                     nonce_account: None,
@@ -3032,7 +2976,6 @@ mod tests {
                     to: to_pubkey,
                     from: 0,
                     sign_only: false,
-                    dump_transaction_message: false,
                     no_wait: false,
                     blockhash_query: BlockhashQuery::FeeCalculator(
                         blockhash_query::Source::Cluster,
@@ -3074,7 +3017,6 @@ mod tests {
                     to: to_pubkey,
                     from: 0,
                     sign_only: false,
-                    dump_transaction_message: false,
                     no_wait: false,
                     blockhash_query: BlockhashQuery::FeeCalculator(
                         blockhash_query::Source::NonceAccount(nonce_address),
@@ -3114,7 +3056,6 @@ mod tests {
                     to: to_pubkey,
                     from: 0,
                     sign_only: false,
-                    dump_transaction_message: false,
                     no_wait: false,
                     blockhash_query: BlockhashQuery::All(blockhash_query::Source::Cluster),
                     nonce_account: None,

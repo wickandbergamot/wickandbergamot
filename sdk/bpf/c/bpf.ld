@@ -8,10 +8,9 @@ PHDRS
 SECTIONS
 {
   . = SIZEOF_HEADERS;
-  .text : { *(.text*) } :text
-  .rodata : { *(.rodata*) } :rodata
+  .text : { *(.text) } :text
+  .rodata : { *(.rodata) } :rodata
   .dynamic : { *(.dynamic) } :dynamic
-  .data.rel.ro : { *(.data.rel.ro*) } :dynamic
   .dynsym : { *(.dynsym) } :dynamic
   .dynstr : { *(.dynstr) } :dynamic
   .gnu.hash : { *(.gnu.hash) } :dynamic

@@ -209,7 +209,7 @@ impl ClusterQuerySubCommands for App<'_, '_> {
             ),
         )
         .subcommand(
-            SubCommand::with_name("supply").about("Get information about the cluster supply of SOL")
+            SubCommand::with_name("supply").about("Get information about the cluster supply of SAFE")
             .arg(
                 Arg::with_name("print_accounts")
                     .long("print-accounts")
@@ -218,7 +218,7 @@ impl ClusterQuerySubCommands for App<'_, '_> {
             ),
         )
         .subcommand(
-            SubCommand::with_name("total-supply").about("Get total number of SOL")
+            SubCommand::with_name("total-supply").about("Get total number of SAFE")
             .setting(AppSettings::Hidden),
         )
         .subcommand(
@@ -331,7 +331,7 @@ impl ClusterQuerySubCommands for App<'_, '_> {
                     Arg::with_name("lamports")
                         .long("lamports")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SOL"),
+                        .help("Display balance in lamports instead of SAFE"),
                 ),
         )
         .subcommand(
@@ -342,7 +342,7 @@ impl ClusterQuerySubCommands for App<'_, '_> {
                     Arg::with_name("lamports")
                         .long("lamports")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SOL"),
+                        .help("Display balance in lamports instead of SAFE"),
                 ),
         )
         .subcommand(
@@ -404,7 +404,7 @@ impl ClusterQuerySubCommands for App<'_, '_> {
                     Arg::with_name("lamports")
                         .long("lamports")
                         .takes_value(false)
-                        .help("Display rent in lamports instead of SOL"),
+                        .help("Display rent in lamports instead of SAFE"),
                 ),
         )
     }
@@ -742,10 +742,6 @@ pub fn process_catchup(
         }
     };
 
-    let start_node_slot = get_slot_while_retrying(&node_client)?;
-    let start_rpc_slot = get_slot_while_retrying(rpc_client)?;
-    let start_slot_distance = start_rpc_slot as i64 - start_node_slot as i64;
-    let mut total_sleep_interval = 0;
     loop {
         // humbly retry; the reference node (rpc_client) could be spotty,
         // especially if pointing to api.meinnet-beta.solana.com at times
@@ -762,37 +758,14 @@ pub fn process_catchup(
         let slot_distance = rpc_slot as i64 - node_slot as i64;
         let slots_per_second =
             (previous_slot_distance - slot_distance) as f64 / f64::from(sleep_interval);
-
-        let average_time_remaining = if slot_distance == 0 || total_sleep_interval == 0 {
+        let time_remaining = (slot_distance as f64 / slots_per_second).round();
+        let time_remaining = if !time_remaining.is_normal() || time_remaining <= 0.0 {
             "".to_string()
         } else {
-            let distance_delta = start_slot_distance as i64 - slot_distance as i64;
-            let average_catchup_slots_per_second =
-                distance_delta as f64 / f64::from(total_sleep_interval);
-            let average_time_remaining =
-                (slot_distance as f64 / average_catchup_slots_per_second).round();
-            if !average_time_remaining.is_normal() {
-                "".to_string()
-            } else if average_time_remaining < 0.0 {
-                format!(
-                    " (AVG: {:.1} slots/second (falling))",
-                    average_catchup_slots_per_second
-                )
-            } else {
-                // important not to miss next scheduled lead slots
-                let total_node_slot_delta = node_slot as i64 - start_node_slot as i64;
-                let average_node_slots_per_second =
-                    total_node_slot_delta as f64 / f64::from(total_sleep_interval);
-                let expected_finish_slot = (node_slot as f64
-                    + average_time_remaining as f64 * average_node_slots_per_second as f64)
-                    .round();
-                format!(
-                    " (AVG: {:.1} slots/second, ETA: slot {} in {})",
-                    average_catchup_slots_per_second,
-                    expected_finish_slot,
-                    humantime::format_duration(Duration::from_secs_f64(average_time_remaining))
-                )
-            }
+            format!(
+                ". Time remaining: {}",
+                humantime::format_duration(Duration::from_secs_f64(time_remaining))
+            )
         };
 
         progress_bar.set_message(&format!(
@@ -817,7 +790,7 @@ pub fn process_catchup(
                         "gaining"
                     },
                     slots_per_second,
-                    average_time_remaining
+                    time_remaining
                 )
             },
         ));
@@ -828,7 +801,6 @@ pub fn process_catchup(
         sleep(Duration::from_secs(sleep_interval as u64));
         previous_rpc_slot = rpc_slot;
         previous_slot_distance = slot_distance;
-        total_sleep_interval += sleep_interval;
     }
 }
 
@@ -993,20 +965,7 @@ pub fn process_get_epoch(rpc_client: &RpcClient, _config: &CliConfig) -> Process
 }
 
 pub fn process_get_epoch_info(rpc_client: &RpcClient, config: &CliConfig) -> ProcessResult {
-    let epoch_info = rpc_client.get_epoch_info()?;
-    let average_slot_time_ms = rpc_client
-        .get_recent_performance_samples(Some(60))
-        .map(|samples| {
-            let (slots, secs) = samples.iter().fold((0, 0), |(slots, secs), sample| {
-                (slots + sample.num_slots, secs + sample.sample_period_secs)
-            });
-            (secs as u64 * 1000) / slots
-        })
-        .unwrap_or(clock::DEFAULT_MS_PER_SLOT);
-    let epoch_info = CliEpochInfo {
-        epoch_info,
-        average_slot_time_ms,
-    };
+    let epoch_info: CliEpochInfo = rpc_client.get_epoch_info()?.into();
     Ok(config.output_format.formatted_string(&epoch_info))
 }
 
@@ -1021,8 +980,8 @@ pub fn process_get_slot(rpc_client: &RpcClient, _config: &CliConfig) -> ProcessR
 }
 
 pub fn process_get_block_height(rpc_client: &RpcClient, _config: &CliConfig) -> ProcessResult {
-    let epoch_info = rpc_client.get_epoch_info()?;
-    Ok(epoch_info.block_height.to_string())
+    let epoch_info: CliEpochInfo = rpc_client.get_epoch_info()?.into();
+    Ok(epoch_info.epoch_info.block_height.to_string())
 }
 
 pub fn parse_show_block_production(matches: &ArgMatches<'_>) -> Result<CliCommandInfo, CliError> {
@@ -1215,7 +1174,7 @@ pub fn process_supply(
 
 pub fn process_total_supply(rpc_client: &RpcClient, _config: &CliConfig) -> ProcessResult {
     let total_supply = rpc_client.total_supply()?;
-    Ok(format!("{} SOL", lamports_to_sol(total_supply)))
+    Ok(format!("{} SAFE", lamports_to_sol(total_supply)))
 }
 
 pub fn process_get_transaction_count(rpc_client: &RpcClient, _config: &CliConfig) -> ProcessResult {

@@ -68,7 +68,6 @@ fn main() {
             "dup_accounts",
             "error_handling",
             "external_spend",
-            "finalize",
             "instruction_introspection",
             "invoke",
             "invoke_and_error",

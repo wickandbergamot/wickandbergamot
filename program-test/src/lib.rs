@@ -20,7 +20,7 @@ use {
         genesis_utils::{create_genesis_config_with_leader, GenesisConfigInfo},
     },
     solana_sdk::{
-        account::{Account, AccountSharedData, ReadableAccount},
+        account::Account,
         clock::Slot,
         genesis_config::GenesisConfig,
         keyed_account::KeyedAccount,
@@ -49,12 +49,8 @@ use {
     tokio::task::JoinHandle,
 };
 
-// Export types so test clients can limit their solana crate dependencies
+// Export types so test clients can limit their safecoin crate dependencies
 pub use solana_banks_client::BanksClient;
-
-// Export tokio for test clients
-pub use tokio;
-
 pub mod programs;
 
 #[macro_use]
@@ -115,7 +111,7 @@ pub fn builtin_process_instruction(
     set_invoke_context(invoke_context);
 
     // Copy all the accounts into a HashMap to ensure there are no duplicates
-    let mut accounts: HashMap<Pubkey, AccountSharedData> = keyed_accounts
+    let mut accounts: HashMap<Pubkey, Account> = keyed_accounts
         .iter()
         .map(|ka| (*ka.unsigned_key(), ka.account.borrow().clone()))
         .collect();
@@ -165,7 +161,7 @@ pub fn builtin_process_instruction(
             let key = keyed_account.unsigned_key();
             let (lamports, data, _owner) = &account_refs[key];
             account.lamports = **lamports.borrow();
-            account.set_data(data.borrow().to_vec());
+            account.data = data.borrow().to_vec();
         }
     }
 
@@ -242,19 +238,16 @@ impl program_stubs::SyscallStubs for SyscallStubs {
 
         stable_log::program_invoke(&logger, &program_id, invoke_context.invoke_depth());
 
-        fn ai_to_a(ai: &AccountInfo) -> AccountSharedData {
-            AccountSharedData::from(Account {
+        fn ai_to_a(ai: &AccountInfo) -> Account {
+            Account {
                 lamports: ai.lamports(),
                 data: ai.try_borrow_data().unwrap().to_vec(),
                 owner: *ai.owner,
                 executable: ai.executable,
                 rent_epoch: ai.rent_epoch,
-            })
+            }
         }
-        let executables = vec![(
-            program_id,
-            Rc::new(RefCell::new(ai_to_a(program_account_info))),
-        )];
+        let executables = vec![(program_id, RefCell::new(ai_to_a(program_account_info)))];
 
         // Convert AccountInfos into Accounts
         let mut accounts = vec![];
@@ -317,8 +310,7 @@ impl program_stubs::SyscallStubs for SyscallStubs {
                     **account_info.try_borrow_mut_lamports().unwrap() = account.borrow().lamports;
 
                     let mut data = account_info.try_borrow_mut_data()?;
-                    let account_borrow = account.borrow();
-                    let new_data = account_borrow.data();
+                    let new_data = &account.borrow().data;
                     if *account_info.owner != account.borrow().owner {
                         // TODO Figure out a better way to allow the System Program to set the account owner
                         #[allow(clippy::transmute_ptr_to_ptr)]
@@ -417,7 +409,7 @@ fn setup_fee_calculator(bank: Bank) -> Bank {
 }
 
 pub struct ProgramTest {
-    accounts: Vec<(Pubkey, AccountSharedData)>,
+    accounts: Vec<(Pubkey, Account)>,
     builtins: Vec<Builtin>,
     bpf_compute_max_units: Option<u64>,
     prefer_bpf: bool,
@@ -438,7 +430,8 @@ impl Default for ProgramTest {
     ///
     fn default() -> Self {
         solana_logger::setup_with_default(
-            "solana_rbpf::vm=debug,\
+            "solana_bpf_loader=debug,\
+             solana_rbpf::vm=debug,\
              solana_runtime::message_processor=debug,\
              solana_runtime::system_instruction_processor=trace,\
              solana_program_test=info",
@@ -477,8 +470,7 @@ impl ProgramTest {
 
     /// Add an account to the test environment
     pub fn add_account(&mut self, address: Pubkey, account: Account) {
-        self.accounts
-            .push((address, AccountSharedData::from(account)));
+        self.accounts.push((address, account));
     }
 
     /// Add an account to the test environment with the account data in the provided `filename`
@@ -531,7 +523,7 @@ impl ProgramTest {
     /// directory.
     ///
     /// If `process_instruction` is provided, the natively built-program may be used instead of the
-    /// BPF shared object depending on the `BPF_OUT_DIR` environment variable.
+    /// BPF shared object depending on the `bpf` environment variable.
     pub fn add_program(
         &mut self,
         program_name: &str,
@@ -709,7 +701,7 @@ impl ProgramTest {
     /// Start the test client
     ///
     /// Returns a `BanksClient` interface into the test environment as well as a payer `Keypair`
-    /// with SOL for sending transactions
+    /// with SAFE for sending transactions
     pub async fn start_with_context(self) -> ProgramTestContext {
         let (bank_forks, block_commitment_cache, last_blockhash, gci) = self.setup_bank();
         let transport =

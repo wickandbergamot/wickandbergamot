@@ -1,4 +1,3 @@
-#![allow(clippy::integer_arithmetic)]
 #![cfg(feature = "full")]
 
 use crate::instruction::Instruction;

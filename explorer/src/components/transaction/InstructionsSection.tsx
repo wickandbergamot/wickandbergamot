@@ -1,4 +1,5 @@
 import React from "react";
+
 import { ErrorCard } from "components/common/ErrorCard";
 import {
   ParsedInnerInstruction,
@@ -33,17 +34,8 @@ import {
   useTransactionStatus,
 } from "providers/transactions";
 import { Cluster, useCluster } from "providers/cluster";
-import { BpfUpgradeableLoaderDetailsCard } from "components/instruction/bpf-upgradeable-loader/BpfUpgradeableLoaderDetailsCard";
-import { VoteDetailsCard } from "components/instruction/vote/VoteDetailsCard";
-
-export type InstructionDetailsProps = {
-  tx: ParsedTransaction;
-  ix: ParsedInstruction;
-  index: number;
-  result: SignatureResult;
-  innerCards?: JSX.Element[];
-  childIndex?: number;
-};
+// import { VoteDetailsCard } from "components/instruction/vote/VoteDetailsCard";
+import { UpgradeableBpfLoaderDetailsCard } from "components/instruction/upgradeable-bpf-loader/UpgradeableBpfLoaderDetailsCard";
 
 export function InstructionsSection({ signature }: SignatureProps) {
   const status = useTransactionStatus(signature);
@@ -172,19 +164,36 @@ function renderInstructionCard({
       case "bpf-loader":
         return <BpfLoaderDetailsCard {...props} />;
       case "bpf-upgradeable-loader":
-        return <BpfUpgradeableLoaderDetailsCard {...props} />;
+        return <UpgradeableBpfLoaderDetailsCard {...props} />;
       case "system":
         return <SystemDetailsCard {...props} />;
       case "stake":
         return <StakeDetailsCard {...props} />;
       case "spl-memo":
         return <MemoDetailsCard {...props} />;
-      case "vote":
-        return <VoteDetailsCard {...props} />;
+      /*case "vote":
+        return <VoteDetailsCard {...props} />;*/
       default:
         return <UnknownDetailsCard {...props} />;
     }
   }
+
+  // TODO: There is a bug in web3, where inner instructions
+  // aren't getting coerced. This is a temporary fix.
+
+  if (typeof ix.programId === "string") {
+    ix.programId = new PublicKey(ix.programId);
+  }
+
+  ix.accounts = ix.accounts.map((account) => {
+    if (typeof account === "string") {
+      return new PublicKey(account);
+    }
+
+    return account;
+  });
+
+  // TODO: End hotfix
 
   const transactionIx = intoTransactionInstruction(tx, ix);
 

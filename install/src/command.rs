@@ -1,32 +1,30 @@
-use {
-    crate::{
-        config::{Config, ExplicitRelease},
-        stop_process::stop_process,
-        update_manifest::{SignedUpdateManifest, UpdateManifest},
-    },
-    chrono::{Local, TimeZone},
-    console::{style, Emoji},
-    indicatif::{ProgressBar, ProgressStyle},
-    serde::{Deserialize, Serialize},
-    solana_client::rpc_client::RpcClient,
-    solana_config_program::{config_instruction, get_config_data, ConfigState},
-    solana_sdk::{
-        hash::{Hash, Hasher},
-        message::Message,
-        pubkey::Pubkey,
-        signature::{read_keypair_file, Keypair, Signable, Signer},
-        transaction::Transaction,
-    },
-    std::{
-        fs::{self, File},
-        io::{self, BufReader, Read},
-        path::{Path, PathBuf},
-        sync::mpsc,
-        time::{Duration, Instant, SystemTime},
-    },
-    tempfile::TempDir,
-    url::Url,
+use crate::{
+    config::{Config, ExplicitRelease},
+    stop_process::stop_process,
+    update_manifest::{SignedUpdateManifest, UpdateManifest},
 };
+use chrono::{Local, TimeZone};
+use console::{style, Emoji};
+use indicatif::{ProgressBar, ProgressStyle};
+use serde_derive::Deserialize;
+use solana_client::rpc_client::RpcClient;
+use solana_config_program::{config_instruction, get_config_data, ConfigState};
+use solana_sdk::{
+    hash::{Hash, Hasher},
+    message::Message,
+    pubkey::Pubkey,
+    signature::{read_keypair_file, Keypair, Signable, Signer},
+    transaction::Transaction,
+};
+use std::{
+    fs::{self, File},
+    io::{self, BufReader, Read},
+    path::{Path, PathBuf},
+    sync::mpsc,
+    time::{Duration, Instant, SystemTime},
+};
+use tempfile::TempDir;
+use url::Url;
 
 #[derive(Deserialize, Debug)]
 pub struct ReleaseVersion {
@@ -39,7 +37,6 @@ static TRUCK: Emoji = Emoji("🚚 ", "");
 static LOOKING_GLASS: Emoji = Emoji("🔍 ", "");
 static BULLET: Emoji = Emoji("• ", "* ");
 static SPARKLE: Emoji = Emoji("✨ ", "");
-static WRAPPED_PRESENT: Emoji = Emoji("🎁 ", "");
 static PACKAGE: Emoji = Emoji("📦 ", "");
 static INFORMATION: Emoji = Emoji("ℹ️  ", "");
 static RECYCLING: Emoji = Emoji("♻️  ", "");
@@ -301,7 +298,7 @@ fn check_env_path_for_bin_dir(config: &Config) {
 
     if !found {
         println!(
-            "\nPlease update your PATH environment variable to include the solana programs:\n    PATH=\"{}:$PATH\"\n",
+            "\nPlease update your PATH environment variable to include the safecoin programs:\n    PATH=\"{}:$PATH\"\n",
             config.active_release_bin_dir().to_str().unwrap()
         );
     }
@@ -531,7 +528,7 @@ pub fn init(
     explicit_release: Option<ExplicitRelease>,
 ) -> Result<(), String> {
     let config = {
-        // Write new config file only if different, so that running |solana-install init|
+        // Write new config file only if different, so that running |safecoin-install init|
         // repeatedly doesn't unnecessarily re-download
         let mut current_config = Config::load(config_file).unwrap_or_default();
         current_config.current_update_manifest = None;
@@ -547,7 +544,7 @@ pub fn init(
         config
     };
 
-    init_or_update(config_file, true, false)?;
+    update(config_file)?;
 
     let path_modified = if !no_modify_path {
         add_to_path(&config.active_release_bin_dir().to_str().unwrap())
@@ -585,21 +582,16 @@ fn release_channel_version_url(release_channel: &str) -> String {
     )
 }
 
-fn print_update_manifest(update_manifest: &UpdateManifest) {
-    let when = Local.timestamp(update_manifest.timestamp_secs as i64, 0);
-    println_name_value(&format!("{}release date:", BULLET), &when.to_string());
-    println_name_value(
-        &format!("{}download URL:", BULLET),
-        &update_manifest.download_url,
-    );
-}
-
-pub fn info(config_file: &str, local_info_only: bool, eval: bool) -> Result<(), String> {
+pub fn info(
+    config_file: &str,
+    local_info_only: bool,
+    eval: bool,
+) -> Result<Option<UpdateManifest>, String> {
     let config = Config::load(config_file)?;
 
     if eval {
         println!(
-            "SOLANA_INSTALL_ACTIVE_RELEASE={}",
+            "SAFECOIN_INSTALL_ACTIVE_RELEASE={}",
             &config.active_release_dir().to_str().unwrap_or("")
         );
         config
@@ -609,10 +601,10 @@ pub fn info(config_file: &str, local_info_only: bool, eval: bool) -> Result<(), 
                 ExplicitRelease::Channel(channel) => channel,
             })
             .and_then(|channel| {
-                println!("SOLANA_INSTALL_ACTIVE_CHANNEL={}", channel,);
+                println!("SAFECOIN_INSTALL_ACTIVE_CHANNEL={}", channel,);
                 Option::<String>::None
             });
-        return Ok(());
+        return Ok(None);
     }
 
     println_name_value("Configuration:", &config_file);
@@ -620,17 +612,6 @@ pub fn info(config_file: &str, local_info_only: bool, eval: bool) -> Result<(), 
         "Active release directory:",
         &config.active_release_dir().to_str().unwrap_or("?"),
     );
-
-    fn print_release_version(config: &Config) {
-        if let Ok(release_version) =
-            load_release_version(&config.active_release_dir().join("version.yml"))
-        {
-            println_name_value(
-                &format!("{}Release commit:", BULLET),
-                &release_version.commit[0..7],
-            );
-        }
-    }
 
     if let Some(explicit_release) = &config.explicit_release {
         match explicit_release {
@@ -649,30 +630,51 @@ pub fn info(config_file: &str, local_info_only: bool, eval: bool) -> Result<(), 
                 );
             }
         }
-        print_release_version(&config);
-    } else {
-        println_name_value("JSON RPC URL:", &config.json_rpc_url);
-        println_name_value(
-            "Update manifest pubkey:",
-            &config.update_manifest_pubkey.to_string(),
-        );
+        return Ok(None);
+    }
 
-        match config.current_update_manifest {
-            Some(ref update_manifest) => {
-                println_name_value("Installed version:", "");
-                print_release_version(&config);
-                print_update_manifest(&update_manifest);
-            }
-            None => {
-                println_name_value("Installed version:", "None");
-            }
+    println_name_value("JSON RPC URL:", &config.json_rpc_url);
+    println_name_value(
+        "Update manifest pubkey:",
+        &config.update_manifest_pubkey.to_string(),
+    );
+
+    fn print_update_manifest(update_manifest: &UpdateManifest) {
+        let when = Local.timestamp(update_manifest.timestamp_secs as i64, 0);
+        println_name_value(&format!("{}release date:", BULLET), &when.to_string());
+        println_name_value(
+            &format!("{}download URL:", BULLET),
+            &update_manifest.download_url,
+        );
+    }
+
+    match config.current_update_manifest {
+        Some(ref update_manifest) => {
+            println_name_value("Installed version:", "");
+            print_update_manifest(&update_manifest);
+        }
+        None => {
+            println_name_value("Installed version:", "None");
         }
     }
 
     if local_info_only {
-        Ok(())
+        Ok(None)
     } else {
-        update(config_file, true).map(|_| ())
+        let progress_bar = new_spinner_progress_bar();
+        progress_bar.set_message(&format!("{}Checking for updates...", LOOKING_GLASS));
+        let rpc_client = RpcClient::new(config.json_rpc_url.clone());
+        let manifest = get_update_manifest(&rpc_client, &config.update_manifest_pubkey)?;
+        progress_bar.finish_and_clear();
+
+        if Some(&manifest) == config.current_update_manifest.as_ref() {
+            println!("\n{}", style("Installation is up to date").italic());
+            Ok(None)
+        } else {
+            println!("\n{}", style("An update is available:").bold());
+            print_update_manifest(&manifest);
+            Ok(Some(manifest))
+        }
     }
 }
 
@@ -843,139 +845,24 @@ pub fn gc(config_file: &str) -> Result<(), String> {
     Ok(())
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct GithubRelease {
-    pub tag_name: String,
-    pub prerelease: bool,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct GithubReleases(Vec<GithubRelease>);
-
-fn semver_of(string: &str) -> Result<semver::Version, String> {
-    if string.starts_with('v') {
-        semver::Version::parse(string.split_at(1).1)
-    } else {
-        semver::Version::parse(string)
-    }
-    .map_err(|err| err.to_string())
-}
-
-fn check_for_newer_github_release(
-    version_filter: Option<semver::VersionReq>,
-    prerelease_allowed: bool,
-) -> reqwest::Result<Option<String>> {
-    let url =
-        reqwest::Url::parse("https://api.github.com/repos/solana-labs/solana/releases").unwrap();
-    let client = reqwest::blocking::Client::builder()
-        .user_agent("solana-install")
-        .build()?;
-    let request = client.get(url).build()?;
-    let response = client.execute(request)?;
-
-    let mut releases = response
-        .json::<GithubReleases>()?
-        .0
-        .into_iter()
-        .filter_map(
-            |GithubRelease {
-                 tag_name,
-                 prerelease,
-             }| {
-                if let Ok(version) = semver_of(&tag_name) {
-                    if (prerelease_allowed || !prerelease)
-                        && version_filter
-                            .as_ref()
-                            .map_or(true, |version_filter| version_filter.matches(&version))
-                    {
-                        return Some(version);
-                    }
-                }
-                None
-            },
-        )
-        .collect::<Vec<_>>();
-
-    releases.sort();
-    Ok(releases.pop().map(|r| r.to_string()))
-}
-
-pub enum SemverUpdateType {
-    Fixed,
-    Patch,
-    _Minor,
-}
-
-pub fn update(config_file: &str, check_only: bool) -> Result<bool, String> {
-    init_or_update(config_file, false, check_only)
-}
-
-pub fn init_or_update(config_file: &str, is_init: bool, check_only: bool) -> Result<bool, String> {
+pub fn update(config_file: &str) -> Result<bool, String> {
     let mut config = Config::load(config_file)?;
+    let update_manifest = info(config_file, false, false)?;
 
-    let semver_update_type = if is_init {
-        SemverUpdateType::Fixed
-    } else {
-        SemverUpdateType::Patch
-    };
-
-    let (updated_version, download_url_and_sha256, release_dir) = if let Some(explicit_release) =
-        &config.explicit_release
-    {
-        match explicit_release {
-            ExplicitRelease::Semver(current_release_semver) => {
-                let progress_bar = new_spinner_progress_bar();
-                progress_bar.set_message(&format!("{}Checking for updates...", LOOKING_GLASS));
-
-                let github_release = check_for_newer_github_release(
-                    semver::VersionReq::parse(&format!(
-                        "{}{}",
-                        match semver_update_type {
-                            SemverUpdateType::Fixed => "=",
-                            SemverUpdateType::Patch => "~",
-                            SemverUpdateType::_Minor => "^",
-                        },
-                        current_release_semver
-                    ))
-                    .ok(),
-                    is_init,
-                )
-                .map_err(|err| err.to_string())?;
-                progress_bar.finish_and_clear();
-
-                match github_release {
-                    None => {
-                        return Err(format!("Unknown release: {}", current_release_semver));
-                    }
-                    Some(release_semver) => {
-                        if release_semver == *current_release_semver {
-                            if let Ok(active_release_version) = load_release_version(
-                                &config.active_release_dir().join("version.yml"),
-                            ) {
-                                if format!("v{}", current_release_semver)
-                                    == active_release_version.channel
-                                {
-                                    println!(
-                                        "Install is up to date. {} is the latest compatible release",
-                                        release_semver
-                                    );
-                                    return Ok(false);
-                                }
-                            }
-                        }
-                        config.explicit_release =
-                            Some(ExplicitRelease::Semver(release_semver.clone()));
-
-                        let release_dir = config.release_dir(&release_semver);
-                        let download_url_and_sha256 = if release_dir.exists() {
-                            // Release already present in the cache
-                            None
-                        } else {
-                            Some((github_release_download_url(&release_semver), None))
-                        };
-                        (release_semver, download_url_and_sha256, release_dir)
-                    }
-                }
+    let release_dir = if let Some(explicit_release) = &config.explicit_release {
+        let (download_url, release_dir) = match explicit_release {
+            ExplicitRelease::Semver(release_semver) => {
+                let download_url = github_release_download_url(release_semver);
+                let release_dir = config.release_dir(&release_semver);
+                let download_url = if release_dir.exists() {
+                    // If this release_semver has already been successfully downloaded, no update
+                    // needed
+                    println!("{} found in cache", release_semver);
+                    None
+                } else {
+                    Some(download_url)
+                };
+                (download_url, release_dir)
             }
             ExplicitRelease::Channel(release_channel) => {
                 let version_url = release_channel_version_url(release_channel);
@@ -991,73 +878,59 @@ pub fn init_or_update(config_file: &str, is_init: bool, check_only: bool) -> Res
                 let current_release_version_yml =
                     release_dir.join("solana-release").join("version.yml");
 
-                let download_url = release_channel_download_url(release_channel);
+                let download_url = Some(release_channel_download_url(release_channel));
 
                 if !current_release_version_yml.exists() {
-                    (
-                        format!(
-                            "{} commit {}",
-                            release_channel,
-                            &update_release_version.commit[0..7]
-                        ),
-                        Some((download_url, None)),
-                        release_dir,
-                    )
+                    println_name_value(
+                        &format!("{}Release commit:", BULLET),
+                        &update_release_version.commit[0..7],
+                    );
+                    (download_url, release_dir)
                 } else {
                     let current_release_version =
                         load_release_version(&current_release_version_yml)?;
                     if update_release_version.commit == current_release_version.commit {
-                        if let Ok(active_release_version) =
-                            load_release_version(&config.active_release_dir().join("version.yml"))
-                        {
-                            if current_release_version.commit == active_release_version.commit {
-                                // Same version, no update required
-                                println!(
-                                    "Install is up to date. {} is the latest commit for {}",
-                                    &active_release_version.commit[0..7],
-                                    release_channel
-                                );
-                                return Ok(false);
-                            }
-                        }
-
-                        // Release already present in the cache
-                        (
-                            format!(
-                                "{} commit {}",
-                                release_channel,
-                                &update_release_version.commit[0..7]
-                            ),
-                            None,
-                            release_dir,
-                        )
+                        // Same commit, no update required
+                        println!(
+                            "Latest {} build ({}) found in cache",
+                            release_channel,
+                            &current_release_version.commit[0..7],
+                        );
+                        (None, release_dir)
                     } else {
-                        (
-                            format!(
-                                "{} (from {})",
-                                &update_release_version.commit[0..7],
+                        println_name_value(
+                            &format!("{}Release commit:", BULLET),
+                            &format!(
+                                "{} => {}:",
                                 &current_release_version.commit[0..7],
+                                &update_release_version.commit[0..7],
                             ),
-                            Some((download_url, None)),
-                            release_dir,
-                        )
+                        );
+
+                        (download_url, release_dir)
                     }
                 }
             }
-        }
-    } else {
-        let progress_bar = new_spinner_progress_bar();
-        progress_bar.set_message(&format!("{}Checking for updates...", LOOKING_GLASS));
-        let rpc_client = RpcClient::new(config.json_rpc_url.clone());
-        let update_manifest = get_update_manifest(&rpc_client, &config.update_manifest_pubkey)?;
-        progress_bar.finish_and_clear();
+        };
 
-        if Some(&update_manifest) == config.current_update_manifest.as_ref() {
-            println!("Install is up to date");
+        if let Some(download_url) = download_url {
+            let (_temp_dir, temp_archive, _temp_archive_sha256) =
+                download_to_temp(&download_url, None)
+                    .map_err(|err| format!("Unable to download {}: {}", download_url, err))?;
+            extract_release_archive(&temp_archive, &release_dir).map_err(|err| {
+                format!(
+                    "Unable to extract {:?} to {:?}: {}",
+                    temp_archive, release_dir, err
+                )
+            })?;
+        }
+
+        release_dir
+    } else {
+        if update_manifest.is_none() {
             return Ok(false);
         }
-        println!("\n{}", style("An update is available:").bold());
-        print_update_manifest(&update_manifest);
+        let update_manifest = update_manifest.unwrap();
 
         if timestamp_secs()
             < u64::from_str_radix(crate::build_env::BUILD_SECONDS_SINCE_UNIX_EPOCH, 10).unwrap()
@@ -1070,39 +943,27 @@ pub fn init_or_update(config_file: &str, is_init: bool, check_only: bool) -> Res
                 return Err("Unable to update to an older version".to_string());
             }
         }
-        config.current_update_manifest = Some(update_manifest.clone());
-
         let release_dir = config.release_dir(&update_manifest.download_sha256.to_string());
-
-        let download_url = update_manifest.download_url;
-        let archive_sha256 = Some(update_manifest.download_sha256);
-        (
-            "latest manifest".to_string(),
-            Some((download_url, archive_sha256)),
-            release_dir,
+        let (_temp_dir, temp_archive, _temp_archive_sha256) = download_to_temp(
+            &update_manifest.download_url,
+            Some(&update_manifest.download_sha256),
         )
-    };
-
-    if check_only {
-        println!(
-            "  {}{}",
-            WRAPPED_PRESENT,
-            style(format!("Update available: {}", updated_version)).bold()
-        );
-        return Ok(true);
-    }
-
-    if let Some((download_url, archive_sha256)) = download_url_and_sha256 {
-        let (_temp_dir, temp_archive, _temp_archive_sha256) =
-            download_to_temp(&download_url, archive_sha256.as_ref())
-                .map_err(|err| format!("Unable to download {}: {}", download_url, err))?;
+        .map_err(|err| {
+            format!(
+                "Unable to download {}: {}",
+                update_manifest.download_url, err
+            )
+        })?;
         extract_release_archive(&temp_archive, &release_dir).map_err(|err| {
             format!(
                 "Unable to extract {:?} to {:?}: {}",
                 temp_archive, release_dir, err
             )
         })?;
-    }
+
+        config.current_update_manifest = Some(update_manifest);
+        release_dir
+    };
 
     let release_target = load_release_target(&release_dir).map_err(|err| {
         format!(
@@ -1139,19 +1000,7 @@ pub fn init_or_update(config_file: &str, is_init: bool, check_only: bool) -> Res
     config.save(config_file)?;
     gc(config_file)?;
 
-    if is_init {
-        println!(
-            "  {}{}",
-            SPARKLE,
-            style(format!("{} initialized", updated_version)).bold()
-        );
-    } else {
-        println!(
-            "  {}{}",
-            SPARKLE,
-            style(format!("Update successful to {}", updated_version)).bold()
-        );
-    }
+    println!("  {}{}", SPARKLE, style("Update successful").bold());
     Ok(true)
 }
 
@@ -1214,7 +1063,7 @@ pub fn run(
         };
 
         if config.explicit_release.is_none() && now.elapsed().as_secs() > config.update_poll_secs {
-            match update(config_file, false) {
+            match update(config_file) {
                 Ok(true) => {
                     // Update successful, kill current process so it will be restart
                     if let Some(ref mut child) = child_option {

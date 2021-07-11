@@ -1,6 +1,6 @@
 #![cfg_attr(RUSTC_WITH_SPECIALIZATION, feature(specialization))]
 #![allow(clippy::integer_arithmetic)]
-//! The `solana` library implements the Solana high-performance blockchain architecture.
+//! The `solana` library implements the Safecoin high-performance blockchain architecture.
 //! It includes a full Rust implementation of the architecture (see
 //! [Validator](server/struct.Validator.html)) as well as hooks to GPU implementations of its most
 //! paralellizable components (i.e. [SigVerify](sigverify/index.html)).  It also includes
@@ -58,7 +58,6 @@ mod result;
 pub mod retransmit_stage;
 pub mod rewards_recorder_service;
 pub mod rpc;
-pub mod rpc_completed_slots_service;
 pub mod rpc_health;
 pub mod rpc_pubsub;
 pub mod rpc_pubsub_service;

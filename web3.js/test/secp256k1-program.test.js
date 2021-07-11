@@ -8,11 +8,12 @@ import {
   Connection,
   Account,
   sendAndConfirmTransaction,
-  LAMPORTS_PER_SOL,
+  LAMPORTS_PER_SAFE,
   Transaction,
   Secp256k1Program,
 } from '../src';
 import {url} from './url';
+import {toBuffer} from '../src/util/to-buffer';
 
 const randomPrivateKey = () => {
   let privateKey;
@@ -24,70 +25,22 @@ const randomPrivateKey = () => {
 
 if (process.env.TEST_LIVE) {
   describe('secp256k1', () => {
-    const privateKey = randomPrivateKey();
-    const publicKey = publicKeyCreate(privateKey, false).slice(1);
-    const ethAddress = Secp256k1Program.publicKeyToEthAddress(publicKey);
-    const from = new Account();
-    const connection = new Connection(url, 'confirmed');
-
-    before(async function () {
-      await connection.confirmTransaction(
-        await connection.requestAirdrop(from.publicKey, 10 * LAMPORTS_PER_SOL),
-      );
-    });
-
-    it('create secp256k1 instruction with string address', async () => {
-      const message = Buffer.from('string address');
-      const messageHash = Buffer.from(keccak_256.update(message).digest());
-      const {signature, recid: recoveryId} = ecdsaSign(messageHash, privateKey);
-      const transaction = new Transaction().add(
-        Secp256k1Program.createInstructionWithEthAddress({
-          ethAddress: ethAddress.toString('hex'),
-          message,
-          signature,
-          recoveryId,
-        }),
-      );
-
-      await sendAndConfirmTransaction(connection, transaction, [from]);
-    });
-
-    it('create secp256k1 instruction with 0x prefix string address', async () => {
-      const message = Buffer.from('0x string address');
-      const messageHash = Buffer.from(keccak_256.update(message).digest());
-      const {signature, recid: recoveryId} = ecdsaSign(messageHash, privateKey);
-      const transaction = new Transaction().add(
-        Secp256k1Program.createInstructionWithEthAddress({
-          ethAddress: '0x' + ethAddress.toString('hex'),
-          message,
-          signature,
-          recoveryId,
-        }),
-      );
-
-      await sendAndConfirmTransaction(connection, transaction, [from]);
-    });
-
-    it('create secp256k1 instruction with buffer address', async () => {
-      const message = Buffer.from('buffer address');
-      const messageHash = Buffer.from(keccak_256.update(message).digest());
-      const {signature, recid: recoveryId} = ecdsaSign(messageHash, privateKey);
-      const transaction = new Transaction().add(
-        Secp256k1Program.createInstructionWithEthAddress({
-          ethAddress,
-          message,
-          signature,
-          recoveryId,
-        }),
-      );
-
-      await sendAndConfirmTransaction(connection, transaction, [from]);
-    });
-
     it('create secp256k1 instruction with public key', async () => {
-      const message = Buffer.from('public key');
-      const messageHash = Buffer.from(keccak_256.update(message).digest());
+      const privateKey = randomPrivateKey();
+      const publicKey = publicKeyCreate(privateKey, false);
+      const message = Buffer.from('This is a message');
+      const messageHash = Buffer.from(
+        keccak_256.update(toBuffer(message)).digest(),
+      );
       const {signature, recid: recoveryId} = ecdsaSign(messageHash, privateKey);
+      const connection = new Connection(url, 'confirmed');
+
+      const from = new Account();
+      await connection.confirmTransaction(
+        await connection.requestAirdrop(from.publicKey, 2 * LAMPORTS_PER_SAFE),
+        'confirmed',
+      );
+
       const transaction = new Transaction().add(
         Secp256k1Program.createInstructionWithPublicKey({
           publicKey,
@@ -97,19 +50,33 @@ if (process.env.TEST_LIVE) {
         }),
       );
 
-      await sendAndConfirmTransaction(connection, transaction, [from]);
+      await sendAndConfirmTransaction(connection, transaction, [from], {
+        commitment: 'confirmed',
+        preflightCommitment: 'confirmed',
+      });
     });
 
     it('create secp256k1 instruction with private key', async () => {
-      const message = Buffer.from('private key');
+      const privateKey = randomPrivateKey();
+      const connection = new Connection(url, 'confirmed');
+
+      const from = new Account();
+      await connection.confirmTransaction(
+        await connection.requestAirdrop(from.publicKey, 2 * LAMPORTS_PER_SAFE),
+        'confirmed',
+      );
+
       const transaction = new Transaction().add(
         Secp256k1Program.createInstructionWithPrivateKey({
           privateKey,
-          message,
+          message: Buffer.from('Test 123'),
         }),
       );
 
-      await sendAndConfirmTransaction(connection, transaction, [from]);
+      await sendAndConfirmTransaction(connection, transaction, [from], {
+        commitment: 'confirmed',
+        preflightCommitment: 'confirmed',
+      });
     });
   });
 }

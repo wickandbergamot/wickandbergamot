@@ -1,6 +1,6 @@
 import React from "react";
 import { TableCardBody } from "components/common/TableCardBody";
-import { lamportsToSolString } from "utils";
+import { lamportsToSafeString } from "utils";
 import { Account, useFetchAccountInfo } from "providers/accounts";
 import { Address } from "components/common/Address";
 import {
@@ -8,8 +8,6 @@ import {
   ProgramDataAccountInfo,
 } from "validators/accounts/upgradeable-program";
 import { Slot } from "components/common/Slot";
-import { addressLabel } from "utils/tx";
-import { useCluster } from "providers/cluster";
 
 export function UpgradeableProgramSection({
   account,
@@ -21,8 +19,6 @@ export function UpgradeableProgramSection({
   programData: ProgramDataAccountInfo;
 }) {
   const refresh = useFetchAccountInfo();
-  const { cluster } = useCluster();
-  const label = addressLabel(account.pubkey.toBase58(), cluster);
   return (
     <div className="card">
       <div className="card-header">
@@ -45,16 +41,10 @@ export function UpgradeableProgramSection({
             <Address pubkey={account.pubkey} alignRight raw />
           </td>
         </tr>
-        {label && (
-          <tr>
-            <td>Address Label</td>
-            <td className="text-lg-right">{label}</td>
-          </tr>
-        )}
         <tr>
-          <td>Balance (SOL)</td>
+          <td>Balance (SAFE)</td>
           <td className="text-lg-right text-uppercase">
-            {lamportsToSolString(account.lamports || 0)}
+            {lamportsToSafeString(account.lamports || 0)}
           </td>
         </tr>
         <tr>

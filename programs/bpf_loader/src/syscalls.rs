@@ -10,13 +10,13 @@ use solana_rbpf::{
 };
 use solana_runtime::message_processor::MessageProcessor;
 use solana_sdk::{
-    account::{Account, AccountSharedData, ReadableAccount},
+    account::Account,
     account_info::AccountInfo,
     account_utils::StateMut,
     bpf_loader, bpf_loader_deprecated,
     bpf_loader_upgradeable::{self, UpgradeableLoaderState},
     entrypoint::{MAX_PERMITTED_DATA_INCREASE, SUCCESS},
-    feature_set::{cpi_data_cost, cpi_share_ro_and_exec_accounts, ristretto_mul_syscall_enabled},
+    feature_set::{per_byte_logging_cost, ristretto_mul_syscall_enabled, use_loaded_executables},
     hash::{Hasher, HASH_BYTES},
     ic_msg,
     instruction::{AccountMeta, Instruction, InstructionError},
@@ -159,13 +159,19 @@ pub fn bind_syscall_context_objects<'a>(
     vm.bind_syscall_context_object(Box::new(SyscallAbort {}), None)?;
     vm.bind_syscall_context_object(
         Box::new(SyscallPanic {
-            compute_meter: invoke_context.get_compute_meter(),
+            compute_meter: if invoke_context.is_feature_active(&per_byte_logging_cost::id()) {
+                Some(invoke_context.get_compute_meter())
+            } else {
+                None
+            },
             loader_id,
         }),
         None,
     )?;
     vm.bind_syscall_context_object(
         Box::new(SyscallLog {
+            per_byte_cost: invoke_context.is_feature_active(&per_byte_logging_cost::id()),
+            cost: bpf_compute_budget.log_units,
             compute_meter: invoke_context.get_compute_meter(),
             logger: invoke_context.get_logger(),
             loader_id,
@@ -407,7 +413,7 @@ impl SyscallObject<BpfError> for SyscallAbort {
 /// Causes the BPF program to be halted immediately
 /// Log a user's info message
 pub struct SyscallPanic<'a> {
-    compute_meter: Rc<RefCell<dyn ComputeMeter>>,
+    compute_meter: Option<Rc<RefCell<dyn ComputeMeter>>>,
     loader_id: &'a Pubkey,
 }
 impl<'a> SyscallObject<BpfError> for SyscallPanic<'a> {
@@ -421,7 +427,9 @@ impl<'a> SyscallObject<BpfError> for SyscallPanic<'a> {
         memory_mapping: &MemoryMapping,
         result: &mut Result<u64, EbpfError<BpfError>>,
     ) {
-        question_mark!(self.compute_meter.consume(len), result);
+        if let Some(ref mut compute_meter) = self.compute_meter {
+            question_mark!(compute_meter.consume(len), result);
+        }
         *result = translate_string_and_do(
             memory_mapping,
             file,
@@ -434,6 +442,8 @@ impl<'a> SyscallObject<BpfError> for SyscallPanic<'a> {
 
 /// Log a user's info message
 pub struct SyscallLog<'a> {
+    per_byte_cost: bool,
+    cost: u64,
     compute_meter: Rc<RefCell<dyn ComputeMeter>>,
     logger: Rc<RefCell<dyn Logger>>,
     loader_id: &'a Pubkey,
@@ -449,7 +459,11 @@ impl<'a> SyscallObject<BpfError> for SyscallLog<'a> {
         memory_mapping: &MemoryMapping,
         result: &mut Result<u64, EbpfError<BpfError>>,
     ) {
-        question_mark!(self.compute_meter.consume(len), result);
+        if self.per_byte_cost {
+            question_mark!(self.compute_meter.consume(len), result);
+        } else {
+            question_mark!(self.compute_meter.consume(self.cost), result);
+        }
         question_mark!(
             translate_string_and_do(
                 memory_mapping,
@@ -837,12 +851,9 @@ struct AccountReferences<'a> {
     ref_to_len_in_vm: &'a mut u64,
     serialized_len_ptr: &'a mut u64,
 }
-type TranslatedAccount<'a> = (
-    Rc<RefCell<AccountSharedData>>,
-    Option<AccountReferences<'a>>,
-);
+type TranslatedAccount<'a> = (Rc<RefCell<Account>>, Option<AccountReferences<'a>>);
 type TranslatedAccounts<'a> = (
-    Vec<Rc<RefCell<AccountSharedData>>>,
+    Vec<Rc<RefCell<Account>>>,
     Vec<Option<AccountReferences<'a>>>,
 );
 
@@ -859,7 +870,6 @@ trait SyscallInvokeSigned<'a> {
     fn translate_accounts(
         &self,
         account_keys: &[Pubkey],
-        caller_write_privileges: &[bool],
         program_account_index: usize,
         account_infos_addr: u64,
         account_infos_len: u64,
@@ -931,7 +941,6 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedRust<'a> {
     fn translate_accounts(
         &self,
         account_keys: &[Pubkey],
-        caller_write_privileges: &[bool],
         program_account_index: usize,
         account_infos_addr: u64,
         account_infos_len: u64,
@@ -957,8 +966,7 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedRust<'a> {
             })
             .collect::<Result<Vec<_>, EbpfError<BpfError>>>()?;
 
-        let translate = |account_info: &AccountInfo,
-                         invoke_context: &Ref<&mut dyn InvokeContext>| {
+        let translate = |account_info: &AccountInfo| {
             // Translate the account from user space
 
             let lamports = {
@@ -975,7 +983,6 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedRust<'a> {
                 account_info.owner as *const _ as u64,
                 self.loader_id,
             )?;
-
             let (data, vm_data_addr, ref_to_len_in_vm, serialized_len_ptr) = {
                 // Double translate data out of RefCell
                 let data = *translate_type::<&[u8]>(
@@ -983,14 +990,6 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedRust<'a> {
                     account_info.data.as_ptr() as *const _ as u64,
                     self.loader_id,
                 )?;
-
-                if invoke_context.is_feature_active(&cpi_data_cost::id()) {
-                    invoke_context.get_compute_meter().consume(
-                        data.len() as u64
-                            / invoke_context.get_bpf_compute_budget().cpi_bytes_per_unit,
-                    )?;
-                }
-
                 let translated = translate(
                     memory_mapping,
                     AccessType::Store,
@@ -1019,13 +1018,13 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedRust<'a> {
             };
 
             Ok((
-                Rc::new(RefCell::new(AccountSharedData::from(Account {
+                Rc::new(RefCell::new(Account {
                     lamports: *lamports,
                     data: data.to_vec(),
                     executable: account_info.executable,
                     owner: *owner,
                     rent_epoch: account_info.rent_epoch,
-                }))),
+                })),
                 Some(AccountReferences {
                     lamports,
                     owner,
@@ -1039,7 +1038,6 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedRust<'a> {
 
         get_translated_accounts(
             account_keys,
-            caller_write_privileges,
             program_account_index,
             &account_info_keys,
             account_infos,
@@ -1123,9 +1121,9 @@ impl<'a> SyscallObject<BpfError> for SyscallInvokeSignedRust<'a> {
     }
 }
 
-/// Rust representation of C's SolInstruction
+/// Rust representation of C's SafeInstruction
 #[derive(Debug)]
-struct SolInstruction {
+struct SafeInstruction {
     program_id_addr: u64,
     accounts_addr: u64,
     accounts_len: usize,
@@ -1133,17 +1131,17 @@ struct SolInstruction {
     data_len: usize,
 }
 
-/// Rust representation of C's SolAccountMeta
+/// Rust representation of C's SafeAccountMeta
 #[derive(Debug)]
-struct SolAccountMeta {
+struct SafeAccountMeta {
     pubkey_addr: u64,
     is_writable: bool,
     is_signer: bool,
 }
 
-/// Rust representation of C's SolAccountInfo
+/// Rust representation of C's SafeAccountInfo
 #[derive(Debug)]
-struct SolAccountInfo {
+struct SafeAccountInfo {
     key_addr: u64,
     lamports_addr: u64,
     data_len: u64,
@@ -1155,16 +1153,16 @@ struct SolAccountInfo {
     executable: bool,
 }
 
-/// Rust representation of C's SolSignerSeed
+/// Rust representation of C's SafeSignerSeed
 #[derive(Debug)]
-struct SolSignerSeedC {
+struct SafeSignerSeedC {
     addr: u64,
     len: u64,
 }
 
-/// Rust representation of C's SolSignerSeeds
+/// Rust representation of C's SafeSignerSeeds
 #[derive(Debug)]
-struct SolSignerSeedsC {
+struct SafeSignerSeedsC {
     addr: u64,
     len: u64,
 }
@@ -1196,7 +1194,7 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
         addr: u64,
         memory_mapping: &MemoryMapping,
     ) -> Result<Instruction, EbpfError<BpfError>> {
-        let ix_c = translate_type::<SolInstruction>(memory_mapping, addr, self.loader_id)?;
+        let ix_c = translate_type::<SafeInstruction>(memory_mapping, addr, self.loader_id)?;
 
         check_instruction_size(
             ix_c.accounts_len,
@@ -1205,7 +1203,7 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
         )?;
         let program_id =
             translate_type::<Pubkey>(memory_mapping, ix_c.program_id_addr, self.loader_id)?;
-        let meta_cs = translate_slice::<SolAccountMeta>(
+        let meta_cs = translate_slice::<SafeAccountMeta>(
             memory_mapping,
             ix_c.accounts_addr,
             ix_c.accounts_len as u64,
@@ -1241,7 +1239,6 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
     fn translate_accounts(
         &self,
         account_keys: &[Pubkey],
-        caller_write_privileges: &[bool],
         program_account_index: usize,
         account_infos_addr: u64,
         account_infos_len: u64,
@@ -1249,7 +1246,7 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
     ) -> Result<TranslatedAccounts<'a>, EbpfError<BpfError>> {
         let invoke_context = self.invoke_context.borrow();
 
-        let account_infos = translate_slice::<SolAccountInfo>(
+        let account_infos = translate_slice::<SafeAccountInfo>(
             memory_mapping,
             account_infos_addr,
             account_infos_len,
@@ -1263,8 +1260,7 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
             })
             .collect::<Result<Vec<_>, EbpfError<BpfError>>>()?;
 
-        let translate = |account_info: &SolAccountInfo,
-                         invoke_context: &Ref<&mut dyn InvokeContext>| {
+        let translate = |account_info: &SafeAccountInfo| {
             // Translate the account from user space
 
             let lamports = translate_type_mut::<u64>(
@@ -1278,14 +1274,6 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
                 self.loader_id,
             )?;
             let vm_data_addr = account_info.data_addr;
-
-            if invoke_context.is_feature_active(&cpi_data_cost::id()) {
-                invoke_context.get_compute_meter().consume(
-                    account_info.data_len
-                        / invoke_context.get_bpf_compute_budget().cpi_bytes_per_unit,
-                )?;
-            }
-
             let data = translate_slice_mut::<u8>(
                 memory_mapping,
                 vm_data_addr,
@@ -1313,13 +1301,13 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
             )?;
 
             Ok((
-                Rc::new(RefCell::new(AccountSharedData::from(Account {
+                Rc::new(RefCell::new(Account {
                     lamports: *lamports,
                     data: data.to_vec(),
                     executable: account_info.executable,
                     owner: *owner,
                     rent_epoch: account_info.rent_epoch,
-                }))),
+                })),
                 Some(AccountReferences {
                     lamports,
                     owner,
@@ -1333,7 +1321,6 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
 
         get_translated_accounts(
             account_keys,
-            caller_write_privileges,
             program_account_index,
             &account_info_keys,
             account_infos,
@@ -1350,7 +1337,7 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
         memory_mapping: &MemoryMapping,
     ) -> Result<Vec<Pubkey>, EbpfError<BpfError>> {
         if signers_seeds_len > 0 {
-            let signers_seeds = translate_slice::<SolSignerSeedC>(
+            let signers_seeds = translate_slice::<SafeSignerSeedC>(
                 memory_mapping,
                 signers_seeds_addr,
                 signers_seeds_len,
@@ -1362,7 +1349,7 @@ impl<'a> SyscallInvokeSigned<'a> for SyscallInvokeSignedC<'a> {
             Ok(signers_seeds
                 .iter()
                 .map(|signer_seeds| {
-                    let seeds = translate_slice::<SolSignerSeedC>(
+                    let seeds = translate_slice::<SafeSignerSeedC>(
                         memory_mapping,
                         signer_seeds.addr,
                         signer_seeds.len,
@@ -1419,7 +1406,6 @@ impl<'a> SyscallObject<BpfError> for SyscallInvokeSignedC<'a> {
 
 fn get_translated_accounts<'a, T, F>(
     account_keys: &[Pubkey],
-    caller_write_privileges: &[bool],
     program_account_index: usize,
     account_info_keys: &[&Pubkey],
     account_infos: &[T],
@@ -1427,7 +1413,7 @@ fn get_translated_accounts<'a, T, F>(
     do_translate: F,
 ) -> Result<TranslatedAccounts<'a>, EbpfError<BpfError>>
 where
-    F: Fn(&T, &Ref<&mut dyn InvokeContext>) -> Result<TranslatedAccount<'a>, EbpfError<BpfError>>,
+    F: Fn(&T) -> Result<TranslatedAccount<'a>, EbpfError<BpfError>>,
 {
     let mut accounts = Vec::with_capacity(account_keys.len());
     let mut refs = Vec::with_capacity(account_keys.len());
@@ -1442,12 +1428,11 @@ where
         })?;
 
         if i == program_account_index
-            || account.borrow().executable
-            || (invoke_context.is_feature_active(&cpi_share_ro_and_exec_accounts::id())
-                && !caller_write_privileges[i])
+            || (invoke_context.is_feature_active(&use_loaded_executables::id())
+                && account.borrow().executable)
         {
-            // Use the known account
-            accounts.push(account);
+            // Use the known executable
+            accounts.push(Rc::new(account));
             refs.push(None);
         } else if let Some(account_info) =
             account_info_keys
@@ -1461,7 +1446,7 @@ where
                     }
                 })
         {
-            let (account, account_ref) = do_translate(account_info, invoke_context)?;
+            let (account, account_ref) = do_translate(account_info)?;
             accounts.push(account);
             refs.push(account_ref);
         } else {
@@ -1525,12 +1510,11 @@ fn check_authorized_program(
     Ok(())
 }
 
-#[allow(clippy::type_complexity)]
 fn get_upgradeable_executable(
     callee_program_id: &Pubkey,
-    program_account: &Rc<RefCell<AccountSharedData>>,
+    program_account: &RefCell<Account>,
     invoke_context: &Ref<&mut dyn InvokeContext>,
-) -> Result<Option<(Pubkey, Rc<RefCell<AccountSharedData>>)>, EbpfError<BpfError>> {
+) -> Result<Option<(Pubkey, RefCell<Account>)>, EbpfError<BpfError>> {
     if program_account.borrow().owner == bpf_loader_upgradeable::id() {
         match program_account.borrow().state() {
             Ok(UpgradeableLoaderState::Program {
@@ -1571,7 +1555,7 @@ fn call<'a>(
     signers_seeds_len: u64,
     memory_mapping: &MemoryMapping,
 ) -> Result<u64, EbpfError<BpfError>> {
-    let (message, executables, accounts, account_refs, caller_write_privileges) = {
+    let (message, executables, accounts, account_refs, caller_privileges) = {
         let invoke_context = syscall.get_context()?;
 
         invoke_context
@@ -1603,7 +1587,7 @@ fn call<'a>(
                 &invoke_context,
             )
             .map_err(SyscallError::InstructionError)?;
-        let caller_write_privileges = message
+        let caller_privileges = message
             .account_keys
             .iter()
             .map(|key| {
@@ -1620,7 +1604,6 @@ fn call<'a>(
         check_authorized_program(&callee_program_id, &instruction.data)?;
         let (accounts, account_refs) = syscall.translate_accounts(
             &message.account_keys,
-            &caller_write_privileges,
             callee_program_id_index,
             account_infos_addr,
             account_infos_len,
@@ -1629,13 +1612,11 @@ fn call<'a>(
 
         // Construct executables
 
-        let program_account = accounts
-            .get(callee_program_id_index)
-            .ok_or_else(|| {
-                ic_msg!(invoke_context, "Unknown program {}", callee_program_id,);
-                SyscallError::InstructionError(InstructionError::MissingAccount)
-            })?
-            .clone();
+        let program_account = (**accounts.get(callee_program_id_index).ok_or_else(|| {
+            ic_msg!(invoke_context, "Unknown program {}", callee_program_id,);
+            SyscallError::InstructionError(InstructionError::MissingAccount)
+        })?)
+        .clone();
         let programdata_executable =
             get_upgradeable_executable(&callee_program_id, &program_account, &invoke_context)?;
         let mut executables = vec![(callee_program_id, program_account)];
@@ -1652,7 +1633,7 @@ fn call<'a>(
             executables,
             accounts,
             account_refs,
-            caller_write_privileges,
+            caller_privileges,
         )
     };
 
@@ -1663,7 +1644,7 @@ fn call<'a>(
         &message,
         &executables,
         &accounts,
-        &caller_write_privileges,
+        &caller_privileges,
         *(&mut *(syscall.get_context_mut()?)),
     ) {
         Ok(()) => (),
@@ -1681,7 +1662,7 @@ fn call<'a>(
                 if message.is_writable(i) && !account.executable {
                     *account_ref.lamports = account.lamports;
                     *account_ref.owner = account.owner;
-                    if account_ref.data.len() != account.data().len() {
+                    if account_ref.data.len() != account.data.len() {
                         if !account_ref.data.is_empty() {
                             // Only support for `CreateAccount` at this time.
                             // Need a way to limit total realloc size across multiple CPI calls
@@ -1694,8 +1675,7 @@ fn call<'a>(
                             )
                             .into());
                         }
-                        if account.data().len()
-                            > account_ref.data.len() + MAX_PERMITTED_DATA_INCREASE
+                        if account.data.len() > account_ref.data.len() + MAX_PERMITTED_DATA_INCREASE
                         {
                             ic_msg!(
                                 invoke_context,
@@ -1711,14 +1691,14 @@ fn call<'a>(
                             memory_mapping,
                             AccessType::Store,
                             account_ref.vm_data_addr,
-                            account.data().len() as u64,
+                            account.data.len() as u64,
                         )?;
-                        *account_ref.ref_to_len_in_vm = account.data().len() as u64;
-                        *account_ref.serialized_len_ptr = account.data().len() as u64;
+                        *account_ref.ref_to_len_in_vm = account.data.len() as u64;
+                        *account_ref.serialized_len_ptr = account.data.len() as u64;
                     }
                     account_ref
                         .data
-                        .clone_from_slice(&account.data()[0..account_ref.data.len()]);
+                        .clone_from_slice(&account.data[0..account_ref.data.len()]);
                 }
             }
         }
@@ -1784,11 +1764,11 @@ mod tests {
         for (ok, start, length, value) in cases {
             if ok {
                 assert_eq!(
-                    translate(&memory_mapping, AccessType::Load, start, length).unwrap(),
+                    translate(&memory_mapping, AccessType::Load, start, length,).unwrap(),
                     value
                 )
             } else {
-                assert!(translate(&memory_mapping, AccessType::Load, start, length).is_err())
+                assert!(translate(&memory_mapping, AccessType::Load, start, length,).is_err())
             }
         }
     }
@@ -1813,7 +1793,7 @@ mod tests {
         assert_eq!(pubkey, *translated_pubkey);
 
         // Instruction
-        let instruction = Instruction::new_with_bincode(
+        let instruction = Instruction::new(
             solana_sdk::pubkey::new_rand(),
             &"foobar",
             vec![AccountMeta::new(solana_sdk::pubkey::new_rand(), false)],
@@ -1913,7 +1893,7 @@ mod tests {
         assert_eq!(data, translated_data);
         data[0] = 10;
         assert_eq!(data, translated_data);
-        assert!(translate_slice::<u64>(&memory_mapping, 96, u64::MAX, &bpf_loader::id()).is_err());
+        assert!(translate_slice::<u64>(&memory_mapping, 96, u64::MAX, &bpf_loader::id(),).is_err());
 
         // Pubkeys
         let mut data = vec![solana_sdk::pubkey::new_rand(); 5];
@@ -2005,7 +1985,7 @@ mod tests {
                 remaining: string.len() as u64 - 1,
             }));
         let mut syscall_panic = SyscallPanic {
-            compute_meter,
+            compute_meter: Some(compute_meter),
             loader_id: &bpf_loader::id(),
         };
         let mut result: Result<u64, EbpfError<BpfError>> = Ok(0);
@@ -2025,12 +2005,8 @@ mod tests {
             result
         );
 
-        let compute_meter: Rc<RefCell<dyn ComputeMeter>> =
-            Rc::new(RefCell::new(MockComputeMeter {
-                remaining: string.len() as u64,
-            }));
         let mut syscall_panic = SyscallPanic {
-            compute_meter,
+            compute_meter: None,
             loader_id: &bpf_loader::id(),
         };
         let mut result: Result<u64, EbpfError<BpfError>> = Ok(0);
@@ -2052,11 +2028,13 @@ mod tests {
         let addr = string.as_ptr() as *const _ as u64;
 
         let compute_meter: Rc<RefCell<dyn ComputeMeter>> =
-            Rc::new(RefCell::new(MockComputeMeter { remaining: 1000000 }));
+            Rc::new(RefCell::new(MockComputeMeter { remaining: 3 }));
         let log = Rc::new(RefCell::new(vec![]));
         let logger: Rc<RefCell<dyn Logger>> =
             Rc::new(RefCell::new(MockLogger { log: log.clone() }));
         let mut syscall_sol_log = SyscallLog {
+            per_byte_cost: false,
+            cost: 1,
             compute_meter,
             logger,
             loader_id: &bpf_loader::id(),
@@ -2118,6 +2096,12 @@ mod tests {
             &memory_mapping,
             &mut result,
         );
+        assert_eq!(
+            Err(EbpfError::UserError(BpfError::SyscallError(
+                SyscallError::InstructionError(InstructionError::ComputationalBudgetExceeded)
+            ))),
+            result
+        );
 
         let compute_meter: Rc<RefCell<dyn ComputeMeter>> =
             Rc::new(RefCell::new(MockComputeMeter {
@@ -2125,6 +2109,8 @@ mod tests {
             }));
         let logger: Rc<RefCell<dyn Logger>> = Rc::new(RefCell::new(MockLogger { log }));
         let mut syscall_sol_log = SyscallLog {
+            per_byte_cost: true,
+            cost: 1,
             compute_meter,
             logger,
             loader_id: &bpf_loader::id(),
@@ -2184,7 +2170,7 @@ mod tests {
 
     #[test]
     fn test_syscall_sol_pubkey() {
-        let pubkey = Pubkey::from_str("MoqiU1vryuCGQSxFKA1SZ316JdLEFFhoAu6cKUNk7dN").unwrap();
+        let pubkey = Pubkey::from_str("BNwVU7MhnDnGEQGAqpJ1dGKVtaYw4SvxbTvoACcdENd2").unwrap();
         let addr = &pubkey.as_ref()[0] as *const _ as u64;
 
         let compute_meter: Rc<RefCell<dyn ComputeMeter>> =
@@ -2215,7 +2201,7 @@ mod tests {
         assert_eq!(log.borrow().len(), 1);
         assert_eq!(
             log.borrow()[0],
-            "Program log: MoqiU1vryuCGQSxFKA1SZ316JdLEFFhoAu6cKUNk7dN"
+            "Program log: BNwVU7MhnDnGEQGAqpJ1dGKVtaYw4SvxbTvoACcdENd2"
         );
         let mut result: Result<u64, EbpfError<BpfError>> = Ok(0);
         syscall_sol_pubkey.call(

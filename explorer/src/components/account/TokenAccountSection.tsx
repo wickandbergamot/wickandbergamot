@@ -6,7 +6,7 @@ import {
   TokenAccountInfo,
   MultisigAccountInfo,
 } from "validators/accounts/token";
-import { create } from "superstruct";
+import { coerce } from "superstruct";
 import { TableCardBody } from "components/common/TableCardBody";
 import { Address } from "components/common/Address";
 import { UnknownAccountCard } from "./UnknownAccountCard";
@@ -15,7 +15,6 @@ import { normalizeTokenAmount } from "utils";
 import { addressLabel } from "utils/tx";
 import { reportError } from "utils/sentry";
 import { useTokenRegistry } from "providers/mints/token-registry";
-import { BigNumber } from "bignumber.js";
 
 export function TokenAccountSection({
   account,
@@ -27,15 +26,15 @@ export function TokenAccountSection({
   try {
     switch (tokenAccount.type) {
       case "mint": {
-        const info = create(tokenAccount.info, MintAccountInfo);
+        const info = coerce(tokenAccount.info, MintAccountInfo);
         return <MintAccountCard account={account} info={info} />;
       }
       case "account": {
-        const info = create(tokenAccount.info, TokenAccountInfo);
+        const info = coerce(tokenAccount.info, TokenAccountInfo);
         return <TokenAccountCard account={account} info={info} />;
       }
       case "multisig": {
-        const info = create(tokenAccount.info, MultisigAccountInfo);
+        const info = coerce(tokenAccount.info, MultisigAccountInfo);
         return <MultisigAccountCard account={account} info={info} />;
       }
     }
@@ -89,16 +88,16 @@ function MintAccountCard({
             )}
           </td>
         </tr>
-        {tokenInfo?.extensions?.website && (
+        {tokenInfo?.website && (
           <tr>
             <td>Website</td>
             <td className="text-lg-right">
               <a
                 rel="noopener noreferrer"
                 target="_blank"
-                href={tokenInfo.extensions.website}
+                href={tokenInfo.website}
               >
-                {tokenInfo.extensions.website}
+                {tokenInfo.website}
                 <span className="fe fe-external-link ml-2"></span>
               </a>
             </td>
@@ -149,18 +148,20 @@ function TokenAccountCard({
 
   let unit, balance;
   if (info.isNative) {
-    unit = "SOL";
+    unit = "SAFE";
     balance = (
       <>
         ◎
         <span className="text-monospace">
-          {new BigNumber(info.tokenAmount.uiAmountString).toFormat(9)}
+          {new Intl.NumberFormat("en-US", { maximumFractionDigits: 9 }).format(
+            info.tokenAmount.uiAmount
+          )}
         </span>
       </>
     );
   } else {
-    balance = <>{info.tokenAmount.uiAmountString}</>;
-    unit = tokenRegistry.get(info.mint.toBase58())?.symbol || "tokens";
+    balance = <>{info.tokenAmount.uiAmount}</>;
+    unit = tokenRegistry.get(info.mint.toBase58())?.tokenSymbol || "tokens";
   }
 
   return (
@@ -215,14 +216,14 @@ function TokenAccountCard({
         )}
         {info.rentExemptReserve && (
           <tr>
-            <td>Rent-exempt reserve (SOL)</td>
+            <td>Rent-exempt reserve (SAFE)</td>
             <td className="text-lg-right">
               <>
                 ◎
                 <span className="text-monospace">
-                  {new BigNumber(
-                    info.rentExemptReserve.uiAmountString
-                  ).toFormat(9)}
+                  {new Intl.NumberFormat("en-US", {
+                    maximumFractionDigits: 9,
+                  }).format(info.rentExemptReserve.uiAmount)}
                 </span>
               </>
             </td>

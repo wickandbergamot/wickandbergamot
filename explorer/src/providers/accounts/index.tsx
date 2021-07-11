@@ -3,7 +3,7 @@ import { PublicKey, Connection, StakeActivationData } from "@solana/web3.js";
 import { useCluster, Cluster } from "../cluster";
 import { HistoryProvider } from "./history";
 import { TokensProvider } from "./tokens";
-import { create } from "superstruct";
+import { coerce } from "superstruct";
 import { ParsedInfo } from "validators";
 import { StakeAccount } from "validators/accounts/stake";
 import {
@@ -151,7 +151,7 @@ async function fetchAccountInfo(
       let data: ProgramData | undefined;
       if ("parsed" in result.data) {
         try {
-          const info = create(result.data.parsed, ParsedInfo);
+          const info = coerce(result.data.parsed, ParsedInfo);
           switch (result.data.program) {
             case "bpf-upgradeable-loader": {
               let programAccount: ProgramAccountInfo;
@@ -161,7 +161,7 @@ async function fetchAccountInfo(
                 break;
               }
 
-              const parsed = create(info, ProgramAccount);
+              const parsed = coerce(info, ProgramAccount);
               programAccount = parsed.info;
               const result = (
                 await connection.getParsedAccountInfo(parsed.info.programData)
@@ -171,8 +171,8 @@ async function fetchAccountInfo(
                 "parsed" in result.data &&
                 result.data.program === "bpf-upgradeable-loader"
               ) {
-                const info = create(result.data.parsed, ParsedInfo);
-                programData = create(info, ProgramDataAccount).info;
+                const info = coerce(result.data.parsed, ParsedInfo);
+                programData = coerce(info, ProgramDataAccount).info;
               } else {
                 throw new Error(
                   `invalid program data account for program: ${pubkey.toBase58()}`
@@ -188,7 +188,7 @@ async function fetchAccountInfo(
               break;
             }
             case "stake": {
-              const parsed = create(info, StakeAccount);
+              const parsed = coerce(info, StakeAccount);
               const isDelegated = parsed.type === "delegated";
               const activation = isDelegated
                 ? await connection.getStakeActivation(pubkey)
@@ -204,32 +204,32 @@ async function fetchAccountInfo(
             case "vote":
               data = {
                 program: result.data.program,
-                parsed: create(info, VoteAccount),
+                parsed: coerce(info, VoteAccount),
               };
               break;
             case "nonce":
               data = {
                 program: result.data.program,
-                parsed: create(info, NonceAccount),
+                parsed: coerce(info, NonceAccount),
               };
               break;
             case "sysvar":
               data = {
                 program: result.data.program,
-                parsed: create(info, SysvarAccount),
+                parsed: coerce(info, SysvarAccount),
               };
               break;
             case "config":
               data = {
                 program: result.data.program,
-                parsed: create(info, ConfigAccount),
+                parsed: coerce(info, ConfigAccount),
               };
               break;
 
             case "spl-token":
               data = {
                 program: result.data.program,
-                parsed: create(info, TokenAccount),
+                parsed: coerce(info, TokenAccount),
               };
               break;
             default:
@@ -298,7 +298,7 @@ export function useMintAccountInfo(
         return;
       }
 
-      return create(data.parsed.info, MintAccountInfo);
+      return coerce(data.parsed.info, MintAccountInfo);
     } catch (err) {
       reportError(err, { address });
     }
@@ -318,7 +318,7 @@ export function useTokenAccountInfo(
       return;
     }
 
-    return create(data.parsed.info, TokenAccountInfo);
+    return coerce(data.parsed.info, TokenAccountInfo);
   } catch (err) {
     reportError(err, { address });
   }

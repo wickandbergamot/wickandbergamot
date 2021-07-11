@@ -760,14 +760,12 @@ const GetSupplyRpcResult = jsonRpcResultAndContext(
  * @typedef {Object} TokenAmount
  * @property {string} amount Raw amount of tokens as string ignoring decimals
  * @property {number} decimals Number of decimals configured for token's mint
- * @property {number | null} uiAmount Token amount as float, accounts for decimals
- * @property {string | undefined} uiAmountString Token amount as string, accounts for decimals
+ * @property {number} uiAmount Token account as float, accounts for decimals
  */
 type TokenAmount = {
   amount: string,
   decimals: number,
-  uiAmount: number | null,
-  uiAmountString?: string,
+  uiAmount: number,
 };
 
 /**
@@ -775,9 +773,8 @@ type TokenAmount = {
  */
 const TokenAmountResult = pick({
   amount: string(),
-  uiAmount: nullable(number()),
+  uiAmount: number(),
   decimals: number(),
-  uiAmountString: optional(nullable(string())),
 });
 
 /**
@@ -787,15 +784,13 @@ const TokenAmountResult = pick({
  * @property {PublicKey} address Address of the token account
  * @property {string} amount Raw amount of tokens as string ignoring decimals
  * @property {number} decimals Number of decimals configured for token's mint
- * @property {number | null} uiAmount Token amount as float, accounts for decimals
- * @property {string | undefined} uiAmountString Token amount as string, accounts for decimals
+ * @property {number} uiAmount Token account as float, accounts for decimals
  */
 type TokenAccountBalancePair = {
   address: PublicKey,
   amount: string,
   decimals: number,
   uiAmount: number,
-  uiAmountString?: string,
 };
 
 /**
@@ -806,9 +801,8 @@ const GetTokenLargestAccountsResult = jsonRpcResultAndContext(
     pick({
       address: PublicKeyFromString,
       amount: string(),
-      uiAmount: nullable(number()),
+      uiAmount: number(),
       decimals: number(),
-      uiAmountString: optional(nullable(string())),
     }),
   ),
 );
@@ -1593,7 +1587,7 @@ export class Connection {
     url.host = '';
     // Only shift the port by +1 as a convention for ws(s) only if given endpoint
     // is explictly specifying the endpoint port (HTTP-based RPC), assuming
-    // we're directly trying to connect to solana-validator's ws listening port.
+    // we're directly trying to connect to safecoin-validator's ws listening port.
     // When the endpoint omits the port, we're connecting to the protocol
     // default ports: http(80) or https(443) and it's assumed we're behind a reverse
     // proxy which manages WebSocket upgrade and backend port redirection.
@@ -2098,7 +2092,7 @@ export class Connection {
       throw new Error(
         `Transaction was not confirmed in ${duration.toFixed(
           2,
-        )} seconds. It is unknown if it succeeded or failed. Check signature ${signature} using the Solana Explorer or CLI tools.`,
+        )} seconds. It is unknown if it succeeded or failed. Check signature ${signature} using the Safecoin Explorer or CLI tools.`,
       );
     }
 
@@ -2686,6 +2680,18 @@ export class Connection {
 
     const wireTransaction = transaction.serialize();
     return await this.sendRawTransaction(wireTransaction, options);
+  }
+
+  /**
+   * @private
+   */
+  async validatorExit(): Promise<boolean> {
+    const unsafeRes = await this._rpcRequest('validatorExit', []);
+    const res = create(unsafeRes, jsonRpcResult(boolean()));
+    if (res.error) {
+      throw new Error('validator exit failed: ' + res.error.message);
+    }
+    return res.result;
   }
 
   /**

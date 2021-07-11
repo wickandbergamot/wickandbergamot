@@ -6,7 +6,7 @@ use solana_cli::{
 use solana_cli_output::OutputFormat;
 use solana_client::rpc_client::RpcClient;
 use solana_core::test_validator::TestValidator;
-use solana_faucet::faucet::run_local_faucet;
+use safecoin_faucet::faucet::run_local_faucet;
 use solana_sdk::{
     account_utils::StateMut,
     bpf_loader,
@@ -571,7 +571,7 @@ fn test_cli_program_write_buffer() {
         .unwrap();
     let minimum_balance_for_buffer_default = rpc_client
         .get_minimum_balance_for_rent_exemption(
-            UpgradeableLoaderState::programdata_len(max_len).unwrap(),
+            UpgradeableLoaderState::programdata_len(max_len * 2).unwrap(),
         )
         .unwrap();
 

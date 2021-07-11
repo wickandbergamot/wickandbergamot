@@ -35,7 +35,7 @@ use solana_sdk::{
     timing::timestamp,
     transaction::Transaction,
 };
-use solana_storage_proto::{StoredExtendedRewards, StoredTransactionStatusMeta};
+use solana_storage_proto::StoredExtendedRewards;
 use solana_transaction_status::{
     ConfirmedBlock, ConfirmedTransaction, ConfirmedTransactionStatusWithSignature, Rewards,
     TransactionStatusMeta, TransactionWithStatusMeta,
@@ -44,7 +44,6 @@ use std::{
     cell::RefCell,
     cmp,
     collections::{HashMap, HashSet},
-    convert::TryInto,
     fs,
     io::{Error as IoError, ErrorKind},
     path::{Path, PathBuf},
@@ -114,7 +113,7 @@ pub struct CompletedDataSetInfo {
 pub struct BlockstoreSignals {
     pub blockstore: Blockstore,
     pub ledger_signal_receiver: Receiver<bool>,
-    pub completed_slots_receivers: [CompletedSlotsReceiver; 2],
+    pub completed_slots_receiver: CompletedSlotsReceiver,
 }
 
 // ledger window
@@ -378,18 +377,15 @@ impl Blockstore {
             enforce_ulimit_nofile,
         )?;
         let (ledger_signal_sender, ledger_signal_receiver) = sync_channel(1);
-        let (completed_slots_sender1, completed_slots_receiver1) =
+        let (completed_slots_sender, completed_slots_receiver) =
             sync_channel(MAX_COMPLETED_SLOTS_IN_CHANNEL);
-        let (completed_slots_sender2, completed_slots_receiver2) =
-            sync_channel(MAX_COMPLETED_SLOTS_IN_CHANNEL);
-
         blockstore.new_shreds_signals = vec![ledger_signal_sender];
-        blockstore.completed_slots_senders = vec![completed_slots_sender1, completed_slots_sender2];
+        blockstore.completed_slots_senders = vec![completed_slots_sender];
 
         Ok(BlockstoreSignals {
             blockstore,
             ledger_signal_receiver,
-            completed_slots_receivers: [completed_slots_receiver1, completed_slots_receiver2],
+            completed_slots_receiver,
         })
     }
 
@@ -1787,8 +1783,7 @@ impl Blockstore {
                     transaction,
                     meta: self
                         .read_transaction_status((signature, slot))
-                        .ok()
-                        .flatten(),
+                        .expect("Expect database get to succeed"),
                 }
             })
             .collect()
@@ -1804,9 +1799,10 @@ impl Blockstore {
         self.transaction_status_index_cf
             .put(1, &TransactionStatusIndexMeta::default())?;
         // This dummy status improves compaction performance
-        let default_status = TransactionStatusMeta::default().into();
-        self.transaction_status_cf
-            .put_protobuf(cf::TransactionStatus::as_index(2), &default_status)?;
+        self.transaction_status_cf.put(
+            cf::TransactionStatus::as_index(2),
+            &TransactionStatusMeta::default(),
+        )?;
         self.address_signatures_cf.put(
             cf::AddressSignatures::as_index(2),
             &AddressSignatureMeta::default(),
@@ -1882,16 +1878,11 @@ impl Blockstore {
         index: (Signature, Slot),
     ) -> Result<Option<TransactionStatusMeta>> {
         let (signature, slot) = index;
-        let result = self
-            .transaction_status_cf
-            .get_protobuf_or_bincode::<StoredTransactionStatusMeta>((0, signature, slot))?;
+        let result = self.transaction_status_cf.get((0, signature, slot))?;
         if result.is_none() {
-            Ok(self
-                .transaction_status_cf
-                .get_protobuf_or_bincode::<StoredTransactionStatusMeta>((1, signature, slot))?
-                .and_then(|meta| meta.try_into().ok()))
+            Ok(self.transaction_status_cf.get((1, signature, slot))?)
         } else {
-            Ok(result.and_then(|meta| meta.try_into().ok()))
+            Ok(result)
         }
     }
 
@@ -1901,16 +1892,15 @@ impl Blockstore {
         signature: Signature,
         writable_keys: Vec<&Pubkey>,
         readonly_keys: Vec<&Pubkey>,
-        status: TransactionStatusMeta,
+        status: &TransactionStatusMeta,
     ) -> Result<()> {
-        let status = status.into();
         // This write lock prevents interleaving issues with the transaction_status_index_cf by gating
         // writes to that column
         let mut w_active_transaction_status_index =
             self.active_transaction_status_index.write().unwrap();
         let primary_index = self.get_primary_index(slot, &mut w_active_transaction_status_index)?;
         self.transaction_status_cf
-            .put_protobuf((primary_index, signature, slot), &status)?;
+            .put((primary_index, signature, slot), status)?;
         for address in writable_keys {
             self.address_signatures_cf.put(
                 (primary_index, *address, slot, signature),
@@ -1938,18 +1928,14 @@ impl Blockstore {
                 (transaction_status_cf_primary_index, signature, 0),
                 IteratorDirection::Forward,
             ))?;
-            for ((i, sig, slot), _data) in index_iterator {
+            for ((i, sig, slot), data) in index_iterator {
                 counter += 1;
                 if i != transaction_status_cf_primary_index || sig != signature {
                     break;
                 }
                 if self.is_root(slot) {
-                    let status = self
-                        .transaction_status_cf
-                        .get_protobuf_or_bincode::<StoredTransactionStatusMeta>((i, sig, slot))?
-                        .and_then(|status| status.try_into().ok())
-                        .map(|status| (slot, status));
-                    return Ok((status, counter));
+                    let status: TransactionStatusMeta = deserialize(&data)?;
+                    return Ok((Some((slot, status)), counter));
                 }
             }
         }
@@ -3545,7 +3531,6 @@ pub mod tests {
     use bincode::serialize;
     use itertools::Itertools;
     use rand::{seq::SliceRandom, thread_rng};
-    use solana_account_decoder::parse_token::UiTokenAmount;
     use solana_runtime::bank::{Bank, RewardType};
     use solana_sdk::{
         hash::{self, hash, Hash},
@@ -3556,7 +3541,7 @@ pub mod tests {
         transaction::TransactionError,
     };
     use solana_storage_proto::convert::generated;
-    use solana_transaction_status::{InnerInstructions, Reward, Rewards, TransactionTokenBalance};
+    use solana_transaction_status::{InnerInstructions, Reward, Rewards};
     use std::time::Duration;
 
     // used for tests only
@@ -4305,7 +4290,7 @@ pub mod tests {
         let ledger_path = get_tmp_ledger_path!();
         let BlockstoreSignals {
             blockstore: ledger,
-            completed_slots_receivers: [recvr, _],
+            completed_slots_receiver: recvr,
             ..
         } = Blockstore::open_with_signal(&ledger_path, None, true).unwrap();
         let ledger = Arc::new(ledger);
@@ -4331,7 +4316,7 @@ pub mod tests {
         let ledger_path = get_tmp_ledger_path!();
         let BlockstoreSignals {
             blockstore: ledger,
-            completed_slots_receivers: [recvr, _],
+            completed_slots_receiver: recvr,
             ..
         } = Blockstore::open_with_signal(&ledger_path, None, true).unwrap();
         let ledger = Arc::new(ledger);
@@ -4375,7 +4360,7 @@ pub mod tests {
         let ledger_path = get_tmp_ledger_path!();
         let BlockstoreSignals {
             blockstore: ledger,
-            completed_slots_receivers: [recvr, _],
+            completed_slots_receiver: recvr,
             ..
         } = Blockstore::open_with_signal(&ledger_path, None, true).unwrap();
         let ledger = Arc::new(ledger);
@@ -5721,35 +5706,37 @@ pub mod tests {
                     post_balances.push(i as u64 * 11);
                 }
                 let signature = transaction.signatures[0];
-                let status = TransactionStatusMeta {
-                    status: Ok(()),
-                    fee: 42,
-                    pre_balances: pre_balances.clone(),
-                    post_balances: post_balances.clone(),
-                    inner_instructions: Some(vec![]),
-                    log_messages: Some(vec![]),
-                    pre_token_balances: Some(vec![]),
-                    post_token_balances: Some(vec![]),
-                }
-                .into();
                 ledger
                     .transaction_status_cf
-                    .put_protobuf((0, signature, slot), &status)
+                    .put(
+                        (0, signature, slot),
+                        &TransactionStatusMeta {
+                            status: Ok(()),
+                            fee: 42,
+                            pre_balances: pre_balances.clone(),
+                            post_balances: post_balances.clone(),
+                            inner_instructions: Some(vec![]),
+                            log_messages: Some(vec![]),
+                            pre_token_balances: Some(vec![]),
+                            post_token_balances: Some(vec![]),
+                        },
+                    )
                     .unwrap();
-                let status = TransactionStatusMeta {
-                    status: Ok(()),
-                    fee: 42,
-                    pre_balances: pre_balances.clone(),
-                    post_balances: post_balances.clone(),
-                    inner_instructions: Some(vec![]),
-                    log_messages: Some(vec![]),
-                    pre_token_balances: Some(vec![]),
-                    post_token_balances: Some(vec![]),
-                }
-                .into();
                 ledger
                     .transaction_status_cf
-                    .put_protobuf((0, signature, slot + 1), &status)
+                    .put(
+                        (0, signature, slot + 1),
+                        &TransactionStatusMeta {
+                            status: Ok(()),
+                            fee: 42,
+                            pre_balances: pre_balances.clone(),
+                            post_balances: post_balances.clone(),
+                            inner_instructions: Some(vec![]),
+                            log_messages: Some(vec![]),
+                            pre_token_balances: Some(vec![]),
+                            post_token_balances: Some(vec![]),
+                        },
+                    )
                     .unwrap();
                 TransactionWithStatusMeta {
                     transaction,
@@ -5839,30 +5826,27 @@ pub mod tests {
 
             // result not found
             assert!(transaction_status_cf
-                .get_protobuf_or_bincode::<StoredTransactionStatusMeta>((
-                    0,
-                    Signature::default(),
-                    0
-                ))
+                .get((0, Signature::default(), 0))
                 .unwrap()
                 .is_none());
 
             // insert value
-            let status = TransactionStatusMeta {
-                status: solana_sdk::transaction::Result::<()>::Err(
-                    TransactionError::AccountNotFound,
-                ),
-                fee: 5u64,
-                pre_balances: pre_balances_vec.clone(),
-                post_balances: post_balances_vec.clone(),
-                inner_instructions: Some(inner_instructions_vec.clone()),
-                log_messages: Some(log_messages_vec.clone()),
-                pre_token_balances: Some(pre_token_balances_vec.clone()),
-                post_token_balances: Some(post_token_balances_vec.clone()),
-            }
-            .into();
             assert!(transaction_status_cf
-                .put_protobuf((0, Signature::default(), 0), &status,)
+                .put(
+                    (0, Signature::default(), 0),
+                    &TransactionStatusMeta {
+                        status: solana_sdk::transaction::Result::<()>::Err(
+                            TransactionError::AccountNotFound
+                        ),
+                        fee: 5u64,
+                        pre_balances: pre_balances_vec.clone(),
+                        post_balances: post_balances_vec.clone(),
+                        inner_instructions: Some(inner_instructions_vec.clone()),
+                        log_messages: Some(log_messages_vec.clone()),
+                        pre_token_balances: Some(pre_token_balances_vec.clone()),
+                        post_token_balances: Some(post_token_balances_vec.clone())
+                    },
+                )
                 .is_ok());
 
             // result found
@@ -5876,14 +5860,8 @@ pub mod tests {
                 pre_token_balances,
                 post_token_balances,
             } = transaction_status_cf
-                .get_protobuf_or_bincode::<StoredTransactionStatusMeta>((
-                    0,
-                    Signature::default(),
-                    0,
-                ))
+                .get((0, Signature::default(), 0))
                 .unwrap()
-                .unwrap()
-                .try_into()
                 .unwrap();
             assert_eq!(status, Err(TransactionError::AccountNotFound));
             assert_eq!(fee, 5u64);
@@ -5895,19 +5873,20 @@ pub mod tests {
             assert_eq!(post_token_balances.unwrap(), post_token_balances_vec);
 
             // insert value
-            let status = TransactionStatusMeta {
-                status: solana_sdk::transaction::Result::<()>::Ok(()),
-                fee: 9u64,
-                pre_balances: pre_balances_vec.clone(),
-                post_balances: post_balances_vec.clone(),
-                inner_instructions: Some(inner_instructions_vec.clone()),
-                log_messages: Some(log_messages_vec.clone()),
-                pre_token_balances: Some(pre_token_balances_vec.clone()),
-                post_token_balances: Some(post_token_balances_vec.clone()),
-            }
-            .into();
             assert!(transaction_status_cf
-                .put_protobuf((0, Signature::new(&[2u8; 64]), 9), &status,)
+                .put(
+                    (0, Signature::new(&[2u8; 64]), 9),
+                    &TransactionStatusMeta {
+                        status: solana_sdk::transaction::Result::<()>::Ok(()),
+                        fee: 9u64,
+                        pre_balances: pre_balances_vec.clone(),
+                        post_balances: post_balances_vec.clone(),
+                        inner_instructions: Some(inner_instructions_vec.clone()),
+                        log_messages: Some(log_messages_vec.clone()),
+                        pre_token_balances: Some(pre_token_balances_vec.clone()),
+                        post_token_balances: Some(post_token_balances_vec.clone())
+                    },
+                )
                 .is_ok());
 
             // result found
@@ -5921,14 +5900,8 @@ pub mod tests {
                 pre_token_balances,
                 post_token_balances,
             } = transaction_status_cf
-                .get_protobuf_or_bincode::<StoredTransactionStatusMeta>((
-                    0,
-                    Signature::new(&[2u8; 64]),
-                    9,
-                ))
+                .get((0, Signature::new(&[2u8; 64]), 9))
                 .unwrap()
-                .unwrap()
-                .try_into()
                 .unwrap();
 
             // deserialize
@@ -5965,7 +5938,7 @@ pub mod tests {
                         Signature::new(&random_bytes),
                         vec![&Pubkey::new(&random_bytes[0..32])],
                         vec![&Pubkey::new(&random_bytes[32..])],
-                        TransactionStatusMeta::default(),
+                        &TransactionStatusMeta::default(),
                     )
                     .unwrap();
             }
@@ -6031,7 +6004,7 @@ pub mod tests {
                         Signature::new(&random_bytes),
                         vec![&Pubkey::new(&random_bytes[0..32])],
                         vec![&Pubkey::new(&random_bytes[32..])],
-                        TransactionStatusMeta::default(),
+                        &TransactionStatusMeta::default(),
                     )
                     .unwrap();
             }
@@ -6170,8 +6143,7 @@ pub mod tests {
                 log_messages: Some(vec![]),
                 pre_token_balances: Some(vec![]),
                 post_token_balances: Some(vec![]),
-            }
-            .into();
+            };
 
             let signature1 = Signature::new(&[1u8; 64]);
             let signature2 = Signature::new(&[2u8; 64]);
@@ -6185,46 +6157,46 @@ pub mod tests {
             //   signature4 in 2 non-roots,
             //   extra entries
             transaction_status_cf
-                .put_protobuf((0, signature2, 1), &status)
+                .put((0, signature2, 1), &status)
                 .unwrap();
 
             transaction_status_cf
-                .put_protobuf((0, signature2, 2), &status)
+                .put((0, signature2, 2), &status)
                 .unwrap();
 
             transaction_status_cf
-                .put_protobuf((0, signature4, 0), &status)
+                .put((0, signature4, 0), &status)
                 .unwrap();
 
             transaction_status_cf
-                .put_protobuf((0, signature4, 1), &status)
+                .put((0, signature4, 1), &status)
                 .unwrap();
 
             transaction_status_cf
-                .put_protobuf((0, signature5, 0), &status)
+                .put((0, signature5, 0), &status)
                 .unwrap();
 
             transaction_status_cf
-                .put_protobuf((0, signature5, 1), &status)
+                .put((0, signature5, 1), &status)
                 .unwrap();
 
             // Initialize index 1, including:
             //   signature4 in non-root and root,
             //   extra entries
             transaction_status_cf
-                .put_protobuf((1, signature4, 1), &status)
+                .put((1, signature4, 1), &status)
                 .unwrap();
 
             transaction_status_cf
-                .put_protobuf((1, signature4, 2), &status)
+                .put((1, signature4, 2), &status)
                 .unwrap();
 
             transaction_status_cf
-                .put_protobuf((1, signature5, 0), &status)
+                .put((1, signature5, 0), &status)
                 .unwrap();
 
             transaction_status_cf
-                .put_protobuf((1, signature5, 1), &status)
+                .put((1, signature5, 1), &status)
                 .unwrap();
 
             blockstore.set_roots(&[2]).unwrap();
@@ -6308,20 +6280,21 @@ pub mod tests {
                 let pre_token_balances = Some(vec![]);
                 let post_token_balances = Some(vec![]);
                 let signature = transaction.signatures[0];
-                let status = TransactionStatusMeta {
-                    status: Ok(()),
-                    fee: 42,
-                    pre_balances: pre_balances.clone(),
-                    post_balances: post_balances.clone(),
-                    inner_instructions: inner_instructions.clone(),
-                    log_messages: log_messages.clone(),
-                    pre_token_balances: pre_token_balances.clone(),
-                    post_token_balances: post_token_balances.clone(),
-                }
-                .into();
                 blockstore
                     .transaction_status_cf
-                    .put_protobuf((0, signature, slot), &status)
+                    .put(
+                        (0, signature, slot),
+                        &TransactionStatusMeta {
+                            status: Ok(()),
+                            fee: 42,
+                            pre_balances: pre_balances.clone(),
+                            post_balances: post_balances.clone(),
+                            inner_instructions: inner_instructions.clone(),
+                            log_messages: log_messages.clone(),
+                            pre_token_balances: pre_token_balances.clone(),
+                            post_token_balances: post_token_balances.clone(),
+                        },
+                    )
                     .unwrap();
                 TransactionWithStatusMeta {
                     transaction,
@@ -6393,7 +6366,7 @@ pub mod tests {
                         signature,
                         vec![&address0],
                         vec![&address1],
-                        TransactionStatusMeta::default(),
+                        &TransactionStatusMeta::default(),
                     )
                     .unwrap();
             }
@@ -6408,7 +6381,7 @@ pub mod tests {
                         signature,
                         vec![&address0],
                         vec![&address1],
-                        TransactionStatusMeta::default(),
+                        &TransactionStatusMeta::default(),
                     )
                     .unwrap();
             }
@@ -6501,7 +6474,7 @@ pub mod tests {
                         signature,
                         vec![&address0],
                         vec![&address1],
-                        TransactionStatusMeta::default(),
+                        &TransactionStatusMeta::default(),
                     )
                     .unwrap();
             }
@@ -6561,7 +6534,7 @@ pub mod tests {
                                 transaction.signatures[0],
                                 transaction.message.account_keys.iter().collect(),
                                 vec![],
-                                TransactionStatusMeta::default(),
+                                &TransactionStatusMeta::default(),
                             )
                             .unwrap();
                     }
@@ -6767,21 +6740,22 @@ pub mod tests {
                     vec![solana_sdk::pubkey::new_rand()],
                     vec![CompiledInstruction::new(1, &(), vec![0])],
                 );
-                let status = TransactionStatusMeta {
-                    status: solana_sdk::transaction::Result::<()>::Err(
-                        TransactionError::AccountNotFound,
-                    ),
-                    fee: x,
-                    pre_balances: vec![],
-                    post_balances: vec![],
-                    inner_instructions: Some(vec![]),
-                    log_messages: Some(vec![]),
-                    pre_token_balances: Some(vec![]),
-                    post_token_balances: Some(vec![]),
-                }
-                .into();
                 transaction_status_cf
-                    .put_protobuf((0, transaction.signatures[0], slot), &status)
+                    .put(
+                        (0, transaction.signatures[0], slot),
+                        &TransactionStatusMeta {
+                            status: solana_sdk::transaction::Result::<()>::Err(
+                                TransactionError::AccountNotFound,
+                            ),
+                            fee: x,
+                            pre_balances: vec![],
+                            post_balances: vec![],
+                            inner_instructions: Some(vec![]),
+                            log_messages: Some(vec![]),
+                            pre_token_balances: Some(vec![]),
+                            post_token_balances: Some(vec![]),
+                        },
+                    )
                     .unwrap();
                 transactions.push(transaction);
             }
@@ -7284,73 +7258,6 @@ pub mod tests {
                         .unwrap()
                         .unwrap(),
                     protobuf_rewards
-                );
-            }
-        }
-        Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
-    }
-
-    #[test]
-    fn test_transaction_status_protobuf_backward_compatability() {
-        let blockstore_path = get_tmp_ledger_path!();
-        {
-            let blockstore = Blockstore::open(&blockstore_path).unwrap();
-            let status = TransactionStatusMeta {
-                status: Ok(()),
-                fee: 42,
-                pre_balances: vec![1, 2, 3],
-                post_balances: vec![1, 2, 3],
-                inner_instructions: Some(vec![]),
-                log_messages: Some(vec![]),
-                pre_token_balances: Some(vec![TransactionTokenBalance {
-                    account_index: 0,
-                    mint: Pubkey::new_unique().to_string(),
-                    ui_token_amount: UiTokenAmount {
-                        ui_amount: Some(1.1),
-                        decimals: 1,
-                        amount: "11".to_string(),
-                        ui_amount_string: "1.1".to_string(),
-                    },
-                }]),
-                post_token_balances: Some(vec![TransactionTokenBalance {
-                    account_index: 0,
-                    mint: Pubkey::new_unique().to_string(),
-                    ui_token_amount: UiTokenAmount {
-                        ui_amount: None,
-                        decimals: 1,
-                        amount: "11".to_string(),
-                        ui_amount_string: "1.1".to_string(),
-                    },
-                }]),
-            };
-            let deprecated_status: StoredTransactionStatusMeta = status.clone().into();
-            let protobuf_status: generated::TransactionStatusMeta = status.into();
-
-            for slot in 0..2 {
-                let data = serialize(&deprecated_status).unwrap();
-                blockstore
-                    .transaction_status_cf
-                    .put_bytes((0, Signature::default(), slot), &data)
-                    .unwrap();
-            }
-            for slot in 2..4 {
-                blockstore
-                    .transaction_status_cf
-                    .put_protobuf((0, Signature::default(), slot), &protobuf_status)
-                    .unwrap();
-            }
-            for slot in 0..4 {
-                assert_eq!(
-                    blockstore
-                        .transaction_status_cf
-                        .get_protobuf_or_bincode::<StoredTransactionStatusMeta>((
-                            0,
-                            Signature::default(),
-                            slot
-                        ))
-                        .unwrap()
-                        .unwrap(),
-                    protobuf_status
                 );
             }
         }

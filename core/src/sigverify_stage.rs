@@ -45,7 +45,8 @@ pub struct DisabledSigVerifier {}
 
 impl SigVerifier for DisabledSigVerifier {
     fn verify_batch(&self, mut batch: Vec<Packets>) -> Vec<Packets> {
-        sigverify::ed25519_verify_disabled(&mut batch);
+        let r = sigverify::ed25519_verify_disabled(&batch);
+        sigverify::mark_disabled(&mut batch, &r);
         batch
     }
 }

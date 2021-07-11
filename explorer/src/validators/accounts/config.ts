@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-redeclare */
 
 import {
-  Infer,
+  StructType,
+  pick,
   array,
   boolean,
-  type,
+  object,
   number,
   string,
   record,
@@ -12,40 +13,44 @@ import {
   literal,
 } from "superstruct";
 
-export type StakeConfigInfo = Infer<typeof StakeConfigInfo>;
-export const StakeConfigInfo = type({
+export type StakeConfigInfo = StructType<typeof StakeConfigInfo>;
+export const StakeConfigInfo = pick({
   warmupCooldownRate: number(),
   slashPenalty: number(),
 });
 
-export type ConfigKey = Infer<typeof ConfigKey>;
-export const ConfigKey = type({
+export type ConfigKey = StructType<typeof ConfigKey>;
+export const ConfigKey = pick({
   pubkey: string(),
   signer: boolean(),
 });
 
-export type ValidatorInfoConfigData = Infer<typeof ValidatorInfoConfigData>;
+export type ValidatorInfoConfigData = StructType<
+  typeof ValidatorInfoConfigData
+>;
 export const ValidatorInfoConfigData = record(string(), string());
 
-export type ValidatorInfoConfigInfo = Infer<typeof ValidatorInfoConfigInfo>;
-export const ValidatorInfoConfigInfo = type({
+export type ValidatorInfoConfigInfo = StructType<
+  typeof ValidatorInfoConfigInfo
+>;
+export const ValidatorInfoConfigInfo = pick({
   keys: array(ConfigKey),
   configData: ValidatorInfoConfigData,
 });
 
-export type ValidatorInfoAccount = Infer<typeof ValidatorInfoAccount>;
-export const ValidatorInfoAccount = type({
+export type ValidatorInfoAccount = StructType<typeof ValidatorInfoAccount>;
+export const ValidatorInfoAccount = object({
   type: literal("validatorInfo"),
   info: ValidatorInfoConfigInfo,
 });
 
-export type StakeConfigInfoAccount = Infer<typeof StakeConfigInfoAccount>;
-export const StakeConfigInfoAccount = type({
+export type StakeConfigInfoAccount = StructType<typeof StakeConfigInfoAccount>;
+export const StakeConfigInfoAccount = object({
   type: literal("stakeConfig"),
   info: StakeConfigInfo,
 });
 
-export type ConfigAccount = Infer<typeof ConfigAccount>;
+export type ConfigAccount = StructType<typeof ConfigAccount>;
 export const ConfigAccount = union([
   StakeConfigInfoAccount,
   ValidatorInfoAccount,

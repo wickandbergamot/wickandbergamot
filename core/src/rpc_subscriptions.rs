@@ -28,7 +28,7 @@ use solana_runtime::{
     commitment::{BlockCommitmentCache, CommitmentSlots},
 };
 use solana_sdk::{
-    account::{AccountSharedData, ReadableAccount},
+    account::Account,
     clock::{Slot, UnixTimestamp},
     commitment_config::CommitmentConfig,
     pubkey::Pubkey,
@@ -276,7 +276,7 @@ impl RpcNotifier {
 }
 
 fn filter_account_result(
-    result: Option<(AccountSharedData, Slot)>,
+    result: Option<(Account, Slot)>,
     pubkey: &Pubkey,
     last_notified_slot: Slot,
     encoding: Option<UiAccountEncoding>,
@@ -320,7 +320,7 @@ fn filter_signature_result(
 }
 
 fn filter_program_results(
-    accounts: Vec<(Pubkey, AccountSharedData)>,
+    accounts: Vec<(Pubkey, Account)>,
     program_id: &Pubkey,
     last_notified_slot: Slot,
     config: Option<ProgramConfig>,
@@ -332,8 +332,8 @@ fn filter_program_results(
     let accounts_is_empty = accounts.is_empty();
     let keyed_accounts = accounts.into_iter().filter(move |(_, account)| {
         filters.iter().all(|filter_type| match filter_type {
-            RpcFilterType::DataSize(size) => account.data().len() as u64 == *size,
-            RpcFilterType::Memcmp(compare) => compare.bytes_match(&account.data()),
+            RpcFilterType::DataSize(size) => account.data.len() as u64 == *size,
+            RpcFilterType::Memcmp(compare) => compare.bytes_match(&account.data),
         })
     });
     let accounts: Box<dyn Iterator<Item = RpcKeyedAccount>> = if program_id == &spl_token_id_v2_0()
@@ -952,11 +952,6 @@ impl RpcSubscriptions {
 
     pub fn notify_slot(&self, slot: Slot, parent: Slot, root: Slot) {
         self.enqueue_notification(NotificationEntry::Slot(SlotInfo { slot, parent, root }));
-        self.enqueue_notification(NotificationEntry::SlotUpdate(SlotUpdate::CreatedBank {
-            slot,
-            parent,
-            timestamp: timestamp(),
-        }));
     }
 
     pub fn notify_signatures_received(&self, slot_signatures: (Slot, Vec<Signature>)) {

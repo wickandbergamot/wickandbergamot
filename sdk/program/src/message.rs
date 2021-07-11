@@ -319,10 +319,6 @@ impl Message {
             .position(|&&pubkey| pubkey == self.account_keys[index])
     }
 
-    pub fn maybe_executable(&self, i: usize) -> bool {
-        self.program_position(i).is_some()
-    }
-
     pub fn is_writable(&self, i: usize) -> bool {
         i < (self.header.num_required_signatures - self.header.num_readonly_signed_accounts)
             as usize
@@ -439,15 +435,6 @@ impl Message {
             accounts,
         })
     }
-
-    pub fn signer_keys(&self) -> Vec<&Pubkey> {
-        // Clamp in case we're working on un-`sanitize()`ed input
-        let last_key = self
-            .account_keys
-            .len()
-            .max(self.header.num_required_signatures as usize);
-        self.account_keys[..last_key].iter().collect()
-    }
 }
 
 #[cfg(test)]
@@ -459,8 +446,8 @@ mod tests {
     fn test_message_unique_program_ids() {
         let program_id0 = Pubkey::default();
         let program_ids = get_program_ids(&[
-            Instruction::new_with_bincode(program_id0, &0, vec![]),
-            Instruction::new_with_bincode(program_id0, &0, vec![]),
+            Instruction::new(program_id0, &0, vec![]),
+            Instruction::new(program_id0, &0, vec![]),
         ]);
         assert_eq!(program_ids, vec![program_id0]);
     }
@@ -470,9 +457,9 @@ mod tests {
         let program_id0 = Pubkey::default();
         let program_id1 = Pubkey::new_unique();
         let program_ids = get_program_ids(&[
-            Instruction::new_with_bincode(program_id0, &0, vec![]),
-            Instruction::new_with_bincode(program_id1, &0, vec![]),
-            Instruction::new_with_bincode(program_id0, &0, vec![]),
+            Instruction::new(program_id0, &0, vec![]),
+            Instruction::new(program_id1, &0, vec![]),
+            Instruction::new(program_id0, &0, vec![]),
         ]);
         assert_eq!(program_ids, vec![program_id0, program_id1]);
     }
@@ -482,9 +469,9 @@ mod tests {
         let program_id0 = Pubkey::new_unique();
         let program_id1 = Pubkey::default(); // Key less than program_id0
         let program_ids = get_program_ids(&[
-            Instruction::new_with_bincode(program_id0, &0, vec![]),
-            Instruction::new_with_bincode(program_id1, &0, vec![]),
-            Instruction::new_with_bincode(program_id0, &0, vec![]),
+            Instruction::new(program_id0, &0, vec![]),
+            Instruction::new(program_id1, &0, vec![]),
+            Instruction::new(program_id0, &0, vec![]),
         ]);
         assert_eq!(program_ids, vec![program_id0, program_id1]);
     }
@@ -495,8 +482,8 @@ mod tests {
         let id0 = Pubkey::default();
         let keys = get_keys(
             &[
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id0, true)]),
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id0, true)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id0, true)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id0, true)]),
             ],
             None,
         );
@@ -508,7 +495,7 @@ mod tests {
         let program_id = Pubkey::default();
         let id0 = Pubkey::default();
         let keys = get_keys(
-            &[Instruction::new_with_bincode(
+            &[Instruction::new(
                 program_id,
                 &0,
                 vec![AccountMeta::new(id0, true)],
@@ -523,7 +510,7 @@ mod tests {
         let program_id = Pubkey::default();
         let id0 = Pubkey::default();
         let keys = get_keys(
-            &[Instruction::new_with_bincode(
+            &[Instruction::new(
                 program_id,
                 &0,
                 vec![AccountMeta::new(id0, false)],
@@ -539,8 +526,8 @@ mod tests {
         let id0 = Pubkey::default();
         let keys = get_keys(
             &[
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id0, false)]),
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id0, true)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id0, false)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id0, true)]),
             ],
             None,
         );
@@ -553,12 +540,8 @@ mod tests {
         let id0 = Pubkey::default();
         let keys = get_keys(
             &[
-                Instruction::new_with_bincode(
-                    program_id,
-                    &0,
-                    vec![AccountMeta::new_readonly(id0, true)],
-                ),
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id0, true)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new_readonly(id0, true)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id0, true)]),
             ],
             None,
         );
@@ -573,12 +556,8 @@ mod tests {
         let id0 = Pubkey::default();
         let keys = get_keys(
             &[
-                Instruction::new_with_bincode(
-                    program_id,
-                    &0,
-                    vec![AccountMeta::new_readonly(id0, false)],
-                ),
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id0, false)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new_readonly(id0, false)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id0, false)]),
             ],
             None,
         );
@@ -594,8 +573,8 @@ mod tests {
         let id1 = Pubkey::default(); // Key less than id0
         let keys = get_keys(
             &[
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id0, false)]),
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id1, false)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id0, false)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id1, false)]),
             ],
             None,
         );
@@ -609,9 +588,9 @@ mod tests {
         let id1 = Pubkey::new_unique();
         let keys = get_keys(
             &[
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id0, false)]),
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id1, false)]),
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id0, true)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id0, false)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id1, false)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id0, true)]),
             ],
             None,
         );
@@ -625,8 +604,8 @@ mod tests {
         let id1 = Pubkey::new_unique();
         let keys = get_keys(
             &[
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id0, false)]),
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id1, true)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id0, false)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id1, true)]),
             ],
             None,
         );
@@ -638,11 +617,11 @@ mod tests {
     fn test_message_signed_keys_len() {
         let program_id = Pubkey::default();
         let id0 = Pubkey::default();
-        let ix = Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id0, false)]);
+        let ix = Instruction::new(program_id, &0, vec![AccountMeta::new(id0, false)]);
         let message = Message::new(&[ix], None);
         assert_eq!(message.header.num_required_signatures, 0);
 
-        let ix = Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id0, true)]);
+        let ix = Instruction::new(program_id, &0, vec![AccountMeta::new(id0, true)]);
         let message = Message::new(&[ix], Some(&id0));
         assert_eq!(message.header.num_required_signatures, 1);
     }
@@ -656,18 +635,10 @@ mod tests {
         let id3 = Pubkey::new_unique();
         let keys = get_keys(
             &[
-                Instruction::new_with_bincode(
-                    program_id,
-                    &0,
-                    vec![AccountMeta::new_readonly(id0, false)],
-                ),
-                Instruction::new_with_bincode(
-                    program_id,
-                    &0,
-                    vec![AccountMeta::new_readonly(id1, true)],
-                ),
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id2, false)]),
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id3, true)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new_readonly(id0, false)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new_readonly(id1, true)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id2, false)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id3, true)]),
             ],
             None,
         );
@@ -685,9 +656,9 @@ mod tests {
         let id1 = Pubkey::new_unique();
         let message = Message::new(
             &[
-                Instruction::new_with_bincode(program_id0, &0, vec![AccountMeta::new(id0, false)]),
-                Instruction::new_with_bincode(program_id1, &0, vec![AccountMeta::new(id1, true)]),
-                Instruction::new_with_bincode(program_id0, &0, vec![AccountMeta::new(id1, false)]),
+                Instruction::new(program_id0, &0, vec![AccountMeta::new(id0, false)]),
+                Instruction::new(program_id1, &0, vec![AccountMeta::new(id1, true)]),
+                Instruction::new(program_id0, &0, vec![AccountMeta::new(id1, false)]),
             ],
             Some(&id1),
         );
@@ -711,15 +682,15 @@ mod tests {
         let payer = Pubkey::new_unique();
         let id0 = Pubkey::default();
 
-        let ix = Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id0, false)]);
+        let ix = Instruction::new(program_id, &0, vec![AccountMeta::new(id0, false)]);
         let message = Message::new(&[ix], Some(&payer));
         assert_eq!(message.header.num_required_signatures, 1);
 
-        let ix = Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id0, true)]);
+        let ix = Instruction::new(program_id, &0, vec![AccountMeta::new(id0, true)]);
         let message = Message::new(&[ix], Some(&payer));
         assert_eq!(message.header.num_required_signatures, 2);
 
-        let ix = Instruction::new_with_bincode(
+        let ix = Instruction::new(
             program_id,
             &0,
             vec![AccountMeta::new(payer, true), AccountMeta::new(id0, true)],
@@ -735,16 +706,8 @@ mod tests {
         let id1 = Pubkey::new_unique();
         let keys = get_keys(
             &[
-                Instruction::new_with_bincode(
-                    program_id,
-                    &0,
-                    vec![AccountMeta::new_readonly(id0, false)],
-                ),
-                Instruction::new_with_bincode(
-                    program_id,
-                    &0,
-                    vec![AccountMeta::new_readonly(id1, true)],
-                ),
+                Instruction::new(program_id, &0, vec![AccountMeta::new_readonly(id0, false)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new_readonly(id1, true)]),
             ],
             None,
         );
@@ -761,8 +724,8 @@ mod tests {
         let id = Pubkey::new_unique();
         let message = Message::new(
             &[
-                Instruction::new_with_bincode(program_id0, &0, vec![AccountMeta::new(id, false)]),
-                Instruction::new_with_bincode(program_id1, &0, vec![AccountMeta::new(id, true)]),
+                Instruction::new(program_id0, &0, vec![AccountMeta::new(id, false)]),
+                Instruction::new(program_id1, &0, vec![AccountMeta::new(id, true)]),
             ],
             Some(&id),
         );
@@ -807,18 +770,10 @@ mod tests {
         let id3 = Pubkey::new_unique();
         let message = Message::new(
             &[
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id0, false)]),
-                Instruction::new_with_bincode(program_id, &0, vec![AccountMeta::new(id1, true)]),
-                Instruction::new_with_bincode(
-                    program_id,
-                    &0,
-                    vec![AccountMeta::new_readonly(id2, false)],
-                ),
-                Instruction::new_with_bincode(
-                    program_id,
-                    &0,
-                    vec![AccountMeta::new_readonly(id3, true)],
-                ),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id0, false)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new(id1, true)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new_readonly(id2, false)]),
+                Instruction::new(program_id, &0, vec![AccountMeta::new_readonly(id3, true)]),
             ],
             Some(&id1),
         );
@@ -838,18 +793,10 @@ mod tests {
         let id2 = Pubkey::new_unique();
         let id3 = Pubkey::new_unique();
         let instructions = vec![
-            Instruction::new_with_bincode(program_id0, &0, vec![AccountMeta::new(id0, false)]),
-            Instruction::new_with_bincode(program_id0, &0, vec![AccountMeta::new(id1, true)]),
-            Instruction::new_with_bincode(
-                program_id1,
-                &0,
-                vec![AccountMeta::new_readonly(id2, false)],
-            ),
-            Instruction::new_with_bincode(
-                program_id1,
-                &0,
-                vec![AccountMeta::new_readonly(id3, true)],
-            ),
+            Instruction::new(program_id0, &0, vec![AccountMeta::new(id0, false)]),
+            Instruction::new(program_id0, &0, vec![AccountMeta::new(id1, true)]),
+            Instruction::new(program_id1, &0, vec![AccountMeta::new_readonly(id2, false)]),
+            Instruction::new(program_id1, &0, vec![AccountMeta::new_readonly(id3, true)]),
         ];
 
         let message = Message::new(&instructions, Some(&id1));

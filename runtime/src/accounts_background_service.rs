@@ -354,7 +354,7 @@ impl AccountsBackgroundService {
                     } else {
                         // under sustained writes, shrink can lag behind so cap to
                         // SHRUNKEN_ACCOUNT_PER_INTERVAL (which is based on INTERVAL_MS,
-                        // which in turn roughly associated block time)
+                        // which in turn roughly asscociated block time)
                         consumed_budget = bank
                             .process_stale_slot_with_budget(
                                 consumed_budget,
@@ -424,7 +424,7 @@ mod test {
     use super::*;
     use crate::genesis_utils::create_genesis_config;
     use crossbeam_channel::unbounded;
-    use solana_sdk::{account::AccountSharedData, pubkey::Pubkey};
+    use solana_sdk::{account::Account, pubkey::Pubkey};
 
     #[test]
     fn test_accounts_background_service_remove_dead_slots() {
@@ -438,10 +438,7 @@ mod test {
 
         // Store an account in slot 0
         let account_key = Pubkey::new_unique();
-        bank0.store_account(
-            &account_key,
-            &AccountSharedData::new(264, 0, &Pubkey::default()),
-        );
+        bank0.store_account(&account_key, &Account::new(264, 0, &Pubkey::default()));
         assert!(bank0.get_account(&account_key).is_some());
         pruned_banks_sender.send(0).unwrap();
         AccountsBackgroundService::remove_dead_slots(&bank0, &request_handler, &mut 0, &mut 0);

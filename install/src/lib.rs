@@ -2,12 +2,10 @@
 #[macro_use]
 extern crate lazy_static;
 
-use {
-    clap::{crate_description, crate_name, App, AppSettings, Arg, ArgMatches, SubCommand},
-    solana_clap_utils::{
-        input_parsers::pubkey_of,
-        input_validators::{is_pubkey, is_url},
-    },
+use clap::{crate_description, crate_name, App, AppSettings, Arg, ArgMatches, SubCommand};
+use solana_clap_utils::{
+    input_parsers::pubkey_of,
+    input_validators::{is_pubkey, is_url},
 };
 
 mod build_env;
@@ -127,7 +125,7 @@ pub fn main() -> Result<(), String> {
                         .takes_value(true)
                         .default_value(defaults::JSON_RPC_URL)
                         .validator(is_url)
-                        .help("JSON RPC URL for the solana cluster"),
+                        .help("JSON RPC URL for the safecoin cluster"),
                 )
                 .arg(
                     Arg::with_name("no_modify_path")
@@ -160,7 +158,9 @@ pub fn main() -> Result<(), String> {
                     Arg::with_name("local_info_only")
                         .short("l")
                         .long("local")
-                        .help("only display local information, don't check for updates"),
+                        .help(
+                        "only display local information, don't check the cluster for new updates",
+                    ),
                 )
                 .arg(
                     Arg::with_name("eval")
@@ -193,14 +193,14 @@ pub fn main() -> Result<(), String> {
                         .takes_value(true)
                         .default_value(defaults::JSON_RPC_URL)
                         .validator(is_url)
-                        .help("JSON RPC URL for the solana cluster"),
+                        .help("JSON RPC URL for the safecoin cluster"),
                 )
                 .arg(
                     Arg::with_name("download_url")
                         .index(1)
                         .required(true)
                         .validator(is_url)
-                        .help("URL to the solana release archive"),
+                        .help("URL to the safecoin release archive"),
                 )
                 .arg(
                     Arg::with_name("update_manifest_keypair_file")
@@ -262,7 +262,7 @@ pub fn main() -> Result<(), String> {
             )
         }
         ("gc", Some(_matches)) => command::gc(config_file),
-        ("update", Some(_matches)) => command::update(config_file, false).map(|_| ()),
+        ("update", Some(_matches)) => command::update(config_file).map(|_| ()),
         ("run", Some(matches)) => {
             let program_name = matches.value_of("program_name").unwrap();
             let program_arguments = matches
@@ -279,7 +279,7 @@ pub fn main() -> Result<(), String> {
 pub fn main_init() -> Result<(), String> {
     solana_logger::setup();
 
-    let matches = App::new("solana-install-init")
+    let matches = App::new("safecoin-install-init")
         .about("Initializes a new installation")
         .version(solana_version::version!())
         .arg({
@@ -315,7 +315,7 @@ pub fn main_init() -> Result<(), String> {
                 .takes_value(true)
                 .default_value(defaults::JSON_RPC_URL)
                 .validator(is_url)
-                .help("JSON RPC URL for the solana cluster"),
+                .help("JSON RPC URL for the safecoin cluster"),
         )
         .arg(
             Arg::with_name("no_modify_path")

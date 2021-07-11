@@ -2,9 +2,9 @@
 title: "Overview"
 ---
 
-An [app](terminology.md#app) interacts with a Solana cluster by sending it
+An [app](terminology.md#app) interacts with a Safecoin cluster by sending it
 [transactions](transactions.md) with one or more
-[instructions](transactions.md#instructions). The Solana [runtime](runtime.md)
+[instructions](transactions.md#instructions). The Safecoin [runtime](runtime.md)
 passes those instructions to [programs](terminology.md#program) deployed by app
 developers beforehand. An instruction might, for example, tell a program to
 transfer [lamports](terminology.md#lamports) from one [account](accounts.md) to
@@ -14,4 +14,4 @@ transaction. If any instruction is invalid, all account changes in the
 transaction are discarded.
 
 To start developing immediately you can build, deploy, and run one of the
-[examples](developing/on-chain-programs/examples.md).
+[examples](developing/deployed-programs/examples.md).

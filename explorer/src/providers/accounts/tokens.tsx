@@ -4,7 +4,7 @@ import * as Cache from "providers/cache";
 import { ActionType, FetchStatus } from "providers/cache";
 import { TokenAccountInfo } from "validators/accounts/token";
 import { useCluster, Cluster } from "../cluster";
-import { create } from "superstruct";
+import { coerce } from "superstruct";
 import { reportError } from "utils/sentry";
 
 export type TokenInfoWithPubkey = {
@@ -41,7 +41,7 @@ export function TokensProvider({ children }: ProviderProps) {
 }
 
 export const TOKEN_PROGRAM_ID = new PublicKey(
-  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+  "HMGr16f8Ct1Zeb9TGPypt9rPgzCkmhCQB8Not8vwiPW1"
 );
 
 async function fetchAccountTokens(
@@ -68,7 +68,7 @@ async function fetchAccountTokens(
     data = {
       tokens: value.map((accountInfo) => {
         const parsedInfo = accountInfo.account.data.parsed.info;
-        const info = create(parsedInfo, TokenAccountInfo);
+        const info = coerce(parsedInfo, TokenAccountInfo);
         return { info, pubkey: accountInfo.pubkey };
       }),
     };

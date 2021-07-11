@@ -7,7 +7,6 @@ use {
         bank::{Bank, BankFieldsToDeserialize, BankRc, Builtins},
         blockhash_queue::BlockhashQueue,
         epoch_stakes::EpochStakes,
-        hardened_unpack::UnpackedAppendVecMap,
         message_processor::MessageProcessor,
         rent_collector::RentCollector,
         serde_snapshot::future::SerializableStorage,
@@ -15,7 +14,9 @@ use {
     },
     bincode,
     bincode::{config::Options, Error},
-    log::*,
+    fs_extra::dir::CopyOptions,
+    log::{info, warn},
+    rand::{thread_rng, Rng},
     serde::{de::DeserializeOwned, Deserialize, Serialize},
     solana_sdk::{
         clock::{Epoch, Slot, UnixTimestamp},
@@ -30,8 +31,8 @@ use {
     },
     std::{
         collections::{HashMap, HashSet},
-        io::{self, BufReader, BufWriter, Read, Write},
-        path::PathBuf,
+        io::{BufReader, BufWriter, Read, Write},
+        path::{Path, PathBuf},
         result::Result,
         sync::{atomic::Ordering, Arc, RwLock},
         time::Instant,
@@ -118,11 +119,11 @@ where
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(crate) fn bank_from_stream<R>(
+pub(crate) fn bank_from_stream<R, P>(
     serde_style: SerdeStyle,
     stream: &mut BufReader<R>,
+    append_vecs_path: P,
     account_paths: &[PathBuf],
-    unpacked_append_vec_map: UnpackedAppendVecMap,
     genesis_config: &GenesisConfig,
     frozen_account_pubkeys: &[Pubkey],
     debug_keys: Option<Arc<HashSet<Pubkey>>>,
@@ -132,6 +133,7 @@ pub(crate) fn bank_from_stream<R>(
 ) -> std::result::Result<Bank, Error>
 where
     R: Read,
+    P: AsRef<Path>,
 {
     macro_rules! INTO {
         ($x:ident) => {{
@@ -143,7 +145,7 @@ where
                 genesis_config,
                 frozen_account_pubkeys,
                 account_paths,
-                unpacked_append_vec_map,
+                append_vecs_path,
                 debug_keys,
                 additional_builtins,
                 account_indexes,
@@ -226,13 +228,13 @@ impl<'a, C: TypeContext<'a>> Serialize for SerializableAccountsDb<'a, C> {
 impl<'a, C> IgnoreAsHelper for SerializableAccountsDb<'a, C> {}
 
 #[allow(clippy::too_many_arguments)]
-fn reconstruct_bank_from_fields<E>(
+fn reconstruct_bank_from_fields<E, P>(
     bank_fields: BankFieldsToDeserialize,
     accounts_db_fields: AccountsDbFields<E>,
     genesis_config: &GenesisConfig,
     frozen_account_pubkeys: &[Pubkey],
     account_paths: &[PathBuf],
-    unpacked_append_vec_map: UnpackedAppendVecMap,
+    append_vecs_path: P,
     debug_keys: Option<Arc<HashSet<Pubkey>>>,
     additional_builtins: Option<&Builtins>,
     account_indexes: HashSet<AccountIndex>,
@@ -240,11 +242,12 @@ fn reconstruct_bank_from_fields<E>(
 ) -> Result<Bank, Error>
 where
     E: SerializableStorage,
+    P: AsRef<Path>,
 {
     let mut accounts_db = reconstruct_accountsdb_from_fields(
         accounts_db_fields,
         account_paths,
-        unpacked_append_vec_map,
+        append_vecs_path,
         &genesis_config.cluster_type,
         account_indexes,
         caching_enabled,
@@ -263,16 +266,17 @@ where
     Ok(bank)
 }
 
-fn reconstruct_accountsdb_from_fields<E>(
+fn reconstruct_accountsdb_from_fields<E, P>(
     accounts_db_fields: AccountsDbFields<E>,
     account_paths: &[PathBuf],
-    unpacked_append_vec_map: UnpackedAppendVecMap,
+    stream_append_vecs_path: P,
     cluster_type: &ClusterType,
     account_indexes: HashSet<AccountIndex>,
     caching_enabled: bool,
 ) -> Result<AccountsDb, Error>
 where
     E: SerializableStorage,
+    P: AsRef<Path>,
 {
     let mut accounts_db = AccountsDb::new_with_config(
         account_paths.to_vec(),
@@ -304,17 +308,30 @@ where
 
             let mut new_slot_storage = HashMap::new();
             for storage_entry in slot_storage.drain(..) {
-                let file_name = AppendVec::file_name(slot, storage_entry.id());
+                let path_index = thread_rng().gen_range(0, accounts_db.paths.len());
+                let local_dir = &accounts_db.paths[path_index];
 
-                let append_vec_path = unpacked_append_vec_map.get(&file_name).ok_or_else(|| {
-                    io::Error::new(
-                        io::ErrorKind::NotFound,
-                        format!("{} not found in unpacked append vecs", file_name),
-                    )
+                // Move the corresponding AppendVec from the snapshot into the directory pointed
+                // at by `local_dir`
+                let append_vec_relative_path =
+                    AppendVec::new_relative_path(slot, storage_entry.id());
+                let append_vec_abs_path = stream_append_vecs_path
+                    .as_ref()
+                    .join(&append_vec_relative_path);
+                let target = local_dir.join(append_vec_abs_path.file_name().unwrap());
+                std::fs::rename(append_vec_abs_path.clone(), target).or_else(|_| {
+                    let mut copy_options = CopyOptions::new();
+                    copy_options.overwrite = true;
+                    fs_extra::move_items(&[&append_vec_abs_path], &local_dir, &copy_options)
+                        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+                        .and(Ok(()))
                 })?;
 
+                // Notify the AppendVec of the new file location
+                let local_path = local_dir.join(append_vec_relative_path);
+
                 let (accounts, num_accounts) =
-                    AppendVec::new_from_file(append_vec_path, storage_entry.current_len())?;
+                    AppendVec::new_from_file(&local_path, storage_entry.current_len())?;
                 let u_storage_entry = AccountStorageEntry::new_existing(
                     slot,
                     storage_entry.id(),

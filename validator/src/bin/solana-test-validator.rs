@@ -10,19 +10,18 @@ use {
     },
     solana_client::rpc_client::RpcClient,
     solana_core::rpc::JsonRpcConfig,
-    solana_faucet::faucet::{run_local_faucet_with_port, FAUCET_PORT},
+    safecoin_faucet::faucet::{run_local_faucet_with_port, FAUCET_PORT},
     solana_sdk::{
-        account::AccountSharedData,
+        account::Account,
         clock::Slot,
-        epoch_schedule::EpochSchedule,
         native_token::sol_to_lamports,
         pubkey::Pubkey,
         rpc_port,
         signature::{read_keypair_file, write_keypair_file, Keypair, Signer},
         system_program,
     },
-    solana_validator::{
-        admin_rpc_service, dashboard::Dashboard, redirect_stderr_to_file, test_validator::*,
+    safecoin_validator::{
+        dashboard::Dashboard, record_start, redirect_stderr_to_file, test_validator::*,
     },
     std::{
         collections::HashSet,
@@ -31,7 +30,7 @@ use {
         path::{Path, PathBuf},
         process::exit,
         sync::mpsc::channel,
-        time::{Duration, SystemTime, UNIX_EPOCH},
+        time::{SystemTime, UNIX_EPOCH},
     },
 };
 
@@ -45,7 +44,7 @@ enum Output {
 fn main() {
     let default_rpc_port = rpc_port::DEFAULT_RPC_PORT.to_string();
 
-    let matches = App::new("solana-test-validator")
+    let matches = App::new("safecoin-test-validator")
         .about("Test Validator")
         .version(solana_version::version!())
         .arg({
@@ -69,7 +68,7 @@ fn main() {
                 .takes_value(true)
                 .validator(is_url_or_moniker)
                 .help(
-                    "URL for Solana's JSON RPC or moniker (or their first letter): \
+                    "URL for Safecoin's JSON RPC or moniker (or their first letter): \
                    [mainnet-beta, testnet, devnet, localhost]",
                 ),
         )
@@ -126,8 +125,8 @@ fn main() {
                 .value_name("PORT")
                 .takes_value(true)
                 .default_value(&default_rpc_port)
-                .validator(solana_validator::port_validator)
-                .help("Enable JSON RPC on this port, and the next port for the RPC websocket"),
+                .validator(safecoin_validator::port_validator)
+                .help("Use this port for JSON RPC and the next port for the RPC websocket"),
         )
         .arg(
             Arg::with_name("bpf_program")
@@ -146,17 +145,6 @@ fn main() {
                 .long("no-bpf-jit")
                 .takes_value(false)
                 .help("Disable the just-in-time compiler and instead use the interpreter for BPF"),
-        )
-        .arg(
-            Arg::with_name("slots_per_epoch")
-                .long("slots-per-epoch")
-                .value_name("SLOTS")
-                .validator(is_slot)
-                .takes_value(true)
-                .help(
-                    "Override the number of slots in an epoch. \
-                       If the ledger already exists then this parameter is silently ignored",
-                ),
         )
         .arg(
             Arg::with_name("clone_account")
@@ -217,8 +205,6 @@ fn main() {
         Output::Dashboard
     };
     let rpc_port = value_t_or_exit!(matches, "rpc_port", u16);
-    let slots_per_epoch = value_t!(matches, "slots_per_epoch", Slot).ok();
-
     let faucet_addr = Some(SocketAddr::new(
         IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
         FAUCET_PORT,
@@ -367,90 +353,60 @@ fn main() {
         });
     }
 
-    if TestValidatorGenesis::ledger_exists(&ledger_path) {
-        for (name, long) in &[
-            ("bpf_program", "--bpf-program"),
-            ("clone_account", "--clone"),
-            ("mint_address", "--mint"),
-            ("slots_per_epoch", "--slots-per-epoch"),
-        ] {
-            if matches.is_present(name) {
-                println!("{} argument ignored, ledger already exists", long);
-            }
-        }
-    }
-
-    let mut genesis = TestValidatorGenesis::default();
-
-    admin_rpc_service::run(
+    record_start(
         &ledger_path,
-        admin_rpc_service::AdminRpcRequestMetadata {
-            rpc_addr: Some(SocketAddr::new(
-                IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-                rpc_port,
-            )),
-            start_progress: genesis.start_progress.clone(),
-            start_time: std::time::SystemTime::now(),
-            validator_exit: genesis.validator_exit.clone(),
-        },
-    );
+        Some(&SocketAddr::new(
+            IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+            rpc_port,
+        )),
+    )
+    .unwrap_or_else(|err| println!("Error: failed to record validator start: {}", err));
+
     let dashboard = if output == Output::Dashboard {
-        Some(
-            Dashboard::new(
-                &ledger_path,
-                Some(&validator_log_symlink),
-                Some(&mut genesis.validator_exit.write().unwrap()),
-            )
-            .unwrap(),
-        )
+        Some(Dashboard::new(&ledger_path, Some(&validator_log_symlink)).unwrap())
     } else {
         None
     };
 
-    genesis
-        .ledger_path(&ledger_path)
-        .add_account(
-            faucet_pubkey,
-            AccountSharedData::new(faucet_lamports, 0, &system_program::id()),
-        )
-        .rpc_config(JsonRpcConfig {
-            enable_rpc_transaction_history: true,
-            enable_cpi_and_log_storage: true,
-            faucet_addr,
-            ..JsonRpcConfig::default()
-        })
-        .bpf_jit(bpf_jit)
-        .rpc_port(rpc_port)
-        .add_programs_with_path(&programs);
+    let test_validator = {
+        let mut genesis = TestValidatorGenesis::default();
+        genesis
+            .ledger_path(&ledger_path)
+            .add_account(
+                faucet_pubkey,
+                Account::new(faucet_lamports, 0, &system_program::id()),
+            )
+            .rpc_config(JsonRpcConfig {
+                enable_validator_exit: true,
+                enable_rpc_transaction_history: true,
+                enable_cpi_and_log_storage: true,
+                faucet_addr,
+                ..JsonRpcConfig::default()
+            })
+            .bpf_jit(bpf_jit)
+            .rpc_port(rpc_port)
+            .add_programs_with_path(&programs);
 
-    if !clone_accounts.is_empty() {
-        genesis.clone_accounts(
-            clone_accounts,
-            cluster_rpc_client
-                .as_ref()
-                .expect("bug: --url argument missing?"),
-        );
-    }
-
-    if let Some(warp_slot) = warp_slot {
-        genesis.warp_slot(warp_slot);
-    }
-
-    if let Some(slots_per_epoch) = slots_per_epoch {
-        genesis.epoch_schedule(EpochSchedule::custom(
-            slots_per_epoch,
-            slots_per_epoch,
-            /* enable_warmup_epochs = */ false,
-        ));
-    }
-
-    match genesis.start_with_mint_address(mint_address) {
-        Ok(test_validator) => {
-            if let Some(dashboard) = dashboard {
-                dashboard.run(Duration::from_millis(250));
-            }
-            test_validator.join();
+        if !clone_accounts.is_empty() {
+            genesis.clone_accounts(
+                clone_accounts,
+                cluster_rpc_client
+                    .as_ref()
+                    .expect("bug: --url argument missing?"),
+            );
         }
+
+        if let Some(warp_slot) = warp_slot {
+            genesis.warp_slot(warp_slot);
+        }
+        genesis.start_with_mint_address(mint_address)
+    };
+
+    match test_validator {
+        Ok(_test_validator) => match dashboard {
+            Some(dashboard) => dashboard.run(),
+            None => std::thread::park(),
+        },
         Err(err) => {
             drop(dashboard);
             println!("Error: failed to start validator: {}", err);
@@ -462,10 +418,10 @@ fn main() {
 fn remove_directory_contents(ledger_path: &Path) -> Result<(), io::Error> {
     for entry in fs::read_dir(&ledger_path)? {
         let entry = entry?;
-        if entry.metadata()?.is_dir() {
-            fs::remove_dir_all(&entry.path())?
-        } else {
+        if entry.metadata()?.is_file() {
             fs::remove_file(&entry.path())?
+        } else {
+            fs::remove_dir_all(&entry.path())?
         }
     }
     Ok(())

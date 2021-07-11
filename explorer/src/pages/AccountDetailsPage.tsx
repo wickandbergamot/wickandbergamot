@@ -97,11 +97,11 @@ export function AccountHeader({ address }: { address: string }) {
   if (tokenDetails) {
     return (
       <div className="row align-items-end">
-        {tokenDetails.logoURI && (
+        {tokenDetails.icon && (
           <div className="col-auto">
             <div className="avatar avatar-lg header-avatar-top">
               <img
-                src={tokenDetails.logoURI}
+                src={tokenDetails.icon}
                 alt="token logo"
                 className="avatar-img rounded-circle border border-4 border-body"
               />
@@ -111,7 +111,7 @@ export function AccountHeader({ address }: { address: string }) {
 
         <div className="col mb-3 ml-n3 ml-md-n2">
           <h6 className="header-pretitle">Token</h6>
-          <h2 className="header-title">{tokenDetails.name}</h2>
+          <h2 className="header-title">{tokenDetails.tokenName}</h2>
         </div>
       </div>
     );
@@ -163,7 +163,7 @@ function DetailsSections({ pubkey, tab }: { pubkey: PublicKey; tab?: string }) {
       {flaggedAccounts.has(address) && (
         <div className="alert alert-danger alert-scam" role="alert">
           Warning! This account has been flagged by the community as a scam
-          account. Please be cautious sending SOL to this account.
+          account. Please be cautious sending SAFE to this account.
         </div>
       )}
       {<InfoSection account={account} />}

@@ -3,21 +3,18 @@
 import { decodeInstruction, MARKETS } from "@project-serum/serum";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import BN from "bn.js";
-import { enums, number, optional, type, Infer, create } from "superstruct";
-import { BigNumFromString } from "validators/bignum";
-import { PublicKeyFromString } from "validators/pubkey";
+import { coerce, enums, number, optional, pick, StructType } from "superstruct";
+import { BigNumValue } from "validators/bignum";
+import { Pubkey } from "validators/pubkey";
 
-const SERUM_PROGRAM_IDS = [
-  "4ckmDgGdxQoPDLUkDT3vHgSAkzA3QRdNq5ywwY4sUSJn",
-  "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin",
-];
+const SERUM_PROGRAM_ID = "4ckmDgGdxQoPDLUkDT3vHgSAkzA3QRdNq5ywwY4sUSJn";
 
 export const SERUM_DECODED_MAX = 6;
 
-export type Side = Infer<typeof Side>;
+export type Side = StructType<typeof Side>;
 export const Side = enums(["buy", "sell"]);
 
-export type OrderType = Infer<typeof OrderType>;
+export type OrderType = StructType<typeof OrderType>;
 export const OrderType = enums(["limit", "ioc", "postOnly"]);
 
 export type InitializeMarket = {
@@ -38,18 +35,18 @@ export type InitializeMarket = {
   programId: PublicKey;
 };
 
-export const InitializeMarketDecode = type({
-  baseLotSize: BigNumFromString,
-  quoteLotSize: BigNumFromString,
+export const InitializeMarketDecode = pick({
+  baseLotSize: BigNumValue,
+  quoteLotSize: BigNumValue,
   feeRateBps: number(),
-  quoteDustThreshold: BigNumFromString,
-  vaultSignerNonce: BigNumFromString,
+  quoteDustThreshold: BigNumValue,
+  vaultSignerNonce: BigNumValue,
 });
 
 export function decodeInitializeMarket(
   ix: TransactionInstruction
 ): InitializeMarket {
-  const decoded = create(
+  const decoded = coerce(
     decodeInstruction(ix.data).initializeMarket,
     InitializeMarketDecode
   );
@@ -92,17 +89,17 @@ export type NewOrder = {
   clientId: BN;
 };
 
-export const NewOrderDecode = type({
+export const NewOrderDecode = pick({
   side: Side,
-  limitPrice: BigNumFromString,
-  maxQuantity: BigNumFromString,
+  limitPrice: BigNumValue,
+  maxQuantity: BigNumValue,
   orderType: OrderType,
-  clientId: BigNumFromString,
-  feeDiscountPubkey: optional(PublicKeyFromString),
+  clientId: BigNumValue,
+  feeDiscountPubkey: optional(Pubkey),
 });
 
 export function decodeNewOrder(ix: TransactionInstruction): NewOrder {
-  const decoded = create(decodeInstruction(ix.data).newOrder, NewOrderDecode);
+  const decoded = coerce(decodeInstruction(ix.data).newOrder, NewOrderDecode);
 
   let newOrder: NewOrder = {
     market: ix.keys[0].pubkey,
@@ -139,12 +136,12 @@ export type MatchOrders = {
   programId: PublicKey;
 };
 
-export const MatchOrdersDecode = type({
+export const MatchOrdersDecode = pick({
   limit: number(),
 });
 
 export function decodeMatchOrders(ix: TransactionInstruction): MatchOrders {
-  const decoded = create(
+  const decoded = coerce(
     decodeInstruction(ix.data).matchOrders,
     MatchOrdersDecode
   );
@@ -172,12 +169,12 @@ export type ConsumeEvents = {
   programId: PublicKey;
 };
 
-export const ConsumeEventsDecode = type({
+export const ConsumeEventsDecode = pick({
   limit: number(),
 });
 
 export function decodeConsumeEvents(ix: TransactionInstruction): ConsumeEvents {
-  const decoded = create(
+  const decoded = coerce(
     decodeInstruction(ix.data).consumeEvents,
     ConsumeEventsDecode
   );
@@ -204,14 +201,14 @@ export type CancelOrder = {
   programId: PublicKey;
 };
 
-export const CancelOrderDecode = type({
+export const CancelOrderDecode = pick({
   side: Side,
-  orderId: BigNumFromString,
+  orderId: BigNumValue,
   openOrdersSlot: number(),
 });
 
 export function decodeCancelOrder(ix: TransactionInstruction): CancelOrder {
-  const decoded = create(
+  const decoded = coerce(
     decodeInstruction(ix.data).cancelOrder,
     CancelOrderDecode
   );
@@ -239,14 +236,14 @@ export type CancelOrderByClientId = {
   programId: PublicKey;
 };
 
-export const CancelOrderByClientIdDecode = type({
-  clientId: BigNumFromString,
+export const CancelOrderByClientIdDecode = pick({
+  clientId: BigNumValue,
 });
 
 export function decodeCancelOrderByClientId(
   ix: TransactionInstruction
 ): CancelOrderByClientId {
-  const decoded = create(
+  const decoded = coerce(
     decodeInstruction(ix.data).cancelOrderByClientId,
     CancelOrderByClientIdDecode
   );
@@ -298,7 +295,7 @@ export function decodeSettleFunds(ix: TransactionInstruction): SettleFunds {
 
 export function isSerumInstruction(instruction: TransactionInstruction) {
   return (
-    SERUM_PROGRAM_IDS.includes(instruction.programId.toBase58()) ||
+    instruction.programId.toBase58() === SERUM_PROGRAM_ID ||
     MARKETS.some(
       (market) =>
         market.programId && market.programId.equals(instruction.programId)
@@ -330,10 +327,6 @@ const SERUM_CODE_LOOKUP: { [key: number]: string } = {
   7: "Disable Market",
   8: "Sweep Fees",
   9: "New Order",
-  10: "New Order",
-  11: "Cancel Order",
-  12: "Cancel Order By Client Id",
-  13: "Send Take",
 };
 
 export function parseSerumInstructionCode(instruction: TransactionInstruction) {

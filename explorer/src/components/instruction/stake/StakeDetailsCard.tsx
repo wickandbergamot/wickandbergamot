@@ -14,7 +14,7 @@ import { WithdrawDetailsCard } from "./WithdrawDetailsCard";
 import { DeactivateDetailsCard } from "./DeactivateDetailsCard";
 import { ParsedInfo } from "validators";
 import { reportError } from "utils/sentry";
-import { create } from "superstruct";
+import { coerce } from "superstruct";
 import {
   AuthorizeInfo,
   DeactivateInfo,
@@ -37,35 +37,35 @@ type DetailsProps = {
 
 export function StakeDetailsCard(props: DetailsProps) {
   try {
-    const parsed = create(props.ix.parsed, ParsedInfo);
+    const parsed = coerce(props.ix.parsed, ParsedInfo);
 
     switch (parsed.type) {
       case "initialize": {
-        const info = create(parsed.info, InitializeInfo);
+        const info = coerce(parsed.info, InitializeInfo);
         return <InitializeDetailsCard info={info} {...props} />;
       }
       case "delegate": {
-        const info = create(parsed.info, DelegateInfo);
+        const info = coerce(parsed.info, DelegateInfo);
         return <DelegateDetailsCard info={info} {...props} />;
       }
       case "authorize": {
-        const info = create(parsed.info, AuthorizeInfo);
+        const info = coerce(parsed.info, AuthorizeInfo);
         return <AuthorizeDetailsCard info={info} {...props} />;
       }
       case "split": {
-        const info = create(parsed.info, SplitInfo);
+        const info = coerce(parsed.info, SplitInfo);
         return <SplitDetailsCard info={info} {...props} />;
       }
       case "withdraw": {
-        const info = create(parsed.info, WithdrawInfo);
+        const info = coerce(parsed.info, WithdrawInfo);
         return <WithdrawDetailsCard info={info} {...props} />;
       }
       case "deactivate": {
-        const info = create(parsed.info, DeactivateInfo);
+        const info = coerce(parsed.info, DeactivateInfo);
         return <DeactivateDetailsCard info={info} {...props} />;
       }
       case "merge": {
-        const info = create(parsed.info, MergeInfo);
+        const info = coerce(parsed.info, MergeInfo);
         return <MergeDetailsCard info={info} {...props} />;
       }
       default:

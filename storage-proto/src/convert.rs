@@ -1,5 +1,5 @@
-use crate::{StoredExtendedRewards, StoredTransactionStatusMeta};
-use solana_account_decoder::parse_token::{real_number_string_trimmed, UiTokenAmount};
+use crate::StoredExtendedRewards;
+use solana_account_decoder::parse_token::UiTokenAmount;
 use solana_sdk::{
     hash::Hash,
     instruction::CompiledInstruction,
@@ -14,10 +14,7 @@ use solana_transaction_status::{
     ConfirmedBlock, InnerInstructions, Reward, RewardType, TransactionByAddrInfo,
     TransactionStatusMeta, TransactionTokenBalance, TransactionWithStatusMeta,
 };
-use std::{
-    convert::{TryFrom, TryInto},
-    str::FromStr,
-};
+use std::convert::{TryFrom, TryInto};
 
 pub mod generated {
     include!(concat!(
@@ -312,13 +309,6 @@ impl From<TransactionStatusMeta> for generated::TransactionStatusMeta {
     }
 }
 
-impl From<StoredTransactionStatusMeta> for generated::TransactionStatusMeta {
-    fn from(meta: StoredTransactionStatusMeta) -> Self {
-        let meta: TransactionStatusMeta = meta.into();
-        meta.into()
-    }
-}
-
 impl TryFrom<generated::TransactionStatusMeta> for TransactionStatusMeta {
     type Error = bincode::Error;
 
@@ -393,10 +383,9 @@ impl From<TransactionTokenBalance> for generated::TokenBalance {
             account_index: value.account_index as u32,
             mint: value.mint,
             ui_token_amount: Some(generated::UiTokenAmount {
-                ui_amount: value.ui_token_amount.ui_amount.unwrap_or_default(),
+                ui_amount: value.ui_token_amount.ui_amount,
                 decimals: value.ui_token_amount.decimals as u32,
                 amount: value.ui_token_amount.amount,
-                ui_amount_string: value.ui_token_amount.ui_amount_string,
             }),
         }
     }
@@ -409,21 +398,9 @@ impl From<generated::TokenBalance> for TransactionTokenBalance {
             account_index: value.account_index as u8,
             mint: value.mint,
             ui_token_amount: UiTokenAmount {
-                ui_amount: if (ui_token_amount.ui_amount - f64::default()).abs() > f64::EPSILON {
-                    Some(ui_token_amount.ui_amount)
-                } else {
-                    None
-                },
+                ui_amount: ui_token_amount.ui_amount,
                 decimals: ui_token_amount.decimals as u8,
-                amount: ui_token_amount.amount.clone(),
-                ui_amount_string: if !ui_token_amount.ui_amount_string.is_empty() {
-                    ui_token_amount.ui_amount_string
-                } else {
-                    real_number_string_trimmed(
-                        u64::from_str(&ui_token_amount.amount).unwrap_or_default(),
-                        ui_token_amount.decimals as u8,
-                    )
-                },
+                amount: ui_token_amount.amount,
             },
         }
     }
@@ -509,7 +486,6 @@ impl TryFrom<tx_by_addr::TransactionError> for TransactionError {
                     44 => InstructionError::BorshIoError(String::new()),
                     45 => InstructionError::AccountNotRentExempt,
                     46 => InstructionError::InvalidAccountOwner,
-                    47 => InstructionError::ArithmeticOverflow,
                     _ => return Err("Invalid InstructionError"),
                 };
 
@@ -735,9 +711,6 @@ impl From<TransactionError> for tx_by_addr::TransactionError {
                             }
                             InstructionError::InvalidAccountOwner => {
                                 tx_by_addr::InstructionErrorType::InvalidAccountOwner
-                            }
-                            InstructionError::ArithmeticOverflow => {
-                                tx_by_addr::InstructionErrorType::ArithmeticOverflow
                             }
                         } as i32,
                         custom: match instruction_error {

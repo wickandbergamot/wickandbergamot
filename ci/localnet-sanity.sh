@@ -6,7 +6,7 @@ iterations=1
 restartInterval=never
 rollingRestart=false
 extraNodes=0
-walletRpcPort=:8899
+walletRpcPort=:8328
 
 usage() {
   exitcode=0
@@ -57,7 +57,7 @@ while getopts "ch?i:k:brxR" opt; do
     extraNodes=$((extraNodes + 1))
     ;;
   r)
-    walletRpcPort=":18899"
+    walletRpcPort=":18328"
     ;;
   R)
     rollingRestart=true
@@ -78,10 +78,11 @@ nodes=(
     --init-complete-file init-complete-node0.log \
     --dynamic-port-range 8000-8050"
   "multinode-demo/validator.sh \
+    --enable-rpc-exit \
     --no-restart \
     --dynamic-port-range 8050-8100
     --init-complete-file init-complete-node1.log \
-    --rpc-port 18899"
+    --rpc-port 18328"
 )
 
 if [[ extraNodes -gt 0 ]]; then
@@ -176,7 +177,7 @@ startNodes() {
       (
         set -x
         $solana_cli --keypair config/bootstrap-validator/identity.json \
-          --url http://127.0.0.1:8899 genesis-hash
+          --url http://127.0.0.1:8328 genesis-hash
       ) | tee genesis-hash.log
       maybeExpectedGenesisHash="--expected-genesis-hash $(tail -n1 genesis-hash.log)"
     fi
@@ -200,10 +201,17 @@ killNodes() {
   [[ ${#pids[@]} -gt 0 ]] || return
 
   # Try to use the RPC exit API to cleanly exit the first two nodes
-  # (dynamic nodes, -x, are just killed)
+  # (dynamic nodes, -x, are just killed since their RPC port is not known)
   echo "--- RPC exit"
-  $solana_validator --ledger "$SOLANA_CONFIG_DIR"/bootstrap-validator exit --force || true
-  $solana_validator --ledger "$SOLANA_CONFIG_DIR"/validator exit --force || true
+  for port in 8328 18328; do
+    (
+      set -x
+      curl --retry 5 --retry-delay 2 --retry-connrefused \
+        -X POST -H 'Content-Type: application/json' \
+        -d '{"jsonrpc":"2.0","id":1, "method":"validatorExit"}' \
+        http://localhost:$port
+    )
+  done
 
   # Give the nodes a splash of time to cleanly exit before killing them
   sleep 2
@@ -271,7 +279,7 @@ verifyLedger() {
     echo "--- $ledger ledger verification"
     (
       set -x
-      $solana_ledger_tool --ledger "$SOLANA_CONFIG_DIR"/$ledger verify
+      $safecoin_ledger_tool --ledger "$SAFECOIN_CONFIG_DIR"/$ledger verify
     ) || flag_error
   done
 }
@@ -304,7 +312,7 @@ flag_error() {
 }
 
 if ! $skipSetup; then
-  clear_config_dir "$SOLANA_CONFIG_DIR"
+  clear_config_dir "$SAFECOIN_CONFIG_DIR"
   multinode-demo/setup.sh --hashes-per-tick sleep
 else
   verifyLedger
@@ -317,7 +325,7 @@ while [[ $iteration -le $iterations ]]; do
     set -x
     client_keypair=/tmp/client-id.json-$$
     $solana_keygen new --no-passphrase -fso $client_keypair || exit $?
-    $solana_gossip spy -n 127.0.0.1:8001 --num-nodes-exactly $numNodes || exit $?
+    $safecoin_gossip spy -n 127.0.0.1:10015 --num-nodes-exactly $numNodes || exit $?
     rm -rf $client_keypair
   ) || flag_error
 
@@ -328,7 +336,7 @@ while [[ $iteration -le $iterations ]]; do
       -X POST -H 'Content-Type: application/json' \
       -d '{"jsonrpc":"2.0","id":1, "method":"getTransactionCount"}' \
       -o log-transactionCount.txt \
-      http://localhost:8899
+      http://localhost:8328
     cat log-transactionCount.txt
   ) || flag_error
 
@@ -338,7 +346,7 @@ while [[ $iteration -le $iterations ]]; do
     curl --retry 5 --retry-delay 2 --retry-connrefused \
       -X POST -H 'Content-Type: application/json' \
       -d '{"jsonrpc":"2.0","id":1, "method":"getTransactionCount"}' \
-      http://localhost:18899
+      http://localhost:18328
   ) || flag_error
 
   # Verify transaction count as reported by the bootstrap-validator node is advancing

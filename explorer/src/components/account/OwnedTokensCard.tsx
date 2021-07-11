@@ -13,7 +13,6 @@ import { useQuery } from "utils/url";
 import { Link } from "react-router-dom";
 import { Location } from "history";
 import { useTokenRegistry } from "providers/mints/token-registry";
-import { BigNumber } from "bignumber.js";
 
 type Display = "summary" | "detail" | null;
 
@@ -92,7 +91,7 @@ function HoldingsDetailTable({ tokens }: { tokens: TokenInfoWithPubkey[] }) {
   const detailsList: React.ReactNode[] = [];
   const { tokenRegistry } = useTokenRegistry();
   const showLogos = tokens.some(
-    (t) => tokenRegistry.get(t.info.mint.toBase58())?.logoURI !== undefined
+    (t) => tokenRegistry.get(t.info.mint.toBase58())?.icon !== undefined
   );
   tokens.forEach((tokenAccount) => {
     const address = tokenAccount.pubkey.toBase58();
@@ -102,9 +101,9 @@ function HoldingsDetailTable({ tokens }: { tokens: TokenInfoWithPubkey[] }) {
       <tr key={address}>
         {showLogos && (
           <td className="w-1 p-0 text-center">
-            {tokenDetails?.logoURI && (
+            {tokenDetails?.icon && (
               <img
-                src={tokenDetails.logoURI}
+                src={tokenDetails.icon}
                 alt="token icon"
                 className="token-icon rounded-circle border border-4 border-gray-dark"
               />
@@ -118,8 +117,8 @@ function HoldingsDetailTable({ tokens }: { tokens: TokenInfoWithPubkey[] }) {
           <Address pubkey={tokenAccount.info.mint} link truncate />
         </td>
         <td>
-          {tokenAccount.info.tokenAmount.uiAmountString}{" "}
-          {tokenDetails && tokenDetails.symbol}
+          {tokenAccount.info.tokenAmount.uiAmount}{" "}
+          {tokenDetails && tokenDetails.tokenSymbol}
         </td>
       </tr>
     );
@@ -146,22 +145,22 @@ function HoldingsDetailTable({ tokens }: { tokens: TokenInfoWithPubkey[] }) {
 
 function HoldingsSummaryTable({ tokens }: { tokens: TokenInfoWithPubkey[] }) {
   const { tokenRegistry } = useTokenRegistry();
-  const mappedTokens = new Map<string, string>();
+  const mappedTokens = new Map<string, number>();
   for (const { info: token } of tokens) {
     const mintAddress = token.mint.toBase58();
     const totalByMint = mappedTokens.get(mintAddress);
 
-    let amount = new BigNumber(token.tokenAmount.uiAmountString);
+    let amount = token.tokenAmount.uiAmount;
     if (totalByMint !== undefined) {
-      amount.plus(totalByMint);
+      amount += totalByMint;
     }
 
-    mappedTokens.set(mintAddress, amount.toString());
+    mappedTokens.set(mintAddress, amount);
   }
 
   const detailsList: React.ReactNode[] = [];
   const showLogos = tokens.some(
-    (t) => tokenRegistry.get(t.info.mint.toBase58())?.logoURI !== undefined
+    (t) => tokenRegistry.get(t.info.mint.toBase58())?.icon !== undefined
   );
   mappedTokens.forEach((totalByMint, mintAddress) => {
     const tokenDetails = tokenRegistry.get(mintAddress);
@@ -169,9 +168,9 @@ function HoldingsSummaryTable({ tokens }: { tokens: TokenInfoWithPubkey[] }) {
       <tr key={mintAddress}>
         {showLogos && (
           <td className="w-1 p-0 text-center">
-            {tokenDetails?.logoURI && (
+            {tokenDetails?.icon && (
               <img
-                src={tokenDetails.logoURI}
+                src={tokenDetails.icon}
                 alt="token icon"
                 className="token-icon rounded-circle border border-4 border-gray-dark"
               />
@@ -182,7 +181,7 @@ function HoldingsSummaryTable({ tokens }: { tokens: TokenInfoWithPubkey[] }) {
           <Address pubkey={new PublicKey(mintAddress)} link />
         </td>
         <td>
-          {totalByMint} {tokenDetails && tokenDetails.symbol}
+          {totalByMint} {tokenDetails && tokenDetails.tokenSymbol}
         </td>
       </tr>
     );

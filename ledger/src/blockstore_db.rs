@@ -17,6 +17,7 @@ use solana_sdk::{
     signature::Signature,
 };
 use solana_storage_proto::convert::generated;
+use solana_transaction_status::TransactionStatusMeta;
 use std::{collections::HashMap, fs, marker::PhantomData, path::Path, sync::Arc};
 use thiserror::Error;
 
@@ -417,6 +418,10 @@ pub trait TypedColumn: Column {
     type Type: Serialize + DeserializeOwned;
 }
 
+impl TypedColumn for columns::TransactionStatus {
+    type Type = TransactionStatusMeta;
+}
+
 impl TypedColumn for columns::AddressSignatures {
     type Type = blockstore_meta::AddressSignatureMeta;
 }
@@ -486,9 +491,6 @@ impl Column for columns::TransactionStatus {
 
 impl ColumnName for columns::TransactionStatus {
     const NAME: &'static str = TRANSACTION_STATUS_CF;
-}
-impl ProtobufColumn for columns::TransactionStatus {
-    type Type = generated::TransactionStatusMeta;
 }
 
 impl Column for columns::AddressSignatures {
@@ -1009,7 +1011,7 @@ impl<'a> WriteBatch<'a> {
 fn get_cf_options(access_type: &AccessType) -> Options {
     let mut options = Options::default();
     // 256 * 8 = 2GB. 6 of these columns should take at most 12GB of RAM
-    options.set_max_write_buffer_number(30);
+    options.set_max_write_buffer_number(8);
     options.set_write_buffer_size(MAX_WRITE_BUFFER_SIZE as usize);
     let file_num_compaction_trigger = 4;
     // Recommend that this be around the size of level 0. Level 0 estimated size in stable state is

@@ -2,8 +2,7 @@ use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum BlockError {
-    /// Block did not have enough ticks was not marked full
-    /// and no shred with is_last was seen.
+    /// Block did not have enough ticks or was not marked full
     #[error("incomplete block")]
     Incomplete,
 
@@ -15,16 +14,9 @@ pub enum BlockError {
     #[error("invalid last tick")]
     InvalidLastTick,
 
-    /// Blocks can not have missing ticks
-    /// Usually indicates that the node was interruppted with a more valuable block during
-    /// production and abandoned it for that more-favorable block. Leader sent data to indicate
-    /// the end of the block.
-    #[error("too few ticks")]
-    TooFewTicks,
-
-    /// Blocks can not have extra ticks
-    #[error("too many ticks")]
-    TooManyTicks,
+    /// Blocks can not have extra ticks or missing ticks
+    #[error("invalid tick count")]
+    InvalidTickCount,
 
     /// All ticks must contain the same number of hashes within a block
     #[error("invalid tick hash count")]

@@ -5,21 +5,17 @@ use {
         accounts::{create_test_accounts, Accounts},
         accounts_db::get_temp_accounts_paths,
         bank::{Bank, StatusCacheRc},
-        hardened_unpack::UnpackedAppendVecMap,
     },
     bincode::serialize_into,
     rand::{thread_rng, Rng},
     solana_sdk::{
-        account::AccountSharedData,
+        account::Account,
         clock::Slot,
         genesis_config::{create_genesis_config, ClusterType},
         pubkey::Pubkey,
         signature::{Keypair, Signer},
     },
-    std::{
-        io::{BufReader, Cursor},
-        path::Path,
-    },
+    std::io::{BufReader, Cursor},
     tempfile::TempDir,
 };
 
@@ -27,18 +23,19 @@ use {
 fn copy_append_vecs<P: AsRef<Path>>(
     accounts_db: &AccountsDb,
     output_dir: P,
-) -> std::io::Result<UnpackedAppendVecMap> {
+) -> std::io::Result<()> {
     let storage_entries = accounts_db.get_snapshot_storages(Slot::max_value());
-    let mut unpacked_append_vec_map = UnpackedAppendVecMap::new();
     for storage in storage_entries.iter().flatten() {
         let storage_path = storage.get_path();
-        let file_name = AppendVec::file_name(storage.slot(), storage.append_vec_id());
-        let output_path = output_dir.as_ref().join(&file_name);
-        std::fs::copy(&storage_path, &output_path)?;
-        unpacked_append_vec_map.insert(file_name, output_path);
+        let output_path = output_dir.as_ref().join(AppendVec::new_relative_path(
+            storage.slot(),
+            storage.append_vec_id(),
+        ));
+
+        std::fs::copy(storage_path, output_path)?;
     }
 
-    Ok(unpacked_append_vec_map)
+    Ok(())
 }
 
 #[cfg(test)]
@@ -48,7 +45,7 @@ fn check_accounts(accounts: &Accounts, pubkeys: &[Pubkey], num: usize) {
         let ancestors = vec![(0, 0)].into_iter().collect();
         let account = accounts.load_slow(&ancestors, &pubkeys[idx]);
         let account1 = Some((
-            AccountSharedData::new((idx + 1) as u64, 0, &AccountSharedData::default().owner),
+            Account::new((idx + 1) as u64, 0, &Account::default().owner),
             0,
         ));
         assert_eq!(account, account1);
@@ -56,20 +53,21 @@ fn check_accounts(accounts: &Accounts, pubkeys: &[Pubkey], num: usize) {
 }
 
 #[cfg(test)]
-fn context_accountsdb_from_stream<'a, C, R>(
+fn context_accountsdb_from_stream<'a, C, R, P>(
     stream: &mut BufReader<R>,
     account_paths: &[PathBuf],
-    unpacked_append_vec_map: UnpackedAppendVecMap,
+    stream_append_vecs_path: P,
 ) -> Result<AccountsDb, Error>
 where
     C: TypeContext<'a>,
     R: Read,
+    P: AsRef<Path>,
 {
     // read and deserialise the accounts database directly from the stream
     reconstruct_accountsdb_from_fields(
         C::deserialize_accounts_db_fields(stream)?,
         account_paths,
-        unpacked_append_vec_map,
+        stream_append_vecs_path,
         &ClusterType::Development,
         HashSet::new(),
         false,
@@ -77,20 +75,21 @@ where
 }
 
 #[cfg(test)]
-fn accountsdb_from_stream<R>(
+fn accountsdb_from_stream<R, P>(
     serde_style: SerdeStyle,
     stream: &mut BufReader<R>,
     account_paths: &[PathBuf],
-    unpacked_append_vec_map: UnpackedAppendVecMap,
+    stream_append_vecs_path: P,
 ) -> Result<AccountsDb, Error>
 where
     R: Read,
+    P: AsRef<Path>,
 {
     match serde_style {
-        SerdeStyle::Newer => context_accountsdb_from_stream::<TypeContextFuture, R>(
+        SerdeStyle::Newer => context_accountsdb_from_stream::<TypeContextFuture, R, P>(
             stream,
             account_paths,
-            unpacked_append_vec_map,
+            stream_append_vecs_path,
         ),
     }
 }
@@ -144,8 +143,7 @@ fn test_accounts_serialize_style(serde_style: SerdeStyle) {
     let copied_accounts = TempDir::new().unwrap();
 
     // Simulate obtaining a copy of the AppendVecs from a tarball
-    let unpacked_append_vec_map =
-        copy_append_vecs(&accounts.accounts_db, copied_accounts.path()).unwrap();
+    copy_append_vecs(&accounts.accounts_db, copied_accounts.path()).unwrap();
 
     let buf = writer.into_inner();
     let mut reader = BufReader::new(&buf[..]);
@@ -155,7 +153,7 @@ fn test_accounts_serialize_style(serde_style: SerdeStyle) {
             serde_style,
             &mut reader,
             &daccounts_paths,
-            unpacked_append_vec_map,
+            copied_accounts.path(),
         )
         .unwrap(),
     );
@@ -209,13 +207,12 @@ fn test_bank_serialize_style(serde_style: SerdeStyle) {
     ref_sc.status_cache.write().unwrap().add_root(2);
     // Create a directory to simulate AppendVecs unpackaged from a snapshot tar
     let copied_accounts = TempDir::new().unwrap();
-    let unpacked_append_vec_map =
-        copy_append_vecs(&bank2.rc.accounts.accounts_db, copied_accounts.path()).unwrap();
+    copy_append_vecs(&bank2.rc.accounts.accounts_db, copied_accounts.path()).unwrap();
     let mut dbank = crate::serde_snapshot::bank_from_stream(
         serde_style,
         &mut reader,
+        copied_accounts.path(),
         &dbank_paths,
-        unpacked_append_vec_map,
         &genesis_config,
         &[],
         None,
@@ -250,22 +247,9 @@ pub(crate) fn reconstruct_accounts_db_via_serialization(
     let buf = writer.into_inner();
     let mut reader = BufReader::new(&buf[..]);
     let copied_accounts = TempDir::new().unwrap();
-
     // Simulate obtaining a copy of the AppendVecs from a tarball
-    let unpacked_append_vec_map = copy_append_vecs(&accounts, copied_accounts.path()).unwrap();
-    let mut accounts_db =
-        accountsdb_from_stream(SerdeStyle::Newer, &mut reader, &[], unpacked_append_vec_map)
-            .unwrap();
-
-    // The append vecs will be used from `copied_accounts` directly by the new AccountsDb so keep
-    // its TempDir alive
-    accounts_db
-        .temp_paths
-        .as_mut()
-        .unwrap()
-        .push(copied_accounts);
-
-    accounts_db
+    copy_append_vecs(&accounts, copied_accounts.path()).unwrap();
+    accountsdb_from_stream(SerdeStyle::Newer, &mut reader, &[], copied_accounts.path()).unwrap()
 }
 
 #[test]

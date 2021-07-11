@@ -73,7 +73,7 @@ impl SwitchForkDecision {
 }
 
 pub const VOTE_THRESHOLD_DEPTH: usize = 8;
-pub const SWITCH_FORK_THRESHOLD: f64 = 0.005;
+pub const SWITCH_FORK_THRESHOLD: f64 = 0.38;
 
 pub type Result<T> = std::result::Result<T, TowerError>;
 
@@ -1253,11 +1253,7 @@ pub mod test {
         },
     };
     use solana_sdk::{
-        account::{Account, AccountSharedData, WritableAccount},
-        clock::Slot,
-        hash::Hash,
-        pubkey::Pubkey,
-        signature::Signer,
+        account::Account, clock::Slot, hash::Hash, pubkey::Pubkey, signature::Signer,
         slot_history::SlotHistory,
     };
     use solana_vote_program::{
@@ -1575,10 +1571,10 @@ pub mod test {
     fn gen_stakes(stake_votes: &[(u64, &[u64])]) -> Vec<(Pubkey, (u64, ArcVoteAccount))> {
         let mut stakes = vec![];
         for (lamports, votes) in stake_votes {
-            let mut account = AccountSharedData {
+            let mut account = Account {
                 data: vec![0; VoteState::size_of()],
                 lamports: *lamports,
-                ..AccountSharedData::default()
+                ..Account::default()
             };
             let mut vote_state = VoteState::default();
             for slot in *votes {
@@ -1586,7 +1582,7 @@ pub mod test {
             }
             VoteState::serialize(
                 &VoteStateVersions::new_current(vote_state),
-                &mut account.data_as_mut_slice(),
+                &mut account.data,
             )
             .expect("serialize state");
             stakes.push((
@@ -2255,10 +2251,10 @@ pub mod test {
     #[test]
     fn test_stake_is_updated_for_entire_branch() {
         let mut voted_stakes = HashMap::new();
-        let account = AccountSharedData::from(Account {
+        let account = Account {
             lamports: 1,
             ..Account::default()
-        });
+        };
         let set: HashSet<u64> = vec![0u64, 1u64].into_iter().collect();
         let ancestors: HashMap<u64, HashSet<u64>> = [(2u64, set)].iter().cloned().collect();
         Tower::update_ancestor_voted_stakes(&mut voted_stakes, 2, account.lamports, &ancestors);

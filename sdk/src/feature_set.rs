@@ -7,19 +7,19 @@ use solana_sdk::{
 use std::collections::{HashMap, HashSet};
 
 pub mod instructions_sysvar_enabled {
-    solana_sdk::declare_id!("EnvhHCLvg55P7PDtbvR1NwuTuAeodqpusV3MR5QEK8gs");
+    solana_sdk::declare_id!("7TfFp6Tf2XqXQQfx16qvXbjekXtn68kiQj9pPfXZ5Bua");
 }
 
 pub mod secp256k1_program_enabled {
-    solana_sdk::declare_id!("E3PHP7w8kB7np3CTQ1qQ2tW3KCtjRSXBQgW9vM2mWv2Y");
+    solana_sdk::declare_id!("3tF9nXQrHzTV5jdDqzn6LVWMoJagN1zRgr4APfY6qmpi");
 }
 
 pub mod consistent_recent_blockhashes_sysvar {
-    solana_sdk::declare_id!("3h1BQWPDS5veRsq6mDBWruEpgPxRJkfwGexg5iiQ9mYg");
+    solana_sdk::declare_id!("ApdySrEmykK3PBLExdN2ehGCRPyVT6athFgu4H7H8e9J");
 }
 
 pub mod deprecate_rewards_sysvar {
-    solana_sdk::declare_id!("GaBtBJvmS4Arjj5W1NmFcyvPjsHN38UGYDq2MDwbs9Qu");
+    solana_sdk::declare_id!("GVriKcZATdgSzmhmu9PtimfheaKYksK5mhgoN5fbRhXg");
 }
 
 pub mod pico_inflation {
@@ -28,71 +28,95 @@ pub mod pico_inflation {
 
 pub mod full_inflation {
     pub mod devnet_and_testnet {
-        solana_sdk::declare_id!("DT4n6ABDqs6w4bnfwrXT9rsprcPf6cdDga1egctaPkLC");
+        solana_sdk::declare_id!("JC1GQujpgHz92Am65FxcxByqqDGTdYJs6jLjgebnDpJF");
     }
 
     pub mod mainnet {
         pub mod certusone {
             pub mod vote {
-                solana_sdk::declare_id!("BzBBveUDymEYoYzcMWNQCx3cd4jQs7puaVFHLtsbB6fm");
+                solana_sdk::declare_id!("7Ra6gKzEBFyYJ7fdsrCuzihZcxKu7AbmDy2FBEQFzap2");
             }
             pub mod enable {
-                solana_sdk::declare_id!("7XRJcS5Ud5vxGB54JbK9N2vBZVwnwdBNeJW1ibRgD9gx");
+                solana_sdk::declare_id!("54ZqXvMyCKShnBrGj2ni6m4kXTjRUrkc21dFoT9npJZk");
             }
         }
     }
 }
 
 pub mod spl_token_v2_multisig_fix {
-    solana_sdk::declare_id!("E5JiFDQCwyC6QfT9REFyMpfK2mHcmv1GUDySU1Ue7TYv");
+    solana_sdk::declare_id!("EwSWSBRpzYZSEqdZ215WMmnce6WiEsk57rSEB3e7ghh6");
 }
 
 pub mod no_overflow_rent_distribution {
-    solana_sdk::declare_id!("4kpdyrcj5jS47CZb2oJGfVxjYbsMm2Kx97gFyZrxxwXz");
+    solana_sdk::declare_id!("9TyDRDhs933rTCWGwzSUTSx1XeJT14sc17o1cNQzUaBq");
 }
 
 pub mod ristretto_mul_syscall_enabled {
-    solana_sdk::declare_id!("HRe7A6aoxgjKzdjbBv6HTy7tJ4YWqE6tVmYCGho6S9Aq");
+    solana_sdk::declare_id!("4mS77eMqwiUZMcV3M6xzDYprbDchxhbNHVyBateEhqST");
+}
+
+pub mod cumulative_rent_related_fixes {
+    solana_sdk::declare_id!("HtaE9dEZDmqMPVysYQCiLx6i6wTeic4NVbqGRoGDkD5w");
 }
 
 pub mod pull_request_ping_pong_check {
-    solana_sdk::declare_id!("5RzEHTnf6D7JPZCvwEzjM19kzBsyjSU3HoMfXaQmVgnZ");
+    solana_sdk::declare_id!("A9VXyn5BYwNva8zUvfG1qWFEuPq6p6mTWwQ9s3qJFWNp");
 }
 
 pub mod stake_program_v2 {
-    solana_sdk::declare_id!("Gvd9gGJZDHGMNf1b3jkxrfBQSR5etrfTQSBNKCvLSFJN");
+    solana_sdk::declare_id!("BpCWufPmpbYaT1xRbdCeZKXDxQ4Wj1Z8ijaG6tWFrJg1");
 }
 
 pub mod rewrite_stake {
-    solana_sdk::declare_id!("6ap2eGy7wx5JmsWUmQ5sHwEWrFSDUxSti2k5Hbfv5BZG");
+    solana_sdk::declare_id!("HpGqShCRhP7QwMBXTs1KbATiHWa383EUWjg3kbQjN2Kf");
 }
 
 pub mod filter_stake_delegation_accounts {
-    solana_sdk::declare_id!("GE7fRxmW46K6EmCD9AMZSbnaJ2e3LfqCZzdHi9hmYAgi");
+    solana_sdk::declare_id!("HpGqShCRhP7QwMBXTs1KbATiHWa383EUWjg3kbQjN2Kf");
+}
+
+pub mod simple_capitalization {
+    solana_sdk::declare_id!("9r69RnnxABmpcPFfj1yhg4n9YFR2MNaLdKJCC6v3Speb");
 }
 
 pub mod bpf_loader_upgradeable_program {
-    solana_sdk::declare_id!("FbhK8HN9qvNHvJcoFVHAEUCNkagHvu7DTWzdnLuVQ5u4");
+    solana_sdk::declare_id!("Cv6gGxiakDF6nd9Sxx53MbC4kij69qXpap8guiC6aK9U");
 }
 
 pub mod stake_program_v3 {
-    solana_sdk::declare_id!("Ego6nTu7WsBcZBvVqJQKp6Yku2N3mrfG8oYCfaLZkAeK");
+    solana_sdk::declare_id!("6tYrCsaWbGqgeW9tN3NRbViw6BBLYjnNsJBqLJZZoo5B");
+}
+
+pub mod use_loaded_executables {
+    solana_sdk::declare_id!("7xk3jJ6kYsCU3qbwtZ3CSppdjxkMNbwMh8NC1cVmeW9S");
 }
 
 pub mod turbine_retransmit_peers_patch {
-    solana_sdk::declare_id!("5Lu3JnWSFwRYpXzwDMkanWSk6XqSuF2i5fpnVhzB5CTc");
+    solana_sdk::declare_id!("BZJfMk71bwWeYHFo2G6xHrXR2KNWxrAuFLLZi5VoF1fM");
+}
+
+pub mod track_writable_deescalation {
+    solana_sdk::declare_id!("4iEEhiZKhMa5KG9YAQbC9u2bLMwYxhQuNmfGEV8jQnz4");
 }
 
 pub mod require_custodian_for_locked_stake_authorize {
-    solana_sdk::declare_id!("D4jsDcXaqdW8tDAWn8H4R25Cdns2YwLneujSL1zvjW6R");
+    solana_sdk::declare_id!("FKWSvfcXATHSBBNvr5VE6ns4tNsTG3EGzcDw2xVtowZQ");
 }
 
 pub mod spl_token_v2_self_transfer_fix {
-    solana_sdk::declare_id!("BL99GYhdjjcv6ys22C9wPgn2aTVERDbPHHo4NbS3hgp7");
+    solana_sdk::declare_id!("2XDc17ZmSTbpqV3B5fmEGac4CKCYnbJj7vnfASvdzqyN");
+}
+
+pub mod matching_buffer_upgrade_authorities {
+    solana_sdk::declare_id!("5gkzmKnnZbm7bcQm4v3d7BZjSRczE9oH8eFDdebxubXH");
 }
 
 pub mod warp_timestamp_again {
     solana_sdk::declare_id!("GvDsGDkH5gyzwpDhxNixx8vtx1kwYHH13RiNAPw27zXb");
+}
+
+pub mod per_byte_logging_cost {
+    solana_sdk::declare_id!("59dM4SV6dPEKXPfkrkhFkRdn4K6xwKxdNAPMyXG7J1wT");
 }
 
 pub mod check_init_vote_data {
@@ -101,22 +125,6 @@ pub mod check_init_vote_data {
 
 pub mod check_program_owner {
     solana_sdk::declare_id!("5XnbR5Es9YXEARRuP6mdvoxiW3hx5atNNeBmwVd8P3QD");
-}
-
-pub mod cpi_share_ro_and_exec_accounts {
-    solana_sdk::declare_id!("6VgVBi3uRVqp56TtEwNou8idgdmhCD1aYqX8FaJ1fnJb");
-}
-
-pub mod skip_ro_deserialization {
-    solana_sdk::declare_id!("6Sw5JV84f7QkDe8gvRxpcPWFnPpfpgEnNziiy8sELaCp");
-}
-
-pub mod require_stake_for_gossip {
-    solana_sdk::declare_id!("6oNzd5Z3M2L1xo4Q5hoox7CR2DuW7m1ETLWH5jHJthwa");
-}
-
-pub mod cpi_data_cost {
-    solana_sdk::declare_id!("Hrg5bXePPGiAVWZfDHbvjqytSeyBDPAGAQ7v6N5i4gCX");
 }
 
 lazy_static! {
@@ -131,24 +139,26 @@ lazy_static! {
         (spl_token_v2_multisig_fix::id(), "spl-token multisig fix"),
         (no_overflow_rent_distribution::id(), "no overflow rent distribution"),
         (ristretto_mul_syscall_enabled::id(), "ristretto multiply syscall"),
+        (cumulative_rent_related_fixes::id(), "rent fixes (#10206, #10468, #11342)"),
         (pull_request_ping_pong_check::id(), "ping-pong packet check #12794"),
         (stake_program_v2::id(), "solana_stake_program v2"),
         (rewrite_stake::id(), "rewrite stake"),
         (filter_stake_delegation_accounts::id(), "filter stake_delegation_accounts #14062"),
+        (simple_capitalization::id(), "simple capitalization"),
         (bpf_loader_upgradeable_program::id(), "upgradeable bpf loader"),
         (stake_program_v3::id(), "solana_stake_program v3"),
+        (use_loaded_executables::id(), "use loaded executable accounts"),
         (turbine_retransmit_peers_patch::id(), "turbine retransmit peers patch #14631"),
+        (track_writable_deescalation::id(), "track account writable deescalation"),
         (require_custodian_for_locked_stake_authorize::id(), "require custodian to authorize withdrawer change for locked stake"),
         (spl_token_v2_self_transfer_fix::id(), "spl-token self-transfer fix"),
+        (matching_buffer_upgrade_authorities::id(), "Upgradeable buffer and program authorities must match"),
         (full_inflation::mainnet::certusone::enable::id(), "Full inflation enabled by Certus One"),
         (full_inflation::mainnet::certusone::vote::id(), "Community vote allowing Certus One to enable full inflation"),
         (warp_timestamp_again::id(), "warp timestamp again, adjust bounding to 25% fast 80% slow #15204"),
+        (per_byte_logging_cost::id(), "charge the compute budget per byte for logging"),
         (check_init_vote_data::id(), "check initialized Vote data"),
-        (check_program_owner::id(), "limit programs to operating on accounts owned by itself"),
-        (cpi_share_ro_and_exec_accounts::id(), "share RO and Executable accounts during cross-program invocations"),
-        (skip_ro_deserialization::id(), "skip deserialization of read-only accounts"),
-        (require_stake_for_gossip::id(), "require stakes for propagating crds values through gossip #15561"),
-        (cpi_data_cost::id(), "charge the compute budget for data passed via CPI"),
+        (check_program_owner::id(), "limit programs to operating on accounts owned by itself")
         /*************** ADD NEW FEATURES HERE ***************/
     ]
     .iter()
@@ -208,6 +218,10 @@ impl FeatureSet {
 
     pub fn activated_slot(&self, feature_id: &Pubkey) -> Option<Slot> {
         self.active.get(feature_id).copied()
+    }
+
+    pub fn cumulative_rent_related_fixes_enabled(&self) -> bool {
+        self.is_active(&cumulative_rent_related_fixes::id())
     }
 
     /// List of enabled features that trigger full inflation

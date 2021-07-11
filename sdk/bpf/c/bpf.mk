@@ -14,8 +14,8 @@ TEST_PREFIX ?= test_
 OUT_DIR ?= ./out
 OS := $(shell uname)
 
-LLVM_DIR = $(LOCAL_PATH)../dependencies/bpf-tools/llvm
-LLVM_SYSTEM_INC_DIRS := $(LLVM_DIR)/lib/clang/11.0.1/include
+LLVM_DIR = $(LOCAL_PATH)../dependencies/bpf-tools/llvm/
+LLVM_SYSTEM_INC_DIRS := $(LLVM_DIR)/lib/clang/8.0.0/include
 
 ifdef LLVM_DIR
 CC := $(LLVM_DIR)/bin/clang
@@ -68,7 +68,7 @@ OBJ_DUMP_FLAGS := \
 
 TESTFRAMEWORK_RPATH := $(abspath $(LOCAL_PATH)../dependencies/criterion/lib)
 TESTFRAMEWORK_FLAGS := \
-  -DSOL_TEST \
+  -DSAFE_TEST \
   -isystem $(LOCAL_PATH)../dependencies/criterion/include \
   -L $(LOCAL_PATH)../dependencies/criterion/lib \
   -rpath $(TESTFRAMEWORK_RPATH) \
@@ -144,7 +144,7 @@ $1: $2
 endef
 
 define CC_RULE
-$1: $2
+$1: $2 
 	@echo "[cxx] $1 ($2)"
 	$(_@)mkdir -p $(dir $1)
 	$(_@)$(CXX) $(BPF_CXX_FLAGS) -o $1 -c $2 -MD -MF $(1:.o=.d)
@@ -163,10 +163,10 @@ $1: $2
 	$(_@)mkdir -p $(dir $1)
 	$(_@)$(LLD) $(BPF_LLD_FLAGS) -o $1 $2
 ifeq (,$(wildcard $(subst .so,-keypair.json,$1)))
-	$(_@)solana-keygen new --no-passphrase --silent -o $(subst .so,-keypair.json,$1)
+	$(_@)safecoin-keygen new --no-passphrase --silent -o $(subst .so,-keypair.json,$1)
 endif
 	@echo To deploy this program:
-	@echo $$$$ solana program deploy $(realpath $1)
+	@echo $$$$ safecoin program deploy $(realpath $1)
 endef
 
 define TEST_C_RULE

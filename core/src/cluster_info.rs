@@ -79,7 +79,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-pub const VALIDATOR_PORT_RANGE: PortRange = (8000, 10_000);
+pub const VALIDATOR_PORT_RANGE: PortRange = (10_001, 12_000);
 pub const MINIMUM_VALIDATOR_PORT_RANGE_WIDTH: u16 = 10; // VALIDATOR_PORT_RANGE must be at least this wide
 
 /// The Data plane fanout size, also used as the neighborhood size
@@ -114,13 +114,6 @@ pub const DEFAULT_CONTACT_DEBUG_INTERVAL_MILLIS: u64 = 10_000;
 pub const DEFAULT_CONTACT_SAVE_INTERVAL_MILLIS: u64 = 60_000;
 /// Minimum serialized size of a Protocol::PullResponse packet.
 const PULL_RESPONSE_MIN_SERIALIZED_SIZE: usize = 161;
-// Limit number of unique pubkeys in the crds table.
-const CRDS_UNIQUE_PUBKEY_CAPACITY: usize = 4096;
-/// Minimum stake that a node should have so that its CRDS values are
-/// propagated through gossip (few types are exempted).
-const MIN_STAKE_FOR_GOSSIP: u64 = solana_sdk::native_token::LAMPORTS_PER_SOL;
-/// Minimum number of staked nodes for enforcing stakes in gossip.
-const MIN_NUM_STAKED_NODES: usize = 500;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ClusterInfoError {
@@ -292,10 +285,6 @@ struct GossipStats {
     prune_message_len: Counter,
     pull_request_ping_pong_check_failed_count: Counter,
     purge: Counter,
-    require_stake_for_gossip_unknown_feature_set: Counter,
-    require_stake_for_gossip_unknown_stakes: Counter,
-    trim_crds_table_failed: Counter,
-    trim_crds_table_purged_values_count: Counter,
     epoch_slots_lookup: Counter,
     new_pull_requests: Counter,
     new_pull_requests_count: Counter,
@@ -544,33 +533,6 @@ struct ResponseScore {
     score: u64,             // Relative score of the response
 }
 
-// Retains only CRDS values associated with nodes with enough stake.
-// (some crds types are exempted)
-fn retain_staked(values: &mut Vec<CrdsValue>, stakes: &HashMap<Pubkey, u64>) {
-    values.retain(|value| {
-        match value.data {
-            CrdsData::ContactInfo(_) => true,
-            // May Impact new validators starting up without any stake yet.
-            CrdsData::Vote(_, _) => true,
-            // Unstaked nodes can still help repair.
-            CrdsData::EpochSlots(_, _) => true,
-            // Unstaked nodes can still serve snapshots.
-            CrdsData::SnapshotHashes(_) => true,
-            // Otherwise unstaked voting nodes will show up with no version in
-            // the various dashboards.
-            CrdsData::Version(_) => true,
-            CrdsData::LowestSlot(_, _)
-            | CrdsData::AccountsHashes(_)
-            | CrdsData::LegacyVersion(_)
-            | CrdsData::NodeInstance(_)
-            | CrdsData::DuplicateShred(_, _) => {
-                let stake = stakes.get(&value.pubkey()).copied();
-                stake.unwrap_or_default() >= MIN_STAKE_FOR_GOSSIP
-            }
-        }
-    })
-}
-
 impl ClusterInfo {
     /// Without a valid keypair gossip will not function. Only useful for tests.
     pub fn new_with_invalid_keypair(contact_info: ContactInfo) -> Self {
@@ -639,6 +601,16 @@ impl ClusterInfo {
 
     pub fn set_contact_debug_interval(&mut self, new: u64) {
         self.contact_debug_interval = new;
+    }
+
+    pub fn update_contact_info<F>(&self, modify: F)
+    where
+        F: FnOnce(&mut ContactInfo),
+    {
+        let my_id = self.id();
+        modify(&mut self.my_contact_info.write().unwrap());
+        assert_eq!(self.my_contact_info.read().unwrap().id, my_id);
+        self.insert_self()
     }
 
     fn push_self(
@@ -1717,21 +1689,11 @@ impl ClusterInfo {
         let mut gossip = self.gossip.write().unwrap();
         gossip.process_push_messages(pending_push_messages);
     }
-    fn new_push_requests(
-        &self,
-        stakes: &HashMap<Pubkey, u64>,
-        require_stake_for_gossip: bool,
-    ) -> Vec<(SocketAddr, Protocol)> {
+    fn new_push_requests(&self) -> Vec<(SocketAddr, Protocol)> {
         let self_id = self.id();
-        let mut push_messages = self
+        let (_, push_messages) = self
             .time_gossip_write_lock("new_push_requests", &self.stats.new_push_requests)
             .new_push_messages(self.drain_push_queue(), timestamp());
-        if require_stake_for_gossip {
-            push_messages.retain(|_, data| {
-                retain_staked(data, stakes);
-                !data.is_empty()
-            })
-        }
         let push_messages: Vec<_> = {
             let gossip =
                 self.time_gossip_read_lock("push_req_lookup", &self.stats.new_push_requests2);
@@ -1763,15 +1725,13 @@ impl ClusterInfo {
         gossip_validators: Option<&HashSet<Pubkey>>,
         stakes: &HashMap<Pubkey, u64>,
         generate_pull_requests: bool,
-        require_stake_for_gossip: bool,
     ) -> Vec<(SocketAddr, Protocol)> {
-        self.trim_crds_table(CRDS_UNIQUE_PUBKEY_CAPACITY, &stakes);
         let mut pulls: Vec<_> = if generate_pull_requests {
             self.new_pull_requests(&thread_pool, gossip_validators, stakes)
         } else {
             vec![]
         };
-        let mut pushes: Vec<_> = self.new_push_requests(stakes, require_stake_for_gossip);
+        let mut pushes: Vec<_> = self.new_push_requests();
         self.stats
             .packets_sent_pull_requests_count
             .add_relaxed(pulls.len() as u64);
@@ -1791,14 +1751,12 @@ impl ClusterInfo {
         stakes: &HashMap<Pubkey, u64>,
         sender: &PacketSender,
         generate_pull_requests: bool,
-        require_stake_for_gossip: bool,
     ) -> Result<()> {
         let reqs = self.generate_new_gossip_requests(
             thread_pool,
             gossip_validators,
-            stakes,
+            &stakes,
             generate_pull_requests,
-            require_stake_for_gossip,
         );
         if !reqs.is_empty() {
             let packets = to_packets_with_destination(recycler.clone(), &reqs);
@@ -1881,39 +1839,6 @@ impl ClusterInfo {
         inc_new_counter_info!("cluster_info-purge-count", num_purged);
     }
 
-    // Trims the CRDS table by dropping all values associated with the pubkeys
-    // with the lowest stake, so that the number of unique pubkeys are bounded.
-    fn trim_crds_table(&self, cap: usize, stakes: &HashMap<Pubkey, u64>) {
-        if !self.gossip.read().unwrap().crds.should_trim(cap) {
-            return;
-        }
-        let keep: Vec<_> = self
-            .entrypoints
-            .read()
-            .unwrap()
-            .iter()
-            .map(|k| k.id)
-            .chain(std::iter::once(self.id))
-            .collect();
-        let mut gossip = self.gossip.write().unwrap();
-        match gossip.crds.trim(cap, &keep, stakes) {
-            Err(err) => {
-                self.stats.trim_crds_table_failed.add_relaxed(1);
-                error!("crds table trim failed: {:?}", err);
-            }
-            Ok(purged_values) => {
-                self.stats
-                    .trim_crds_table_purged_values_count
-                    .add_relaxed(purged_values.len() as u64);
-                gossip.pull.purged_values.extend(
-                    purged_values
-                        .into_iter()
-                        .map(|v| (v.value_hash, v.local_timestamp)),
-                );
-            }
-        }
-    }
-
     /// randomly pick a node and ask them for updates asynchronously
     pub fn gossip(
         self: Arc<Self>,
@@ -1929,7 +1854,7 @@ impl ClusterInfo {
             .build()
             .unwrap();
         Builder::new()
-            .name("solana-gossip".to_string())
+            .name("safecoin-gossip".to_string())
             .spawn(move || {
                 let mut last_push = timestamp();
                 let mut last_contact_info_trace = timestamp();
@@ -1947,7 +1872,7 @@ impl ClusterInfo {
                 let mut generate_pull_requests = true;
                 loop {
                     let start = timestamp();
-                    thread_mem_usage::datapoint("solana-gossip");
+                    thread_mem_usage::datapoint("safecoin-gossip");
                     if self.contact_debug_interval != 0
                         && start - last_contact_info_trace > self.contact_debug_interval
                     {
@@ -1967,18 +1892,13 @@ impl ClusterInfo {
                         last_contact_info_save = start;
                     }
 
-                    let (stakes, feature_set) = match bank_forks {
+                    let stakes: HashMap<_, _> = match bank_forks {
                         Some(ref bank_forks) => {
-                            let root_bank = bank_forks.read().unwrap().root_bank();
-                            (
-                                root_bank.staked_nodes(),
-                                Some(root_bank.feature_set.clone()),
-                            )
+                            bank_forks.read().unwrap().root_bank().staked_nodes()
                         }
-                        None => (HashMap::new(), None),
+                        None => HashMap::new(),
                     };
-                    let require_stake_for_gossip =
-                        self.require_stake_for_gossip(feature_set.as_deref(), &stakes);
+
                     let _ = self.run_gossip(
                         &thread_pool,
                         gossip_validators.as_ref(),
@@ -1986,7 +1906,6 @@ impl ClusterInfo {
                         &stakes,
                         &sender,
                         generate_pull_requests,
-                        require_stake_for_gossip,
                     );
                     if exit.load(Ordering::Relaxed) {
                         return;
@@ -2067,7 +1986,6 @@ impl ClusterInfo {
         stakes: &HashMap<Pubkey, u64>,
         response_sender: &PacketSender,
         feature_set: Option<&FeatureSet>,
-        require_stake_for_gossip: bool,
     ) {
         let _st = ScopedTimer::from(&self.stats.handle_batch_pull_requests_time);
         if requests.is_empty() {
@@ -2109,13 +2027,7 @@ impl ClusterInfo {
             self.stats
                 .pull_requests_count
                 .add_relaxed(requests.len() as u64);
-            let response = self.handle_pull_requests(
-                recycler,
-                requests,
-                stakes,
-                feature_set,
-                require_stake_for_gossip,
-            );
+            let response = self.handle_pull_requests(recycler, requests, stakes, feature_set);
             if !response.is_empty() {
                 self.stats
                     .packets_sent_pull_responses_count
@@ -2192,7 +2104,6 @@ impl ClusterInfo {
         requests: Vec<PullData>,
         stakes: &HashMap<Pubkey, u64>,
         feature_set: Option<&FeatureSet>,
-        require_stake_for_gossip: bool,
     ) -> Packets {
         let mut time = Measure::start("handle_pull_requests");
         let callers = crds_value::filter_current(requests.iter().map(|r| &r.caller));
@@ -2214,17 +2125,13 @@ impl ClusterInfo {
         let now = timestamp();
         let self_id = self.id();
 
-        let mut pull_responses = self
+        let pull_responses = self
             .time_gossip_read_lock(
                 "generate_pull_responses",
                 &self.stats.generate_pull_responses,
             )
             .generate_pull_responses(&caller_and_filters, output_size_limit, now);
-        if require_stake_for_gossip {
-            for resp in &mut pull_responses {
-                retain_staked(resp, stakes);
-            }
-        }
+
         let pull_responses: Vec<_> = pull_responses
             .into_iter()
             .zip(addrs.into_iter())
@@ -2515,7 +2422,6 @@ impl ClusterInfo {
         recycler: &PacketsRecycler,
         stakes: &HashMap<Pubkey, u64>,
         response_sender: &PacketSender,
-        require_stake_for_gossip: bool,
     ) {
         let _st = ScopedTimer::from(&self.stats.handle_batch_push_messages_time);
         if messages.is_empty() {
@@ -2625,7 +2531,7 @@ impl ClusterInfo {
         self.stats
             .push_response_count
             .add_relaxed(packets.packets.len() as u64);
-        let new_push_requests = self.new_push_requests(stakes, require_stake_for_gossip);
+        let new_push_requests = self.new_push_requests();
         inc_new_counter_debug!("cluster_info-push_message-pushes", new_push_requests.len());
         for (address, request) in new_push_requests {
             if ContactInfo::is_valid_address(&address) {
@@ -2664,33 +2570,6 @@ impl ClusterInfo {
             None => {
                 inc_new_counter_info!("cluster_info-purge-no_working_bank", 1);
                 (HashMap::new(), CRDS_GOSSIP_PULL_CRDS_TIMEOUT_MS)
-            }
-        }
-    }
-
-    fn require_stake_for_gossip(
-        &self,
-        feature_set: Option<&FeatureSet>,
-        stakes: &HashMap<Pubkey, u64>,
-    ) -> bool {
-        match feature_set {
-            None => {
-                self.stats
-                    .require_stake_for_gossip_unknown_feature_set
-                    .add_relaxed(1);
-                false
-            }
-            Some(feature_set) => {
-                if !feature_set.is_active(&feature_set::require_stake_for_gossip::id()) {
-                    false
-                } else if stakes.len() < MIN_NUM_STAKED_NODES {
-                    self.stats
-                        .require_stake_for_gossip_unknown_stakes
-                        .add_relaxed(1);
-                    false
-                } else {
-                    true
-                }
             }
         }
     }
@@ -2774,17 +2653,6 @@ impl ClusterInfo {
         self.stats
             .packets_received_prune_messages_count
             .add_relaxed(prune_messages.len() as u64);
-        let require_stake_for_gossip = self.require_stake_for_gossip(feature_set, &stakes);
-        if require_stake_for_gossip {
-            for (_, data) in &mut pull_responses {
-                retain_staked(data, &stakes);
-            }
-            for (_, data) in &mut push_messages {
-                retain_staked(data, &stakes);
-            }
-            pull_responses.retain(|(_, data)| !data.is_empty());
-            push_messages.retain(|(_, data)| !data.is_empty());
-        }
         self.handle_batch_ping_messages(ping_messages, recycler, response_sender);
         self.handle_batch_prune_messages(prune_messages);
         self.handle_batch_push_messages(
@@ -2793,10 +2661,8 @@ impl ClusterInfo {
             recycler,
             &stakes,
             response_sender,
-            require_stake_for_gossip,
         );
         self.handle_batch_pull_responses(pull_responses, thread_pool, &stakes, epoch_time_ms);
-        self.trim_crds_table(CRDS_UNIQUE_PUBKEY_CAPACITY, &stakes);
         self.handle_batch_pong_messages(pong_messages, Instant::now());
         self.handle_batch_pull_requests(
             pull_requests,
@@ -2805,7 +2671,6 @@ impl ClusterInfo {
             &stakes,
             response_sender,
             feature_set,
-            require_stake_for_gossip,
         );
         Ok(())
     }
@@ -3143,28 +3008,6 @@ impl ClusterInfo {
                 (
                     "packets_sent_push_messages_count",
                     self.stats.packets_sent_push_messages_count.clear(),
-                    i64
-                ),
-                (
-                    "require_stake_for_gossip_unknown_feature_set",
-                    self.stats
-                        .require_stake_for_gossip_unknown_feature_set
-                        .clear(),
-                    i64
-                ),
-                (
-                    "require_stake_for_gossip_unknown_stakes",
-                    self.stats.require_stake_for_gossip_unknown_stakes.clear(),
-                    i64
-                ),
-                (
-                    "trim_crds_table_failed",
-                    self.stats.trim_crds_table_failed.clear(),
-                    i64
-                ),
-                (
-                    "trim_crds_table_purged_values_count",
-                    self.stats.trim_crds_table_purged_values_count.clear(),
                     i64
                 ),
             );
@@ -3843,13 +3686,8 @@ mod tests {
             .write()
             .unwrap()
             .refresh_push_active_set(&HashMap::new(), None);
-        let reqs = cluster_info.generate_new_gossip_requests(
-            &thread_pool,
-            None, // gossip_validators
-            &HashMap::new(),
-            true,  // generate_pull_requests
-            false, // require_stake_for_gossip
-        );
+        let reqs =
+            cluster_info.generate_new_gossip_requests(&thread_pool, None, &HashMap::new(), true);
         //assert none of the addrs are invalid.
         reqs.iter().all(|(addr, _)| {
             let res = ContactInfo::is_valid_address(addr);
@@ -3879,6 +3717,40 @@ mod tests {
             .crds
             .lookup(&label)
             .is_some());
+    }
+    #[test]
+    #[should_panic]
+    fn test_update_contact_info() {
+        let d = ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
+        let cluster_info = ClusterInfo::new_with_invalid_keypair(d);
+        let entry_label = CrdsValueLabel::ContactInfo(cluster_info.id());
+        assert!(cluster_info
+            .gossip
+            .read()
+            .unwrap()
+            .crds
+            .lookup(&entry_label)
+            .is_some());
+
+        let now = timestamp();
+        cluster_info.update_contact_info(|ci| ci.wallclock = now);
+        assert_eq!(
+            cluster_info
+                .gossip
+                .read()
+                .unwrap()
+                .crds
+                .lookup(&entry_label)
+                .unwrap()
+                .contact_info()
+                .unwrap()
+                .wallclock,
+            now
+        );
+
+        // Inserting Contactinfo with different pubkey should panic,
+        // and update should fail
+        cluster_info.update_contact_info(|ci| ci.id = solana_sdk::pubkey::new_rand())
     }
 
     fn assert_in_range(x: u16, range: (u16, u16)) {
@@ -3960,7 +3832,7 @@ mod tests {
             .unwrap()
             .refresh_push_active_set(&HashMap::new(), None);
         //check that all types of gossip messages are signed correctly
-        let push_messages = cluster_info
+        let (_, push_messages) = cluster_info
             .gossip
             .write()
             .unwrap()

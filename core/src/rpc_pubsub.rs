@@ -32,7 +32,7 @@ const MAX_ACTIVE_SUBSCRIPTIONS: usize = 100_000;
 // Once https://github.com/paritytech/jsonrpc/issues/418 is resolved, try to remove this clippy allow
 #[allow(clippy::needless_return)]
 #[rpc]
-pub trait RpcSolPubSub {
+pub trait RpcSafePubSub {
     type Metadata;
 
     // Get notification every time account data is changed
@@ -189,12 +189,12 @@ pub trait RpcSolPubSub {
     fn root_unsubscribe(&self, meta: Option<Self::Metadata>, id: SubscriptionId) -> Result<bool>;
 }
 
-pub struct RpcSolPubSubImpl {
+pub struct RpcSafePubSubImpl {
     uid: Arc<atomic::AtomicUsize>,
     subscriptions: Arc<RpcSubscriptions>,
 }
 
-impl RpcSolPubSubImpl {
+impl RpcSafePubSubImpl {
     pub fn new(subscriptions: Arc<RpcSubscriptions>) -> Self {
         let uid = Arc::new(atomic::AtomicUsize::default());
         Self { uid, subscriptions }
@@ -232,7 +232,7 @@ fn param<T: FromStr>(param_str: &str, thing: &str) -> Result<T> {
     })
 }
 
-impl RpcSolPubSub for RpcSolPubSubImpl {
+impl RpcSafePubSub for RpcSafePubSubImpl {
     type Metadata = Arc<Session>;
 
     fn account_subscribe(
@@ -562,7 +562,6 @@ mod tests {
         },
     };
     use solana_sdk::{
-        account::ReadableAccount,
         commitment_config::CommitmentConfig,
         hash::Hash,
         message::Message,
@@ -619,7 +618,7 @@ mod tests {
         let bank = Bank::new(&genesis_config);
         let blockhash = bank.last_blockhash();
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
-        let rpc = RpcSolPubSubImpl {
+        let rpc = RpcSafePubSubImpl {
             subscriptions: Arc::new(RpcSubscriptions::new(
                 &Arc::new(AtomicBool::new(false)),
                 bank_forks.clone(),
@@ -747,7 +746,7 @@ mod tests {
         let session = create_session();
 
         let mut io = PubSubHandler::default();
-        let rpc = RpcSolPubSubImpl::default_with_bank_forks(bank_forks);
+        let rpc = RpcSafePubSubImpl::default_with_bank_forks(bank_forks);
         io.extend_with(rpc.to_delegate());
 
         let tx = system_transaction::transfer(&alice, &bob_pubkey, 20, blockhash);
@@ -797,7 +796,7 @@ mod tests {
         let bank1 = Bank::new_from_parent(&bank0, &Pubkey::default(), 1);
         bank_forks.write().unwrap().insert(bank1);
 
-        let rpc = RpcSolPubSubImpl {
+        let rpc = RpcSafePubSubImpl {
             subscriptions: Arc::new(RpcSubscriptions::new(
                 &Arc::new(AtomicBool::new(false)),
                 bank_forks.clone(),
@@ -838,14 +837,14 @@ mod tests {
         sleep(Duration::from_millis(200));
 
         // Test signature confirmation notification #1
-        let account = bank_forks
+        let expected_data = bank_forks
             .read()
             .unwrap()
             .get(1)
             .unwrap()
             .get_account(&stake_account.pubkey())
-            .unwrap();
-        let expected_data = account.data();
+            .unwrap()
+            .data;
         let expected = json!({
            "jsonrpc": "2.0",
            "method": "accountNotification",
@@ -907,7 +906,7 @@ mod tests {
         let bank1 = Bank::new_from_parent(&bank0, &Pubkey::default(), 1);
         bank_forks.write().unwrap().insert(bank1);
 
-        let rpc = RpcSolPubSubImpl {
+        let rpc = RpcSafePubSubImpl {
             subscriptions: Arc::new(RpcSubscriptions::new(
                 &Arc::new(AtomicBool::new(false)),
                 bank_forks.clone(),
@@ -943,18 +942,18 @@ mod tests {
         sleep(Duration::from_millis(200));
 
         // Test signature confirmation notification #1
-        let account = bank_forks
+        let expected_data = bank_forks
             .read()
             .unwrap()
             .get(1)
             .unwrap()
             .get_account(&nonce_account.pubkey())
-            .unwrap();
-        let expected_data = account.data();
+            .unwrap()
+            .data;
         let expected_data = parse_account_data(
             &nonce_account.pubkey(),
             &system_program::id(),
-            expected_data,
+            &expected_data,
             None,
         )
         .unwrap();
@@ -989,7 +988,7 @@ mod tests {
         let bank_forks = Arc::new(RwLock::new(BankForks::new(Bank::new(&genesis_config))));
 
         let mut io = PubSubHandler::default();
-        let rpc = RpcSolPubSubImpl::default_with_bank_forks(bank_forks);
+        let rpc = RpcSafePubSubImpl::default_with_bank_forks(bank_forks);
 
         io.extend_with(rpc.to_delegate());
 
@@ -1031,7 +1030,7 @@ mod tests {
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
         let bob = Keypair::new();
 
-        let mut rpc = RpcSolPubSubImpl::default_with_bank_forks(bank_forks.clone());
+        let mut rpc = RpcSafePubSubImpl::default_with_bank_forks(bank_forks.clone());
         let exit = Arc::new(AtomicBool::new(false));
         let subscriptions = RpcSubscriptions::new(
             &exit,
@@ -1083,7 +1082,7 @@ mod tests {
         bank_forks.write().unwrap().insert(bank1);
         let bob = Keypair::new();
 
-        let mut rpc = RpcSolPubSubImpl::default_with_bank_forks(bank_forks.clone());
+        let mut rpc = RpcSafePubSubImpl::default_with_bank_forks(bank_forks.clone());
         let exit = Arc::new(AtomicBool::new(false));
         let block_commitment_cache = Arc::new(RwLock::new(BlockCommitmentCache::new_for_tests()));
 
@@ -1155,7 +1154,7 @@ mod tests {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let bank = Bank::new(&genesis_config);
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
-        let rpc = RpcSolPubSubImpl::default_with_bank_forks(bank_forks);
+        let rpc = RpcSafePubSubImpl::default_with_bank_forks(bank_forks);
         let session = create_session();
         let (subscriber, _id_receiver, receiver) = Subscriber::new_test("slotNotification");
         rpc.slot_subscribe(session, subscriber);
@@ -1183,7 +1182,7 @@ mod tests {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let bank = Bank::new(&genesis_config);
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
-        let rpc = RpcSolPubSubImpl::default_with_bank_forks(bank_forks);
+        let rpc = RpcSafePubSubImpl::default_with_bank_forks(bank_forks);
         let session = create_session();
         let (subscriber, _id_receiver, receiver) = Subscriber::new_test("slotNotification");
         rpc.slot_subscribe(session, subscriber);
@@ -1232,7 +1231,7 @@ mod tests {
         let bank_forks = Arc::new(RwLock::new(bank_forks));
 
         // Setup RPC
-        let mut rpc = RpcSolPubSubImpl::default_with_bank_forks(bank_forks.clone());
+        let mut rpc = RpcSafePubSubImpl::default_with_bank_forks(bank_forks.clone());
         let session = create_session();
         let (subscriber, _id_receiver, receiver) = Subscriber::new_test("voteNotification");
 
@@ -1297,7 +1296,7 @@ mod tests {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let bank = Bank::new(&genesis_config);
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
-        let rpc = RpcSolPubSubImpl::default_with_bank_forks(bank_forks);
+        let rpc = RpcSafePubSubImpl::default_with_bank_forks(bank_forks);
         let session = create_session();
         let (subscriber, _id_receiver, _) = Subscriber::new_test("voteNotification");
         rpc.vote_subscribe(session, subscriber);

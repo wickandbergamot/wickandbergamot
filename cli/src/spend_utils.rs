@@ -107,22 +107,15 @@ where
                 return Err(CliError::InsufficientFundsForSpendAndFee(
                     lamports_to_sol(spend),
                     lamports_to_sol(fee),
-                    *from_pubkey,
                 ));
             }
         } else {
             if from_balance < spend {
-                return Err(CliError::InsufficientFundsForSpend(
-                    lamports_to_sol(spend),
-                    *from_pubkey,
-                ));
+                return Err(CliError::InsufficientFundsForSpend(lamports_to_sol(spend)));
             }
             if !check_account_for_balance_with_commitment(rpc_client, fee_pubkey, fee, commitment)?
             {
-                return Err(CliError::InsufficientFundsForFee(
-                    lamports_to_sol(fee),
-                    *fee_pubkey,
-                ));
+                return Err(CliError::InsufficientFundsForFee(lamports_to_sol(fee)));
             }
         }
         Ok((message, spend))

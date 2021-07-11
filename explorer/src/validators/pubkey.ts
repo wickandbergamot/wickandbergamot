@@ -1,8 +1,8 @@
-import { coerce, instance, string } from "superstruct";
+import { coercion, struct, Struct } from "superstruct";
 import { PublicKey } from "@solana/web3.js";
 
-export const PublicKeyFromString = coerce(
-  instance(PublicKey),
-  string(),
-  (value) => new PublicKey(value)
-);
+const PubkeyValue = struct("Pubkey", (value) => value instanceof PublicKey);
+export const Pubkey: Struct<PublicKey, any> = coercion(PubkeyValue, (value) => {
+  if (typeof value === "string") return new PublicKey(value);
+  throw new Error("invalid pubkey");
+});

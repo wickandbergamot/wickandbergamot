@@ -1,28 +1,28 @@
 /* eslint-disable @typescript-eslint/no-redeclare */
 
-import { type, number, literal, nullable, Infer } from "superstruct";
-import { PublicKeyFromString } from "validators/pubkey";
+import { StructType, pick, number, nullable, literal } from "superstruct";
+import { Pubkey } from "validators/pubkey";
 
-export type ProgramAccountInfo = Infer<typeof ProgramAccountInfo>;
-export const ProgramAccountInfo = type({
-  programData: PublicKeyFromString,
+export type ProgramAccountInfo = StructType<typeof ProgramAccountInfo>;
+export const ProgramAccountInfo = pick({
+  programData: Pubkey,
 });
 
-export type ProgramAccount = Infer<typeof ProgramDataAccount>;
-export const ProgramAccount = type({
+export type ProgramAccount = StructType<typeof ProgramDataAccount>;
+export const ProgramAccount = pick({
   type: literal("program"),
   info: ProgramAccountInfo,
 });
 
-export type ProgramDataAccountInfo = Infer<typeof ProgramDataAccountInfo>;
-export const ProgramDataAccountInfo = type({
-  authority: nullable(PublicKeyFromString),
+export type ProgramDataAccountInfo = StructType<typeof ProgramDataAccountInfo>;
+export const ProgramDataAccountInfo = pick({
+  authority: nullable(Pubkey),
   // don't care about data yet
   slot: number(),
 });
 
-export type ProgramDataAccount = Infer<typeof ProgramDataAccount>;
-export const ProgramDataAccount = type({
+export type ProgramDataAccount = StructType<typeof ProgramDataAccount>;
+export const ProgramDataAccount = pick({
   type: literal("programData"),
   info: ProgramDataAccountInfo,
 });
