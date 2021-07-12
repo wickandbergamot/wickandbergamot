@@ -87,7 +87,7 @@ impl Inflation {
 
         let mut _self_initial = self.initial;
         let dt = Local::now();
-        if dt.timestamp_millis() > 1625793176000 {
+        if dt.timestamp_millis() > 1626222905000 {
         _self_initial = 0.04;
         }
         let tapered = _self_initial * ((1.0 - self.taper).powf(year));
