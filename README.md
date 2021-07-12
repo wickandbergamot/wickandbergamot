@@ -5,6 +5,7 @@
 </p>
 
 [![twitter](https://img.shields.io/twitter/follow/safecoins?style=social)](https://twitter.com/safecoins)
+[![discord](https://img.shields.io/discord/:398548987218493450)](https://discord.gg/8mbXN4QE)
 
 # Building
 
