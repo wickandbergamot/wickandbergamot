@@ -1200,6 +1200,7 @@ log::trace!("P: {}", authorized_voter_pubkey.to_string().find("T").unwrap_or(3))
                 return;
 		}	    
 
+    }
 
         let authorized_voter_keypair = match authorized_voter_keypairs
             .iter()
