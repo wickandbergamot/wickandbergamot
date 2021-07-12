@@ -226,7 +226,6 @@ EOF
       if [[ -f net/keypairs/bootstrap-validator-identity.json ]]; then
         export BOOTSTRAP_VALIDATOR_IDENTITY_KEYPAIR=net/keypairs/bootstrap-validator-identity.json
       fi
-      echo "remote-node.sh: Primordial stakes: $extraPrimordialStakes"
       if [[ "$extraPrimordialStakes" -gt 0 ]]; then
         if [[ "$extraPrimordialStakes" -gt "$numNodes" ]]; then
           echo "warning: extraPrimordialStakes($extraPrimordialStakes) clamped to numNodes($numNodes)"
@@ -311,30 +310,30 @@ EOF
 
       if [[ $nodeType = blockstreamer ]]; then
         net/scripts/rsync-retry.sh -vPrc \
-          "$entrypointIp":~/solana/config/blockstreamer-identity.json "$SAFECOIN_CONFIG_DIR"/validator-identity.json
+          "$entrypointIp":~/solana/config/blockstreamer-identity.json config/validator-identity.json
       else
         net/scripts/rsync-retry.sh -vPrc \
-          "$entrypointIp":~/solana/config/validator-identity-"$nodeIndex".json "$SAFECOIN_CONFIG_DIR"/validator-identity.json
+          "$entrypointIp":~/solana/config/validator-identity-"$nodeIndex".json config/validator-identity.json
         net/scripts/rsync-retry.sh -vPrc \
-          "$entrypointIp":~/solana/config/validator-stake-"$nodeIndex".json "$SAFECOIN_CONFIG_DIR"/stake-account.json
+          "$entrypointIp":~/solana/config/validator-stake-"$nodeIndex".json config/stake-account.json
         net/scripts/rsync-retry.sh -vPrc \
-          "$entrypointIp":~/solana/config/validator-vote-"$nodeIndex".json "$SAFECOIN_CONFIG_DIR"/vote-account.json
+          "$entrypointIp":~/solana/config/validator-vote-"$nodeIndex".json config/vote-account.json
       fi
       net/scripts/rsync-retry.sh -vPrc \
-        "$entrypointIp":~/solana/config/shred-version "$SAFECOIN_CONFIG_DIR"/shred-version
+        "$entrypointIp":~/solana/config/shred-version config/shred-version
 
       net/scripts/rsync-retry.sh -vPrc \
-        "$entrypointIp":~/solana/config/bank-hash "$SAFECOIN_CONFIG_DIR"/bank-hash || true
+        "$entrypointIp":~/solana/config/bank-hash config/bank-hash || true
 
       net/scripts/rsync-retry.sh -vPrc \
-        "$entrypointIp":~/solana/config/faucet.json "$SAFECOIN_CONFIG_DIR"/faucet.json
+        "$entrypointIp":~/solana/config/faucet.json config/faucet.json
     fi
 
     args=(
       --entrypoint "$entrypointIp:10015"
       --gossip-port 10015
       --rpc-port 8328
-      --expected-shred-version "$(cat "$SAFECOIN_CONFIG_DIR"/shred-version)"
+      --expected-shred-version "$(cat config/shred-version)"
     )
     if [[ $nodeType = blockstreamer ]]; then
       args+=(
@@ -349,27 +348,27 @@ EOF
       fi
     fi
 
-    if [[ ! -f "$SAFECOIN_CONFIG_DIR"/validator-identity.json ]]; then
-      safecoin-keygen new --no-passphrase -so "$SAFECOIN_CONFIG_DIR"/validator-identity.json
+    if [[ ! -f config/validator-identity.json ]]; then
+      safecoin-keygen new --no-passphrase -so config/validator-identity.json
     fi
-    args+=(--identity "$SAFECOIN_CONFIG_DIR"/validator-identity.json)
-    if [[ ! -f "$SAFECOIN_CONFIG_DIR"/vote-account.json ]]; then
-      safecoin-keygen new --no-passphrase -so "$SAFECOIN_CONFIG_DIR"/vote-account.json
+    args+=(--identity config/validator-identity.json)
+    if [[ ! -f config/vote-account.json ]]; then
+      safecoin-keygen new --no-passphrase -so config/vote-account.json
     fi
-    args+=(--vote-account "$SAFECOIN_CONFIG_DIR"/vote-account.json)
+    args+=(--vote-account config/vote-account.json)
 
     if [[ $airdropsEnabled != true ]]; then
       args+=(--no-airdrop)
     fi
 
-    if [[ -r "$SAFECOIN_CONFIG_DIR"/bank-hash ]]; then
-      args+=(--expected-bank-hash "$(cat "$SAFECOIN_CONFIG_DIR"/bank-hash)")
+    if [[ -r config/bank-hash ]]; then
+      args+=(--expected-bank-hash "$(cat config/bank-hash)")
     fi
 
     set -x
     # Add the faucet keypair to validators for convenient access from tools
     # like bench-tps and add to blocktreamers to run a faucet
-    scp "$entrypointIp":~/solana/config/faucet.json "$SAFECOIN_CONFIG_DIR"/
+    scp "$entrypointIp":~/solana/config/faucet.json config/
     if [[ $nodeType = blockstreamer ]]; then
       # Run another faucet with the same keypair on the blockstreamer node.
       # Typically the blockstreamer node has a static IP/DNS name for hosting
@@ -429,13 +428,8 @@ EOF
         args+=(--keypair config/validator-identity.json)
       fi
 
-      if [[ ${extraPrimordialStakes} -eq 0 ]]; then
-        echo "0 Primordial stakes, staking with $internalNodesStakeLamports"
-        multinode-demo/delegate-stake.sh --vote-account "$SAFECOIN_CONFIG_DIR"/vote-account.json \
-                                         --stake-account "$SAFECOIN_CONFIG_DIR"/stake-account.json \
-                                         "${args[@]}" "$internalNodesStakeLamports"
-      else
-        echo "Skipping staking with extra stakes: ${extraPrimordialStakes}"
+      if [[ ${#extraPrimordialStakes} -eq 0 ]]; then
+        multinode-demo/delegate-stake.sh "${args[@]}" "$internalNodesStakeLamports"
       fi
     fi
     ;;

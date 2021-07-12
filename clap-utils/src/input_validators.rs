@@ -164,8 +164,8 @@ where
     }
 }
 
-pub fn normalize_to_url_if_moniker<T: AsRef<str>>(url_or_moniker: T) -> String {
-    match url_or_moniker.as_ref() {
+pub fn normalize_to_url_if_moniker(url_or_moniker: &str) -> String {
+    match url_or_moniker {
         "m" | "mainnet-beta" => "https://api.mainnet-beta.safecoin.org",
         "t" | "testnet" => "https://testnet.safecoin.org",
         "d" | "devnet" => "https://devnet.safecoin.org",

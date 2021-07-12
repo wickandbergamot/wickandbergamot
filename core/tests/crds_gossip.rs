@@ -2,7 +2,7 @@ use bincode::serialized_size;
 use log::*;
 use rayon::prelude::*;
 use rayon::{ThreadPool, ThreadPoolBuilder};
-use serial_test::serial;
+use serial_test_derive::serial;
 use solana_core::cluster_info;
 use solana_core::contact_info::ContactInfo;
 use solana_core::crds_gossip::*;
@@ -458,11 +458,7 @@ fn network_run_pull(
                         let rsp = node
                             .lock()
                             .unwrap()
-                            .generate_pull_responses(
-                                &filters,
-                                /*output_size_limit=*/ usize::MAX,
-                                now,
-                            )
+                            .generate_pull_responses(&filters, now)
                             .into_iter()
                             .flatten()
                             .collect();
@@ -628,10 +624,8 @@ fn test_star_network_large_push() {
 }
 #[test]
 fn test_prune_errors() {
-    let mut crds_gossip = CrdsGossip {
-        id: Pubkey::new(&[0; 32]),
-        ..CrdsGossip::default()
-    };
+    let mut crds_gossip = CrdsGossip::default();
+    crds_gossip.id = Pubkey::new(&[0; 32]);
     let id = crds_gossip.id;
     let ci = ContactInfo::new_localhost(&Pubkey::new(&[1; 32]), 0);
     let prune_pubkey = Pubkey::new(&[2; 32]);

@@ -267,7 +267,7 @@ fn build_messages(
             return Err(Error::ExitSignal);
         }
         let new_stake_account_keypair = Keypair::new();
-        let lockup_date = if allocation.lockup_date.is_empty() {
+        let lockup_date = if allocation.lockup_date == "" {
             None
         } else {
             Some(allocation.lockup_date.parse::<DateTime<Utc>>().unwrap())
@@ -338,7 +338,7 @@ fn send_messages(
             signers.push(&*stake_args.stake_authority);
             signers.push(&*stake_args.withdraw_authority);
             signers.push(&new_stake_account_keypair);
-            if !allocation.lockup_date.is_empty() {
+            if allocation.lockup_date != "" {
                 if let Some(lockup_authority) = &stake_args.lockup_authority {
                     signers.push(&**lockup_authority);
                 } else {
@@ -1037,39 +1037,81 @@ pub fn test_process_distribute_stake_with_client(client: &RpcClient, sender_keyp
 #[cfg(test)]
 mod tests {
     use super::*;
+    use solana_client::rpc_client::get_rpc_request_str;
     use solana_core::test_validator::TestValidator;
-    use solana_sdk::signature::{read_keypair_file, write_keypair_file, Signer};
+    use solana_sdk::{
+        clock::DEFAULT_MS_PER_SLOT,
+        signature::{read_keypair_file, write_keypair_file},
+    };
     use solana_stake_program::stake_instruction::StakeInstruction;
     use solana_transaction_status::TransactionConfirmationStatus;
+    use std::fs::remove_dir_all;
+
+    // This is a quick hack until TestValidator can be initialized with fees from block 0
+    fn test_validator_block_0_fee_workaround(client: &RpcClient) {
+        while client
+            .get_recent_blockhash()
+            .unwrap()
+            .1
+            .lamports_per_signature
+            == 0
+        {
+            sleep(Duration::from_millis(DEFAULT_MS_PER_SLOT));
+        }
+    }
 
     #[test]
     fn test_process_token_allocations() {
-        let alice = Keypair::new();
-        let test_validator = TestValidator::with_no_fees(alice.pubkey());
-        let url = test_validator.rpc_url();
-
-        let client = RpcClient::new_with_commitment(url, CommitmentConfig::processed());
+        let TestValidator {
+            server,
+            leader_data,
+            alice,
+            ledger_path,
+            ..
+        } = TestValidator::run();
+        let url = get_rpc_request_str(leader_data.rpc, false);
+        let client = RpcClient::new_with_commitment(url, CommitmentConfig::recent());
         test_process_distribute_tokens_with_client(&client, alice, None);
+
+        // Explicit cleanup, otherwise "pure virtual method called" crash in Docker
+        server.close().unwrap();
+        remove_dir_all(ledger_path).unwrap();
     }
 
     #[test]
     fn test_process_transfer_amount_allocations() {
-        let alice = Keypair::new();
-        let test_validator = TestValidator::with_no_fees(alice.pubkey());
-        let url = test_validator.rpc_url();
-
-        let client = RpcClient::new_with_commitment(url, CommitmentConfig::processed());
+        let TestValidator {
+            server,
+            leader_data,
+            alice,
+            ledger_path,
+            ..
+        } = TestValidator::run();
+        let url = get_rpc_request_str(leader_data.rpc, false);
+        let client = RpcClient::new_with_commitment(url, CommitmentConfig::recent());
         test_process_distribute_tokens_with_client(&client, alice, Some(sol_to_lamports(1.5)));
+
+        // Explicit cleanup, otherwise "pure virtual method called" crash in Docker
+        server.close().unwrap();
+        remove_dir_all(ledger_path).unwrap();
     }
 
     #[test]
     fn test_process_stake_allocations() {
-        let alice = Keypair::new();
-        let test_validator = TestValidator::with_no_fees(alice.pubkey());
-        let url = test_validator.rpc_url();
-
-        let client = RpcClient::new_with_commitment(url, CommitmentConfig::processed());
+        let TestValidator {
+            server,
+            leader_data,
+            alice,
+            ledger_path,
+            ..
+        } = TestValidator::run();
+        let url = get_rpc_request_str(leader_data.rpc, false);
+        let client = RpcClient::new_with_commitment(url, CommitmentConfig::recent());
         test_process_distribute_stake_with_client(&client, alice);
+
+        // Explicit cleanup, otherwise "pure virtual method called" crash in Docker
+        server.close().unwrap();
+        remove_dir_all(ledger_path).unwrap();
     }
 
     #[test]
@@ -1378,14 +1420,19 @@ mod tests {
     fn test_check_payer_balances_distribute_tokens_single_payer() {
         let fees = 10_000;
         let fees_in_sol = lamports_to_sol(fees);
-
-        let alice = Keypair::new();
-        let test_validator = TestValidator::with_custom_fees(alice.pubkey(), fees);
-        let url = test_validator.rpc_url();
-
-        let client = RpcClient::new_with_commitment(url, CommitmentConfig::processed());
+        let TestValidator {
+            server,
+            leader_data,
+            alice,
+            ledger_path,
+            ..
+        } = TestValidator::run_with_fees(fees);
+        let url = get_rpc_request_str(leader_data.rpc, false);
+        let client = RpcClient::new_with_commitment(url, CommitmentConfig::recent());
         let sender_keypair_file = tmp_file_path("keypair_file", &alice.pubkey());
         write_keypair_file(&alice, &sender_keypair_file).unwrap();
+
+        test_validator_block_0_fee_workaround(&client);
 
         let allocation_amount = 1000.0;
 
@@ -1456,17 +1503,27 @@ mod tests {
         } else {
             panic!("check_payer_balances should have errored");
         }
+
+        // Explicit cleanup, otherwise "pure virtual method called" crash in Docker
+        server.close().unwrap();
+        remove_dir_all(ledger_path).unwrap();
     }
 
     #[test]
     fn test_check_payer_balances_distribute_tokens_separate_payers() {
         let fees = 10_000;
         let fees_in_sol = lamports_to_sol(fees);
-        let alice = Keypair::new();
-        let test_validator = TestValidator::with_custom_fees(alice.pubkey(), fees);
-        let url = test_validator.rpc_url();
+        let TestValidator {
+            server,
+            leader_data,
+            alice,
+            ledger_path,
+            ..
+        } = TestValidator::run_with_fees(fees);
+        let url = get_rpc_request_str(leader_data.rpc, false);
+        let client = RpcClient::new_with_commitment(url, CommitmentConfig::recent());
 
-        let client = RpcClient::new_with_commitment(url, CommitmentConfig::processed());
+        test_validator_block_0_fee_workaround(&client);
 
         let sender_keypair_file = tmp_file_path("keypair_file", &alice.pubkey());
         write_keypair_file(&alice, &sender_keypair_file).unwrap();
@@ -1526,6 +1583,10 @@ mod tests {
         } else {
             panic!("check_payer_balances should have errored");
         }
+
+        // Explicit cleanup, otherwise "pure virtual method called" crash in Docker
+        server.close().unwrap();
+        remove_dir_all(ledger_path).unwrap();
     }
 
     fn initialize_stake_account(
@@ -1572,10 +1633,17 @@ mod tests {
     fn test_check_payer_balances_distribute_stakes_single_payer() {
         let fees = 10_000;
         let fees_in_sol = lamports_to_sol(fees);
-        let alice = Keypair::new();
-        let test_validator = TestValidator::with_custom_fees(alice.pubkey(), fees);
-        let url = test_validator.rpc_url();
-        let client = RpcClient::new_with_commitment(url, CommitmentConfig::processed());
+        let TestValidator {
+            server,
+            leader_data,
+            alice,
+            ledger_path,
+            ..
+        } = TestValidator::run_with_fees(fees);
+        let url = get_rpc_request_str(leader_data.rpc, false);
+        let client = RpcClient::new_with_commitment(url, CommitmentConfig::recent());
+
+        test_validator_block_0_fee_workaround(&client);
 
         let sender_keypair_file = tmp_file_path("keypair_file", &alice.pubkey());
         write_keypair_file(&alice, &sender_keypair_file).unwrap();
@@ -1672,20 +1740,30 @@ mod tests {
         } else {
             panic!("check_payer_balances should have errored");
         }
+
+        // Explicit cleanup, otherwise "pure virtual method called" crash in Docker
+        server.close().unwrap();
+        remove_dir_all(ledger_path).unwrap();
     }
 
     #[test]
     fn test_check_payer_balances_distribute_stakes_separate_payers() {
         let fees = 10_000;
         let fees_in_sol = lamports_to_sol(fees);
-        let alice = Keypair::new();
-        let test_validator = TestValidator::with_custom_fees(alice.pubkey(), fees);
-        let url = test_validator.rpc_url();
-
-        let client = RpcClient::new_with_commitment(url, CommitmentConfig::processed());
+        let TestValidator {
+            server,
+            leader_data,
+            alice,
+            ledger_path,
+            ..
+        } = TestValidator::run_with_fees(fees);
+        let url = get_rpc_request_str(leader_data.rpc, false);
+        let client = RpcClient::new_with_commitment(url, CommitmentConfig::recent());
 
         let sender_keypair_file = tmp_file_path("keypair_file", &alice.pubkey());
         write_keypair_file(&alice, &sender_keypair_file).unwrap();
+
+        test_validator_block_0_fee_workaround(&client);
 
         let allocation_amount = 1000.0;
         let unlocked_sol = 1.0;
@@ -1749,6 +1827,10 @@ mod tests {
         } else {
             panic!("check_payer_balances should have errored");
         }
+
+        // Explicit cleanup, otherwise "pure virtual method called" crash in Docker
+        server.close().unwrap();
+        remove_dir_all(ledger_path).unwrap();
     }
 
     #[test]
@@ -1993,19 +2075,19 @@ mod tests {
 
     #[test]
     fn test_distribute_allocations_dump_db() {
-        let sender_keypair = Keypair::new();
-        let test_validator = TestValidator::with_no_fees(sender_keypair.pubkey());
-        let url = test_validator.rpc_url();
-        let client = RpcClient::new_with_commitment(url, CommitmentConfig::processed());
+        let TestValidator {
+            server,
+            leader_data,
+            alice,
+            ledger_path,
+            ..
+        } = TestValidator::run();
+        let url = get_rpc_request_str(leader_data.rpc, false);
+        let client = RpcClient::new_with_commitment(url, CommitmentConfig::recent());
 
         let fee_payer = Keypair::new();
-        let transaction = transfer(
-            &client,
-            sol_to_lamports(1.0),
-            &sender_keypair,
-            &fee_payer.pubkey(),
-        )
-        .unwrap();
+        let transaction =
+            transfer(&client, sol_to_lamports(1.0), &alice, &fee_payer.pubkey()).unwrap();
         client
             .send_and_confirm_transaction_with_spinner(&transaction)
             .unwrap();
@@ -2026,7 +2108,7 @@ mod tests {
         };
         // This is just dummy data; Args will not affect messages
         let args = DistributeTokensArgs {
-            sender_keypair: Box::new(sender_keypair),
+            sender_keypair: Box::new(alice),
             fee_payer: Box::new(fee_payer),
             dry_run: true,
             input_csv: "".to_string(),
@@ -2044,6 +2126,10 @@ mod tests {
         let read_db = db::open_db(&db_file, true).unwrap();
         let transaction_info = db::read_transaction_infos(&read_db);
         assert_eq!(transaction_info.len(), 1);
+
+        // Explicit cleanup, otherwise "pure virtual method called" crash in Docker
+        server.close().unwrap();
+        remove_dir_all(ledger_path).unwrap();
     }
 
     #[test]

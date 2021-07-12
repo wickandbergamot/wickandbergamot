@@ -52,28 +52,27 @@ impl DataBudget {
         }
     }
 
-    /// Updates the budget if at least given milliseconds has passed since last
-    /// update. Updater function maps current value of bytes to the new one.
-    /// Returns current data-budget after the update.
-    pub fn update<F>(&self, duration_millis: u64, updater: F) -> usize
+    // Updates the budget if at least given milliseconds has passed since last
+    // update. Updater function maps current value of bytes to the new one.
+    pub fn update<F>(&self, duration_millis: u64, updater: F)
     where
         F: Fn(usize) -> usize,
     {
-        if self.can_update(duration_millis) {
-            let mut bytes = self.bytes.load(Ordering::Acquire);
-            loop {
-                match self.bytes.compare_exchange_weak(
-                    bytes,
-                    updater(bytes),
-                    Ordering::AcqRel,
-                    Ordering::Acquire,
-                ) {
-                    Ok(_) => break,
-                    Err(b) => bytes = b,
-                }
+        if !self.can_update(duration_millis) {
+            return;
+        }
+        let mut bytes = self.bytes.load(Ordering::Acquire);
+        loop {
+            match self.bytes.compare_exchange_weak(
+                bytes,
+                updater(bytes),
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(_) => break,
+                Err(b) => bytes = b,
             }
         }
-        self.bytes.load(Ordering::Acquire)
     }
 
     // Non-atomic clone only for tests and simulations.
@@ -95,16 +94,16 @@ mod tests {
         let budget = DataBudget::default();
         assert!(!budget.take(1)); // budget = 0.
 
-        assert_eq!(budget.update(1000, |bytes| bytes + 5), 5); // budget updates to 5.
+        budget.update(1000, |bytes| bytes + 5); // budget updates to 5.
         assert!(budget.take(1));
         assert!(budget.take(2));
         assert!(!budget.take(3)); // budget = 2, out of budget.
 
-        assert_eq!(budget.update(30, |_| 10), 2); // no update, budget = 2.
+        budget.update(30, |_| 10); // no update, budget = 2.
         assert!(!budget.take(3)); // budget = 2, out of budget.
 
         std::thread::sleep(Duration::from_millis(50));
-        assert_eq!(budget.update(30, |bytes| bytes * 2), 4); // budget updates to 4.
+        budget.update(30, |bytes| bytes * 2); // budget updates to 4.
 
         assert!(budget.take(3));
         assert!(budget.take(1));

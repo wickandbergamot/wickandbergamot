@@ -136,7 +136,7 @@ pub fn create_test_recent_blockhashes(start: usize) -> RecentBlockhashes {
         .iter()
         .map(|(i, hash, fee_calc)| IterItem(*i, hash, fee_calc))
         .collect();
-    bhq.into_iter().collect()
+    RecentBlockhashes::from_iter(bhq.into_iter())
 }
 
 #[cfg(test)]

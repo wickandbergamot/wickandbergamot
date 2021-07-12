@@ -19,17 +19,14 @@ export function TokenLargestAccountsCard({ pubkey }: { pubkey: PublicKey }) {
   const mintInfo = useMintAccountInfo(mintAddress);
   const largestAccounts = useTokenLargestTokens(mintAddress);
   const fetchLargestAccounts = useFetchTokenLargestAccounts();
-  const refreshLargest = React.useCallback(() => fetchLargestAccounts(pubkey), [
-    pubkey,
-    fetchLargestAccounts,
-  ]);
+  const refreshLargest = () => fetchLargestAccounts(pubkey);
   const { cluster } = useCluster();
   const unit = TokenRegistry.get(mintAddress, cluster)?.symbol;
   const unitLabel = unit ? `(${unit})` : "";
 
   React.useEffect(() => {
-    if (mintInfo) refreshLargest();
-  }, [mintInfo, refreshLargest]);
+    if (!largestAccounts) refreshLargest();
+  }, [mintAddress]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Largest accounts hasn't started fetching
   if (largestAccounts === undefined) return null;
@@ -48,8 +45,6 @@ export function TokenLargestAccountsCard({ pubkey }: { pubkey: PublicKey }) {
         text="Failed to fetch largest accounts"
       />
     );
-  } else if (largestAccounts.status === FetchStatus.Fetching) {
-    return <LoadingCard message="Refreshing largest accounts" />;
   }
 
   const accounts = largestAccounts.data.largest;

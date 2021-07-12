@@ -196,18 +196,14 @@ impl<T: BloomHashIndex> AtomicBloom<T> {
     }
 }
 
-impl<T: BloomHashIndex> From<AtomicBloom<T>> for Bloom<T> {
-    fn from(atomic_bloom: AtomicBloom<T>) -> Self {
-        let bits: Vec<_> = atomic_bloom
-            .bits
-            .into_iter()
-            .map(AtomicU64::into_inner)
-            .collect();
+impl<T: BloomHashIndex> Into<Bloom<T>> for AtomicBloom<T> {
+    fn into(self) -> Bloom<T> {
+        let bits: Vec<_> = self.bits.into_iter().map(AtomicU64::into_inner).collect();
         let num_bits_set = bits.iter().map(|x| x.count_ones() as u64).sum();
         let mut bits: BitVec<u64> = bits.into();
-        bits.truncate(atomic_bloom.num_bits);
+        bits.truncate(self.num_bits);
         Bloom {
-            keys: atomic_bloom.keys,
+            keys: self.keys,
             bits,
             num_bits_set,
             _phantom: PhantomData::default(),
@@ -258,8 +254,8 @@ mod test {
     fn test_random() {
         let mut b1: Bloom<Hash> = Bloom::random(10, 0.1, 100);
         let mut b2: Bloom<Hash> = Bloom::random(10, 0.1, 100);
-        b1.keys.sort_unstable();
-        b2.keys.sort_unstable();
+        b1.keys.sort();
+        b2.keys.sort();
         assert_ne!(b1.keys, b2.keys);
     }
     // Bloom filter math in python

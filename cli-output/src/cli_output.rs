@@ -1,42 +1,41 @@
-use {
-    crate::{
-        display::{
-            build_balance_message, build_balance_message_with_config, format_labeled_address,
-            unix_timestamp_to_string, writeln_name_value, BuildBalanceMessageConfig,
-        },
-        QuietDisplay, VerboseDisplay,
+use crate::{
+    display::{
+        build_balance_message, build_balance_message_with_config, format_labeled_address,
+        writeln_name_value, BuildBalanceMessageConfig,
     },
-    console::{style, Emoji},
-    inflector::cases::titlecase::to_title_case,
-    serde::{Deserialize, Serialize},
-    serde_json::{Map, Value},
-    solana_account_decoder::parse_token::UiTokenAccount,
-    solana_clap_utils::keypair::SignOnly,
-    solana_client::rpc_response::{
-        RpcAccountBalance, RpcInflationGovernor, RpcInflationRate, RpcKeyedAccount, RpcSupply,
-        RpcVoteAccountInfo,
-    },
-    solana_sdk::{
-        clock::{self, Epoch, Slot, UnixTimestamp},
-        epoch_info::EpochInfo,
-        hash::Hash,
-        native_token::lamports_to_sol,
-        pubkey::Pubkey,
-        signature::Signature,
-        stake_history::StakeHistoryEntry,
-        transaction::Transaction,
-    },
-    solana_stake_program::stake_state::{Authorized, Lockup},
-    solana_vote_program::{
-        authorized_voters::AuthorizedVoters,
-        vote_state::{BlockTimestamp, Lockout},
-    },
-    std::{
-        collections::{BTreeMap, HashMap},
-        fmt,
-        str::FromStr,
-        time::Duration,
-    },
+    QuietDisplay, VerboseDisplay,
+};
+use chrono::{DateTime, NaiveDateTime, SecondsFormat, Utc};
+use console::{style, Emoji};
+use inflector::cases::titlecase::to_title_case;
+use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
+use solana_account_decoder::parse_token::UiTokenAccount;
+use solana_clap_utils::keypair::SignOnly;
+use solana_client::rpc_response::{
+    RpcAccountBalance, RpcInflationGovernor, RpcInflationRate, RpcKeyedAccount, RpcSupply,
+    RpcVoteAccountInfo,
+};
+use solana_sdk::{
+    clock::{self, Epoch, Slot, UnixTimestamp},
+    epoch_info::EpochInfo,
+    hash::Hash,
+    native_token::lamports_to_sol,
+    pubkey::Pubkey,
+    signature::Signature,
+    stake_history::StakeHistoryEntry,
+    transaction::Transaction,
+};
+use solana_stake_program::stake_state::{Authorized, Lockup};
+use solana_vote_program::{
+    authorized_voters::AuthorizedVoters,
+    vote_state::{BlockTimestamp, Lockout},
+};
+use std::{
+    collections::{BTreeMap, HashMap},
+    fmt,
+    str::FromStr,
+    time::Duration,
 };
 
 static WARNING: Emoji = Emoji("⚠️", "!");
@@ -289,7 +288,10 @@ impl fmt::Display for CliEpochInfo {
 }
 
 fn slot_to_human_time(slot: Slot) -> String {
-    humantime::format_duration(Duration::from_millis(slot * clock::DEFAULT_MS_PER_SLOT)).to_string()
+    humantime::format_duration(Duration::from_secs(
+        slot * clock::DEFAULT_TICKS_PER_SLOT / clock::DEFAULT_TICKS_PER_SECOND,
+    ))
+    .to_string()
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -599,45 +601,6 @@ pub struct CliEpochReward {
     pub post_balance: u64, // lamports
     pub percent_change: f64,
     pub apr: Option<f64>,
-}
-
-fn show_votes_and_credits(
-    f: &mut fmt::Formatter,
-    votes: &[CliLockout],
-    epoch_voting_history: &[CliEpochVotingHistory],
-) -> fmt::Result {
-    if votes.is_empty() {
-        return Ok(());
-    }
-
-    writeln!(f, "Recent Votes:")?;
-    for vote in votes {
-        writeln!(f, "- slot: {}", vote.slot)?;
-        writeln!(f, "  confirmation count: {}", vote.confirmation_count)?;
-    }
-    writeln!(f, "Epoch Voting History:")?;
-    writeln!(
-        f,
-        "* missed credits include slots unavailable to vote on due to delinquent leaders",
-    )?;
-    for entry in epoch_voting_history {
-        writeln!(
-            f, // tame fmt so that this will be folded like following
-            "- epoch: {}",
-            entry.epoch
-        )?;
-        writeln!(
-            f,
-            "  credits range: [{}..{})",
-            entry.prev_credits, entry.credits
-        )?;
-        writeln!(
-            f,
-            "  credits/slots: {}/{}",
-            entry.credits_earned, entry.slots_in_epoch
-        )?;
-    }
-    Ok(())
 }
 
 fn show_epoch_rewards(
@@ -1085,7 +1048,24 @@ impl fmt::Display for CliVoteAccount {
             unix_timestamp_to_string(self.recent_timestamp.timestamp),
             self.recent_timestamp.slot
         )?;
-        show_votes_and_credits(f, &self.votes, &self.epoch_voting_history)?;
+        if !self.votes.is_empty() {
+            writeln!(f, "Recent Votes:")?;
+            for vote in &self.votes {
+                writeln!(
+                    f,
+                    "- slot: {}\n  confirmation count: {}",
+                    vote.slot, vote.confirmation_count
+                )?;
+            }
+            writeln!(f, "Epoch Voting History:")?;
+            for epoch_info in &self.epoch_voting_history {
+                writeln!(
+                    f,
+                    "- epoch: {}\n  slots in epoch: {}\n  credits earned: {}",
+                    epoch_info.epoch, epoch_info.slots_in_epoch, epoch_info.credits_earned,
+                )?;
+            }
+        }
         show_epoch_rewards(f, &self.epoch_rewards)?;
         Ok(())
     }
@@ -1124,8 +1104,6 @@ pub struct CliEpochVotingHistory {
     pub epoch: Epoch,
     pub slots_in_epoch: u64,
     pub credits_earned: u64,
-    pub credits: u64,
-    pub prev_credits: u64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -1153,6 +1131,18 @@ pub struct CliBlockTime {
 
 impl QuietDisplay for CliBlockTime {}
 impl VerboseDisplay for CliBlockTime {}
+
+fn unix_timestamp_to_string(unix_timestamp: UnixTimestamp) -> String {
+    format!(
+        "{} (UnixTimestamp: {})",
+        match NaiveDateTime::from_timestamp_opt(unix_timestamp, 0) {
+            Some(ndt) =>
+                DateTime::<Utc>::from_utc(ndt, Utc).to_rfc3339_opts(SecondsFormat::Secs, true),
+            None => "unknown".to_string(),
+        },
+        unix_timestamp,
+    )
+}
 
 impl fmt::Display for CliBlockTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -1459,114 +1449,6 @@ impl fmt::Display for CliTokenAccount {
             f,
             "Close authority:",
             &account.close_authority.as_ref().unwrap_or(&String::new()),
-        )?;
-        Ok(())
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CliProgramId {
-    pub program_id: String,
-}
-
-impl QuietDisplay for CliProgramId {}
-impl VerboseDisplay for CliProgramId {}
-
-impl fmt::Display for CliProgramId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln_name_value(f, "Program Id:", &self.program_id)
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CliProgramBuffer {
-    pub buffer: String,
-}
-
-impl QuietDisplay for CliProgramBuffer {}
-impl VerboseDisplay for CliProgramBuffer {}
-
-impl fmt::Display for CliProgramBuffer {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln_name_value(f, "Buffer:", &self.buffer)
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum CliProgramAccountType {
-    Buffer,
-    Program,
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CliProgramAuthority {
-    pub authority: String,
-    pub account_type: CliProgramAccountType,
-}
-
-impl QuietDisplay for CliProgramAuthority {}
-impl VerboseDisplay for CliProgramAuthority {}
-
-impl fmt::Display for CliProgramAuthority {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln_name_value(f, "Account Type:", &format!("{:?}", self.account_type))?;
-        writeln_name_value(f, "Authority:", &self.authority)
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CliUpgradeableProgram {
-    pub program_id: String,
-    pub programdata_address: String,
-    pub authority: String,
-    pub last_deploy_slot: u64,
-    pub data_len: usize,
-}
-impl QuietDisplay for CliUpgradeableProgram {}
-impl VerboseDisplay for CliUpgradeableProgram {}
-impl fmt::Display for CliUpgradeableProgram {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f)?;
-        writeln_name_value(f, "Program Id:", &self.program_id)?;
-        writeln_name_value(f, "ProgramData Address:", &self.programdata_address)?;
-        writeln_name_value(f, "Authority:", &self.authority)?;
-        writeln_name_value(
-            f,
-            "Last Deployed In Slot:",
-            &self.last_deploy_slot.to_string(),
-        )?;
-        writeln_name_value(
-            f,
-            "Data Length:",
-            &format!("{:?} ({:#x?}) bytes", self.data_len, self.data_len),
-        )?;
-        Ok(())
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CliUpgradeableBuffer {
-    pub address: String,
-    pub authority: String,
-    pub data_len: usize,
-}
-impl QuietDisplay for CliUpgradeableBuffer {}
-impl VerboseDisplay for CliUpgradeableBuffer {}
-impl fmt::Display for CliUpgradeableBuffer {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f)?;
-        writeln_name_value(f, "Buffer Address:", &self.address)?;
-        writeln_name_value(f, "Authority:", &self.authority)?;
-        writeln_name_value(
-            f,
-            "Data Length:",
-            &format!("{:?} ({:#x?}) bytes", self.data_len, self.data_len),
         )?;
         Ok(())
     }

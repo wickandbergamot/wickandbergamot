@@ -12,6 +12,11 @@ use std::{
 };
 use thiserror::Error;
 
+// Inline to prevent version conflicts in v1.4 branch
+mod spl_memo_v3_0 {
+    solana_sdk::declare_id!("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
+}
+
 lazy_static! {
     static ref BPF_LOADER_PROGRAM_ID: Pubkey = solana_sdk::bpf_loader::id();
     static ref MEMO_V1_PROGRAM_ID: Pubkey =
@@ -85,7 +90,7 @@ pub fn parse(
 ) -> Result<ParsedInstruction, ParseInstructionError> {
     let program_name = PARSABLE_PROGRAM_IDS
         .get(program_id)
-        .ok_or(ParseInstructionError::ProgramNotParsable)?;
+        .ok_or_else(|| ParseInstructionError::ProgramNotParsable)?;
     let parsed_json = match program_name {
         ParsableProgram::SplMemo => parse_memo(instruction),
         ParsableProgram::SplToken => serde_json::to_value(parse_token(instruction, account_keys)?)?,

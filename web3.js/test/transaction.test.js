@@ -86,22 +86,19 @@ describe('compileMessage', () => {
 
     expect(() => {
       transaction.compileMessage();
-    }).toThrow('Transaction fee payer required');
+    }).toThrow('Transaction feePayer required');
+
+    transaction.setSigners(payer.publicKey);
+
+    expect(() => {
+      transaction.compileMessage();
+    }).toThrow('missing signer');
 
     transaction.setSigners(payer.publicKey, new Account().publicKey);
 
     expect(() => {
       transaction.compileMessage();
     }).toThrow('unknown signer');
-
-    // Expect compile to succeed with implicit fee payer from signers
-    transaction.setSigners(payer.publicKey);
-    transaction.compileMessage();
-
-    // Expect compile to succeed with fee payer and no signers
-    transaction.signatures = [];
-    transaction.feePayer = payer.publicKey;
-    transaction.compileMessage();
   });
 
   test('payer is writable', () => {
@@ -263,7 +260,6 @@ test('transfer signatures', () => {
 
   const newTransaction = new Transaction({
     recentBlockhash: orgTransaction.recentBlockhash,
-    feePayer: orgTransaction.feePayer,
     signatures: orgTransaction.signatures,
   }).add(transfer1, transfer2);
 
@@ -358,10 +354,7 @@ test('parse wire format and serialize', () => {
     toPubkey: recipient,
     lamports: 49,
   });
-  const expectedTransaction = new Transaction({
-    recentBlockhash,
-    feePayer: sender.publicKey,
-  }).add(transfer);
+  const expectedTransaction = new Transaction({recentBlockhash}).add(transfer);
   expectedTransaction.sign(sender);
 
   const wireTransaction = Buffer.from(
@@ -430,38 +423,21 @@ test('serialize unsigned transaction', () => {
   expect(expectedTransaction.signatures.length).toBe(0);
   expect(() => {
     expectedTransaction.serialize();
-  }).toThrow('Transaction fee payer required');
+  }).toThrow(Error);
   expect(() => {
     expectedTransaction.serialize({verifySignatures: false});
-  }).toThrow('Transaction fee payer required');
+  }).toThrow(Error);
   expect(() => {
     expectedTransaction.serializeMessage();
-  }).toThrow('Transaction fee payer required');
+  }).toThrow('Transaction feePayer required');
 
-  expectedTransaction.feePayer = sender.publicKey;
-
-  // Transactions with missing signatures will fail sigverify.
-  expect(() => {
-    expectedTransaction.serialize();
-  }).toThrow('Signature verification failed');
-
-  // Serializing without signatures is allowed if sigverify disabled.
-  expectedTransaction.serialize({verifySignatures: false});
-
-  // Serializing the message is allowed when signature array has null signatures
-  expectedTransaction.serializeMessage();
-
-  expectedTransaction.feePayer = null;
   expectedTransaction.setSigners(sender.publicKey);
   expect(expectedTransaction.signatures.length).toBe(1);
 
-  // Transactions with missing signatures will fail sigverify.
+  // Signature array populated with null signatures fails.
   expect(() => {
     expectedTransaction.serialize();
-  }).toThrow('Signature verification failed');
-
-  // Serializing without signatures is allowed if sigverify disabled.
-  expectedTransaction.serialize({verifySignatures: false});
+  }).toThrow(Error);
 
   // Serializing the message is allowed when signature array has null signatures
   expectedTransaction.serializeMessage();
@@ -492,28 +468,6 @@ test('serialize unsigned transaction', () => {
   expect(expectedTransaction.signatures.length).toBe(1);
 });
 
-test('deprecated - externally signed stake delegate', () => {
-  const from_keypair = nacl.sign.keyPair.fromSeed(
-    Uint8Array.from(Array(32).fill(1)),
-  );
-  const authority = new Account(Buffer.from(from_keypair.secretKey));
-  const stake = new PublicKey(2);
-  const recentBlockhash = new PublicKey(3).toBuffer();
-  const vote = new PublicKey(4);
-  var tx = StakeProgram.delegate({
-    stakePubkey: stake,
-    authorizedPubkey: authority.publicKey,
-    votePubkey: vote,
-  });
-  const from = authority;
-  tx.recentBlockhash = bs58.encode(recentBlockhash);
-  tx.setSigners(from.publicKey);
-  const tx_bytes = tx.serializeMessage();
-  const signature = nacl.sign.detached(tx_bytes, from.secretKey);
-  tx.addSignature(from.publicKey, signature);
-  expect(tx.verifySignatures()).toBe(true);
-});
-
 test('externally signed stake delegate', () => {
   const from_keypair = nacl.sign.keyPair.fromSeed(
     Uint8Array.from(Array(32).fill(1)),
@@ -529,7 +483,7 @@ test('externally signed stake delegate', () => {
   });
   const from = authority;
   tx.recentBlockhash = bs58.encode(recentBlockhash);
-  tx.feePayer = from.publicKey;
+  tx.setSigners(from.publicKey);
   const tx_bytes = tx.serializeMessage();
   const signature = nacl.sign.detached(tx_bytes, from.secretKey);
   tx.addSignature(from.publicKey, signature);

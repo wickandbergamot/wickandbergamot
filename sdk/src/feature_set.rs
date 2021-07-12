@@ -90,7 +90,7 @@ pub mod full_inflation {
             solana_sdk::declare_id!("3Z4xtD9nrdSsri3c51khB4J9nh8aMTESTAf8HZDk8bj2");
         }
         pub mod enable {
-            solana_sdk::declare_id!("CnFq96h8LrGPNcwPd9WBunh1q6m5CJBR1Q55j4UUANf1");
+            solana_sdk::declare_id!("3Z4xtD9nrdSsri3c51khB4J9nh8aMTESTAf8HZDk8bj2");
         }
     }
 
@@ -114,7 +114,7 @@ pub mod full_inflation {
 
     pub mod p2pvalidator {
         pub mod vote {
-            solana_sdk::declare_id!("6Dh3jzTtGViAT4UqpV49W5HqFVh2UngXU8uri5in8MPP");
+            solana_sdk::declare_id!("89xUFJyCb3JQ7WbYBK4vza5uyCCTXXv8UQEUCQjo4SbC");
         }
         pub mod enable {
             solana_sdk::declare_id!("CaMb255xHwUop3tbKHNLuwvKgxLnGFT7jCRt8rwC47CA");
@@ -132,7 +132,7 @@ pub mod full_inflation {
 
     pub mod sotcsa {
         pub mod vote {
-            solana_sdk::declare_id!("DzXnJ8gieQ3FEPSmDJBMMh4Axsgc7Gs3gwbDPggSwTyA");
+            solana_sdk::declare_id!("GzhLBMdjFuGHGoZHm4koFpd2pYFwqV8H82k6488CxQEf");
         }
         pub mod enable {
             solana_sdk::declare_id!("8oQF7WqrH5hfzz7SEiUyaRrxMsZ7Ti82t42YFsmH3wTd");
@@ -227,7 +227,11 @@ pub mod filter_stake_delegation_accounts {
 }
 
 pub mod simple_capitalization {
-    solana_sdk::declare_id!("6MB3LnR8gFRdZpSD6c3gadQPZDkkKjPVZvJ6ZmdzrbXY");
+    solana_sdk::declare_id!("9r69RnnxABmpcPFfj1yhg4n9YFR2MNaLdKJCC6v3Speb");
+}
+
+pub mod stake_program_v3 {
+    solana_sdk::declare_id!("6tYrCsaWbGqgeW9tN3NRbViw6BBLYjnNsJBqLJZZoo5B");
 }
 
 pub mod bpf_loader_upgradeable_program {
@@ -236,14 +240,6 @@ pub mod bpf_loader_upgradeable_program {
 
 pub mod try_find_program_address_syscall_enabled {
     solana_sdk::declare_id!("7seUWJM7vNLxmCgGZDfDPqMbX7xvfzBKCwVbWZriq1Bu");
-}
-
-pub mod warp_timestamp {
-    solana_sdk::declare_id!("BJHdqjFAorV7KKRkZTbYGDkDF2ncnheM3a6ZpUeXe5nM");
-}
-
-pub mod stake_program_v3 {
-    solana_sdk::declare_id!("6tYrCsaWbGqgeW9tN3NRbViw6BBLYjnNsJBqLJZZoo5B");
 }
 
 pub mod max_cpi_instruction_size_ipv6_mtu {
@@ -266,6 +262,10 @@ pub mod use_loaded_executables {
     solana_sdk::declare_id!("7xk3jJ6kYsCU3qbwtZ3CSppdjxkMNbwMh8NC1cVmeW9S");
 }
 
+pub mod warp_timestamp {
+    solana_sdk::declare_id!("BJHdqjFAorV7KKRkZTbYGDkDF2ncnheM3a6ZpUeXe5nM");
+}
+
 pub mod turbine_retransmit_peers_patch {
     solana_sdk::declare_id!("BZJfMk71bwWeYHFo2G6xHrXR2KNWxrAuFLLZi5VoF1fM");
 }
@@ -276,10 +276,6 @@ pub mod prevent_upgrade_and_invoke {
 
 pub mod track_writable_deescalation {
     solana_sdk::declare_id!("4iEEhiZKhMa5KG9YAQbC9u2bLMwYxhQuNmfGEV8jQnz4");
-}
-
-pub mod require_custodian_for_locked_stake_authorize {
-    solana_sdk::declare_id!("FKWSvfcXATHSBBNvr5VE6ns4tNsTG3EGzcDw2xVtowZQ");
 }
 
 pub mod spl_token_v2_self_transfer_fix {
@@ -329,7 +325,6 @@ lazy_static! {
         (turbine_retransmit_peers_patch::id(), "turbine retransmit peers patch #14631"),
         (prevent_upgrade_and_invoke::id(), "prevent upgrade and invoke in same tx batch"),
         (track_writable_deescalation::id(), "track account writable deescalation"),
-        (require_custodian_for_locked_stake_authorize::id(), "require custodian to authorize withdrawer change for locked stake"),
         (spl_token_v2_self_transfer_fix::id(), "spl-token self-transfer fix"),
         (matching_buffer_upgrade_authorities::id(), "Upgradeable buffer and program authorities must match"),
         (full_inflation::candidate_example::vote::id(), "Community vote allowing candidate_example to enable full inflation"),

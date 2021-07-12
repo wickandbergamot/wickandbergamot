@@ -1,23 +1,29 @@
 import React from "react";
 import {
+  TransactionInstruction,
   SystemProgram,
   SignatureResult,
-  ParsedInstruction,
+  SystemInstruction,
 } from "@solana/web3.js";
 import { lamportsToSafeString } from "utils";
 import { InstructionCard } from "../InstructionCard";
+import { UnknownDetailsCard } from "../UnknownDetailsCard";
 import { Address } from "components/common/Address";
-import { CreateAccountInfo } from "./types";
 
 export function CreateDetailsCard(props: {
-  ix: ParsedInstruction;
+  ix: TransactionInstruction;
   index: number;
   result: SignatureResult;
-  info: CreateAccountInfo;
-  innerCards?: JSX.Element[];
-  childIndex?: number;
 }) {
-  const { ix, index, result, info, innerCards, childIndex } = props;
+  const { ix, index, result } = props;
+
+  let params;
+  try {
+    params = SystemInstruction.decodeCreateAccount(ix);
+  } catch (err) {
+    console.error(err);
+    return <UnknownDetailsCard {...props} />;
+  }
 
   return (
     <InstructionCard
@@ -25,8 +31,6 @@ export function CreateDetailsCard(props: {
       index={index}
       result={result}
       title="Create Account"
-      innerCards={innerCards}
-      childIndex={childIndex}
     >
       <tr>
         <td>Program</td>
@@ -38,31 +42,33 @@ export function CreateDetailsCard(props: {
       <tr>
         <td>From Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.source} alignRight link />
+          <Address pubkey={params.fromPubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>New Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.newAccount} alignRight link />
+          <Address pubkey={params.newAccountPubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Transfer Amount (SAFE)</td>
-        <td className="text-lg-right">{lamportsToSafeString(info.lamports)}</td>
+        <td className="text-lg-right">
+          {lamportsToSafeString(params.lamports)}
+        </td>
       </tr>
 
       <tr>
         <td>Allocated Space (Bytes)</td>
-        <td className="text-lg-right">{info.space}</td>
+        <td className="text-lg-right">{params.space}</td>
       </tr>
 
       <tr>
         <td>Assigned Owner</td>
         <td className="text-lg-right">
-          <Address pubkey={info.owner} alignRight link />
+          <Address pubkey={params.programId} alignRight link />
         </td>
       </tr>
     </InstructionCard>

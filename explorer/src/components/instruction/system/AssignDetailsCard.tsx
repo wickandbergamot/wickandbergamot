@@ -1,22 +1,28 @@
 import React from "react";
 import {
+  TransactionInstruction,
   SystemProgram,
   SignatureResult,
-  ParsedInstruction,
+  SystemInstruction,
 } from "@solana/web3.js";
 import { InstructionCard } from "../InstructionCard";
+import { UnknownDetailsCard } from "../UnknownDetailsCard";
 import { Address } from "components/common/Address";
-import { AssignInfo } from "./types";
 
 export function AssignDetailsCard(props: {
-  ix: ParsedInstruction;
+  ix: TransactionInstruction;
   index: number;
   result: SignatureResult;
-  info: AssignInfo;
-  innerCards?: JSX.Element[];
-  childIndex?: number;
 }) {
-  const { ix, index, result, info, innerCards, childIndex } = props;
+  const { ix, index, result } = props;
+
+  let params;
+  try {
+    params = SystemInstruction.decodeAssign(ix);
+  } catch (err) {
+    console.error(err);
+    return <UnknownDetailsCard {...props} />;
+  }
 
   return (
     <InstructionCard
@@ -24,8 +30,6 @@ export function AssignDetailsCard(props: {
       index={index}
       result={result}
       title="Assign Account"
-      innerCards={innerCards}
-      childIndex={childIndex}
     >
       <tr>
         <td>Program</td>
@@ -37,14 +41,14 @@ export function AssignDetailsCard(props: {
       <tr>
         <td>Account Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.account} alignRight link />
+          <Address pubkey={params.accountPubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Assigned Owner</td>
         <td className="text-lg-right">
-          <Address pubkey={info.owner} alignRight link />
+          <Address pubkey={params.programId} alignRight link />
         </td>
       </tr>
     </InstructionCard>

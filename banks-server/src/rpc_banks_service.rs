@@ -15,7 +15,6 @@ use tokio::{
     runtime::Runtime,
     time::{self, Duration},
 };
-use tokio_stream::wrappers::IntervalStream;
 
 pub struct RpcBanksService {
     thread_hdl: JoinHandle<()>,
@@ -36,7 +35,7 @@ async fn start_abortable_tcp_server(
         block_commitment_cache.clone(),
     )
     .fuse();
-    let interval = IntervalStream::new(time::interval(Duration::from_millis(100))).fuse();
+    let interval = time::interval(Duration::from_millis(100)).fuse();
     pin_mut!(server, interval);
     loop {
         select! {

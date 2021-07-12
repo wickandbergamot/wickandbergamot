@@ -137,7 +137,7 @@ Manage testnet instances
                     - Attempt to generate a TLS certificate using this
                       DNS name (useful only when the -a and -P options
                       are also provided)
-   --custom-machine-type [type]
+   --custom-machine-type
                     - Set a custom machine type without assuming whether or not
                       GPU is enabled.  Set this explicitly with --enable-gpu/-g to call out the presence of GPUs.
 $(
@@ -159,10 +159,6 @@ $(
    --self-destruct-hours [number]
                     - Specify lifetime of the allocated instances in hours. 0 to
                       disable. Only supported on GCE. (default: $selfDestructHours)
-   --validator-boot-disk-size-gb [number]
-                    - Specify validator boot disk size in gb.
-   --client-machine-type [type]
-                    - custom client machine type
    --tmpfs-accounts - Put accounts directory on a swap-backed tmpfs volume
 
  config-specific options:
@@ -216,12 +212,6 @@ while [[ -n $1 ]]; do
       shift
     elif [[ $1 = --custom-machine-type ]]; then
       customMachineType="$2"
-      shift 2
-    elif [[ $1 = --client-machine-type ]]; then
-      clientMachineType="$2"
-      shift 2
-    elif [[ $1 = --validator-boot-disk-size-gb ]]; then
-      validatorBootDiskSizeInGb="$2"
       shift 2
     elif [[ $1 == --self-destruct-hours ]]; then
       maybeTimeout=$2

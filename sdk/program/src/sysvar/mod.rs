@@ -80,7 +80,7 @@ mod tests {
 
     #[repr(C)]
     #[derive(Serialize, Deserialize, Debug, Default, PartialEq)]
-    struct TestSysvar {
+    pub struct TestSysvar {
         something: Pubkey,
     }
     crate::declare_id!("TestSysvar111111111111111111111111111111111");

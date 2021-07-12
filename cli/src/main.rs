@@ -234,10 +234,7 @@ pub fn parse_args<'a>(
             verbose,
             output_format,
             commitment,
-            send_transaction_config: RpcSendTransactionConfig {
-                preflight_commitment: Some(commitment.commitment),
-                ..RpcSendTransactionConfig::default()
-            },
+            send_transaction_config: RpcSendTransactionConfig::default(),
             address_labels,
         },
         signers,
@@ -300,20 +297,10 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         Arg::with_name("commitment")
             .long("commitment")
             .takes_value(true)
-            .possible_values(&[
-                "processed",
-                "confirmed",
-                "finalized",
-                "recent", // Deprecated as of v1.5.5
-                "single", // Deprecated as of v1.5.5
-                "singleGossip", // Deprecated as of v1.5.5
-                "root", // Deprecated as of v1.5.5
-                "max", // Deprecated as of v1.5.5
-            ])
+            .possible_values(&["recent", "single", "singleGossip", "root", "max"])
             .value_name("COMMITMENT_LEVEL")
-            .hide_possible_values(true)
             .global(true)
-            .help("Return information at the selected commitment level [possible values: processed, confirmed, finalized]"),
+            .help("Return information at the selected commitment level"),
     )
     .arg(
         Arg::with_name("verbose")

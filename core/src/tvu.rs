@@ -29,10 +29,7 @@ use solana_ledger::{
     leader_schedule_cache::LeaderScheduleCache,
 };
 use solana_runtime::{
-    accounts_background_service::{
-        ABSRequestHandler, ABSRequestSender, AccountsBackgroundService, SendDroppedBankCallback,
-        SnapshotRequestHandler,
-    },
+    accounts_background_service::{AccountsBackgroundService, SnapshotRequestHandler},
     bank_forks::{BankForks, SnapshotConfig},
     commitment::BlockCommitmentCache,
     vote_sender_types::ReplayVoteSender,
@@ -42,7 +39,6 @@ use solana_sdk::{
     signature::{Keypair, Signer},
 };
 use std::{
-    boxed::Box,
     collections::HashSet,
     net::UdpSocket,
     sync::{
@@ -78,8 +74,6 @@ pub struct TvuConfig {
     pub trusted_validators: Option<HashSet<Pubkey>>,
     pub repair_validators: Option<HashSet<Pubkey>>,
     pub accounts_hash_fault_injection_slots: u64,
-    pub accounts_db_caching_enabled: bool,
-    pub test_hash_calculation: bool,
 }
 
 impl Tvu {
@@ -214,22 +208,6 @@ impl Tvu {
                 .unwrap_or((None, None))
         };
 
-        let (pruned_banks_sender, pruned_banks_receiver) = unbounded();
-
-        // Before replay starts, set the callbacks in each of the banks in BankForks
-        for bank in bank_forks.read().unwrap().banks().values() {
-            bank.set_callback(Some(Box::new(SendDroppedBankCallback::new(
-                pruned_banks_sender.clone(),
-            ))));
-        }
-
-        let accounts_background_request_sender = ABSRequestSender::new(snapshot_request_sender);
-
-        let accounts_background_request_handler = ABSRequestHandler {
-            snapshot_request_handler,
-            pruned_banks_receiver,
-        };
-
         let replay_stage_config = ReplayStageConfig {
             my_pubkey: keypair.pubkey(),
             vote_account: *vote_account,
@@ -238,7 +216,7 @@ impl Tvu {
             subscriptions: subscriptions.clone(),
             leader_schedule_cache: leader_schedule_cache.clone(),
             latest_root_senders: vec![ledger_cleanup_slot_sender],
-            accounts_background_request_sender,
+            snapshot_request_sender,
             block_commitment_cache,
             transaction_status_sender,
             rewards_recorder_sender,
@@ -270,13 +248,8 @@ impl Tvu {
             )
         });
 
-        let accounts_background_service = AccountsBackgroundService::new(
-            bank_forks.clone(),
-            &exit,
-            accounts_background_request_handler,
-            tvu_config.accounts_db_caching_enabled,
-            tvu_config.test_hash_calculation,
-        );
+        let accounts_background_service =
+            AccountsBackgroundService::new(bank_forks.clone(), &exit, snapshot_request_handler);
 
         Tvu {
             fetch_stage,
@@ -311,7 +284,7 @@ pub mod tests {
         cluster_info::{ClusterInfo, Node},
         optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank,
     };
-    use serial_test::serial;
+    use serial_test_derive::serial;
     use solana_ledger::{
         blockstore::BlockstoreSignals,
         create_new_tmp_ledger,
@@ -345,7 +318,7 @@ pub mod tests {
             ledger_signal_receiver,
             completed_slots_receiver,
             ..
-        } = Blockstore::open_with_signal(&blockstore_path, None, true)
+        } = Blockstore::open_with_signal(&blockstore_path, None)
             .expect("Expected to successfully open ledger");
         let blockstore = Arc::new(blockstore);
         let bank = bank_forks.working_bank();

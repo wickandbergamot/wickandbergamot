@@ -15,8 +15,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 2194,
-  "iteration": 1610479516268,
+  "id": 1547,
+  "iteration": 1591834899194,
   "links": [
     {
       "asDropdown": true,
@@ -116,7 +116,7 @@
         "lineColor": "rgb(31, 120, 193)",
         "show": false
       },
-      "tableColumn": "last",
+      "tableColumn": "mode",
       "targets": [
         {
           "groupBy": [
@@ -3078,8 +3078,8 @@
       "scroll": true,
       "showHeader": true,
       "sort": {
-        "col": 1,
-        "desc": true
+        "col": null,
+        "desc": false
       },
       "styles": [
         {
@@ -8608,126 +8608,10 @@
       "gridPos": {
         "h": 6,
         "w": 8,
-        "x": 0,
-        "y": 71
-      },
-      "id": 50,
-      "legend": {
-        "alignAsTable": false,
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null",
-      "percentage": false,
-      "pointradius": 5,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "cluster_info-vote-count",
-          "orderByTime": "ASC",
-          "policy": "autogen",
-          "query": "SELECT sum(\"count\") AS \"dropped-vote\" FROM \"$testnet\".\"autogen\".\"dropped-vote-hash\"  WHERE host_id::tag =~ /$hostid/ AND  $timeFilter  GROUP BY time(1s) fill(null)\n",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
-              {
-                "params": [
-                  "count"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "sum"
-              }
-            ]
-          ],
-          "tags": []
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Vote dropped hash mismatch ($hostid)",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "none",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "none",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "$datasource",
-      "fill": 1,
-      "gridPos": {
-        "h": 6,
-        "w": 8,
         "x": 8,
         "y": 71
       },
-      "id": 51,
+      "id": 77,
       "legend": {
         "alignAsTable": false,
         "avg": false,
@@ -9048,7 +8932,7 @@
         "x": 16,
         "y": 71
       },
-      "id": 52,
+      "id": 50,
       "legend": {
         "alignAsTable": false,
         "avg": false,
@@ -9320,7 +9204,7 @@
         "x": 0,
         "y": 77
       },
-      "id": 53,
+      "id": 51,
       "panels": [],
       "title": "Tower Consensus",
       "type": "row"
@@ -9343,7 +9227,7 @@
         "x": 0,
         "y": 78
       },
-      "id": 54,
+      "id": 52,
       "legend": {
         "alignAsTable": false,
         "avg": false,
@@ -9503,7 +9387,7 @@
         "x": 8,
         "y": 78
       },
-      "id": 55,
+      "id": 53,
       "legend": {
         "alignAsTable": false,
         "avg": false,
@@ -9602,43 +9486,6 @@
             ]
           ],
           "tags": []
-        },
-        {
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "orderByTime": "ASC",
-          "policy": "default",
-          "query": "SELECT max(\"root\") AS \"cluster-root\" FROM \"$testnet\".\"autogen\".\"tower-observed\" WHERE $timeFilter GROUP BY time($__interval)",
-          "rawQuery": true,
-          "refId": "C",
-          "resultFormat": "time_series",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              }
-            ]
-          ],
-          "tags": []
         }
       ],
       "thresholds": [],
@@ -9700,7 +9547,7 @@
         "x": 16,
         "y": 78
       },
-      "id": 56,
+      "id": 54,
       "legend": {
         "alignAsTable": false,
         "avg": false,
@@ -9896,7 +9743,7 @@
         "x": 0,
         "y": 83
       },
-      "id": 57,
+      "id": 55,
       "legend": {
         "alignAsTable": false,
         "avg": false,
@@ -10019,7 +9866,7 @@
         "x": 8,
         "y": 83
       },
-      "id": 58,
+      "id": 56,
       "legend": {
         "alignAsTable": false,
         "avg": false,
@@ -10142,7 +9989,7 @@
         "x": 16,
         "y": 83
       },
-      "id": 59,
+      "id": 57,
       "legend": {
         "alignAsTable": false,
         "avg": false,
@@ -10247,254 +10094,14 @@
       }
     },
     {
-      "aliasColors": {
-        "cluster-info.repair": "#ba43a9",
-        "replay_stage-new_leader.last": "#00ffbb",
-        "tower-vote.last": "#00ffbb",
-        "window-service.receive": "#b7dbab",
-        "window-stage.consumed": "#5195ce"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "$datasource",
-      "fill": 1,
-      "gridPos": {
-        "h": 5,
-        "w": 8,
-        "x": 8,
-        "y": 88
-      },
-      "id": 79,
-      "legend": {
-        "alignAsTable": false,
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": false,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null",
-      "percentage": false,
-      "pointradius": 2,
-      "points": true,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "hide": false,
-          "measurement": "cluster_info-vote-count",
-          "orderByTime": "ASC",
-          "policy": "autogen",
-          "query": "SELECT max(\"slot_height\") FROM \"$testnet\".\"autogen\".\"bank-new_from_parent-heights\" WHERE host_id::tag =~ /$hostid/ AND $timeFilter GROUP BY time($__interval)",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
-              {
-                "params": [
-                  "count"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "sum"
-              }
-            ]
-          ],
-          "tags": []
-        },
-        {
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "hide": false,
-          "measurement": "cluster_info-vote-count",
-          "orderByTime": "ASC",
-          "policy": "autogen",
-          "query": "SELECT mean(\"slot_height\") AS \"cluster-height\" FROM \"$testnet\".\"autogen\".\"bank-new_from_parent-heights\" WHERE $timeFilter GROUP BY time($__interval)",
-          "rawQuery": true,
-          "refId": "B",
-          "resultFormat": "time_series",
-          "select": [
-            [
-              {
-                "params": [
-                  "count"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "sum"
-              }
-            ]
-          ],
-          "tags": []
-        },
-        {
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "hide": false,
-          "measurement": "cluster_info-vote-count",
-          "orderByTime": "ASC",
-          "policy": "autogen",
-          "query": "SELECT max(\"slot\") AS \"cluster-replay-slot\" FROM \"$testnet\".\"autogen\".\"replay-slot-stats\" WHERE $timeFilter GROUP BY time($__interval)",
-          "rawQuery": true,
-          "refId": "C",
-          "resultFormat": "time_series",
-          "select": [
-            [
-              {
-                "params": [
-                  "count"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "sum"
-              }
-            ]
-          ],
-          "tags": []
-        },
-        {
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "hide": false,
-          "measurement": "cluster_info-vote-count",
-          "orderByTime": "ASC",
-          "policy": "autogen",
-          "query": "SELECT max(\"slot\") FROM \"$testnet\".\"autogen\".\"replay-slot-stats\" WHERE host_id::tag =~ /$hostid/ AND $timeFilter GROUP BY time($__interval)",
-          "rawQuery": true,
-          "refId": "D",
-          "resultFormat": "time_series",
-          "select": [
-            [
-              {
-                "params": [
-                  "count"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "sum"
-              }
-            ]
-          ],
-          "tags": []
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Slot Production ($hostid)",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "none",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 93
+        "y": 88
       },
-      "id": 60,
+      "id": 58,
       "panels": [],
       "repeat": null,
       "title": "IP Network",
@@ -10511,9 +10118,9 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 94
+        "y": 89
       },
-      "id": 61,
+      "id": 59,
       "legend": {
         "alignAsTable": false,
         "avg": false,
@@ -10744,9 +10351,9 @@
         "h": 5,
         "w": 12,
         "x": 12,
-        "y": 94
+        "y": 89
       },
-      "id": 62,
+      "id": 60,
       "legend": {
         "alignAsTable": false,
         "avg": false,
@@ -10897,9 +10504,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 99
+        "y": 94
       },
-      "id": 63,
+      "id": 61,
       "panels": [],
       "title": "Signature Verification",
       "type": "row"
@@ -10915,9 +10522,9 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 100
+        "y": 95
       },
-      "id": 64,
+      "id": 62,
       "legend": {
         "avg": false,
         "current": false,
@@ -11117,9 +10724,9 @@
         "h": 5,
         "w": 12,
         "x": 12,
-        "y": 100
+        "y": 95
       },
-      "id": 65,
+      "id": 63,
       "legend": {
         "alignAsTable": false,
         "avg": false,
@@ -11266,9 +10873,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 105
+        "y": 100
       },
-      "id": 66,
+      "id": 64,
       "panels": [],
       "title": "Snapshots",
       "type": "row"
@@ -11284,9 +10891,9 @@
         "h": 6,
         "w": 8,
         "x": 0,
-        "y": 106
+        "y": 101
       },
-      "id": 67,
+      "id": 65,
       "legend": {
         "avg": false,
         "current": false,
@@ -11476,9 +11083,9 @@
         "h": 6,
         "w": 8,
         "x": 8,
-        "y": 106
+        "y": 101
       },
-      "id": 68,
+      "id": 66,
       "legend": {
         "avg": false,
         "current": false,
@@ -11744,9 +11351,9 @@
         "h": 6,
         "w": 8,
         "x": 16,
-        "y": 106
+        "y": 101
       },
-      "id": 69,
+      "id": 67,
       "legend": {
         "avg": false,
         "current": false,
@@ -11938,9 +11545,9 @@
         "h": 6,
         "w": 8,
         "x": 0,
-        "y": 112
+        "y": 107
       },
-      "id": 70,
+      "id": 68,
       "legend": {
         "avg": false,
         "current": false,
@@ -12129,9 +11736,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 118
+        "y": 113
       },
-      "id": 71,
+      "id": 69,
       "panels": [],
       "title": "RPC Send Transaction Service",
       "type": "row"
@@ -12147,9 +11754,9 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 119
+        "y": 114
       },
-      "id": 72,
+      "id": 70,
       "legend": {
         "avg": false,
         "current": false,
@@ -12265,9 +11872,9 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 119
+        "y": 114
       },
-      "id": 73,
+      "id": 71,
       "legend": {
         "avg": false,
         "current": false,
@@ -12528,9 +12135,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 125
+        "y": 120
       },
-      "id": 74,
+      "id": 72,
       "panels": [],
       "title": "Bench TPS",
       "type": "row"
@@ -12546,9 +12153,9 @@
         "h": 5,
         "w": 7,
         "x": 0,
-        "y": 126
+        "y": 121
       },
-      "id": 75,
+      "id": 73,
       "legend": {
         "avg": false,
         "current": false,
@@ -12661,9 +12268,9 @@
         "h": 5,
         "w": 7,
         "x": 7,
-        "y": 126
+        "y": 121
       },
-      "id": 76,
+      "id": 74,
       "legend": {
         "alignAsTable": false,
         "avg": false,
@@ -12886,9 +12493,9 @@
         "h": 5,
         "w": 10,
         "x": 14,
-        "y": 126
+        "y": 121
       },
-      "id": 77,
+      "id": 75,
       "links": [],
       "pageSize": null,
       "scroll": true,
@@ -12974,9 +12581,9 @@
         "h": 4,
         "w": 10,
         "x": 0,
-        "y": 131
+        "y": 126
       },
-      "id": 78,
+      "id": 76,
       "legend": {
         "avg": false,
         "current": false,

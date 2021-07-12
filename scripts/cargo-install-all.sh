@@ -95,7 +95,6 @@ else
     safecoin-stake-monitor
     safecoin-stake-o-matic
     safecoin-sys-tuner
-    safecoin-test-validator
     safecoin-tokens
     safecoin-validator
     safecoin-watchtower

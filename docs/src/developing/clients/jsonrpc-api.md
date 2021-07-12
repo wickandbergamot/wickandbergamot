@@ -36,7 +36,6 @@ gives a convenient interface for the RPC methods.
 - [getFees](jsonrpc-api.md#getfees)
 - [getFirstAvailableBlock](jsonrpc-api.md#getfirstavailableblock)
 - [getGenesisHash](jsonrpc-api.md#getgenesishash)
-- [getHealth](jsonrpc-api.md#gethealth)
 - [getIdentity](jsonrpc-api.md#getidentity)
 - [getInflationGovernor](jsonrpc-api.md#getinflationgovernor)
 - [getInflationRate](jsonrpc-api.md#getinflationrate)
@@ -120,8 +119,8 @@ Requests can be sent in batches by sending an array of JSON-RPC request objects 
 
 - Hash: A SHA-256 hash of a chunk of data.
 - Pubkey: The public key of a Ed25519 key-pair.
-- Transaction: A list of Safecoin instructions signed by a client keypair to authorize those actions.
-- Signature: An Ed25519 signature of transaction's payload data including instructions. This can be used to identify transactions.
+- Signature: An Ed25519 signature of a chunk of data.
+- Transaction: A Safecoin instruction signed by a client key-pair.
 
 ## Configuring State Commitment
 
@@ -134,20 +133,22 @@ to report progress and higher levels to ensure the state will not be rolled back
 In descending order of commitment (most finalized to least finalized), clients
 may specify:
 
-- `"finalized"` - the node will query the most recent block confirmed by supermajority
+- `"max"` - the node will query the most recent block confirmed by supermajority
 of the cluster as having reached maximum lockout, meaning the cluster has
 recognized this block as finalized
-- `"confirmed"` - the node will query the most recent block that has been voted on by supermajority of the cluster.
+- `"root"` - the node will query the most recent block having reached maximum
+lockout on this node, meaning the node has recognized this block as finalized
+- `"singleGossip"` - the node will query the most recent block that has been voted on by supermajority of the cluster.
   - It incorporates votes from gossip and replay.
   - It does not count votes on descendants of a block, only direct votes on that block.
   - This confirmation level also upholds "optimistic confirmation" guarantees in
     release 1.3 and onwards.
-- `"processed"` - the node will query its most recent block.  Note that the block
+- `"recent"` - the node will query its most recent block.  Note that the block
 may not be complete.
 
 For processing many dependent transactions in series, it's recommended to use
-`"confirmed"` commitment, which balances speed with rollback safety.
-For total safety, it's recommended to use`"finalized"` commitment.
+`"singleGossip"` commitment, which balances speed with rollback safety.
+For total safety, it's recommended to use`"max"` commitment.
 
 #### Example
 
@@ -162,7 +163,7 @@ curl http://localhost:8328 -X POST -H "Content-Type: application/json" -d '
     "params": [
       "83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri",
       {
-        "commitment": "finalized"
+        "commitment": "max"
       }
     ]
   }
@@ -171,7 +172,7 @@ curl http://localhost:8328 -X POST -H "Content-Type: application/json" -d '
 
 #### Default:
 
-If commitment configuration is not provided, the node will default to `"finalized"` commitment
+If commitment configuration is not provided, the node will default to `"max"` commitment
 
 Only methods that query bank state accept the commitment parameter. They are indicated in the API Reference below.
 
@@ -486,8 +487,6 @@ The result field will be an object with the following fields:
       - `preBalances: <array>` - array of u64 account balances from before the transaction was processed
       - `postBalances: <array>` - array of u64 account balances after the transaction was processed
       - `innerInstructions: <array|undefined>` - List of [inner instructions](#inner-instructions-structure) or omitted if inner instruction recording was not yet enabled during this transaction
-      - `preTokenBalances: <array|undefined>` - List of [token balances](#token-balances-structure) from before the transaction was processed or omitted if token balance recording was not yet enabled during this transaction
-      - `postTokenBalances: <array|undefined>` - List of [token balances](#token-balances-structure) from after the transaction was processed or omitted if token balance recording was not yet enabled during this transaction
       - `logMessages: <array>` - array of string log messages or omitted if log message recording was not yet enabled during this transaction
       - DEPRECATED: `status: <object>` - Transaction status
         - `"Ok": <null>` - Transaction was successful
@@ -532,7 +531,6 @@ Result:
             1,
             1
           ],
-          "postTokenBalances": [],
           "preBalances": [
             499998937500,
             26858640,
@@ -540,7 +538,6 @@ Result:
             1,
             1
           ],
-          "preTokenBalances": [],
           "status": {
             "Ok": null
           }
@@ -616,7 +613,6 @@ Result:
             1,
             1
           ],
-          "postTokenBalances": [],
           "preBalances": [
             499998937500,
             26858640,
@@ -624,7 +620,6 @@ Result:
             1,
             1
           ],
-          "preTokenBalances": [],
           "status": {
             "Ok": null
           }
@@ -646,7 +641,7 @@ Transactions are quite different from those on other blockchains. Be sure to rev
 
 The JSON structure of a transaction is defined as follows:
 
-- `signatures: <array[string]>` - A list of base-58 encoded signatures applied to the transaction. The list is always of length `message.header.numRequiredSignatures` and not empty. The signature at index `i` corresponds to the public key at index `i` in `message.account_keys`. The first one is used as the [transaction id](../../terminology.md#transaction-id).
+- `signatures: <array[string]>` - A list of base-58 encoded signatures applied to the transaction. The list is always of length `message.header.numRequiredSignatures`, and the signature at index `i` corresponds to the public key at index `i` in `message.account_keys`.
 - `message: <object>` - Defines the content of the transaction.
   - `accountKeys: <array[string]>` - List of base-58 encoded public keys used by the transaction, including by the instructions and for signatures. The first `message.header.numRequiredSignatures` public keys must sign the transaction.
   - `header: <object>` - Details the account types and signatures required by the transaction.
@@ -670,17 +665,6 @@ The JSON structure of inner instructions is defined as a list of objects in the 
   - `programIdIndex: <number>` - Index into the `message.accountKeys` array indicating the program account that executes this instruction.
   - `accounts: <array[number]>` - List of ordered indices into the `message.accountKeys` array indicating which accounts to pass to the program.
   - `data: <string>` - The program input data encoded in a base-58 string.
-
-#### Token Balances Structure
-
-The JSON structure of token balances is defined as a list of objects in the following structure:
-
-- `accountIndex: <number>` - Index of the account in which the token balance is provided for.
-- `mint: <string>` - Pubkey of the token's mint.
-- `uiTokenAmount: <object>` -
-  - `amount: <string>` - Raw amount of tokens as a string, ignoring decimals.
-  - `decimals: <number>` - Number of decimals configured for token's mint.
-  - `uiAmount: <number>` - Token amount as a float, accounting for decimals.
 
 ### getConfirmedBlocks
 
@@ -813,7 +797,6 @@ from newest to oldest transaction:
   * `slot: <u64>` - The slot that contains the block with the transaction
   * `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/solana-labs/solana/blob/master/sdk/src/transaction.rs#L24)
   * `memo: <string |null>` - Memo associated with the transaction, null if no memo is present
-  * `blockTime: <i64 | null>` - estimated production time, as Unix timestamp (seconds since the Unix epoch) of when transaction was processed. null if not available.
 
 #### Example:
 Request:
@@ -842,8 +825,7 @@ Result:
       "err": null,
       "memo": null,
       "signature": "5h6xBEauJ3PK6SWCZ1PGjBvj8vDdWG3KpwATGy1ARAXFSDwt8GFXM7W5Ncn16wmqokgpiKRLuS83KUxyZyv2sUYv",
-      "slot": 114,
-      "blockTime": null
+      "slot": 114
     }
   ],
   "id": 1
@@ -857,8 +839,7 @@ Returns transaction details for a confirmed transaction
 #### Parameters:
 
 - `<string>` - transaction signature as base-58 encoded string
-- `<string>` - encoding for each returned Transaction, either "json", "jsonParsed", "base58" (*slow*), "base64". If parameter not provided, the default encoding is "json".
-  "jsonParsed" encoding attempts to use program-specific instruction parsers to return more human-readable and explicit data in the `transaction.message.instructions` list. If "jsonParsed" is requested but a parser cannot be found, the instruction falls back to regular JSON encoding (`accounts`, `data`, and `programIdIndex` fields).
+N encoding attempts to use program-specific instruction parsers to return more human-readable and explicit data in the `transaction.message.instructions` list. If "jsonParsed" is requested but a parser cannot be found, the instruction falls back to regular JSON encoding (`accounts`, `data`, and `programIdIndex` fields).
 - `<string>` - (optional) encoding for the returned Transaction, either "json", "jsonParsed", "base58" (*slow*), or "base64". If parameter not provided, the default encoding is JSON.
 
 #### Results:
@@ -867,15 +848,12 @@ Returns transaction details for a confirmed transaction
 - `<object>` - if transaction is confirmed, an object with the following fields:
   - `slot: <u64>` - the slot this transaction was processed in
   - `transaction: <object|[string,encoding]>` - [Transaction](#transaction-structure) object, either in JSON format or encoded binary data, depending on encoding parameter
-  - `blockTime: <i64 | null>` - estimated production time, as Unix timestamp (seconds since the Unix epoch) of when the transaction was processed. null if not available
   - `meta: <object | null>` - transaction status metadata object:
     - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/solana-labs/solana/blob/master/sdk/src/transaction.rs#L24)
     - `fee: <u64>` - fee this transaction was charged, as u64 integer
     - `preBalances: <array>` - array of u64 account balances from before the transaction was processed
     - `postBalances: <array>` - array of u64 account balances after the transaction was processed
     - `innerInstructions: <array|undefined>` - List of [inner instructions](#inner-instructions-structure) or omitted if inner instruction recording was not yet enabled during this transaction
-    - `preTokenBalances: <array|undefined>` - List of  [token balances](#token-balances-structure) from before the transaction was processed or omitted if token balance recording was not yet enabled during this transaction
-    - `postTokenBalances: <array|undefined>` - List of [token balances](#token-balances-structure) from after the transaction was processed or omitted if token balance recording was not yet enabled during this transaction
     - `logMessages: <array>` - array of string log messages or omitted if log message recording was not yet enabled during this transaction
     - DEPRECATED: `status: <object>` - Transaction status
       - `"Ok": <null>` - Transaction was successful
@@ -913,7 +891,6 @@ Result:
         1,
         1
       ],
-      "postTokenBalances": [],
       "preBalances": [
         499998937500,
         26858640,
@@ -921,7 +898,6 @@ Result:
         1,
         1
       ],
-      "preTokenBalances": [],
       "status": {
         "Ok": null
       }
@@ -960,7 +936,6 @@ Result:
       ]
     }
   },
-  "blockTime": null,
   "id": 1
 }
 ```
@@ -997,7 +972,6 @@ Result:
         1,
         1
       ],
-      "postTokenBalances": [],
       "preBalances": [
         499998937500,
         26858640,
@@ -1005,7 +979,6 @@ Result:
         1,
         1
       ],
-      "preTokenBalances": [],
       "status": {
         "Ok": null
       }
@@ -1220,7 +1193,7 @@ The result will be an RpcResponse JSON object with `value` set to a JSON object 
 
 - `blockhash: <string>` - a Hash as base-58 encoded string
 - `feeCalculator: <object>` - FeeCalculator object, the fee schedule for this block hash
-- `lastValidSlot: <u64>` - last slot in which a blockhash will be valid (NOTE: this can be inaccurate when there are [skipped slots](../../terminology.md#skipped-slot))
+- `lastValidSlot: <u64>` - last slot in which a blockhash will be valid
 
 #### Example:
 
@@ -1301,69 +1274,6 @@ curl http://localhost:8328 -X POST -H "Content-Type: application/json" -d '
 Result:
 ```json
 {"jsonrpc":"2.0","result":"GH7ome3EiwEr7tu9JuTh2dpYWBJK3z69Xm1ZE3MEE6JC","id":1}
-```
-
-### getHealth
-
-Returns the current health of the node.
-
-If one or more `--trusted-validator` arguments are provided to
-`safecoin-validator`, "ok" is returned when the node has within
-`HEALTH_CHECK_SLOT_DISTANCE` slots of the highest trusted validator, otherwise
-an error is returned.  "ok" is always returned if no trusted validators are
-provided.
-
-#### Parameters:
-
-None
-
-#### Results:
-
-If the node is healthy: "ok"
-If the node is unhealthy, a JSON RPC error response is returned.  The specifics
-of the error response are **UNSTABLE** and may change in the future
-
-
-#### Example:
-
-Request:
-```bash
-curl http://localhost:8328 -X POST -H "Content-Type: application/json" -d '
-  {"jsonrpc":"2.0","id":1, "method":"getHealth"}
-'
-```
-
-Healthy Result:
-```json
-{"jsonrpc":"2.0","result": "ok","id":1}
-```
-
-Unhealthy Result (generic):
-```json
-{
-  "jsonrpc": "2.0",
-  "error": {
-    "code": -32005,
-    "message": "Node is unhealthy",
-    "data": {}
-  },
-  "id": 1
-}
-```
-
-Unhealthy Result (if additional information is available)
-```json
-{
-  "jsonrpc": "2.0",
-  "error": {
-    "code": -32005,
-    "message": "Node is behind by 42 slots",
-    "data": {
-      "numSlotsBehind": 42
-    }
-  },
-  "id": 1
-}
 ```
 
 ### getIdentity
@@ -2007,38 +1917,6 @@ Result:
   ],
   "id": 1
 }
-```
-
-
-### getSnapshotSlot
-
-Returns the highest slot that the node has a snapshot for
-
-#### Parameters:
-
-None
-
-#### Results:
-
-- `<u64>` - Snapshot slot
-
-#### Example:
-
-Request:
-```bash
-curl http://localhost:8328 -X POST -H "Content-Type: application/json" -d '
-  {"jsonrpc":"2.0","id":1, "method":"getSnapshotSlot"}
-'
-```
-
-Result:
-```json
-{"jsonrpc":"2.0","result":100,"id":1}
-```
-
-Result when the node has no snapshot:
-```json
-{"jsonrpc":"2.0","error":{"code":-32008,"message":"No snapshot"},"id":1}
 ```
 
 ### getSignatureStatuses
@@ -2696,7 +2574,7 @@ curl http://localhost:8328 -X POST -H "Content-Type: application/json" -d '
 
 Result:
 ```json
-{"jsonrpc":"2.0","result":{"solana-core": "1.6.0"},"id":1}
+{"jsonrpc":"2.0","result":{"solana-core": "1.5.0"},"id":1}
 ```
 
 ### getVoteAccounts
@@ -2821,20 +2699,6 @@ Result:
 
 Submits a signed transaction to the cluster for processing.
 
-This method does not alter the transaction in any way; it relays the
-transaction created by clients to the node as-is.
-
-If the node's rpc service receives the transaction, this method immediately
-succeeds, without waiting for any confirmations. A successful response from
-this method does not guarantee the transaction is processed or confirmed by the
-cluster.
-
-While the rpc service will reasonably retry to submit it, the transaction
-could be rejected if transaction's `recent_blockhash` expires before it lands.
-
-Use [`getSignatureStatuses`](jsonrpc-api.md#getsignaturestatuses) to ensure
-a transaction is processed and confirmed.
-
 Before submitting, the following preflight checks are performed:
 
 1. The transaction signatures are verified
@@ -2843,22 +2707,17 @@ Before submitting, the following preflight checks are performed:
    disabled if desired. It is recommended to specify the same commitment and
    preflight commitment to avoid confusing behavior.
 
-The returned signature is the first signature in the transaction, which
-is used to identify the transaction ([transaction id](../../terminology.md#transanction-id)).
-This identifier can be easily extracted from the transaction data before
-submission.
-
 #### Parameters:
 
 - `<string>` - fully-signed Transaction, as encoded string
 - `<object>` - (optional) Configuration object containing the following field:
   - `skipPreflight: <bool>` - if true, skip the preflight transaction checks (default: false)
-  - `preflightCommitment: <string>` - (optional) [Commitment](jsonrpc-api.md#configuring-state-commitment) level to use for preflight (default: `"finalized"`).
+  - `preflightCommitment: <string>` - (optional) [Commitment](jsonrpc-api.md#configuring-state-commitment) level to use for preflight (default: `"max"`).
   - `encoding: <string>` - (optional) Encoding used for the transaction data. Either `"base58"` (*slow*, **DEPRECATED**), or `"base64"`. (default: `"base58"`).
 
 #### Results:
 
-- `<string>` - First Transaction Signature embedded in the transaction, as base-58 encoded string ([transaction id](../../terminology.md#transanction-id))
+- `<string>` - Transaction Signature, as base-58 encoded string
 
 #### Example:
 
@@ -2890,7 +2749,7 @@ Simulate sending a transaction
 - `<string>` - Transaction, as an encoded string. The transaction must have a valid blockhash, but is not required to be signed.
 - `<object>` - (optional) Configuration object containing the following field:
   - `sigVerify: <bool>` - if true the transaction signatures will be verified (default: false)
-  - `commitment: <string>` - (optional) [Commitment](jsonrpc-api.md#configuring-state-commitment) level to simulate the transaction at (default: `"finalized"`).
+  - `commitment: <string>` - (optional) [Commitment](jsonrpc-api.md#configuring-state-commitment) level to simulate the transaction at (default: `"max"`).
   - `encoding: <string>` - (optional) Encoding used for the transaction data. Either `"base58"` (*slow*, **DEPRECATED**), or `"base64"`. (default: `"base58"`).
 
 #### Results:
@@ -2992,7 +2851,7 @@ After connecting to the RPC PubSub websocket at `ws://<ADDRESS>/`:
 
 - Submit subscription requests to the websocket using the methods below
 - Multiple subscriptions may be active at once
-- Many subscriptions take the optional [`commitment` parameter](jsonrpc-api.md#configuring-state-commitment), defining how finalized a change should be to trigger a notification. For subscriptions, if commitment is unspecified, the default value is `"confirmed"`.
+- Many subscriptions take the optional [`commitment` parameter](jsonrpc-api.md#configuring-state-commitment), defining how finalized a change should be to trigger a notification. For subscriptions, if commitment is unspecified, the default value is `"singleGossip"`.
 
 ### accountSubscribe
 
@@ -3022,7 +2881,7 @@ Request:
     "CM78CPUeXjn8o3yroDHxUtKsZZgoy4GPkPPXfouKNH12",
     {
       "encoding": "base64",
-      "commitment": "finalized"
+      "commitment": "root"
     }
   ]
 }
@@ -3159,7 +3018,7 @@ Request:
       "mentions": [ "11111111111111111111111111111111" ]
     },
     {
-      "commitment": "finalized"
+      "commitment": "max"
     }
   ]
 }
@@ -3255,7 +3114,7 @@ Request:
     "11111111111111111111111111111111",
     {
       "encoding": "base64",
-      "commitment": "finalized"
+      "commitment": "max"
     }
   ]
 }
@@ -3417,7 +3276,7 @@ Request:
   "params": [
     "2EBVM6cB8vAAD93Ktr6Vd8p67XPbQzCJX47MpReuiCXJAtcjaxpvWpcg9Ege1Nr5Tk3a2GFrByT7WPBjdsTycY9b",
     {
-      "commitment": "finalized"
+      "commitment": "max"
     }
   ]
 }

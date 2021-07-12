@@ -16,8 +16,10 @@ import {BPF_LOADER_PROGRAM_ID} from '../src/bpf-loader';
 
 if (!mockRpcEnabled) {
   // The default of 5 seconds is too slow for live testing sometimes
-  jest.setTimeout(240000);
+  jest.setTimeout(120000);
 }
+
+const NUM_RETRIES = 100; /* allow some number of retries */
 
 test('load BPF C program', async () => {
   if (mockRpcEnabled) {
@@ -27,34 +29,25 @@ test('load BPF C program', async () => {
 
   const data = await fs.readFile('test/fixtures/noop-c/noop.so');
 
-  const connection = new Connection(url, 'singleGossip');
+  const connection = new Connection(url, 'recent');
   const {feeCalculator} = await connection.getRecentBlockhash();
   const fees =
     feeCalculator.lamportsPerSignature *
-    BpfLoader.getMinNumSignatures(data.length);
-  const payerBalance = await connection.getMinimumBalanceForRentExemption(0);
-  const executableBalance = await connection.getMinimumBalanceForRentExemption(
+    (BpfLoader.getMinNumSignatures(data.length) + NUM_RETRIES);
+  const balanceNeeded = await connection.getMinimumBalanceForRentExemption(
     data.length,
   );
-  const from = await newAccountWithLamports(
-    connection,
-    payerBalance + fees + executableBalance,
-  );
+  const from = await newAccountWithLamports(connection, fees + balanceNeeded);
 
   const program = new Account();
   await BpfLoader.load(connection, from, program, data, BPF_LOADER_PROGRAM_ID);
-
-  // Check that program loading costed exactly `fees + executableBalance`
-  const fromBalance = await connection.getBalance(from.publicKey);
-  expect(fromBalance).toEqual(payerBalance);
-
   const transaction = new Transaction().add({
     keys: [{pubkey: from.publicKey, isSigner: true, isWritable: true}],
     programId: program.publicKey,
   });
   await sendAndConfirmTransaction(connection, transaction, [from], {
-    commitment: 'singleGossip',
-    preflightCommitment: 'singleGossip',
+    commitment: 'single',
+    skipPreflight: true,
   });
 });
 
@@ -64,9 +57,10 @@ describe('load BPF Rust program', () => {
     return;
   }
 
-  const connection = new Connection(url, 'singleGossip');
+  const connection = new Connection(url, 'recent');
 
   let program: Account;
+  let signature: string;
   let payerAccount: Account;
   let programData: Buffer;
 
@@ -78,19 +72,18 @@ describe('load BPF Rust program', () => {
     const {feeCalculator} = await connection.getRecentBlockhash();
     const fees =
       feeCalculator.lamportsPerSignature *
-      BpfLoader.getMinNumSignatures(programData.length);
-    const payerBalance = await connection.getMinimumBalanceForRentExemption(0);
-    const executableBalance = await connection.getMinimumBalanceForRentExemption(
+      (BpfLoader.getMinNumSignatures(programData.length) + NUM_RETRIES);
+    const balanceNeeded = await connection.getMinimumBalanceForRentExemption(
       programData.length,
     );
 
     payerAccount = await newAccountWithLamports(
       connection,
-      payerBalance + fees + executableBalance,
+      fees + balanceNeeded,
     );
 
     // Create program account with low balance
-    program = await newAccountWithLamports(connection, executableBalance - 1);
+    program = await newAccountWithLamports(connection, balanceNeeded - 1);
 
     // First load will fail part way due to lack of funds
     const insufficientPayerAccount = await newAccountWithLamports(
@@ -105,7 +98,7 @@ describe('load BPF Rust program', () => {
       programData,
       BPF_LOADER_PROGRAM_ID,
     );
-    await expect(failedLoad).rejects.toThrow();
+    await expect(failedLoad).rejects.toThrow('Transaction was not confirmed');
 
     // Second load will succeed
     await BpfLoader.load(
@@ -115,9 +108,7 @@ describe('load BPF Rust program', () => {
       programData,
       BPF_LOADER_PROGRAM_ID,
     );
-  });
 
-  test('get confirmed transaction', async () => {
     const transaction = new Transaction().add({
       keys: [
         {pubkey: payerAccount.publicKey, isSigner: true, isWritable: true},
@@ -125,16 +116,17 @@ describe('load BPF Rust program', () => {
       programId: program.publicKey,
     });
 
-    const signature = await sendAndConfirmTransaction(
+    signature = await sendAndConfirmTransaction(
       connection,
       transaction,
       [payerAccount],
       {
-        commitment: 'max', // `getParsedConfirmedTransaction` requires max commitment
-        preflightCommitment: connection.commitment || 'max',
+        skipPreflight: true,
       },
     );
+  });
 
+  test('get confirmed transaction', async () => {
     const parsedTx = await connection.getParsedConfirmedTransaction(signature);
     if (parsedTx === null) {
       expect(parsedTx).not.toBeNull();
@@ -170,15 +162,13 @@ describe('load BPF Rust program', () => {
     }
 
     expect(logs.length).toBeGreaterThanOrEqual(2);
-    expect(logs[0]).toEqual(
-      `Program ${program.publicKey.toBase58()} invoke [1]`,
-    );
+    expect(logs[0]).toEqual(`Call BPF program ${program.publicKey.toBase58()}`);
     expect(logs[logs.length - 1]).toEqual(
-      `Program ${program.publicKey.toBase58()} success`,
+      `BPF program ${program.publicKey.toBase58()} success`,
     );
   });
 
-  test('deprecated - simulate transaction without signature verification', async () => {
+  test('simulate transaction without signature verification', async () => {
     const simulatedTransaction = new Transaction().add({
       keys: [
         {pubkey: payerAccount.publicKey, isSigner: true, isWritable: true},
@@ -198,40 +188,9 @@ describe('load BPF Rust program', () => {
     }
 
     expect(logs.length).toBeGreaterThanOrEqual(2);
-    expect(logs[0]).toEqual(
-      `Program ${program.publicKey.toBase58()} invoke [1]`,
-    );
+    expect(logs[0]).toEqual(`Call BPF program ${program.publicKey.toBase58()}`);
     expect(logs[logs.length - 1]).toEqual(
-      `Program ${program.publicKey.toBase58()} success`,
-    );
-  });
-
-  test('simulate transaction without signature verification', async () => {
-    const simulatedTransaction = new Transaction({
-      feePayer: payerAccount.publicKey,
-    }).add({
-      keys: [
-        {pubkey: payerAccount.publicKey, isSigner: true, isWritable: true},
-      ],
-      programId: program.publicKey,
-    });
-
-    const {err, logs} = (
-      await connection.simulateTransaction(simulatedTransaction)
-    ).value;
-    expect(err).toBeNull();
-
-    if (logs === null) {
-      expect(logs).not.toBeNull();
-      return;
-    }
-
-    expect(logs.length).toBeGreaterThanOrEqual(2);
-    expect(logs[0]).toEqual(
-      `Program ${program.publicKey.toBase58()} invoke [1]`,
-    );
-    expect(logs[logs.length - 1]).toEqual(
-      `Program ${program.publicKey.toBase58()} success`,
+      `BPF program ${program.publicKey.toBase58()} success`,
     );
   });
 

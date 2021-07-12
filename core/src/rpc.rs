@@ -41,10 +41,9 @@ use solana_runtime::{
     accounts::AccountAddressFilter,
     accounts_index::{AccountIndex, IndexKey},
     bank::Bank,
-    bank_forks::{BankForks, SnapshotConfig},
+    bank_forks::BankForks,
     commitment::{BlockCommitmentArray, BlockCommitmentCache, CommitmentSlots},
     inline_spl_token_v2_0::{SPL_TOKEN_ACCOUNT_MINT_OFFSET, SPL_TOKEN_ACCOUNT_OWNER_OFFSET},
-    snapshot_utils::get_highest_snapshot_archive_path,
 };
 use solana_sdk::{
     account::Account,
@@ -84,7 +83,7 @@ use std::{
     },
     time::Duration,
 };
-use tokio::runtime::Runtime;
+use tokio::runtime;
 
 pub const MAX_REQUEST_PAYLOAD_SIZE: usize = 50 * (1 << 10); // 50kB
 pub const PERFORMANCE_SAMPLES_LIMIT: usize = 720;
@@ -109,7 +108,6 @@ pub struct JsonRpcConfig {
     pub enable_validator_exit: bool,
     pub enable_set_log_filter: bool,
     pub enable_rpc_transaction_history: bool,
-    pub enable_cpi_and_log_storage: bool,
     pub identity_pubkey: Pubkey,
     pub faucet_addr: Option<SocketAddr>,
     pub health_check_slot_distance: u64,
@@ -127,27 +125,28 @@ pub struct JsonRpcRequestProcessor {
     block_commitment_cache: Arc<RwLock<BlockCommitmentCache>>,
     blockstore: Arc<Blockstore>,
     config: JsonRpcConfig,
-    snapshot_config: Option<SnapshotConfig>,
     validator_exit: Arc<RwLock<Option<ValidatorExit>>>,
     health: Arc<RpcHealth>,
     cluster_info: Arc<ClusterInfo>,
     genesis_hash: Hash,
     transaction_sender: Arc<Mutex<Sender<TransactionInfo>>>,
-    runtime: Arc<Runtime>,
+    runtime_handle: runtime::Handle,
     bigtable_ledger_storage: Option<solana_storage_bigtable::LedgerStorage>,
     optimistically_confirmed_bank: Arc<RwLock<OptimisticallyConfirmedBank>>,
 }
 impl Metadata for JsonRpcRequestProcessor {}
 
 impl JsonRpcRequestProcessor {
-    #[allow(deprecated)]
     fn bank(&self, commitment: Option<CommitmentConfig>) -> Arc<Bank> {
         debug!("RPC commitment_config: {:?}", commitment);
         let r_bank_forks = self.bank_forks.read().unwrap();
 
-        let commitment = commitment.unwrap_or_default();
+        let commitment_level = match commitment {
+            None => CommitmentLevel::Max,
+            Some(config) => config.commitment,
+        };
 
-        if commitment.is_confirmed() {
+        if commitment_level == CommitmentLevel::SingleGossip {
             let bank = self
                 .optimistically_confirmed_bank
                 .read()
@@ -162,26 +161,22 @@ impl JsonRpcRequestProcessor {
             .block_commitment_cache
             .read()
             .unwrap()
-            .slot_with_commitment(commitment.commitment);
+            .slot_with_commitment(commitment_level);
 
-        match commitment.commitment {
-            // Recent variant is deprecated
-            CommitmentLevel::Recent | CommitmentLevel::Processed => {
+        match commitment_level {
+            CommitmentLevel::Recent => {
                 debug!("RPC using the heaviest slot: {:?}", slot);
             }
-            // Root variant is deprecated
             CommitmentLevel::Root => {
                 debug!("RPC using node root: {:?}", slot);
             }
-            // Single variant is deprecated
             CommitmentLevel::Single => {
                 debug!("RPC using confirmed slot: {:?}", slot);
             }
-            // Max variant is deprecated
-            CommitmentLevel::Max | CommitmentLevel::Finalized => {
+            CommitmentLevel::Max => {
                 debug!("RPC using block: {:?}", slot);
             }
-            CommitmentLevel::SingleGossip | CommitmentLevel::Confirmed => unreachable!(), // SingleGossip variant is deprecated
+            CommitmentLevel::SingleGossip => unreachable!(),
         };
 
         r_bank_forks.get(slot).cloned().unwrap_or_else(|| {
@@ -198,16 +193,15 @@ impl JsonRpcRequestProcessor {
             // For more information, see https://github.com/solana-labs/solana/issues/11078
             warn!(
                 "Bank with {:?} not found at slot: {:?}",
-                commitment.commitment, slot
+                commitment_level, slot
             );
-            r_bank_forks.root_bank()
+            r_bank_forks.root_bank().clone()
         })
     }
 
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         config: JsonRpcConfig,
-        snapshot_config: Option<SnapshotConfig>,
         bank_forks: Arc<RwLock<BankForks>>,
         block_commitment_cache: Arc<RwLock<BlockCommitmentCache>>,
         blockstore: Arc<Blockstore>,
@@ -215,7 +209,7 @@ impl JsonRpcRequestProcessor {
         health: Arc<RpcHealth>,
         cluster_info: Arc<ClusterInfo>,
         genesis_hash: Hash,
-        runtime: Arc<Runtime>,
+        runtime: &runtime::Runtime,
         bigtable_ledger_storage: Option<solana_storage_bigtable::LedgerStorage>,
         optimistically_confirmed_bank: Arc<RwLock<OptimisticallyConfirmedBank>>,
     ) -> (Self, Receiver<TransactionInfo>) {
@@ -223,7 +217,6 @@ impl JsonRpcRequestProcessor {
         (
             Self {
                 config,
-                snapshot_config,
                 bank_forks,
                 block_commitment_cache,
                 blockstore,
@@ -232,7 +225,7 @@ impl JsonRpcRequestProcessor {
                 cluster_info,
                 genesis_hash,
                 transaction_sender: Arc::new(Mutex::new(sender)),
-                runtime,
+                runtime_handle: runtime.handle().clone(),
                 bigtable_ledger_storage,
                 optimistically_confirmed_bank,
             },
@@ -256,7 +249,6 @@ impl JsonRpcRequestProcessor {
 
         Self {
             config: JsonRpcConfig::default(),
-            snapshot_config: None,
             bank_forks,
             block_commitment_cache: Arc::new(RwLock::new(BlockCommitmentCache::new(
                 HashMap::new(),
@@ -269,7 +261,7 @@ impl JsonRpcRequestProcessor {
             cluster_info,
             genesis_hash,
             transaction_sender: Arc::new(Mutex::new(sender)),
-            runtime: Arc::new(Runtime::new().expect("Runtime")),
+            runtime_handle: runtime::Runtime::new().unwrap().handle().clone(),
             bigtable_ledger_storage: None,
             optimistically_confirmed_bank: Arc::new(RwLock::new(OptimisticallyConfirmedBank {
                 bank: bank.clone(),
@@ -383,7 +375,7 @@ impl JsonRpcRequestProcessor {
     pub fn get_epoch_schedule(&self) -> EpochSchedule {
         // Since epoch schedule data comes from the genesis config, any commitment level should be
         // fine
-        let bank = self.bank(Some(CommitmentConfig::finalized()));
+        let bank = self.bank(Some(CommitmentConfig::root()));
         *bank.epoch_schedule()
     }
 
@@ -474,7 +466,7 @@ impl JsonRpcRequestProcessor {
         }
     }
 
-    fn get_slot(&self, commitment: Option<CommitmentConfig>) -> Slot {
+    fn get_slot(&self, commitment: Option<CommitmentConfig>) -> u64 {
         self.bank(commitment).slot()
     }
 
@@ -708,7 +700,7 @@ impl JsonRpcRequestProcessor {
             if result.is_err() {
                 if let Some(bigtable_ledger_storage) = &self.bigtable_ledger_storage {
                     let bigtable_result = self
-                        .runtime
+                        .runtime_handle
                         .block_on(bigtable_ledger_storage.get_confirmed_block(slot));
                     self.check_bigtable_result(&bigtable_result)?;
                     return Ok(bigtable_result
@@ -752,8 +744,8 @@ impl JsonRpcRequestProcessor {
             // If the starting slot is lower than what's available in blockstore assume the entire
             // [start_slot..end_slot] can be fetched from BigTable.
             if let Some(bigtable_ledger_storage) = &self.bigtable_ledger_storage {
-                return self
-                    .runtime
+                return Ok(self
+                    .runtime_handle
                     .block_on(
                         bigtable_ledger_storage
                             .get_confirmed_blocks(start_slot, (end_slot - start_slot) as usize + 1), // increment limit by 1 to ensure returned range is inclusive of both start_slot and end_slot
@@ -767,7 +759,7 @@ impl JsonRpcRequestProcessor {
                             "BigTable query failed (maybe timeout due to too large range?)"
                                 .to_string(),
                         )
-                    });
+                    })?);
             }
         }
 
@@ -798,7 +790,7 @@ impl JsonRpcRequestProcessor {
             // range can be fetched from BigTable.
             if let Some(bigtable_ledger_storage) = &self.bigtable_ledger_storage {
                 return Ok(self
-                    .runtime
+                    .runtime_handle
                     .block_on(bigtable_ledger_storage.get_confirmed_blocks(start_slot, limit))
                     .unwrap_or_else(|_| vec![]));
             }
@@ -825,7 +817,7 @@ impl JsonRpcRequestProcessor {
             if result.is_err() || matches!(result, Ok(None)) {
                 if let Some(bigtable_ledger_storage) = &self.bigtable_ledger_storage {
                     let bigtable_result = self
-                        .runtime
+                        .runtime_handle
                         .block_on(bigtable_ledger_storage.get_confirmed_block(slot));
                     self.check_bigtable_result(&bigtable_result)?;
                     return Ok(bigtable_result
@@ -876,7 +868,7 @@ impl JsonRpcRequestProcessor {
         let search_transaction_history = config
             .map(|x| x.search_transaction_history)
             .unwrap_or(false);
-        let bank = self.bank(Some(CommitmentConfig::processed()));
+        let bank = self.bank(Some(CommitmentConfig::recent()));
 
         for signature in signatures {
             let status = if let Some(status) = self.get_transaction_status(signature, &bank) {
@@ -904,7 +896,7 @@ impl JsonRpcRequestProcessor {
                     })
                     .or_else(|| {
                         if let Some(bigtable_ledger_storage) = &self.bigtable_ledger_storage {
-                            self.runtime
+                            self.runtime_handle
                                 .block_on(bigtable_ledger_storage.get_signature_status(&signature))
                                 .map(Some)
                                 .unwrap_or(None)
@@ -928,7 +920,7 @@ impl JsonRpcRequestProcessor {
         let (slot, status) = bank.get_signature_status_slot(&signature)?;
         let r_block_commitment_cache = self.block_commitment_cache.read().unwrap();
 
-        let optimistically_confirmed_bank = self.bank(Some(CommitmentConfig::confirmed()));
+        let optimistically_confirmed_bank = self.bank(Some(CommitmentConfig::single_gossip()));
         let optimistically_confirmed =
             optimistically_confirmed_bank.get_signature_status_slot(&signature);
 
@@ -983,7 +975,7 @@ impl JsonRpcRequestProcessor {
                 None => {
                     if let Some(bigtable_ledger_storage) = &self.bigtable_ledger_storage {
                         return self
-                            .runtime
+                            .runtime_handle
                             .block_on(bigtable_ledger_storage.get_confirmed_transaction(&signature))
                             .unwrap_or(None)
                             .map(|confirmed| confirmed.encode(encoding));
@@ -1050,7 +1042,7 @@ impl JsonRpcRequestProcessor {
                         before = results.last().map(|x| x.signature);
                     }
 
-                    let bigtable_results = self.runtime.block_on(
+                    let bigtable_results = self.runtime_handle.block_on(
                         bigtable_ledger_storage.get_confirmed_signatures_for_address(
                             &address,
                             before.as_ref(),
@@ -1083,7 +1075,7 @@ impl JsonRpcRequestProcessor {
 
         if let Some(bigtable_ledger_storage) = &self.bigtable_ledger_storage {
             let bigtable_slot = self
-                .runtime
+                .runtime_handle
                 .block_on(bigtable_ledger_storage.get_first_available_block())
                 .unwrap_or(None)
                 .unwrap_or(slot);
@@ -1800,9 +1792,6 @@ pub trait RpcSafe {
     #[rpc(meta, name = "getGenesisHash")]
     fn get_genesis_hash(&self, meta: Self::Metadata) -> Result<String>;
 
-    #[rpc(meta, name = "getHealth")]
-    fn get_health(&self, meta: Self::Metadata) -> Result<String>;
-
     #[rpc(meta, name = "getLeaderSchedule")]
     fn get_leader_schedule(
         &self,
@@ -1839,9 +1828,6 @@ pub trait RpcSafe {
         meta: Self::Metadata,
     ) -> Result<RpcResponse<RpcFeeRateGovernor>>;
 
-    #[rpc(meta, name = "getSnapshotSlot")]
-    fn get_snapshot_slot(&self, meta: Self::Metadata) -> Result<Slot>;
-
     #[rpc(meta, name = "getSignatureStatuses")]
     fn get_signature_statuses(
         &self,
@@ -1851,7 +1837,7 @@ pub trait RpcSafe {
     ) -> Result<RpcResponse<Vec<Option<TransactionStatus>>>>;
 
     #[rpc(meta, name = "getSlot")]
-    fn get_slot(&self, meta: Self::Metadata, commitment: Option<CommitmentConfig>) -> Result<Slot>;
+    fn get_slot(&self, meta: Self::Metadata, commitment: Option<CommitmentConfig>) -> Result<u64>;
 
     #[rpc(meta, name = "getTransactionCount")]
     fn get_transaction_count(
@@ -2293,16 +2279,6 @@ impl RpcSafe for RpcSafeImpl {
         Ok(meta.genesis_hash.to_string())
     }
 
-    fn get_health(&self, meta: Self::Metadata) -> Result<String> {
-        match meta.health.check() {
-            RpcHealthStatus::Ok => Ok("ok".to_string()),
-            RpcHealthStatus::Behind { num_slots } => Err(RpcCustomError::NodeUnhealthy {
-                num_slots_behind: Some(num_slots),
-            }
-            .into()),
-        }
-    }
-
     fn get_leader_schedule(
         &self,
         meta: Self::Metadata,
@@ -2398,17 +2374,6 @@ impl RpcSafe for RpcSafeImpl {
         Ok(meta.get_signature_status(signature, commitment))
     }
 
-    fn get_snapshot_slot(&self, meta: Self::Metadata) -> Result<Slot> {
-        debug!("get_snapshot_slot rpc request received");
-
-        meta.snapshot_config
-            .and_then(|snapshot_config| {
-                get_highest_snapshot_archive_path(&snapshot_config.snapshot_package_output_path)
-                    .map(|(_, (slot, _, _))| slot)
-            })
-            .ok_or_else(|| RpcCustomError::NoSnapshot.into())
-    }
-
     fn get_signature_statuses(
         &self,
         meta: Self::Metadata,
@@ -2432,7 +2397,7 @@ impl RpcSafe for RpcSafeImpl {
         meta.get_signature_statuses(signatures, config)
     }
 
-    fn get_slot(&self, meta: Self::Metadata, commitment: Option<CommitmentConfig>) -> Result<Slot> {
+    fn get_slot(&self, meta: Self::Metadata, commitment: Option<CommitmentConfig>) -> Result<u64> {
         debug!("get_slot rpc request received");
         Ok(meta.get_slot(commitment))
     }
@@ -2553,16 +2518,9 @@ impl RpcSafe for RpcSafeImpl {
                 return Err(e);
             }
 
-            match meta.health.check() {
-                RpcHealthStatus::Ok => (),
-                RpcHealthStatus::Behind { num_slots } => {
-                    return Err(RpcCustomError::NodeUnhealthy {
-                        num_slots_behind: Some(num_slots),
-                    }
-                    .into());
-                }
+            if meta.health.check() != RpcHealthStatus::Ok {
+                return Err(RpcCustomError::RpcNodeUnhealthy.into());
             }
-
             if let (Err(err), logs) = preflight_bank.simulate_transaction(transaction.clone()) {
                 return Err(RpcCustomError::SendTransactionPreflightFailure {
                     message: format!("Transaction simulation failed: {}", err),
@@ -2964,7 +2922,9 @@ pub mod tests {
         rpc_subscriptions::RpcSubscriptions,
     };
     use bincode::deserialize;
-    use jsonrpc_core::{futures, ErrorCode, MetaIoHandler, Output, Response, Value};
+    use jsonrpc_core::{
+        futures::future::Future, ErrorCode, MetaIoHandler, Output, Response, Value,
+    };
     use jsonrpc_core_client::transports::local;
     use solana_client::rpc_filter::{Memcmp, MemcmpEncodedBytes};
     use solana_ledger::{
@@ -2972,9 +2932,7 @@ pub mod tests {
         blockstore_processor::fill_blockstore_slot_with_ticks,
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
     };
-    use solana_runtime::{
-        accounts_background_service::ABSRequestSender, commitment::BlockCommitment,
-    };
+    use solana_runtime::commitment::BlockCommitment;
     use solana_sdk::{
         clock::MAX_RECENT_BLOCKHASHES,
         fee_calculator::DEFAULT_BURN_PERCENT,
@@ -3087,10 +3045,7 @@ pub mod tests {
             bank_forks.write().unwrap().insert(new_bank);
 
             for root in roots.iter() {
-                bank_forks
-                    .write()
-                    .unwrap()
-                    .set_root(*root, &ABSRequestSender::default(), Some(0));
+                bank_forks.write().unwrap().set_root(*root, &None, Some(0));
                 let mut stakes = HashMap::new();
                 stakes.insert(leader_vote_keypair.pubkey(), (1, Account::default()));
                 let block_time = bank_forks
@@ -3144,7 +3099,6 @@ pub mod tests {
                 identity_pubkey: *pubkey,
                 ..JsonRpcConfig::default()
             },
-            None,
             bank_forks.clone(),
             block_commitment_cache.clone(),
             blockstore,
@@ -3152,7 +3106,7 @@ pub mod tests {
             RpcHealth::stub(),
             cluster_info.clone(),
             Hash::default(),
-            Arc::new(tokio::runtime::Runtime::new().unwrap()),
+            &runtime::Runtime::new().unwrap(),
             None,
             OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks),
         );
@@ -3229,23 +3183,15 @@ pub mod tests {
         let mut io = MetaIoHandler::default();
         io.extend_with(RpcSafeImpl.to_delegate());
 
-        async fn use_client(client: gen_client::Client, mint_pubkey: Pubkey) -> u64 {
-            client
-                .get_balance(mint_pubkey.to_string(), None)
-                .await
-                .unwrap()
-                .value
-        }
-
-        let fut = async {
+        let fut = {
             let (client, server) =
                 local::connect_with_metadata::<gen_client::Client, _, _>(&io, meta);
-            let client = use_client(client, mint_pubkey);
-
-            futures::join!(client, server)
+            client
+                .get_balance(mint_pubkey.to_string(), None)
+                .join(server)
         };
-        let (response, _) = futures::executor::block_on(fut);
-        assert_eq!(response, 20);
+        let (response, _) = fut.wait().unwrap();
+        assert_eq!(response.value, 20);
     }
 
     #[test]
@@ -4553,7 +4499,6 @@ pub mod tests {
         let tpu_address = cluster_info.my_contact_info().tpu;
         let (meta, receiver) = JsonRpcRequestProcessor::new(
             JsonRpcConfig::default(),
-            None,
             bank_forks.clone(),
             block_commitment_cache,
             blockstore,
@@ -4561,7 +4506,7 @@ pub mod tests {
             health.clone(),
             cluster_info,
             Hash::default(),
-            Arc::new(tokio::runtime::Runtime::new().unwrap()),
+            &runtime::Runtime::new().unwrap(),
             None,
             OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks),
         );
@@ -4610,7 +4555,7 @@ pub mod tests {
         );
 
         // sendTransaction will fail due to poor node health
-        health.stub_set_health_status(Some(RpcHealthStatus::Behind { num_slots: 42 }));
+        health.stub_set_health_status(Some(RpcHealthStatus::Behind));
         let req = format!(
             r#"{{"jsonrpc":"2.0","id":1,"method":"sendTransaction","params":["{}"]}}"#,
             bs58::encode(serialize(&bad_transaction).unwrap()).into_string()
@@ -4619,7 +4564,7 @@ pub mod tests {
         assert_eq!(
             res,
             Some(
-                r#"{"jsonrpc":"2.0","error":{"code":-32005,"message":"Node is behind by 42 slots","data":{"numSlotsBehind":42}},"id":1}"#.to_string(),
+                r#"{"jsonrpc":"2.0","error":{"code":-32005,"message":"RPC node is unhealthy"},"id":1}"#.to_string(),
             )
         );
         health.stub_set_health_status(None);
@@ -4749,7 +4694,6 @@ pub mod tests {
         let bank_forks = new_bank_forks().0;
         let (request_processor, receiver) = JsonRpcRequestProcessor::new(
             JsonRpcConfig::default(),
-            None,
             bank_forks.clone(),
             block_commitment_cache,
             blockstore,
@@ -4757,7 +4701,7 @@ pub mod tests {
             RpcHealth::stub(),
             cluster_info,
             Hash::default(),
-            Arc::new(tokio::runtime::Runtime::new().unwrap()),
+            &runtime::Runtime::new().unwrap(),
             None,
             OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks),
         );
@@ -4773,16 +4717,13 @@ pub mod tests {
         let ledger_path = get_tmp_ledger_path!();
         let blockstore = Arc::new(Blockstore::open(&ledger_path).unwrap());
         let block_commitment_cache = Arc::new(RwLock::new(BlockCommitmentCache::default()));
-        let config = JsonRpcConfig {
-            enable_validator_exit: true,
-            ..JsonRpcConfig::default()
-        };
+        let mut config = JsonRpcConfig::default();
+        config.enable_validator_exit = true;
         let bank_forks = new_bank_forks().0;
         let cluster_info = Arc::new(ClusterInfo::default());
         let tpu_address = cluster_info.my_contact_info().tpu;
         let (request_processor, receiver) = JsonRpcRequestProcessor::new(
             config,
-            None,
             bank_forks.clone(),
             block_commitment_cache,
             blockstore,
@@ -4790,7 +4731,7 @@ pub mod tests {
             RpcHealth::stub(),
             cluster_info,
             Hash::default(),
-            Arc::new(tokio::runtime::Runtime::new().unwrap()),
+            &runtime::Runtime::new().unwrap(),
             None,
             OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks),
         );
@@ -4866,15 +4807,12 @@ pub mod tests {
             CommitmentSlots::new_from_slot(bank_forks.read().unwrap().highest_slot()),
         )));
 
-        let config = JsonRpcConfig {
-            enable_validator_exit: true,
-            ..JsonRpcConfig::default()
-        };
+        let mut config = JsonRpcConfig::default();
+        config.enable_validator_exit = true;
         let cluster_info = Arc::new(ClusterInfo::default());
         let tpu_address = cluster_info.my_contact_info().tpu;
         let (request_processor, receiver) = JsonRpcRequestProcessor::new(
             config,
-            None,
             bank_forks.clone(),
             block_commitment_cache,
             blockstore,
@@ -4882,7 +4820,7 @@ pub mod tests {
             RpcHealth::stub(),
             cluster_info,
             Hash::default(),
-            Arc::new(tokio::runtime::Runtime::new().unwrap()),
+            &runtime::Runtime::new().unwrap(),
             None,
             OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks),
         );
@@ -5385,7 +5323,7 @@ pub mod tests {
 
         let req = format!(
             r#"{{"jsonrpc":"2.0","id":1,"method":"getVoteAccounts","params":{}}}"#,
-            json!([CommitmentConfig::processed()])
+            json!([CommitmentConfig::recent()])
         );
 
         let res = io.handle_request_sync(&req, meta.clone());
@@ -5431,7 +5369,7 @@ pub mod tests {
         {
             let req = format!(
                 r#"{{"jsonrpc":"2.0","id":1,"method":"getVoteAccounts","params":{}}}"#,
-                json!([CommitmentConfig::processed()])
+                json!([CommitmentConfig::recent()])
             );
 
             let res = io.handle_request_sync(&req, meta);
@@ -6103,7 +6041,6 @@ pub mod tests {
 
         let (meta, _receiver) = JsonRpcRequestProcessor::new(
             JsonRpcConfig::default(),
-            None,
             bank_forks.clone(),
             block_commitment_cache,
             blockstore,
@@ -6111,7 +6048,7 @@ pub mod tests {
             RpcHealth::stub(),
             cluster_info,
             Hash::default(),
-            Arc::new(tokio::runtime::Runtime::new().unwrap()),
+            &runtime::Runtime::new().unwrap(),
             None,
             optimistically_confirmed_bank.clone(),
         );
@@ -6119,8 +6056,7 @@ pub mod tests {
         let mut io = MetaIoHandler::default();
         io.extend_with(RpcSafeImpl.to_delegate());
 
-        let req =
-            r#"{"jsonrpc":"2.0","id":1,"method":"getSlot","params":[{"commitment":"confirmed"}]}"#;
+        let req = r#"{"jsonrpc":"2.0","id":1,"method":"getSlot","params":[{"commitment":"singleGossip"}]}"#;
         let res = io.handle_request_sync(req, meta.clone());
         let json: Value = serde_json::from_str(&res.unwrap()).unwrap();
         let slot: Slot = serde_json::from_value(json["result"].clone()).unwrap();
@@ -6133,8 +6069,7 @@ pub mod tests {
             &subscriptions,
             &mut pending_optimistically_confirmed_banks,
         );
-        let req =
-            r#"{"jsonrpc":"2.0","id":1,"method":"getSlot","params":[{"commitment": "confirmed"}]}"#;
+        let req = r#"{"jsonrpc":"2.0","id":1,"method":"getSlot","params":[{"commitment": "singleGossip"}]}"#;
         let res = io.handle_request_sync(&req, meta.clone());
         let json: Value = serde_json::from_str(&res.unwrap()).unwrap();
         let slot: Slot = serde_json::from_value(json["result"].clone()).unwrap();
@@ -6148,8 +6083,7 @@ pub mod tests {
             &subscriptions,
             &mut pending_optimistically_confirmed_banks,
         );
-        let req =
-            r#"{"jsonrpc":"2.0","id":1,"method":"getSlot","params":[{"commitment": "confirmed"}]}"#;
+        let req = r#"{"jsonrpc":"2.0","id":1,"method":"getSlot","params":[{"commitment": "singleGossip"}]}"#;
         let res = io.handle_request_sync(&req, meta.clone());
         let json: Value = serde_json::from_str(&res.unwrap()).unwrap();
         let slot: Slot = serde_json::from_value(json["result"].clone()).unwrap();
@@ -6163,8 +6097,7 @@ pub mod tests {
             &subscriptions,
             &mut pending_optimistically_confirmed_banks,
         );
-        let req =
-            r#"{"jsonrpc":"2.0","id":1,"method":"getSlot","params":[{"commitment": "confirmed"}]}"#;
+        let req = r#"{"jsonrpc":"2.0","id":1,"method":"getSlot","params":[{"commitment": "singleGossip"}]}"#;
         let res = io.handle_request_sync(&req, meta.clone());
         let json: Value = serde_json::from_str(&res.unwrap()).unwrap();
         let slot: Slot = serde_json::from_value(json["result"].clone()).unwrap();
@@ -6179,8 +6112,7 @@ pub mod tests {
             &subscriptions,
             &mut pending_optimistically_confirmed_banks,
         );
-        let req =
-            r#"{"jsonrpc":"2.0","id":1,"method":"getSlot","params":[{"commitment": "confirmed"}]}"#;
+        let req = r#"{"jsonrpc":"2.0","id":1,"method":"getSlot","params":[{"commitment": "singleGossip"}]}"#;
         let res = io.handle_request_sync(&req, meta);
         let json: Value = serde_json::from_str(&res.unwrap()).unwrap();
         let slot: Slot = serde_json::from_value(json["result"].clone()).unwrap();

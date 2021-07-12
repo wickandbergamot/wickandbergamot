@@ -2,7 +2,7 @@ use assert_matches::assert_matches;
 use crossbeam_channel::{unbounded, Receiver};
 use gag::BufferRedirect;
 use log::*;
-use serial_test::serial;
+use serial_test_derive::serial;
 use solana_client::{
     pubsub_client::PubsubClient,
     rpc_client::RpcClient,
@@ -68,10 +68,8 @@ fn test_ledger_cleanup_service() {
     solana_logger::setup();
     error!("test_ledger_cleanup_service");
     let num_nodes = 3;
-    let validator_config = ValidatorConfig {
-        max_ledger_shreds: Some(100),
-        ..ValidatorConfig::default()
-    };
+    let mut validator_config = ValidatorConfig::default();
+    validator_config.max_ledger_shreds = Some(100);
     let mut config = ClusterConfig {
         cluster_lamports: 10_000,
         poh_config: PohConfig::new_sleep(Duration::from_millis(50)),
@@ -168,7 +166,7 @@ fn test_local_cluster_signature_subscribe() {
         VALIDATOR_PORT_RANGE,
     );
     let (blockhash, _fee_calculator, _last_valid_slot) = tx_client
-        .get_recent_blockhash_with_commitment(CommitmentConfig::processed())
+        .get_recent_blockhash_with_commitment(CommitmentConfig::recent())
         .unwrap();
 
     let mut transaction = system_transaction::transfer(
@@ -182,7 +180,7 @@ fn test_local_cluster_signature_subscribe() {
         &format!("ws://{}", &non_bootstrap_info.rpc_pubsub.to_string()),
         &transaction.signatures[0],
         Some(RpcSignatureSubscribeConfig {
-            commitment: Some(CommitmentConfig::processed()),
+            commitment: Some(CommitmentConfig::recent()),
             enable_received_notification: Some(true),
         }),
     )
@@ -324,10 +322,8 @@ fn run_cluster_partition<E, F>(
     assert_eq!(node_stakes.len(), num_nodes);
     let cluster_lamports = node_stakes.iter().sum::<u64>() * 2;
     let enable_partition = Arc::new(AtomicBool::new(true));
-    let mut validator_config = ValidatorConfig {
-        enable_partition: Some(enable_partition.clone()),
-        ..ValidatorConfig::default()
-    };
+    let mut validator_config = ValidatorConfig::default();
+    validator_config.enable_partition = Some(enable_partition.clone());
 
     // Returns:
     // 1) The keys for the validators
@@ -706,7 +702,7 @@ fn test_forwarding() {
 fn test_restart_node() {
     solana_logger::setup();
     error!("test_restart_node");
-    let slots_per_epoch = MINIMUM_SLOTS_PER_EPOCH * 2;
+    let slots_per_epoch = MINIMUM_SLOTS_PER_EPOCH * 2 as u64;
     let ticks_per_slot = 16;
     let validator_config = ValidatorConfig::default();
     let mut cluster = LocalCluster::new(&mut ClusterConfig {
@@ -791,7 +787,7 @@ fn test_mainnet_beta_cluster_type() {
             (
                 program_id,
                 client
-                    .get_account_with_commitment(program_id, CommitmentConfig::processed())
+                    .get_account_with_commitment(program_id, CommitmentConfig::recent())
                     .unwrap()
             ),
             (_program_id, Some(_))
@@ -809,7 +805,7 @@ fn test_mainnet_beta_cluster_type() {
             (
                 program_id,
                 client
-                    .get_account_with_commitment(program_id, CommitmentConfig::processed())
+                    .get_account_with_commitment(program_id, CommitmentConfig::recent())
                     .unwrap()
             ),
             (program_id, None)
@@ -826,7 +822,7 @@ fn generate_frozen_account_panic(mut cluster: LocalCluster, frozen_account: Arc<
     trace!(
         "validator slot: {}",
         client
-            .get_slot_with_commitment(CommitmentConfig::processed())
+            .get_slot_with_commitment(CommitmentConfig::recent())
             .expect("get slot")
     );
 
@@ -838,7 +834,7 @@ fn generate_frozen_account_panic(mut cluster: LocalCluster, frozen_account: Arc<
     while !solana_runtime::accounts_db::FROZEN_ACCOUNT_PANIC.load(Ordering::Relaxed) {
         // Transfer from frozen account
         let (blockhash, _fee_calculator, _last_valid_slot) = client
-            .get_recent_blockhash_with_commitment(CommitmentConfig::processed())
+            .get_recent_blockhash_with_commitment(CommitmentConfig::recent())
             .unwrap();
         client
             .async_transfer(
@@ -1052,12 +1048,9 @@ fn test_snapshot_download() {
 
     trace!("found: {:?}", archive_filename);
     let validator_archive_path = snapshot_utils::get_snapshot_archive_path(
-        validator_snapshot_test_config
-            .snapshot_output_path
-            .path()
-            .to_path_buf(),
+        &validator_snapshot_test_config.snapshot_output_path,
         &archive_snapshot_hash,
-        ArchiveFormat::TarBzip2,
+        &ArchiveFormat::TarBzip2,
     );
 
     // Download the snapshot, then boot a validator from it.
@@ -1125,12 +1118,9 @@ fn test_snapshot_restart_tower() {
 
     // Copy archive to validator's snapshot output directory
     let validator_archive_path = snapshot_utils::get_snapshot_archive_path(
-        validator_snapshot_test_config
-            .snapshot_output_path
-            .path()
-            .to_path_buf(),
+        &validator_snapshot_test_config.snapshot_output_path,
         &archive_snapshot_hash,
-        ArchiveFormat::TarBzip2,
+        &ArchiveFormat::TarBzip2,
     );
     fs::hard_link(archive_filename, &validator_archive_path).unwrap();
 
@@ -1193,12 +1183,9 @@ fn test_snapshots_blockstore_floor() {
 
     // Copy archive to validator's snapshot output directory
     let validator_archive_path = snapshot_utils::get_snapshot_archive_path(
-        validator_snapshot_test_config
-            .snapshot_output_path
-            .path()
-            .to_path_buf(),
+        &validator_snapshot_test_config.snapshot_output_path,
         &(archive_slot, archive_hash),
-        ArchiveFormat::TarBzip2,
+        &ArchiveFormat::TarBzip2,
     );
     fs::hard_link(archive_filename, &validator_archive_path).unwrap();
     let slot_floor = archive_slot;
@@ -1231,7 +1218,7 @@ fn test_snapshots_blockstore_floor() {
     let target_slot = slot_floor + 40;
     while current_slot <= target_slot {
         trace!("current_slot: {}", current_slot);
-        if let Ok(slot) = validator_client.get_slot_with_commitment(CommitmentConfig::processed()) {
+        if let Ok(slot) = validator_client.get_slot_with_commitment(CommitmentConfig::recent()) {
             current_slot = slot;
         } else {
             continue;
@@ -1345,10 +1332,8 @@ fn test_fake_shreds_broadcast_leader() {
 fn test_faulty_node(faulty_node_type: BroadcastStageType) {
     solana_logger::setup();
     let num_nodes = 2;
-    let error_validator_config = ValidatorConfig {
-        broadcast_stage_type: faulty_node_type,
-        ..ValidatorConfig::default()
-    };
+    let mut error_validator_config = ValidatorConfig::default();
+    error_validator_config.broadcast_stage_type = faulty_node_type;
     let mut validator_configs = Vec::with_capacity(num_nodes - 1);
     validator_configs.resize_with(num_nodes - 1, ValidatorConfig::default);
 
@@ -1360,8 +1345,8 @@ fn test_faulty_node(faulty_node_type: BroadcastStageType) {
         cluster_lamports: 10_000,
         node_stakes,
         validator_configs,
-        slots_per_epoch: MINIMUM_SLOTS_PER_EPOCH * 2,
-        stakers_slot_offset: MINIMUM_SLOTS_PER_EPOCH * 2,
+        slots_per_epoch: MINIMUM_SLOTS_PER_EPOCH * 2 as u64,
+        stakers_slot_offset: MINIMUM_SLOTS_PER_EPOCH * 2 as u64,
         ..ClusterConfig::default()
     };
 
@@ -1411,7 +1396,7 @@ fn test_no_voting() {
         .unwrap();
     loop {
         let last_slot = client
-            .get_slot_with_commitment(CommitmentConfig::processed())
+            .get_slot_with_commitment(CommitmentConfig::recent())
             .expect("Couldn't get slot");
         if last_slot > 4 * VOTE_THRESHOLD_DEPTH as u64 {
             break;
@@ -1469,7 +1454,7 @@ fn test_optimistic_confirmation_violation_detection() {
     let mut prev_voted_slot = 0;
     loop {
         let last_voted_slot = client
-            .get_slot_with_commitment(CommitmentConfig::processed())
+            .get_slot_with_commitment(CommitmentConfig::recent())
             .unwrap();
         if last_voted_slot > 50 {
             if prev_voted_slot == 0 {
@@ -1507,7 +1492,7 @@ fn test_optimistic_confirmation_violation_detection() {
     let client = cluster.get_validator_client(&entry_point_id).unwrap();
     loop {
         let last_root = client
-            .get_slot_with_commitment(CommitmentConfig::finalized())
+            .get_slot_with_commitment(CommitmentConfig::max())
             .unwrap();
         if last_root > prev_voted_slot {
             break;
@@ -1570,7 +1555,7 @@ fn test_validator_saves_tower() {
     // Wait for some votes to be generated
     let mut last_replayed_root;
     loop {
-        if let Ok(slot) = validator_client.get_slot_with_commitment(CommitmentConfig::processed()) {
+        if let Ok(slot) = validator_client.get_slot_with_commitment(CommitmentConfig::recent()) {
             trace!("current slot: {}", slot);
             if slot > 2 {
                 // this will be the root next time a validator starts
@@ -1593,9 +1578,6 @@ fn test_validator_saves_tower() {
 
     // Wait for the first root
     loop {
-        #[allow(deprecated)]
-        // This test depends on knowing the immediate root, without any delay from the commitment
-        // service, so the deprecated CommitmentConfig::root() is retained
         if let Ok(root) = validator_client.get_slot_with_commitment(CommitmentConfig::root()) {
             trace!("current root: {}", root);
             if root > last_replayed_root + 1 {
@@ -1608,7 +1590,7 @@ fn test_validator_saves_tower() {
 
     // Stop validator, and check saved tower
     let recent_slot = validator_client
-        .get_slot_with_commitment(CommitmentConfig::processed())
+        .get_slot_with_commitment(CommitmentConfig::recent())
         .unwrap();
     let validator_info = cluster.exit_node(&validator_id);
     let tower2 = Tower::restore(&ledger_path, &validator_id).unwrap();
@@ -1625,9 +1607,6 @@ fn test_validator_saves_tower() {
 
     // Wait for a new root, demonstrating the validator was able to make progress from the older `tower1`
     loop {
-        #[allow(deprecated)]
-        // This test depends on knowing the immediate root, without any delay from the commitment
-        // service, so the deprecated CommitmentConfig::root() is retained
         if let Ok(root) = validator_client.get_slot_with_commitment(CommitmentConfig::root()) {
             trace!(
                 "current root: {}, last_replayed_root: {}",
@@ -1657,10 +1636,10 @@ fn test_validator_saves_tower() {
 
     // Wait for a couple more slots to pass so another vote occurs
     let current_slot = validator_client
-        .get_slot_with_commitment(CommitmentConfig::processed())
+        .get_slot_with_commitment(CommitmentConfig::recent())
         .unwrap();
     loop {
-        if let Ok(slot) = validator_client.get_slot_with_commitment(CommitmentConfig::processed()) {
+        if let Ok(slot) = validator_client.get_slot_with_commitment(CommitmentConfig::recent()) {
             trace!("current_slot: {}, slot: {}", current_slot, slot);
             if slot > current_slot + 1 {
                 break;
@@ -1678,10 +1657,11 @@ fn test_validator_saves_tower() {
 }
 
 fn open_blockstore(ledger_path: &Path) -> Blockstore {
-    Blockstore::open_with_access_type(ledger_path, AccessType::PrimaryOnly, None, true)
-        .unwrap_or_else(|e| {
+    Blockstore::open_with_access_type(ledger_path, AccessType::PrimaryOnly, None).unwrap_or_else(
+        |e| {
             panic!("Failed to open ledger at {:?}, err: {}", ledger_path, e);
-        })
+        },
+    )
 }
 
 fn purge_slots(blockstore: &Blockstore, start_slot: Slot, slot_count: Slot) {
@@ -1901,7 +1881,6 @@ fn do_test_optimistic_confirmation_violation_with_or_without_tower(with_tower: b
                 &val_a_ledger_path,
                 AccessType::TryPrimaryThenSecondary,
                 None,
-                true,
             )
             .unwrap();
             let mut ancestors = AncestorIterator::new(last_vote, &blockstore);
@@ -2172,18 +2151,18 @@ fn test_optimistic_confirmation_violation_without_tower() {
 #[test]
 #[serial]
 fn test_run_test_load_program_accounts_root() {
-    run_test_load_program_accounts(CommitmentConfig::finalized());
+    run_test_load_program_accounts(CommitmentConfig::root());
 }
 
 #[test]
 #[serial]
 fn test_run_test_load_program_accounts_partition_root() {
-    run_test_load_program_accounts_partition(CommitmentConfig::finalized());
+    run_test_load_program_accounts_partition(CommitmentConfig::root());
 }
 
 fn run_test_load_program_accounts_partition(scan_commitment: CommitmentConfig) {
     let num_slots_per_validator = 8;
-    let partitions: [&[usize]; 2] = [&[(1)], &[(1)]];
+    let partitions: [&[usize]; 2] = [&[(1 as usize)], &[(1 as usize)]];
     let (leader_schedule, validator_keys) =
         create_custom_leader_schedule(partitions.len(), num_slots_per_validator);
 
@@ -2260,7 +2239,7 @@ fn setup_transfer_scan_threads(
                     return;
                 }
                 let (blockhash, _fee_calculator, _last_valid_slot) = client
-                    .get_recent_blockhash_with_commitment(CommitmentConfig::processed())
+                    .get_recent_blockhash_with_commitment(CommitmentConfig::recent())
                     .unwrap();
                 for i in 0..starting_keypairs_.len() {
                     client
@@ -2403,7 +2382,7 @@ fn wait_for_next_snapshot(
         .get_validator_client(&cluster.entry_point_info.id)
         .unwrap();
     let last_slot = client
-        .get_slot_with_commitment(CommitmentConfig::processed())
+        .get_slot_with_commitment(CommitmentConfig::recent())
         .expect("Couldn't get slot");
 
     // Wait for a snapshot for a bank >= last_slot to be made so we know that the snapshot

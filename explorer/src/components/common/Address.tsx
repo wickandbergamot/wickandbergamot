@@ -3,26 +3,19 @@ import { Link } from "react-router-dom";
 import { PublicKey } from "@solana/web3.js";
 import { clusterPath } from "utils/url";
 import { displayAddress } from "utils/tx";
+import { Pubkey } from "solana-sdk-wasm";
 import { useCluster } from "providers/cluster";
 
 type CopyState = "copy" | "copied";
 type Props = {
-  pubkey: PublicKey;
+  pubkey: PublicKey | Pubkey;
   alignRight?: boolean;
   link?: boolean;
   raw?: boolean;
   truncate?: boolean;
-  truncateUnknown?: boolean;
 };
 
-export function Address({
-  pubkey,
-  alignRight,
-  link,
-  raw,
-  truncate,
-  truncateUnknown,
-}: Props) {
+export function Address({ pubkey, alignRight, link, raw, truncate }: Props) {
   const [state, setState] = useState<CopyState>("copy");
   const address = pubkey.toBase58();
   const { cluster } = useCluster();
@@ -40,10 +33,6 @@ export function Address({
     ) : (
       <span className="fe fe-check-circle"></span>
     );
-
-  if (truncateUnknown && address === displayAddress(address, cluster)) {
-    truncate = true;
-  }
 
   const content = (
     <>

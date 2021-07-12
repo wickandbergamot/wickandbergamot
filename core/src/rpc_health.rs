@@ -1,17 +1,15 @@
-use {
-    crate::cluster_info::ClusterInfo,
-    solana_sdk::{clock::Slot, pubkey::Pubkey},
-    std::{
-        collections::HashSet,
-        sync::atomic::{AtomicBool, Ordering},
-        sync::Arc,
-    },
+use crate::cluster_info::ClusterInfo;
+use solana_sdk::pubkey::Pubkey;
+use std::{
+    collections::HashSet,
+    sync::atomic::{AtomicBool, Ordering},
+    sync::Arc,
 };
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum RpcHealthStatus {
     Ok,
-    Behind { num_slots: Slot }, // Validator is behind its trusted validators
+    Behind, // Validator is behind its trusted validators
 }
 
 pub struct RpcHealth {
@@ -90,13 +88,11 @@ impl RpcHealth {
             {
                 RpcHealthStatus::Ok
             } else {
-                let num_slots = latest_trusted_validator_account_hash_slot
-                    .saturating_sub(latest_account_hash_slot);
                 warn!(
-                    "health check: behind by {} slots: me={}, latest trusted_validator={}",
-                    num_slots, latest_account_hash_slot, latest_trusted_validator_account_hash_slot
+                    "health check: me={}, latest trusted_validator={}",
+                    latest_account_hash_slot, latest_trusted_validator_account_hash_slot
                 );
-                RpcHealthStatus::Behind { num_slots }
+                RpcHealthStatus::Behind
             }
         } else {
             // No trusted validator point of reference available, so this validator is healthy

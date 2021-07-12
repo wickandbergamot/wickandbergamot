@@ -16,7 +16,6 @@ struct Config {
     cargo_build_bpf: PathBuf,
     extra_cargo_test_args: Vec<String>,
     features: Vec<String>,
-    test_name: Option<String>,
     no_default_features: bool,
     offline: bool,
     verbose: bool,
@@ -32,7 +31,6 @@ impl Default for Config {
             cargo_build_bpf: PathBuf::from("cargo-build-bpf"),
             extra_cargo_test_args: vec![],
             features: vec![],
-            test_name: None,
             no_default_features: false,
             offline: false,
             verbose: false,
@@ -67,7 +65,11 @@ where
     }
 }
 
-fn test_bpf_package(config: &Config, target_directory: &Path, package: &cargo_metadata::Package) {
+fn test_bpf_package(
+    config: &Config,
+    target_directory: &PathBuf,
+    package: &cargo_metadata::Package,
+) {
     let set_test_bpf_feature = package.features.contains_key("test-bpf");
 
     let bpf_out_dir = config
@@ -103,11 +105,6 @@ fn test_bpf_package(config: &Config, target_directory: &Path, package: &cargo_me
     env::set_var("BPF_OUT_DIR", bpf_out_dir);
 
     cargo_args.insert(0, "test");
-
-    if let Some(test_name) = &config.test_name {
-        cargo_args.push("--test");
-        cargo_args.push(test_name);
-    }
 
     // If the program crate declares the "test-bpf" feature, pass it along to the tests so they can
     // distinguish between `cargo test` and `cargo test-bpf`
@@ -195,13 +192,6 @@ fn main() {
                 .help("Do not activate the `default` feature"),
         )
         .arg(
-            Arg::with_name("test")
-                .long("test")
-                .value_name("NAME")
-                .takes_value(true)
-                .help("Test only the specified test target"),
-        )
-        .arg(
             Arg::with_name("manifest_path")
                 .long("manifest-path")
                 .value_name("PATH")
@@ -253,7 +243,6 @@ fn main() {
         features: values_t!(matches, "features", String)
             .ok()
             .unwrap_or_else(Vec::new),
-        test_name: value_t!(matches, "test", String).ok(),
         no_default_features: matches.is_present("no_default_features"),
         offline: matches.is_present("offline"),
         verbose: matches.is_present("verbose"),

@@ -260,13 +260,11 @@ impl RemoteWalletInfo {
             ));
         }
 
-        let mut wallet_info = RemoteWalletInfo {
-            manufacturer: wallet_path.host_str().unwrap().to_string(),
-            ..RemoteWalletInfo::default()
-        };
+        let mut wallet_info = RemoteWalletInfo::default();
+        wallet_info.manufacturer = wallet_path.host_str().unwrap().to_string();
 
         if let Some(wallet_id) = wallet_path.path_segments().map(|c| c.collect::<Vec<_>>()) {
-            if !wallet_id[0].is_empty() {
+            if wallet_id[0] != "" {
                 wallet_info.pubkey = Pubkey::from_str(wallet_id[0]).map_err(|e| {
                     RemoteWalletError::InvalidDerivationPath(format!(
                         "pubkey from_str error: {:?}",
@@ -599,10 +597,8 @@ mod tests {
             pubkey,
             error: None,
         };
-        let mut test_info = RemoteWalletInfo {
-            manufacturer: "Not Ledger".to_string(),
-            ..RemoteWalletInfo::default()
-        };
+        let mut test_info = RemoteWalletInfo::default();
+        test_info.manufacturer = "Not Ledger".to_string();
         assert!(!info.matches(&test_info));
         test_info.manufacturer = "Ledger".to_string();
         assert!(info.matches(&test_info));

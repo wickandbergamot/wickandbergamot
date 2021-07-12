@@ -136,12 +136,11 @@ The role of a [validator](terminology.md#validator) when it is appending [entrie
 
 ## leader schedule
 
-A sequence of [validator](terminology.md#validator) [public keys](terminology.md#public-key) mapped to [slots](terminology.md#slot). The cluster uses the leader schedule to determine which validator is the [leader](terminology.md#leader) at any moment in time.
+A sequence of [validator](terminology.md#validator) [public keys](terminology.md#public-key). The cluster uses the leader schedule to determine which validator is the [leader](terminology.md#leader) at any moment in time.
 
 ## ledger
 
 A list of [entries](terminology.md#entry) containing [transactions](terminology.md#transaction) signed by [clients](terminology.md#client).
-Conceptually, this can be traced back to the [genesis block](terminology.md#genesis-block), but actual [validators](terminology.md#validator)'s ledger may have only newer [blocks](terminology.md#block) to save storage usage as older ones not needed for validation of future blocks by design.
 
 ## ledger vote
 
@@ -214,20 +213,10 @@ A fraction of a [block](terminology.md#block); the smallest unit sent between [v
 ## signature
 
 A 64-byte ed25519 signature of R (32-bytes) and S (32-bytes). With the requirement that R is a packed Edwards point not of small order and S is a scalar in the range of 0 <= S < L.
-This requirement ensures no signature malleability. Each transaction must have at least one signature for [fee account](terminology#fee-account).
-Thus, the first signature in transaction can be treated as [transacton id](terminology.md#transaction-id)
-
-## skipped slot
-
-A past [slot](terminology.md#slot) that did not produce a [block](terminology.md#block), because the leader was offline or the [fork](terminology.md#fork) containing the slot was abandoned for a better alternative by cluster consensus. A skipped slot will not appear as an ancestor for blocks at subsequent slots, nor increment the [block height](terminology#block-height), nor expire the oldest `recent_blockhash`.
-
-Whether a slot has been skipped can only be determined when it becomes older than the latest [rooted](terminology.md#root) (thus not-skipped) slot.
 
 ## slot
 
-The period of time for which each [leader](terminology.md#leader) ingests transactions and produces a [block](terminology.md#block).
-
-Collectively, slots create a logical clock. Slots are ordered sequentially and non-overlapping, comprising roughly equal real-world time as per [PoH](terminology.md#proof-of-history).
+The period of time for which a [leader](terminology.md#leader) ingests transactions and produces a [block](terminology.md#block).
 
 ## smart contract
 
@@ -271,11 +260,7 @@ A scarce, fungible member of a set of tokens.
 
 ## transaction
 
-One or more [instructions](terminology.md#instruction) signed by the [client](terminology.md#client) using one or more [keypairs](terminology.md#keypair) and executed atomically with only two possible outcomes: success or failure.
-
-## transaction id
-
-The first [signature](terminology.md#signature) in a [transaction](terminology.md#transaction), which can be used to uniquely identify the transaction across the complete [ledger](terminology.md#ledger).
+One or more [instructions](terminology.md#instruction) signed by the [client](terminology.md#client) and executed atomically.
 
 ## transaction confirmations
 

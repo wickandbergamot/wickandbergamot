@@ -1,23 +1,29 @@
 import React from "react";
 import {
+  TransactionInstruction,
   SignatureResult,
+  StakeInstruction,
   StakeProgram,
   SystemProgram,
-  ParsedInstruction,
 } from "@solana/web3.js";
 import { InstructionCard } from "../InstructionCard";
+import { UnknownDetailsCard } from "../UnknownDetailsCard";
 import { Address } from "components/common/Address";
-import { InitializeInfo } from "./types";
 
 export function InitializeDetailsCard(props: {
-  ix: ParsedInstruction;
+  ix: TransactionInstruction;
   index: number;
   result: SignatureResult;
-  info: InitializeInfo;
-  innerCards?: JSX.Element[];
-  childIndex?: number;
 }) {
-  const { ix, index, result, info, innerCards, childIndex } = props;
+  const { ix, index, result } = props;
+
+  let params;
+  try {
+    params = StakeInstruction.decodeInitialize(ix);
+  } catch (err) {
+    console.error(err);
+    return <UnknownDetailsCard {...props} />;
+  }
 
   return (
     <InstructionCard
@@ -25,8 +31,6 @@ export function InitializeDetailsCard(props: {
       index={index}
       result={result}
       title="Stake Initialize"
-      innerCards={innerCards}
-      childIndex={childIndex}
     >
       <tr>
         <td>Program</td>
@@ -38,45 +42,45 @@ export function InitializeDetailsCard(props: {
       <tr>
         <td>Stake Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.stakeAccount} alignRight link />
+          <Address pubkey={params.stakePubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Stake Authority Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.authorized.staker} alignRight link />
+          <Address pubkey={params.authorized.staker} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Withdraw Authority Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.authorized.withdrawer} alignRight link />
+          <Address pubkey={params.authorized.withdrawer} alignRight link />
         </td>
       </tr>
 
-      {info.lockup.epoch > 0 && (
+      {params.lockup.epoch > 0 && (
         <tr>
           <td>Lockup Expiry Epoch</td>
-          <td className="text-lg-right">{info.lockup.epoch}</td>
+          <td className="text-lg-right">{params.lockup.epoch}</td>
         </tr>
       )}
 
-      {info.lockup.unixTimestamp > 0 && (
+      {params.lockup.unixTimestamp > 0 && (
         <tr>
           <td>Lockup Expiry Timestamp</td>
           <td className="text-lg-right">
-            {new Date(info.lockup.unixTimestamp * 1000).toUTCString()}
+            {new Date(params.lockup.unixTimestamp * 1000).toUTCString()}
           </td>
         </tr>
       )}
 
-      {!info.lockup.custodian.equals(SystemProgram.programId) && (
+      {!params.lockup.custodian.equals(SystemProgram.programId) && (
         <tr>
           <td>Lockup Custodian Address</td>
           <td className="text-lg-right">
-            <Address pubkey={info.lockup.custodian} alignRight link />
+            <Address pubkey={params.lockup.custodian} alignRight link />
           </td>
         </tr>
       )}

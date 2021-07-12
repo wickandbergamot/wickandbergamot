@@ -93,7 +93,7 @@ fn tune_kernel_udp_buffers_and_vmmap() {
     sysctl_write("net.core.wmem_default", "134217728");
 
     // increase mmap counts for many append_vecs
-    sysctl_write("vm.max_map_count", "700000");
+    sysctl_write("vm.max_map_count", "500000");
 }
 
 #[cfg(unix)]
@@ -149,8 +149,8 @@ fn main() {
     for stream in listener.incoming() {
         if stream.is_ok() {
             info!("Tuning the system now");
+            #[cfg(target_os = "linux")]
             {
-                #![cfg(target_os = "linux")]
                 // tune_poh_service_priority(peer_uid);
             }
         }

@@ -1,5 +1,6 @@
 pub use solana_runtime::genesis_utils::{
-    bootstrap_validator_stake_lamports, create_genesis_config_with_leader, GenesisConfigInfo,
+    bootstrap_validator_stake_lamports, create_genesis_config_with_leader,
+    create_genesis_config_with_leader_ex, GenesisConfigInfo,
 };
 
 // same as genesis_config::create_genesis_config, but with bootstrap_validator staking logic

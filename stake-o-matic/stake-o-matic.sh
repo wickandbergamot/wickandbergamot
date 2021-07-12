@@ -13,5 +13,4 @@ curl -sSf https://raw.githubusercontent.com/solana-labs/solana/v1.0.0/install/sa
 export PATH="$PWD/safecoin-install/releases/$solana_version/solana-release/bin/:$PATH"
 
 set -x
-safecoin --version
 exec safecoin-stake-o-matic "$@"

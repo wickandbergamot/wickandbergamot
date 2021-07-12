@@ -19,15 +19,19 @@ export function TopAccountsCard() {
   const [showDropdown, setDropdown] = React.useState(false);
   const filter = useQueryFilter();
 
+  // Fetch on load
+  React.useEffect(() => {
+    if (richList === Status.Idle && typeof supply === "object") fetchRichList();
+  }, [supply]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (typeof supply !== "object") return null;
 
   if (richList === Status.Disconnected) {
     return <ErrorCard text="Not connected to the cluster" />;
   }
 
-  if (richList === Status.Connecting) {
+  if (richList === Status.Idle || richList === Status.Connecting)
     return <LoadingCard />;
-  }
 
   if (typeof richList === "string") {
     return <ErrorCard text={richList} retry={fetchRichList} />;
@@ -35,28 +39,25 @@ export function TopAccountsCard() {
 
   let supplyCount: number;
   let accounts, header;
-
-  if (richList !== Status.Idle) {
-    switch (filter) {
-      case "nonCirculating": {
-        accounts = richList.nonCirculating;
-        supplyCount = supply.nonCirculating;
-        header = "Non-Circulating";
-        break;
-      }
-      case "all": {
-        accounts = richList.total;
-        supplyCount = supply.total;
-        header = "Total";
-        break;
-      }
-      case "circulating":
-      default: {
-        accounts = richList.circulating;
-        supplyCount = supply.circulating;
-        header = "Circulating";
-        break;
-      }
+  switch (filter) {
+    case "nonCirculating": {
+      accounts = richList.nonCirculating;
+      supplyCount = supply.nonCirculating;
+      header = "Non-Circulating";
+      break;
+    }
+    case "all": {
+      accounts = richList.total;
+      supplyCount = supply.total;
+      header = "Total";
+      break;
+    }
+    case "circulating":
+    default: {
+      accounts = richList.circulating;
+      supplyCount = supply.circulating;
+      header = "Circulating";
+      break;
     }
   }
 
@@ -83,38 +84,23 @@ export function TopAccountsCard() {
           </div>
         </div>
 
-        {richList === Status.Idle && (
-          <div className="card-body">
-            <span
-              className="btn btn-white ml-3 d-none d-md-inline"
-              onClick={fetchRichList}
-            >
-              Load Largest Accounts
-            </span>
-          </div>
-        )}
-
-        {accounts && (
-          <div className="table-responsive mb-0">
-            <table className="table table-sm table-nowrap card-table">
-              <thead>
-                <tr>
-                  <th className="text-muted">Rank</th>
-                  <th className="text-muted">Address</th>
-                  <th className="text-muted text-right">Balance (SAFE)</th>
-                  <th className="text-muted text-right">
-                    % of {header} Supply
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="list">
-                {accounts.map((account, index) =>
-                  renderAccountRow(account, index, supplyCount)
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="table-responsive mb-0">
+          <table className="table table-sm table-nowrap card-table">
+            <thead>
+              <tr>
+                <th className="text-muted">Rank</th>
+                <th className="text-muted">Address</th>
+                <th className="text-muted text-right">Balance (SAFE)</th>
+                <th className="text-muted text-right">% of {header} Supply</th>
+              </tr>
+            </thead>
+            <tbody className="list">
+              {accounts.map((account, index) =>
+                renderAccountRow(account, index, supplyCount)
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </>
   );

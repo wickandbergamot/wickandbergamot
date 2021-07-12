@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-redeclare */
-
 import { object, any, StructType, string } from "superstruct";
 
 export type ParsedInfo = StructType<typeof ParsedInfo>;

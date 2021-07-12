@@ -83,7 +83,7 @@ sudo sysctl -p /etc/sysctl.d/20-solana-udp-buffers.conf
 ```bash
 sudo bash -c "cat >/etc/sysctl.d/20-solana-mmaps.conf <<EOF
 # Increase memory mapped files limit
-vm.max_map_count = 700000
+vm.max_map_count = 500000
 EOF"
 ```
 ```bash
@@ -91,12 +91,12 @@ sudo sysctl -p /etc/sysctl.d/20-solana-mmaps.conf
 ```
 Add
 ```
-LimitNOFILE=700000
+LimitNOFILE=500000
 ```
 to the `[Service]` section of your systemd service file, if you use one,
 otherwise add
 ```
-DefaultLimitNOFILE=700000
+DefaultLimitNOFILE=500000
 ```
 to the `[Manager]` section of `/etc/systemd/system.conf`.
 ```bash
@@ -105,7 +105,7 @@ sudo systemctl daemon-reload
 ```bash
 sudo bash -c "cat >/etc/security/limits.d/90-solana-nofiles.conf <<EOF
 # Increase process file descriptor count limit
-* - nofile 700000
+* - nofile 500000
 EOF"
 ```
 ```bash
@@ -154,7 +154,7 @@ See [Paper Wallet Usage](../wallet-guide/paper-wallet.md) for more info.
 You can generate a custom vanity keypair using safecoin-keygen. For instance:
 
 ```bash
-safecoin-keygen grind --starts-with e1v1s:1
+safecoin-keygen grind --starts-with e1v1s
 ```
 
 Depending on the string requested, it may take days to find a match...
@@ -318,7 +318,7 @@ Type=simple
 Restart=always
 RestartSec=1
 User=sol
-LimitNOFILE=700000
+LimitNOFILE=500000
 LogRateLimitIntervalSec=0
 Environment="PATH=/bin:/usr/bin:/home/sol/.local/share/solana/install/active_release/bin"
 ExecStart=/home/sol/bin/validator.sh
@@ -420,18 +420,3 @@ Example configuration:
 
 Now add the `--accounts /mnt/solana-accounts` argument to your `safecoin-validator`
 command-line arguments and restart the validator.
-
-### Account indexing
-
-As the number of populated accounts on the cluster grows, account-data RPC
-requests that scan the entire account set  -- like
-[`getProgramAccounts`](developing/clients/jsonrpc-api.md#getprogramaccounts) and
-[SPL-token-specific requests](developing/clients/jsonrpc-api.md#gettokenaccountsbydelegate) --
-may perform poorly. If your validator needs to support any of these requests,
-you can use the `--account-index` parameter to activate one or more in-memory
-account indexes that significantly improve RPC performance by indexing accounts
-by the key field. Currently supports the following parameter values:
-
-- `program-id`: each account indexed by its owning program; used by [`getProgramAccounts`](developing/clients/jsonrpc-api.md#getprogramaccounts)
-- `spl-token-mint`: each SPL token account indexed by its token Mint; used by [getTokenAccountsByDelegate](developing/clients/jsonrpc-api.md#gettokenaccountsbydelegate), and [getTokenLargestAccounts](developing/clients/jsonrpc-api.md#gettokenlargestaccounts)
-- `spl-token-owner`: each SPL token account indexed by the token-owner address; used by [getTokenAccountsByOwner](developing/clients/jsonrpc-api.md#gettokenaccountsbyowner), and [`getProgramAccounts`](developing/clients/jsonrpc-api.md#getprogramaccounts) requests that include an spl-token-owner filter.

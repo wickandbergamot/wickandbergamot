@@ -15,7 +15,7 @@ use solana_ledger::{
     leader_schedule_cache::LeaderScheduleCache,
 };
 use solana_measure::{measure::Measure, thread_mem_usage};
-use solana_metrics::{inc_new_counter_debug, inc_new_counter_info};
+use solana_metrics::{inc_new_counter_debug, inc_new_counter_info, inc_new_counter_warn};
 use solana_perf::{
     cuda_runtime::PinnedVec,
     packet::{limited_deserialize, Packet, Packets, PACKETS_PER_BATCH},
@@ -490,7 +490,7 @@ impl BankingStage {
         debug!("num_to_commit: {} ", num_to_commit);
         // unlock all the accounts with errors which are filtered by the above `filter_map`
         if !processed_transactions.is_empty() {
-            inc_new_counter_info!("banking_stage-record_transactions", num_to_commit);
+            inc_new_counter_warn!("banking_stage-record_transactions", num_to_commit);
 
             let mut hash_time = Measure::start("record::hash");
             let hash = hash_transactions(&processed_transactions[..]);
@@ -539,6 +539,7 @@ impl BankingStage {
             vec![]
         };
 
+        let mut execute_timings = ExecuteTimings::default();
         let mut mint_decimals: HashMap<Pubkey, u8> = HashMap::new();
 
         let pre_token_balances = if transaction_status_sender.is_some() {
@@ -546,8 +547,6 @@ impl BankingStage {
         } else {
             vec![]
         };
-
-        let mut execute_timings = ExecuteTimings::default();
 
         let (
             mut loaded_accounts,
@@ -593,7 +592,7 @@ impl BankingStage {
             );
 
             bank_utils::find_and_send_votes(txs, &tx_results, Some(gossip_vote_sender));
-            if let Some(transaction_status_sender) = transaction_status_sender {
+            if let Some(sender) = transaction_status_sender {
                 let post_balances = bank.collect_balances(batch);
                 let post_token_balances = collect_token_balances(&bank, &batch, &mut mint_decimals);
                 send_transaction_status_batch(
@@ -605,7 +604,7 @@ impl BankingStage {
                     TransactionTokenBalancesSet::new(pre_token_balances, post_token_balances),
                     inner_instructions,
                     transaction_logs,
-                    transaction_status_sender,
+                    sender,
                 );
             }
         }
@@ -1121,7 +1120,7 @@ mod tests {
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
         get_tmp_ledger_path,
     };
-    use solana_perf::packet::to_packets_chunked;
+    use solana_perf::packet::to_packets;
     use solana_sdk::{
         instruction::InstructionError,
         signature::{Keypair, Signer},
@@ -1184,10 +1183,8 @@ mod tests {
                 Blockstore::open(&ledger_path)
                     .expect("Expected to be able to open database ledger"),
             );
-            let poh_config = PohConfig {
-                target_tick_count: Some(bank.max_tick_height() + num_extra_ticks),
-                ..PohConfig::default()
-            };
+            let mut poh_config = PohConfig::default();
+            poh_config.target_tick_count = Some(bank.max_tick_height() + num_extra_ticks);
             let (exit, poh_recorder, poh_service, entry_receiver) =
                 create_test_recorder(&bank, &blockstore, Some(poh_config));
             let cluster_info = ClusterInfo::new_with_invalid_keypair(Node::new_localhost().info);
@@ -1251,12 +1248,9 @@ mod tests {
                 Blockstore::open(&ledger_path)
                     .expect("Expected to be able to open database ledger"),
             );
-            let poh_config = PohConfig {
-                // limit tick count to avoid clearing working_bank at PohRecord then
-                // PohRecorderError(MaxHeightReached) at BankingStage
-                target_tick_count: Some(bank.max_tick_height() - 1),
-                ..PohConfig::default()
-            };
+            let mut poh_config = PohConfig::default();
+            // limit tick count to avoid clearing working_bank at PohRecord then PohRecorderError(MaxHeightReached) at BankingStage
+            poh_config.target_tick_count = Some(bank.max_tick_height() - 1);
             let (exit, poh_recorder, poh_service, entry_receiver) =
                 create_test_recorder(&bank, &blockstore, Some(poh_config));
             let cluster_info = ClusterInfo::new_with_invalid_keypair(Node::new_localhost().info);
@@ -1292,7 +1286,7 @@ mod tests {
             let tx_anf = system_transaction::transfer(&keypair, &to3, 1, start_hash);
 
             // send 'em over
-            let packets = to_packets_chunked(&[tx_no_ver, tx_anf, tx], 3);
+            let packets = to_packets(&[tx_no_ver, tx_anf, tx]);
 
             // glad they all fit
             assert_eq!(packets.len(), 1);
@@ -1368,7 +1362,7 @@ mod tests {
         let tx =
             system_transaction::transfer(&mint_keypair, &alice.pubkey(), 2, genesis_config.hash());
 
-        let packets = to_packets_chunked(&[tx], 1);
+        let packets = to_packets(&[tx]);
         let packets = packets
             .into_iter()
             .map(|packets| (packets, vec![1u8]))
@@ -1379,7 +1373,7 @@ mod tests {
         // Process a second batch that uses the same from account, so conflicts with above TX
         let tx =
             system_transaction::transfer(&mint_keypair, &alice.pubkey(), 1, genesis_config.hash());
-        let packets = to_packets_chunked(&[tx], 1);
+        let packets = to_packets(&[tx]);
         let packets = packets
             .into_iter()
             .map(|packets| (packets, vec![1u8]))
@@ -1399,12 +1393,9 @@ mod tests {
                     Blockstore::open(&ledger_path)
                         .expect("Expected to be able to open database ledger"),
                 );
-                let poh_config = PohConfig {
-                    // limit tick count to avoid clearing working_bank at
-                    // PohRecord then PohRecorderError(MaxHeightReached) at BankingStage
-                    target_tick_count: Some(bank.max_tick_height() - 1),
-                    ..PohConfig::default()
-                };
+                let mut poh_config = PohConfig::default();
+                // limit tick count to avoid clearing working_bank at PohRecord then PohRecorderError(MaxHeightReached) at BankingStage
+                poh_config.target_tick_count = Some(bank.max_tick_height() - 1);
                 let (exit, poh_recorder, poh_service, entry_receiver) =
                     create_test_recorder(&bank, &blockstore, Some(poh_config));
                 let cluster_info =
@@ -1994,7 +1985,7 @@ mod tests {
 
             assert_eq!(processed_transactions_count, 0,);
 
-            retryable_txs.sort_unstable();
+            retryable_txs.sort();
             let expected: Vec<usize> = (0..transactions.len()).collect();
             assert_eq!(retryable_txs, expected);
         }
@@ -2074,10 +2065,7 @@ mod tests {
                 &transactions,
                 &poh_recorder,
                 0,
-                Some(TransactionStatusSender {
-                    sender: transaction_status_sender,
-                    enable_cpi_and_log_storage: false,
-                }),
+                Some(transaction_status_sender),
                 &gossip_vote_sender,
             );
 

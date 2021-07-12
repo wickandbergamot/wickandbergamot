@@ -1,9 +1,7 @@
-use crate::contains::Contains;
 use dashmap::{mapref::entry::Entry::Occupied, DashMap};
 use log::*;
 use solana_sdk::{clock::Slot, pubkey::Pubkey};
 use std::{
-    borrow::Borrow,
     collections::{hash_map, HashMap, HashSet},
     fmt::Debug,
     sync::{Arc, RwLock},
@@ -259,10 +257,7 @@ impl<SecondaryIndexEntryType: SecondaryIndexEntry + Default + Sync + Send>
 
     // Note passing `None` is dangerous unless you're sure there's no other competing threads
     // writing updates to the index for this Pubkey at the same time!
-    pub fn remove_by_inner_key<'a, C>(&'a self, inner_key: &Pubkey, slots_to_remove: Option<&'a C>)
-    where
-        C: Contains<'a, Slot>,
-    {
+    pub fn remove_by_inner_key(&self, inner_key: &Pubkey, slots_to_remove: Option<&HashSet<Slot>>) {
         // Save off which keys in `self.index` had slots removed so we can remove them
         // after we purge the reverse index
         let mut key_to_removed_slots: HashMap<Pubkey, Vec<Slot>> = HashMap::new();
@@ -277,12 +272,12 @@ impl<SecondaryIndexEntryType: SecondaryIndexEntry + Default + Sync + Send>
                         // Ideally we use a concurrent map here as well to prevent clean
                         // from blocking writes, but memory usage of DashMap is high
                         let mut w_slots_map = slots_map.value().write().unwrap();
-                        for slot in slots_to_remove.contains_iter() {
-                            if let Some(removed_key) = w_slots_map.remove(slot.borrow()) {
+                        for slot in slots_to_remove.iter() {
+                            if let Some(removed_key) = w_slots_map.remove(slot) {
                                 key_to_removed_slots
                                     .entry(removed_key)
                                     .or_default()
-                                    .push(*slot.borrow());
+                                    .push(*slot);
                             }
                         }
                         w_slots_map.is_empty()

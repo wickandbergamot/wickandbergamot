@@ -199,7 +199,6 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for ShortVec<T> {
 }
 
 /// Return the decoded value and how many bytes it consumed.
-#[allow(clippy::result_unit_err)]
 pub fn decode_len(bytes: &[u8]) -> Result<(usize, usize), ()> {
     let mut len = 0;
     let mut size = 0;

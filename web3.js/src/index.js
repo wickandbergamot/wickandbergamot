@@ -6,7 +6,7 @@ export {Connection} from './connection';
 export {Loader} from './loader';
 export {Message} from './message';
 export {NonceAccount, NONCE_ACCOUNT_LENGTH} from './nonce-account';
-export {MAX_SEED_LENGTH, PublicKey} from './publickey';
+export {PublicKey} from './publickey';
 export {
   STAKE_CONFIG_ID,
   Authorized,
@@ -21,7 +21,6 @@ export {
   SystemProgram,
   SYSTEM_INSTRUCTION_LAYOUTS,
 } from './system-program';
-export {Secp256k1Program} from './secp256k1-program';
 export {Transaction, TransactionInstruction} from './transaction';
 export {VALIDATOR_INFO_KEY, ValidatorInfo} from './validator-info';
 export {VOTE_PROGRAM_ID, VoteAccount} from './vote-account';
@@ -30,7 +29,6 @@ export {
   SYSVAR_RENT_PUBKEY,
   SYSVAR_REWARDS_PUBKEY,
   SYSVAR_STAKE_HISTORY_PUBKEY,
-  SYSVAR_INSTRUCTIONS_PUBKEY,
 } from './sysvar';
 export {sendAndConfirmTransaction} from './util/send-and-confirm-transaction';
 export {sendAndConfirmRawTransaction} from './util/send-and-confirm-raw-transaction';

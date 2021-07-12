@@ -164,7 +164,6 @@ impl Counter {
         }
     }
     pub fn init(&mut self) {
-        #![allow(deprecated)]
         self.lograte
             .compare_and_swap(0, Self::default_log_rate(), Ordering::Relaxed);
         self.metricsrate
@@ -189,7 +188,6 @@ impl Counter {
         }
 
         let lastlog = self.lastlog.load(Ordering::Relaxed);
-        #[allow(deprecated)]
         let prev = self
             .lastlog
             .compare_and_swap(lastlog, counts, Ordering::Relaxed);
@@ -209,7 +207,7 @@ mod tests {
     use crate::counter::{Counter, DEFAULT_LOG_RATE, DEFAULT_METRICS_RATE};
     use log::Level;
     use log::*;
-    use serial_test::serial;
+    use serial_test_derive::serial;
     use std::env;
     use std::sync::atomic::Ordering;
     use std::sync::{Once, RwLock};

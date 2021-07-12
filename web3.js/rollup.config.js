@@ -106,8 +106,6 @@ function generateConfig(configType) {
         'superstruct',
         'tweetnacl',
         'url',
-        'secp256k1',
-        'keccak',
       ];
       break;
     default:

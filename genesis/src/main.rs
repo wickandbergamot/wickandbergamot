@@ -443,13 +443,11 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     );
     fee_rate_governor.burn_percent = value_t_or_exit!(matches, "fee_burn_percentage", u8);
 
-    let mut poh_config = PohConfig {
-        target_tick_duration: if matches.is_present("target_tick_duration") {
-            Duration::from_micros(value_t_or_exit!(matches, "target_tick_duration", u64))
-        } else {
-            Duration::from_micros(default_target_tick_duration)
-        },
-        ..PohConfig::default()
+    let mut poh_config = PohConfig::default();
+    poh_config.target_tick_duration = if matches.is_present("target_tick_duration") {
+        Duration::from_micros(value_t_or_exit!(matches, "target_tick_duration", u64))
+    } else {
+        Duration::from_micros(default_target_tick_duration)
     };
 
     let cluster_type = cluster_type_of(&matches, "cluster_type").unwrap();
@@ -462,7 +460,8 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 poh_config.hashes_per_tick = Some(hashes_per_tick);
             }
             ClusterType::Devnet | ClusterType::Testnet | ClusterType::MainnetBeta => {
-                poh_config.hashes_per_tick = Some(clock::DEFAULT_HASHES_PER_TICK);
+                poh_config.hashes_per_tick =
+                    Some(clock::DEFAULT_HASHES_PER_SECOND / clock::DEFAULT_TICKS_PER_SECOND);
             }
         },
         "sleep" => {
@@ -664,7 +663,7 @@ mod tests {
             solana_sdk::pubkey::new_rand().to_string(),
             Base64Account {
                 owner: solana_sdk::pubkey::new_rand().to_string(),
-                balance: 2,
+                balance: 2 as u64,
                 executable: false,
                 data: String::from("aGVsbG8="),
             },
@@ -673,7 +672,7 @@ mod tests {
             solana_sdk::pubkey::new_rand().to_string(),
             Base64Account {
                 owner: solana_sdk::pubkey::new_rand().to_string(),
-                balance: 1,
+                balance: 1 as u64,
                 executable: true,
                 data: String::from("aGVsbG8gd29ybGQ="),
             },
@@ -682,7 +681,7 @@ mod tests {
             solana_sdk::pubkey::new_rand().to_string(),
             Base64Account {
                 owner: solana_sdk::pubkey::new_rand().to_string(),
-                balance: 3,
+                balance: 3 as u64,
                 executable: true,
                 data: String::from("bWUgaGVsbG8gdG8gd29ybGQ="),
             },
@@ -737,7 +736,7 @@ mod tests {
             solana_sdk::pubkey::new_rand().to_string(),
             Base64Account {
                 owner: solana_sdk::pubkey::new_rand().to_string(),
-                balance: 6,
+                balance: 6 as u64,
                 executable: true,
                 data: String::from("eW91IGFyZQ=="),
             },
@@ -746,7 +745,7 @@ mod tests {
             solana_sdk::pubkey::new_rand().to_string(),
             Base64Account {
                 owner: solana_sdk::pubkey::new_rand().to_string(),
-                balance: 5,
+                balance: 5 as u64,
                 executable: false,
                 data: String::from("bWV0YSBzdHJpbmc="),
             },
@@ -755,7 +754,7 @@ mod tests {
             solana_sdk::pubkey::new_rand().to_string(),
             Base64Account {
                 owner: solana_sdk::pubkey::new_rand().to_string(),
-                balance: 10,
+                balance: 10 as u64,
                 executable: false,
                 data: String::from("YmFzZTY0IHN0cmluZw=="),
             },
@@ -820,7 +819,7 @@ mod tests {
             serde_json::to_string(&account_keypairs[0].to_bytes().to_vec()).unwrap(),
             Base64Account {
                 owner: solana_sdk::pubkey::new_rand().to_string(),
-                balance: 20,
+                balance: 20 as u64,
                 executable: true,
                 data: String::from("Y2F0IGRvZw=="),
             },
@@ -829,7 +828,7 @@ mod tests {
             serde_json::to_string(&account_keypairs[1].to_bytes().to_vec()).unwrap(),
             Base64Account {
                 owner: solana_sdk::pubkey::new_rand().to_string(),
-                balance: 15,
+                balance: 15 as u64,
                 executable: false,
                 data: String::from("bW9ua2V5IGVsZXBoYW50"),
             },
@@ -838,7 +837,7 @@ mod tests {
             serde_json::to_string(&account_keypairs[2].to_bytes().to_vec()).unwrap(),
             Base64Account {
                 owner: solana_sdk::pubkey::new_rand().to_string(),
-                balance: 30,
+                balance: 30 as u64,
                 executable: true,
                 data: String::from("Y29tYSBtb2Nh"),
             },

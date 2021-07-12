@@ -3,7 +3,7 @@
 #![cfg(feature = "full")]
 
 use crate::sanitize::{Sanitize, SanitizeError};
-use crate::secp256k1_instruction::verify_eth_addresses;
+use crate::secp256k1::verify_eth_addresses;
 use crate::{
     hash::Hash,
     instruction::{CompiledInstruction, Instruction, InstructionError},
@@ -103,7 +103,7 @@ impl From<SanitizeError> for TransactionError {
 }
 
 /// An atomic transaction
-#[frozen_abi(digest = "2Kr1C1pRytLsmUbg8p2nLoZyrjrEQCriAYLTCYvwj1Fo")]
+#[frozen_abi(digest = "EGPL8qfT6of8UDKUTPQfcCADiRrpVxKXmULWtNdfjbQ8")]
 #[derive(Debug, PartialEq, Default, Eq, Clone, Serialize, Deserialize, AbiExample)]
 pub struct Transaction {
     /// A set of digital signatures of `account_keys`, `program_ids`, `recent_blockhash`, and `instructions`, signed by the first

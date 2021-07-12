@@ -92,7 +92,7 @@ up)
       --publish 9900:9900/tcp # faucet
       --publish 8000:8000/udp # tvu
       --publish 10015:10015/udp # gossip
-      --publish 10015:10015/udp # tvu_forwards
+      --publish 8002:8002/udp # tvu_forwards
       --publish 8003:8003/udp # tpu
       --publish 8004:8004/udp # tpu_forwards
       --publish 8005:8005/udp # retransmit
@@ -100,7 +100,7 @@ up)
       --publish 8007:8007/udp # serve_repair
       --publish 8008:8008/udp # broadcast
       --tty
-      --ulimit "nofile=700000"
+      --ulimit "nofile=500000"
       --env "RUST_LOG=$RUST_LOG"
     )
     if [[ -n $network ]]; then

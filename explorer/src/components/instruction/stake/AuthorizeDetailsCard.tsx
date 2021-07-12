@@ -1,22 +1,40 @@
 import React from "react";
 import {
+  TransactionInstruction,
   SignatureResult,
+  StakeInstruction,
   StakeProgram,
-  ParsedInstruction,
 } from "@solana/web3.js";
 import { InstructionCard } from "../InstructionCard";
+import { UnknownDetailsCard } from "../UnknownDetailsCard";
 import { Address } from "components/common/Address";
-import { AuthorizeInfo } from "./types";
 
 export function AuthorizeDetailsCard(props: {
-  ix: ParsedInstruction;
+  ix: TransactionInstruction;
   index: number;
   result: SignatureResult;
-  info: AuthorizeInfo;
-  innerCards?: JSX.Element[];
-  childIndex?: number;
 }) {
-  const { ix, index, result, info, innerCards, childIndex } = props;
+  const { ix, index, result } = props;
+
+  let params;
+  try {
+    params = StakeInstruction.decodeAuthorize(ix);
+  } catch (err) {
+    return <UnknownDetailsCard {...props} />;
+  }
+
+  let authorizationType;
+  switch (params.stakeAuthorizationType.index) {
+    case 0:
+      authorizationType = "Staker";
+      break;
+    case 1:
+      authorizationType = "Withdrawer";
+      break;
+    default:
+      authorizationType = "Invalid";
+      break;
+  }
 
   return (
     <InstructionCard
@@ -24,8 +42,6 @@ export function AuthorizeDetailsCard(props: {
       index={index}
       result={result}
       title="Stake Authorize"
-      innerCards={innerCards}
-      childIndex={childIndex}
     >
       <tr>
         <td>Program</td>
@@ -37,27 +53,27 @@ export function AuthorizeDetailsCard(props: {
       <tr>
         <td>Stake Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.stakeAccount} alignRight link />
+          <Address pubkey={params.stakePubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Old Authority Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.authority} alignRight link />
+          <Address pubkey={params.authorizedPubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>New Authority Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.newAuthority} alignRight link />
+          <Address pubkey={params.newAuthorizedPubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Authority Type</td>
-        <td className="text-lg-right">{info.authorityType}</td>
+        <td className="text-lg-right">{authorizationType}</td>
       </tr>
     </InstructionCard>
   );

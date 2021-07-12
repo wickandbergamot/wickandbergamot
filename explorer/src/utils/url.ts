@@ -7,24 +7,24 @@ export function useQuery() {
 
 export const clusterPath = (pathname: string) => {
   return (location: Location) => ({
-    ...pickClusterParams(location),
+    ...pickCluster(location),
     pathname,
   });
 };
 
-export function pickClusterParams(location: Location): Location {
-  const urlParams = new URLSearchParams(location.search);
-  const cluster = urlParams.get("cluster");
-  const customUrl = urlParams.get("customUrl");
+export function pickCluster(location: Location): Location {
+  const cluster = new URLSearchParams(location.search).get("cluster");
 
-  // Pick the params we care about
-  const newParams = new URLSearchParams();
-  if (cluster) newParams.set("cluster", cluster);
-  if (customUrl) newParams.set("customUrl", customUrl);
+  let search = "";
+  if (cluster) {
+    const params = new URLSearchParams();
+    params.set("cluster", cluster);
+    search = params.toString();
+  }
 
   return {
     ...location,
-    search: newParams.toString(),
+    search,
   };
 }
 

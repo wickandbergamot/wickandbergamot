@@ -1,22 +1,28 @@
 import React from "react";
 import {
+  TransactionInstruction,
   SystemProgram,
   SignatureResult,
-  ParsedInstruction,
+  SystemInstruction,
 } from "@solana/web3.js";
 import { InstructionCard } from "../InstructionCard";
+import { UnknownDetailsCard } from "../UnknownDetailsCard";
 import { Address } from "components/common/Address";
-import { InitializeNonceInfo } from "./types";
 
 export function NonceInitializeDetailsCard(props: {
-  ix: ParsedInstruction;
+  ix: TransactionInstruction;
   index: number;
   result: SignatureResult;
-  info: InitializeNonceInfo;
-  innerCards?: JSX.Element[];
-  childIndex?: number;
 }) {
-  const { ix, index, result, info, innerCards, childIndex } = props;
+  const { ix, index, result } = props;
+
+  let params;
+  try {
+    params = SystemInstruction.decodeNonceInitialize(ix);
+  } catch (err) {
+    console.error(err);
+    return <UnknownDetailsCard {...props} />;
+  }
 
   return (
     <InstructionCard
@@ -24,8 +30,6 @@ export function NonceInitializeDetailsCard(props: {
       index={index}
       result={result}
       title="Initialize Nonce"
-      innerCards={innerCards}
-      childIndex={childIndex}
     >
       <tr>
         <td>Program</td>
@@ -37,14 +41,14 @@ export function NonceInitializeDetailsCard(props: {
       <tr>
         <td>Nonce Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.nonceAccount} alignRight link />
+          <Address pubkey={params.noncePubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Authority Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.nonceAuthority} alignRight link />
+          <Address pubkey={params.authorizedPubkey} alignRight link />
         </td>
       </tr>
     </InstructionCard>

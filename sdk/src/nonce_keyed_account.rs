@@ -179,9 +179,10 @@ mod test {
         nonce::{self, State},
         nonce_account::verify_nonce_account,
         system_instruction::NonceError,
-        sysvar::recent_blockhashes::create_test_recent_blockhashes,
+        sysvar::recent_blockhashes::{create_test_recent_blockhashes, RecentBlockhashes},
     };
     use solana_program::hash::Hash;
+    use std::iter::FromIterator;
 
     #[test]
     fn default_is_uninitialized() {
@@ -327,7 +328,7 @@ mod test {
             keyed_account
                 .initialize_nonce_account(&authorized, &recent_blockhashes, &rent)
                 .unwrap();
-            let recent_blockhashes = vec![].into_iter().collect();
+            let recent_blockhashes = RecentBlockhashes::from_iter(vec![].into_iter());
             let result = keyed_account.advance_nonce_account(&recent_blockhashes, &signers);
             assert_eq!(result, Err(NonceError::NoRecentBlockhashes.into()));
         })
@@ -773,7 +774,7 @@ mod test {
         with_test_keyed_account(min_lamports + 42, true, |keyed_account| {
             let mut signers = HashSet::new();
             signers.insert(*keyed_account.signer_key().unwrap());
-            let recent_blockhashes = vec![].into_iter().collect();
+            let recent_blockhashes = RecentBlockhashes::from_iter(vec![].into_iter());
             let authorized = *keyed_account.unsigned_key();
             let result =
                 keyed_account.initialize_nonce_account(&authorized, &recent_blockhashes, &rent);

@@ -438,7 +438,7 @@ impl CliConfig<'_> {
     }
 
     fn default_commitment() -> CommitmentConfig {
-        CommitmentConfig::confirmed()
+        CommitmentConfig::single_gossip()
     }
 
     fn first_nonempty_setting(
@@ -446,7 +446,7 @@ impl CliConfig<'_> {
     ) -> (SettingType, String) {
         settings
             .into_iter()
-            .find(|(_, value)| !value.is_empty())
+            .find(|(_, value)| value != "")
             .expect("no nonempty setting")
     }
 
@@ -536,15 +536,14 @@ impl CliConfig<'_> {
     }
 
     pub fn recent_for_tests() -> Self {
-        Self {
-            commitment: CommitmentConfig::processed(),
-            send_transaction_config: RpcSendTransactionConfig {
-                skip_preflight: true,
-                preflight_commitment: Some(CommitmentConfig::processed().commitment),
-                ..RpcSendTransactionConfig::default()
-            },
-            ..Self::default()
-        }
+        let mut config = Self::default();
+        config.commitment = CommitmentConfig::recent();
+        config.send_transaction_config = RpcSendTransactionConfig {
+            skip_preflight: true,
+            preflight_commitment: Some(CommitmentConfig::recent().commitment),
+            ..RpcSendTransactionConfig::default()
+        };
+        config
     }
 }
 
@@ -563,7 +562,7 @@ impl Default for CliConfig<'_> {
             rpc_timeout: Duration::from_secs(u64::from_str(DEFAULT_RPC_TIMEOUT_SECONDS).unwrap()),
             verbose: false,
             output_format: OutputFormat::Display,
-            commitment: CommitmentConfig::confirmed(),
+            commitment: CommitmentConfig::single_gossip(),
             send_transaction_config: RpcSendTransactionConfig::default(),
             address_labels: HashMap::new(),
         }
@@ -1046,7 +1045,6 @@ fn process_confirm(
     }
 }
 
-#[allow(clippy::unnecessary_wraps)]
 fn process_decode_transaction(transaction: &Transaction) -> ProcessResult {
     let sig_stats = CliSignatureVerificationStatus::verify_transaction(&transaction);
     println_transaction(transaction, &None, "", Some(&sig_stats));
@@ -2448,11 +2446,9 @@ mod tests {
     #[allow(clippy::cognitive_complexity)]
     fn test_cli_process_command() {
         // Success cases
-        let mut config = CliConfig {
-            rpc_client: Some(RpcClient::new_mock("succeeds".to_string())),
-            json_rpc_url: "http://127.0.0.1:8328".to_string(),
-            ..CliConfig::default()
-        };
+        let mut config = CliConfig::default();
+        config.rpc_client = Some(RpcClient::new_mock("succeeds".to_string()));
+        config.json_rpc_url = "http://127.0.0.1:8328".to_string();
 
         let keypair = Keypair::new();
         let pubkey = keypair.pubkey().to_string();
@@ -2730,7 +2726,6 @@ mod tests {
             use_deprecated_loader: false,
             allow_excessive_balance: false,
         };
-        config.output_format = OutputFormat::JsonCompact;
         let result = process_command(&config);
         let json: Value = serde_json::from_str(&result.unwrap()).unwrap();
         let program_id = json

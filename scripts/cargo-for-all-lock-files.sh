@@ -4,6 +4,7 @@ here="$(dirname "$0")"
 cargo="$(readlink -f "${here}/../cargo")"
 
 set -e
+cargo="$(readlink -f "$(dirname "$0")/../cargo")"
 
 shifted_args=()
 while [[ -n $1 ]]; do

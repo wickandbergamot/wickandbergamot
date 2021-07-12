@@ -196,29 +196,24 @@ build() {
   echo "Build took $SECONDS seconds"
 }
 
-SAFECOIN_HOME="\$HOME/solana"
-CARGO_BIN="\$HOME/.cargo/bin"
-
 startCommon() {
   declare ipAddress=$1
   test -d "$SAFECOIN_ROOT"
   if $skipSetup; then
-    # shellcheck disable=SC2029
     ssh "${sshOptions[@]}" "$ipAddress" "
       set -x;
-      mkdir -p $SAFECOIN_HOME/config;
+      mkdir -p ~/solana/config;
       rm -rf ~/config;
-      mv $SAFECOIN_HOME/config ~;
-      rm -rf $SAFECOIN_HOME;
-      mkdir -p $SAFECOIN_HOME $CARGO_BIN;
-      mv ~/config $SAFECOIN_HOME/
+      mv ~/solana/config ~;
+      rm -rf ~/solana;
+      mkdir -p ~/safecoin ~/.cargo/bin;
+      mv ~/config ~/solana/
     "
   else
-    # shellcheck disable=SC2029
     ssh "${sshOptions[@]}" "$ipAddress" "
       set -x;
-      rm -rf $SAFECOIN_HOME;
-      mkdir -p $CARGO_BIN
+      rm -rf ~/solana;
+      mkdir -p ~/.cargo/bin
     "
   fi
   [[ -z "$externalNodeSshKey" ]] || ssh-copy-id -f -i "$externalNodeSshKey" "${sshOptions[@]}" "solana@$ipAddress"
@@ -231,7 +226,7 @@ syncScripts() {
   rsync -vPrc -e "ssh ${sshOptions[*]}" \
     --exclude 'net/log*' \
     "$SAFECOIN_ROOT"/{fetch-perf-libs.sh,fetch-spl.sh,scripts,net,multinode-demo} \
-    "$ipAddress":"$SAFECOIN_HOME"/ > /dev/null
+    "$ipAddress":~/solana/ > /dev/null
 }
 
 # Deploy local binaries to bootstrap validator.  Other validators and clients later fetch the
@@ -242,11 +237,11 @@ deployBootstrapValidator() {
   echo "Deploying software to bootstrap validator ($ipAddress)"
   case $deployMethod in
   tar)
-    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFECOIN_ROOT"/solana-release/bin/* "$ipAddress:$CARGO_BIN/"
+    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFECOIN_ROOT"/solana-release/bin/* "$ipAddress:~/.cargo/bin/"
     rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFECOIN_ROOT"/solana-release/version.yml "$ipAddress:~/"
     ;;
   local)
-    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFECOIN_ROOT"/farf/bin/* "$ipAddress:$CARGO_BIN/"
+    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFECOIN_ROOT"/farf/bin/* "$ipAddress:~/.cargo/bin/"
     ssh "${sshOptions[@]}" -n "$ipAddress" "rm -f ~/version.yml; touch ~/version.yml"
     ;;
   skip)
@@ -505,13 +500,11 @@ prepareDeploy() {
   case $deployMethod in
   tar)
     if [[ -n $releaseChannel ]]; then
-      echo "Downloading release from channel: $releaseChannel"
       rm -f "$SAFECOIN_ROOT"/solana-release.tar.bz2
-      declare updateDownloadUrl=https://release.solana.com/"$releaseChannel"/solana-release-x86_64-unknown-linux-gnu.tar.bz2
+      declare updateDownloadUrl=http://release.solana.com/"$releaseChannel"/solana-release-x86_64-unknown-linux-gnu.tar.bz2
       (
         set -x
-        curl -L -I "$updateDownloadUrl"
-        curl -L --retry 5 --retry-delay 2 --retry-connrefused \
+        curl --retry 5 --retry-delay 2 --retry-connrefused \
           -o "$SAFECOIN_ROOT"/solana-release.tar.bz2 "$updateDownloadUrl"
       )
       tarballFilename="$SAFECOIN_ROOT"/solana-release.tar.bz2
@@ -519,7 +512,7 @@ prepareDeploy() {
     (
       set -x
       rm -rf "$SAFECOIN_ROOT"/solana-release
-      cd "$SAFECOIN_ROOT"; tar jfxv "$tarballFilename"
+      (cd "$SAFECOIN_ROOT"; tar jxv) < "$tarballFilename"
       cat "$SAFECOIN_ROOT"/solana-release/version.yml
     )
     ;;
@@ -1011,7 +1004,6 @@ if [[ -n "$maybeWaitForSupermajority" && -n "$maybeWarpSlot" ]]; then
   fi
 fi
 
-echo "net.sh: Primordial stakes: $extraPrimordialStakes"
 if [[ $extraPrimordialStakes -gt 0 ]]; then
   # Extra primoridial stakes require that all of the validators start at
   # the same time. Force async init and wait for supermajority here.
@@ -1102,7 +1094,7 @@ netem)
     remoteNetemConfigFile="$(basename "$netemConfigFile")"
     if [[ $netemCommand = "add" ]]; then
       for ipAddress in "${validatorIpList[@]}"; do
-        "$here"/scp.sh "$netemConfigFile" solana@"$ipAddress":"$SAFECOIN_HOME"
+        "$here"/scp.sh "$netemConfigFile" solana@"$ipAddress":~/solana
       done
     fi
     for i in "${!validatorIpList[@]}"; do

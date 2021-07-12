@@ -214,11 +214,12 @@ impl BigTableConnection {
     where
         T: serde::ser::Serialize,
     {
-        use backoff::{future::retry, ExponentialBackoff};
-        retry(ExponentialBackoff::default(), || async {
+        use backoff::{future::FutureOperation as _, ExponentialBackoff};
+        (|| async {
             let mut client = self.client();
             Ok(client.put_bincode_cells(table, cells).await?)
         })
+        .retry(ExponentialBackoff::default())
         .await
     }
 
@@ -230,11 +231,12 @@ impl BigTableConnection {
     where
         T: prost::Message,
     {
-        use backoff::{future::retry, ExponentialBackoff};
-        retry(ExponentialBackoff::default(), || async {
+        use backoff::{future::FutureOperation as _, ExponentialBackoff};
+        (|| async {
             let mut client = self.client();
             Ok(client.put_protobuf_cells(table, cells).await?)
         })
+        .retry(ExponentialBackoff::default())
         .await
     }
 }
@@ -474,7 +476,7 @@ impl BigTable {
         rows.into_iter()
             .next()
             .map(|r| r.1)
-            .ok_or(Error::RowNotFound)
+            .ok_or_else(|| Error::RowNotFound)
     }
 
     /// Store data for one or more `table` rows in the `family_name` Column family

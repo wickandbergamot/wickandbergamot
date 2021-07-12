@@ -13,8 +13,6 @@ pub const DEFAULT_TICKS_PER_SLOT: u64 = 64;
 // GCP n1-standard hardware and also a xeon e5-2520 v4 are about this rate of hashes/s
 pub const DEFAULT_HASHES_PER_SECOND: u64 = 2_000_000;
 
-pub const DEFAULT_HASHES_PER_TICK: u64 = DEFAULT_HASHES_PER_SECOND / DEFAULT_TICKS_PER_SECOND;
-
 // 1 Dev Epoch = 400 ms * 8192 ~= 55 minutes
 pub const DEFAULT_DEV_SLOTS_PER_EPOCH: u64 = 8192;
 
@@ -27,7 +25,6 @@ pub const DEFAULT_SLOTS_PER_EPOCH: u64 = 2 * TICKS_PER_DAY / DEFAULT_TICKS_PER_S
 // leader schedule is governed by this
 pub const NUM_CONSECUTIVE_LEADER_SLOTS: u64 = 4;
 
-pub const DEFAULT_S_PER_SLOT: f64 = DEFAULT_TICKS_PER_SLOT as f64 / DEFAULT_TICKS_PER_SECOND as f64;
 pub const DEFAULT_MS_PER_SLOT: u64 = 1_000 * DEFAULT_TICKS_PER_SLOT / DEFAULT_TICKS_PER_SECOND;
 
 /// The time window of recent block hash values that the bank will track the signatures

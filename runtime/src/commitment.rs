@@ -109,16 +109,13 @@ impl BlockCommitmentCache {
         self.highest_confirmed_slot()
     }
 
-    #[allow(deprecated)]
     pub fn slot_with_commitment(&self, commitment_level: CommitmentLevel) -> Slot {
         match commitment_level {
-            CommitmentLevel::Recent | CommitmentLevel::Processed => self.slot(),
+            CommitmentLevel::Recent => self.slot(),
             CommitmentLevel::Root => self.root(),
             CommitmentLevel::Single => self.highest_confirmed_slot(),
-            CommitmentLevel::SingleGossip | CommitmentLevel::Confirmed => {
-                self.highest_gossip_confirmed_slot()
-            }
-            CommitmentLevel::Max | CommitmentLevel::Finalized => self.highest_confirmed_root(),
+            CommitmentLevel::SingleGossip => self.highest_gossip_confirmed_slot(),
+            CommitmentLevel::Max => self.highest_confirmed_root(),
         }
     }
 
@@ -194,13 +191,6 @@ impl BlockCommitmentCache {
     pub fn initialize_slots(&mut self, slot: Slot) {
         self.commitment_slots.slot = slot;
         self.commitment_slots.root = slot;
-    }
-
-    pub fn set_all_slots(&mut self, slot: Slot, root: Slot) {
-        self.commitment_slots.slot = slot;
-        self.commitment_slots.highest_confirmed_slot = slot;
-        self.commitment_slots.root = root;
-        self.commitment_slots.highest_confirmed_root = root;
     }
 }
 

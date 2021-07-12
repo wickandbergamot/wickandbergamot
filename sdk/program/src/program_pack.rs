@@ -43,7 +43,7 @@ pub trait Pack: Sealed {
         if input.len() != Self::LEN {
             return Err(ProgramError::InvalidAccountData);
         }
-        Self::unpack_from_slice(input)
+        Ok(Self::unpack_from_slice(input)?)
     }
 
     /// Pack into slice

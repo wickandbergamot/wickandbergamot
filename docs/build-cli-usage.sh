@@ -2,7 +2,7 @@
 set -e
 
 cd "$(dirname "$0")"
-cargo=../cargo
+cargo="$(readlink -f "./cargo")"
 
 # shellcheck source=ci/rust-version.sh
 source ../ci/rust-version.sh stable

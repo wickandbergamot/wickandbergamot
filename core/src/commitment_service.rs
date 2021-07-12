@@ -249,7 +249,6 @@ mod tests {
     use super::*;
     use solana_ledger::genesis_utils::{create_genesis_config, GenesisConfigInfo};
     use solana_runtime::{
-        accounts_background_service::ABSRequestSender,
         bank_forks::BankForks,
         genesis_utils::{create_genesis_config_with_vote_accounts, ValidatorVoteKeypairs},
     };
@@ -263,9 +262,15 @@ mod tests {
     #[test]
     fn test_get_highest_confirmed_root() {
         assert_eq!(get_highest_confirmed_root(vec![], 10), 0);
-        let rooted_stake = vec![(0, 5), (1, 5)];
+        let mut rooted_stake = vec![];
+        rooted_stake.push((0, 5));
+        rooted_stake.push((1, 5));
         assert_eq!(get_highest_confirmed_root(rooted_stake, 10), 0);
-        let rooted_stake = vec![(1, 5), (0, 10), (2, 5), (1, 4)];
+        let mut rooted_stake = vec![];
+        rooted_stake.push((1, 5));
+        rooted_stake.push((0, 10));
+        rooted_stake.push((2, 5));
+        rooted_stake.push((1, 4));
         assert_eq!(get_highest_confirmed_root(rooted_stake, 10), 1);
     }
 
@@ -534,7 +539,7 @@ mod tests {
             &working_bank,
         );
         for x in 0..root {
-            bank_forks.set_root(x, &ABSRequestSender::default(), None);
+            bank_forks.set_root(x, &None, None);
         }
 
         // Add an additional bank/vote that will root slot 2
@@ -571,11 +576,7 @@ mod tests {
             .read()
             .unwrap()
             .highest_confirmed_root();
-        bank_forks.set_root(
-            root,
-            &ABSRequestSender::default(),
-            Some(highest_confirmed_root),
-        );
+        bank_forks.set_root(root, &None, Some(highest_confirmed_root));
         let highest_confirmed_root_bank = bank_forks.get(highest_confirmed_root);
         assert!(highest_confirmed_root_bank.is_some());
 
@@ -640,11 +641,7 @@ mod tests {
             .read()
             .unwrap()
             .highest_confirmed_root();
-        bank_forks.set_root(
-            root,
-            &ABSRequestSender::default(),
-            Some(highest_confirmed_root),
-        );
+        bank_forks.set_root(root, &None, Some(highest_confirmed_root));
         let highest_confirmed_root_bank = bank_forks.get(highest_confirmed_root);
         assert!(highest_confirmed_root_bank.is_some());
     }

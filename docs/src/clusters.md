@@ -119,7 +119,7 @@ Currently, rewards and inflation are disabled.
   - Note: If you are using a non-command-line wallet such as
     [Safeflare](wallet-guide/solflare.md),
     the wallet will always be connecting to Mainnet Beta.
-- Gossip entrypoint for Mainnet Beta: `entrypoint.mainnet-beta.safecoin.org:10015`
+- Gossip entrypoint for Mainnet Beta: `mainnet-beta.safecoin.org:10015`
 - Metrics environment variable for Mainnet Beta:
 ```bash
 export SAFECOIN_METRICS_CONFIG="host=https://metrics.safecoin.org:10016,db=mainnet-beta,u=mainnet-beta_write,p=password"
@@ -147,11 +147,7 @@ $ safecoin-validator \
     --rpc-port 8328 \
     --private-rpc \
     --dynamic-port-range 8000-8010 \
-    --entrypoint entrypoint.mainnet-beta.safecoin.org:10015 \
-    --entrypoint entrypoint2.mainnet-beta.safecoin.org:10015 \
-    --entrypoint entrypoint3.mainnet-beta.safecoin.org:10015 \
-    --entrypoint entrypoint4.mainnet-beta.safecoin.org:10015 \
-    --entrypoint entrypoint5.mainnet-beta.safecoin.org:10015 \
+    --entrypoint mainnet-beta.safecoin.org:10015 \
     --expected-genesis-hash 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d \
     --wal-recovery-mode skip_any_corrupted_record \
     --limit-ledger-size

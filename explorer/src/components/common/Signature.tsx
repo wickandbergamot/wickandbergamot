@@ -8,10 +8,9 @@ type Props = {
   signature: TransactionSignature;
   alignRight?: boolean;
   link?: boolean;
-  truncate?: boolean;
 };
 
-export function Signature({ signature, alignRight, link, truncate }: Props) {
+export function Signature({ signature, alignRight, link }: Props) {
   const [state, setState] = useState<CopyState>("copy");
 
   const copyToClipboard = () => navigator.clipboard.writeText(signature);
@@ -41,10 +40,7 @@ export function Signature({ signature, alignRight, link, truncate }: Props) {
       {copyButton}
       <span className="text-monospace">
         {link ? (
-          <Link
-            className={truncate ? "text-truncate signature-truncate" : ""}
-            to={clusterPath(`/tx/${signature}`)}
-          >
+          <Link className="" to={clusterPath(`/tx/${signature}`)}>
             {signature}
           </Link>
         ) : (

@@ -26,7 +26,7 @@ import {mockConfirmTransaction} from './mockrpc/confirm-transaction';
 import {mockRpcSocket} from './__mocks__/rpc-websockets';
 
 // Testing tokens and blockhash cache each take around 30s to complete
-jest.setTimeout(90000);
+jest.setTimeout(40000);
 
 const errorMessage = 'Invalid';
 const errorResponse = {
@@ -91,7 +91,7 @@ test('get account info - not found', async () => {
 });
 
 test('get program accounts', async () => {
-  const connection = new Connection(url, 'singleGossip');
+  const connection = new Connection(url, 'recent');
   const account0 = new Account();
   const account1 = new Account();
   const programId = new Account();
@@ -107,15 +107,6 @@ test('get program accounts', async () => {
         '2WE5w4B7v59x6qjyC4FbG2FEKYKQfvsJwqSxNVmtMjT8TQ31hsZieDHcSgqzxiAoTL56n2w5TncjqEKjLhtF4Vk',
     },
   ]);
-  mockConfirmTransaction(
-    '2WE5w4B7v59x6qjyC4FbG2FEKYKQfvsJwqSxNVmtMjT8TQ31hsZieDHcSgqzxiAoTL56n2w5TncjqEKjLhtF4Vk',
-  );
-  let signature = await connection.requestAirdrop(
-    account0.publicKey,
-    LAMPORTS_PER_SAFE,
-  );
-  await connection.confirmTransaction(signature);
-
   mockRpc.push([
     url,
     {
@@ -128,14 +119,8 @@ test('get program accounts', async () => {
         '2WE5w4B7v59x6qjyC4FbG2FEKYKQfvsJwqSxNVmtMjT8TQ31hsZieDHcSgqzxiAoTL56n2w5TncjqEKjLhtF4Vk',
     },
   ]);
-  mockConfirmTransaction(
-    '2WE5w4B7v59x6qjyC4FbG2FEKYKQfvsJwqSxNVmtMjT8TQ31hsZieDHcSgqzxiAoTL56n2w5TncjqEKjLhtF4Vk',
-  );
-  signature = await connection.requestAirdrop(
-    account1.publicKey,
-    0.5 * LAMPORTS_PER_SAFE,
-  );
-  await connection.confirmTransaction(signature);
+  await connection.requestAirdrop(account0.publicKey, LAMPORTS_PER_SAFE);
+  await connection.requestAirdrop(account1.publicKey, 0.5 * LAMPORTS_PER_SAFE);
 
   mockGetRecentBlockhash('max');
   mockRpc.push([
@@ -161,7 +146,8 @@ test('get program accounts', async () => {
     '3WE5w4B7v59x6qjyC4FbG2FEKYKQfvsJwqSxNVmtMjT8TQ31hsZieDHcSgqzxiAoTL56n2w5TncjqEKjLhtF4Vk',
   );
   await sendAndConfirmTransaction(connection, transaction, [account0], {
-    commitment: 'singleGossip',
+    commitment: 'single',
+    skipPreflight: true,
   });
 
   mockRpc.push([
@@ -187,14 +173,15 @@ test('get program accounts', async () => {
     '3WE5w4B7v59x6qjyC4FbG2FEKYKQfvsJwqSxNVmtMjT8TQ31hsZieDHcSgqzxiAoTL56n2w5TncjqEKjLhtF4Vk',
   );
   await sendAndConfirmTransaction(connection, transaction, [account1], {
-    commitment: 'singleGossip',
+    commitment: 'single',
+    skipPreflight: true,
   });
 
   mockRpc.push([
     url,
     {
       method: 'getFeeCalculatorForBlockhash',
-      params: [transaction.recentBlockhash, {commitment: 'singleGossip'}],
+      params: [transaction.recentBlockhash, {commitment: 'recent'}],
     },
     {
       error: null,
@@ -211,8 +198,8 @@ test('get program accounts', async () => {
     },
   ]);
 
-  if (!transaction.recentBlockhash) {
-    expect(transaction.recentBlockhash).toBeTruthy();
+  if (transaction.recentBlockhash === null) {
+    expect(transaction.recentBlockhash).not.toBeNull();
     return;
   }
 
@@ -231,7 +218,7 @@ test('get program accounts', async () => {
       method: 'getProgramAccounts',
       params: [
         programId.publicKey.toBase58(),
-        {commitment: 'singleGossip', encoding: 'base64'},
+        {commitment: 'recent', encoding: 'base64'},
       ],
     },
     {
@@ -385,13 +372,13 @@ test('get inflation', async () => {
 });
 
 test('get epoch info', async () => {
-  const connection = new Connection(url, 'singleGossip');
+  const connection = new Connection(url, 'recent');
 
   mockRpc.push([
     url,
     {
       method: 'getEpochInfo',
-      params: [{commitment: 'singleGossip'}],
+      params: [{commitment: 'recent'}],
     },
     {
       error: null,
@@ -1013,117 +1000,6 @@ test('get confirmed transaction', async () => {
   expect(nullResponse).toBeNull();
 });
 
-test('get parsed confirmed transaction coerces public keys of inner instructions', async () => {
-  if (!mockRpcEnabled) {
-    return;
-  }
-
-  const connection = new Connection(url);
-
-  const confirmedTransaction: TransactionSignature =
-    '4ADvAUQYxkh4qWKYE9QLW8gCLomGG94QchDLG4quvpBz1WqARYvzWQDDitKduAKspuy1DjcbnaDAnCAfnKpJYs48';
-
-  function getMockData(inner) {
-    return {
-      error: null,
-      result: {
-        slot: 353050305,
-        transaction: {
-          message: {
-            accountKeys: [
-              {
-                pubkey: 'va12u4o9DipLEB2z4fuoHszroq1U9NcAB9aooFDPJSf',
-                signer: true,
-                writable: true,
-              },
-            ],
-            instructions: [
-              {
-                accounts: ['va12u4o9DipLEB2z4fuoHszroq1U9NcAB9aooFDPJSf'],
-                data:
-                  '37u9WtQpcm6ULa3VtWDFAWoQc1hUvybPrA3dtx99tgHvvcE7pKRZjuGmn7VX2tC3JmYDYGG7',
-                programId: 'HMGr16f8Ct1Zeb9TGPypt9rPgzCkmhCQB8Not8vwiPW1',
-              },
-            ],
-            recentBlockhash: 'GeyAFFRY3WGpmam2hbgrKw4rbU2RKzfVLm5QLSeZwTZE',
-          },
-          signatures: [
-            'w2Zeq8YkpyB463DttvfzARD7k9ZxGEwbsEw4boEK7jDp3pfoxZbTdLFSsEPhzXhpCcjGi2kHtHFobgX49MMhbWt',
-            '4oCEqwGrMdBeMxpzuWiukCYqSfV4DsSKXSiVVCh1iJ6pS772X7y219JZP3mgqBz5PhsvprpKyhzChjYc3VSBQXzG',
-          ],
-        },
-        meta: {
-          fee: 10000,
-          postBalances: [499260347380, 15298080, 1, 1, 1],
-          preBalances: [499260357380, 15298080, 1, 1, 1],
-          innerInstructions: [
-            {
-              index: 0,
-              instructions: [inner],
-            },
-          ],
-          status: {Ok: null},
-          err: null,
-        },
-      },
-    };
-  }
-
-  mockRpc.push([
-    url,
-    {
-      method: 'getConfirmedTransaction',
-      params: [confirmedTransaction, 'jsonParsed'],
-    },
-    getMockData({
-      parsed: {},
-      program: 'spl-token',
-      programId: 'HMGr16f8Ct1Zeb9TGPypt9rPgzCkmhCQB8Not8vwiPW1',
-    }),
-  ]);
-
-  const result = await connection.getParsedConfirmedTransaction(
-    confirmedTransaction,
-  );
-
-  if (
-    result !== null &&
-    result.meta &&
-    result.meta.innerInstructions !== undefined &&
-    result.meta.innerInstructions.length > 0
-  ) {
-    expect(
-      result.meta.innerInstructions[0].instructions[0].programId,
-    ).toBeInstanceOf(PublicKey);
-  }
-
-  mockRpc.push([
-    url,
-    {
-      method: 'getConfirmedTransaction',
-      params: [confirmedTransaction, 'jsonParsed'],
-    },
-    getMockData({
-      accounts: [
-        'EeJqWk5pczNjsqqY3jia9xfFNG1dD68te4s8gsdCuEk7',
-        '6tVrjJhFm5SAvvdh6tysjotQurCSELpxuW3JaAAYeC1m',
-      ],
-      data: 'ai3535',
-      programId: 'HMGr16f8Ct1Zeb9TGPypt9rPgzCkmhCQB8Not8vwiPW1',
-    }),
-  ]);
-
-  //$FlowFixMe
-  const result2 = await connection.getParsedConfirmedTransaction(
-    confirmedTransaction,
-  );
-
-  let instruction = result2.meta.innerInstructions[0].instructions[0];
-  expect(instruction.programId).toBeInstanceOf(PublicKey);
-  expect(instruction.accounts[0]).toBeInstanceOf(PublicKey);
-  expect(instruction.accounts[1]).toBeInstanceOf(PublicKey);
-});
-
 test('get confirmed block', async () => {
   const connection = new Connection(url);
 
@@ -1245,22 +1121,20 @@ test('get confirmed block', async () => {
       params: [Number.MAX_SAFE_INTEGER],
     },
     {
-      error: {
-        message: `Block not available for slot ${Number.MAX_SAFE_INTEGER}`,
-      },
+      error: null,
       result: null,
     },
   ]);
   await expect(
     connection.getConfirmedBlock(Number.MAX_SAFE_INTEGER),
-  ).rejects.toThrow(`Block not available for slot ${Number.MAX_SAFE_INTEGER}`);
+  ).rejects.toThrow();
 });
 
 test('get recent blockhash', async () => {
   const connection = new Connection(url);
   for (const commitment of [
     'max',
-    'singleGossip',
+    'recent',
     'root',
     'single',
     'singleGossip',
@@ -1278,14 +1152,14 @@ test('get recent blockhash', async () => {
 test('get fee calculator', async () => {
   const connection = new Connection(url);
 
-  mockGetRecentBlockhash('singleGossip');
-  const {blockhash} = await connection.getRecentBlockhash('singleGossip');
+  mockGetRecentBlockhash('recent');
+  const {blockhash} = await connection.getRecentBlockhash('recent');
 
   mockRpc.push([
     url,
     {
       method: 'getFeeCalculatorForBlockhash',
-      params: [blockhash, {commitment: 'singleGossip'}],
+      params: [blockhash, {commitment: 'recent'}],
     },
     {
       error: null,
@@ -1303,7 +1177,7 @@ test('get fee calculator', async () => {
   ]);
 
   const feeCalculator = (
-    await connection.getFeeCalculatorForBlockhash(blockhash, 'singleGossip')
+    await connection.getFeeCalculatorForBlockhash(blockhash, 'recent')
   ).value;
   if (feeCalculator === null) {
     expect(feeCalculator).not.toBeNull();
@@ -1402,68 +1276,8 @@ test('get supply', async () => {
   const supply = (await connection.getSupply()).value;
   expect(supply.total).toBeGreaterThan(0);
   expect(supply.circulating).toBeGreaterThan(0);
-  expect(supply.nonCirculating).toBeGreaterThanOrEqual(0);
-  expect(supply.nonCirculatingAccounts.length).toBeGreaterThanOrEqual(0);
-});
-
-test('get performance samples', async () => {
-  const connection = new Connection(url);
-
-  if (mockRpcEnabled) {
-    mockRpc.push([
-      url,
-      {
-        method: 'getRecentPerformanceSamples',
-        params: [],
-      },
-      {
-        error: null,
-        result: [
-          {
-            slot: 1234,
-            numTransactions: 1000,
-            numSlots: 60,
-            samplePeriodSecs: 60,
-          },
-        ],
-      },
-    ]);
-  }
-
-  const perfSamples = await connection.getRecentPerformanceSamples();
-  expect(Array.isArray(perfSamples)).toBe(true);
-
-  if (perfSamples.length > 0) {
-    expect(perfSamples[0].slot).toBeGreaterThan(0);
-    expect(perfSamples[0].numTransactions).toBeGreaterThan(0);
-    expect(perfSamples[0].numSlots).toBeGreaterThan(0);
-    expect(perfSamples[0].samplePeriodSecs).toBeGreaterThan(0);
-  }
-});
-
-test('get performance samples limit too high', async () => {
-  const connection = new Connection(url);
-
-  if (mockRpcEnabled) {
-    mockRpc.push([
-      url,
-      {
-        method: 'getRecentPerformanceSamples',
-        params: [100000],
-      },
-      {
-        error: {
-          code: -32602,
-          message: 'Invalid limit; max 720',
-        },
-        result: null,
-      },
-    ]);
-  }
-
-  await expect(
-    connection.getRecentPerformanceSamples(100000),
-  ).rejects.toThrow();
+  expect(supply.nonCirculating).toBeGreaterThan(0);
+  expect(supply.nonCirculatingAccounts.length).toBeGreaterThan(0);
 });
 
 const TOKEN_PROGRAM_ID = new PublicKey(
@@ -1476,7 +1290,7 @@ describe('token methods', () => {
     return;
   }
 
-  const connection = new Connection(url, 'singleGossip');
+  const connection = new Connection(url);
   const newAccount = new Account().publicKey;
 
   let testToken: Token;
@@ -1489,6 +1303,7 @@ describe('token methods', () => {
     const payerAccount = new Account();
     await connection.confirmTransaction(
       await connection.requestAirdrop(payerAccount.publicKey, 100000000000),
+      'single',
     );
 
     const mintOwner = new Account();
@@ -1526,7 +1341,7 @@ describe('token methods', () => {
       new u64(1),
     );
 
-    await connection.confirmTransaction(testSignature, 'max');
+    await connection.confirmTransaction(testSignature);
 
     testOwner = accountOwner;
     testToken = token;
@@ -1735,20 +1550,17 @@ test('stake activation should return activating for new accounts', async () => {
     return;
   }
 
-  const connection = new Connection(url, 'singleGossip');
+  const connection = new Connection(url, 'recent');
   const voteAccounts = await connection.getVoteAccounts();
   const voteAccount = voteAccounts.current.concat(voteAccounts.delinquent)[0];
   const votePubkey = new PublicKey(voteAccount.votePubkey);
 
   const authorized = new Account();
-  let signature = await connection.requestAirdrop(
-    authorized.publicKey,
-    2 * LAMPORTS_PER_SAFE,
-  );
-  await connection.confirmTransaction(signature);
+  await connection.requestAirdrop(authorized.publicKey, 2 * LAMPORTS_PER_SAFE);
 
   const minimumAmount = await connection.getMinimumBalanceForRentExemption(
     StakeProgram.space,
+    'recent',
   );
 
   const newStakeAccount = new Account();
@@ -1764,9 +1576,7 @@ test('stake activation should return activating for new accounts', async () => {
     connection,
     createAndInitialize,
     [authorized, newStakeAccount],
-    {
-      commitment: 'singleGossip',
-    },
+    {commitment: 'single', skipPreflight: true},
   );
   let delegation = StakeProgram.delegate({
     stakePubkey: newStakeAccount.publicKey,
@@ -1774,14 +1584,15 @@ test('stake activation should return activating for new accounts', async () => {
     votePubkey,
   });
   await sendAndConfirmTransaction(connection, delegation, [authorized], {
-    commitment: 'singleGossip',
+    commitment: 'single',
+    skipPreflight: true,
   });
 
   const LARGE_EPOCH = 4000;
   await expect(
     connection.getStakeActivation(
       newStakeAccount.publicKey,
-      'singleGossip',
+      'recent',
       LARGE_EPOCH,
     ),
   ).rejects.toThrow(
@@ -1802,7 +1613,7 @@ test('stake activation should only accept state with valid string literals', asy
     return;
   }
 
-  const connection = new Connection(url, 'singleGossip');
+  const connection = new Connection(url, 'recent');
   const publicKey = new Account().publicKey;
 
   const addStakeActivationMock = state => {
@@ -1854,13 +1665,13 @@ test('getVersion', async () => {
 
 test('request airdrop', async () => {
   const account = new Account();
-  const connection = new Connection(url, 'singleGossip');
+  const connection = new Connection(url, 'recent');
 
   mockRpc.push([
     url,
     {
       method: 'getMinimumBalanceForRentExemption',
-      params: [0, {commitment: 'singleGossip'}],
+      params: [0, {commitment: 'recent'}],
     },
     {
       error: null,
@@ -1870,7 +1681,7 @@ test('request airdrop', async () => {
 
   const minimumAmount = await connection.getMinimumBalanceForRentExemption(
     0,
-    'singleGossip',
+    'recent',
   );
 
   mockRpc.push([
@@ -1892,13 +1703,13 @@ test('request airdrop', async () => {
   );
 
   mockConfirmTransaction(signature);
-  await connection.confirmTransaction(signature);
+  await connection.confirmTransaction(signature, 'single');
 
   mockRpc.push([
     url,
     {
       method: 'getBalance',
-      params: [account.publicKey.toBase58(), {commitment: 'singleGossip'}],
+      params: [account.publicKey.toBase58(), {commitment: 'recent'}],
     },
     {
       error: null,
@@ -1920,7 +1731,7 @@ test('request airdrop', async () => {
       method: 'getAccountInfo',
       params: [
         account.publicKey.toBase58(),
-        {commitment: 'singleGossip', encoding: 'base64'},
+        {commitment: 'recent', encoding: 'base64'},
       ],
     },
     {
@@ -1954,7 +1765,7 @@ test('request airdrop', async () => {
       method: 'getAccountInfo',
       params: [
         account.publicKey.toBase58(),
-        {commitment: 'singleGossip', encoding: 'jsonParsed'},
+        {commitment: 'recent', encoding: 'jsonParsed'},
       ],
     },
     {
@@ -1990,13 +1801,13 @@ test('request airdrop', async () => {
 
 test('transaction failure', async () => {
   const account = new Account();
-  const connection = new Connection(url, 'singleGossip');
+  const connection = new Connection(url, 'recent');
 
   mockRpc.push([
     url,
     {
       method: 'getMinimumBalanceForRentExemption',
-      params: [0, {commitment: 'singleGossip'}],
+      params: [0, {commitment: 'recent'}],
     },
     {
       error: null,
@@ -2006,7 +1817,7 @@ test('transaction failure', async () => {
 
   const minimumAmount = await connection.getMinimumBalanceForRentExemption(
     0,
-    'singleGossip',
+    'recent',
   );
 
   mockRpc.push([
@@ -2027,13 +1838,13 @@ test('transaction failure', async () => {
   );
 
   mockConfirmTransaction(airdropSignature);
-  await connection.confirmTransaction(airdropSignature);
+  await connection.confirmTransaction(airdropSignature, 'single');
 
   mockRpc.push([
     url,
     {
       method: 'getBalance',
-      params: [account.publicKey.toBase58(), {commitment: 'singleGossip'}],
+      params: [account.publicKey.toBase58(), {commitment: 'recent'}],
     },
     {
       error: null,
@@ -2080,7 +1891,7 @@ test('transaction failure', async () => {
     connection,
     transaction,
     [account, newAccount],
-    {commitment: 'singleGossip'},
+    {commitment: 'single', skipPreflight: true},
   );
 
   mockRpc.push([
@@ -2115,7 +1926,7 @@ test('transaction failure', async () => {
   mockRpcSocket.push([
     {
       method: 'signatureSubscribe',
-      params: [signature, {commitment: 'singleGossip'}],
+      params: [signature, {commitment: 'single'}],
     },
     {
       context: {
@@ -2127,7 +1938,7 @@ test('transaction failure', async () => {
 
   // Wait for one confirmation
   const confirmResult = (
-    await connection.confirmTransaction(signature, 'singleGossip')
+    await connection.confirmTransaction(signature, 'single')
   ).value;
   expect(confirmResult.err).toEqual(expectedErr);
 
@@ -2166,13 +1977,13 @@ test('transaction failure', async () => {
 test('transaction', async () => {
   const accountFrom = new Account();
   const accountTo = new Account();
-  const connection = new Connection(url, 'singleGossip');
+  const connection = new Connection(url, 'recent');
 
   mockRpc.push([
     url,
     {
       method: 'getMinimumBalanceForRentExemption',
-      params: [0, {commitment: 'singleGossip'}],
+      params: [0, {commitment: 'recent'}],
     },
     {
       error: null,
@@ -2182,7 +1993,7 @@ test('transaction', async () => {
 
   const minimumAmount = await connection.getMinimumBalanceForRentExemption(
     0,
-    'singleGossip',
+    'recent',
   );
 
   mockRpc.push([
@@ -2203,13 +2014,13 @@ test('transaction', async () => {
   );
 
   mockConfirmTransaction(airdropFromSig);
-  await connection.confirmTransaction(airdropFromSig);
+  await connection.confirmTransaction(airdropFromSig, 'single');
 
   mockRpc.push([
     url,
     {
       method: 'getBalance',
-      params: [accountFrom.publicKey.toBase58(), {commitment: 'singleGossip'}],
+      params: [accountFrom.publicKey.toBase58(), {commitment: 'recent'}],
     },
     {
       error: null,
@@ -2244,13 +2055,13 @@ test('transaction', async () => {
   );
 
   mockConfirmTransaction(airdropToSig);
-  await connection.confirmTransaction(airdropToSig);
+  await connection.confirmTransaction(airdropToSig, 'single');
 
   mockRpc.push([
     url,
     {
       method: 'getBalance',
-      params: [accountTo.publicKey.toBase58(), {commitment: 'singleGossip'}],
+      params: [accountTo.publicKey.toBase58(), {commitment: 'recent'}],
     },
     {
       error: null,
@@ -2292,9 +2103,8 @@ test('transaction', async () => {
   );
 
   mockConfirmTransaction(signature);
-  let confirmResult = (
-    await connection.confirmTransaction(signature, 'singleGossip')
-  ).value;
+  let confirmResult = (await connection.confirmTransaction(signature, 'single'))
+    .value;
   expect(confirmResult.err).toBeNull();
 
   mockGetRecentBlockhash('max');
@@ -2328,7 +2138,7 @@ test('transaction', async () => {
   expect(transaction.recentBlockhash).not.toEqual(transaction2.recentBlockhash);
 
   mockConfirmTransaction(signature2);
-  await connection.confirmTransaction(signature2, 'singleGossip');
+  await connection.confirmTransaction(signature2, 'single');
 
   mockRpc.push([
     url,
@@ -2360,7 +2170,7 @@ test('transaction', async () => {
   expect(transaction2.recentBlockhash).toEqual(transaction3.recentBlockhash);
 
   mockConfirmTransaction(signature3);
-  await connection.confirmTransaction(signature3, 'singleGossip');
+  await connection.confirmTransaction(signature3, 'single');
 
   // Sleep until blockhash cache times out
   await sleep(
@@ -2396,7 +2206,7 @@ test('transaction', async () => {
     },
   );
   mockConfirmTransaction(signature4);
-  await connection.confirmTransaction(signature4, 'singleGossip');
+  await connection.confirmTransaction(signature4, 'single');
 
   expect(transaction4.recentBlockhash).not.toEqual(
     transaction3.recentBlockhash,
@@ -2406,7 +2216,7 @@ test('transaction', async () => {
     url,
     {
       method: 'getBalance',
-      params: [accountFrom.publicKey.toBase58(), {commitment: 'singleGossip'}],
+      params: [accountFrom.publicKey.toBase58(), {commitment: 'recent'}],
     },
     {
       error: null,
@@ -2428,7 +2238,7 @@ test('transaction', async () => {
     url,
     {
       method: 'getBalance',
-      params: [accountTo.publicKey.toBase58(), {commitment: 'singleGossip'}],
+      params: [accountTo.publicKey.toBase58(), {commitment: 'recent'}],
     },
     {
       error: null,
@@ -2453,27 +2263,27 @@ test('multi-instruction transaction', async () => {
 
   const accountFrom = new Account();
   const accountTo = new Account();
-  const connection = new Connection(url, 'singleGossip');
+  const connection = new Connection(url, 'recent');
 
   let signature = await connection.requestAirdrop(
     accountFrom.publicKey,
     LAMPORTS_PER_SAFE,
   );
-  await connection.confirmTransaction(signature, 'singleGossip');
+  await connection.confirmTransaction(signature, 'single');
   expect(await connection.getBalance(accountFrom.publicKey)).toBe(
     LAMPORTS_PER_SAFE,
   );
 
   const minimumAmount = await connection.getMinimumBalanceForRentExemption(
     0,
-    'singleGossip',
+    'recent',
   );
 
   signature = await connection.requestAirdrop(
     accountTo.publicKey,
     minimumAmount + 21,
   );
-  await connection.confirmTransaction(signature);
+  await connection.confirmTransaction(signature, 'single');
   expect(await connection.getBalance(accountTo.publicKey)).toBe(
     minimumAmount + 21,
   );
@@ -2501,7 +2311,7 @@ test('multi-instruction transaction', async () => {
     {skipPreflight: true},
   );
 
-  await connection.confirmTransaction(signature, 'singleGossip');
+  await connection.confirmTransaction(signature, 'single');
 
   const response = (await connection.getSignatureStatus(signature)).value;
   if (response !== null) {
@@ -2528,7 +2338,7 @@ test('account change notification', async () => {
     return;
   }
 
-  const connection = new Connection(url, 'singleGossip');
+  const connection = new Connection(url, 'recent');
   const owner = new Account();
   const programAccount = new Account();
 
@@ -2537,7 +2347,7 @@ test('account change notification', async () => {
   const subscriptionId = connection.onAccountChange(
     programAccount.publicKey,
     mockCallback,
-    'singleGossip',
+    'recent',
   );
 
   const balanceNeeded = Math.max(
@@ -2545,11 +2355,7 @@ test('account change notification', async () => {
     1,
   );
 
-  let signature = await connection.requestAirdrop(
-    owner.publicKey,
-    LAMPORTS_PER_SAFE,
-  );
-  await connection.confirmTransaction(signature);
+  await connection.requestAirdrop(owner.publicKey, LAMPORTS_PER_SAFE);
   try {
     const transaction = new Transaction().add(
       SystemProgram.transfer({
@@ -2559,7 +2365,8 @@ test('account change notification', async () => {
       }),
     );
     await sendAndConfirmTransaction(connection, transaction, [owner], {
-      commitment: 'singleGossip',
+      commitment: 'single',
+      skipPreflight: true,
     });
   } catch (err) {
     await connection.removeAccountChangeListener(subscriptionId);
@@ -2593,7 +2400,7 @@ test('program account change notification', async () => {
     return;
   }
 
-  const connection = new Connection(url, 'singleGossip');
+  const connection = new Connection(url, 'recent');
   const owner = new Account();
   const programAccount = new Account();
 
@@ -2617,11 +2424,7 @@ test('program account change notification', async () => {
     },
   );
 
-  let signature = await connection.requestAirdrop(
-    owner.publicKey,
-    LAMPORTS_PER_SAFE,
-  );
-  await connection.confirmTransaction(signature);
+  await connection.requestAirdrop(owner.publicKey, LAMPORTS_PER_SAFE);
   try {
     const transaction = new Transaction().add(
       SystemProgram.transfer({
@@ -2631,7 +2434,8 @@ test('program account change notification', async () => {
       }),
     );
     await sendAndConfirmTransaction(connection, transaction, [owner], {
-      commitment: 'singleGossip',
+      commitment: 'single',
+      skipPreflight: true,
     });
   } catch (err) {
     await connection.removeProgramAccountChangeListener(subscriptionId);
@@ -2659,7 +2463,7 @@ test('slot notification', async () => {
     return;
   }
 
-  const connection = new Connection(url, 'singleGossip');
+  const connection = new Connection(url, 'recent');
 
   let notified = false;
   const subscriptionId = connection.onSlotChange(slotInfo => {
@@ -2691,7 +2495,7 @@ test('root notification', async () => {
     return;
   }
 
-  const connection = new Connection(url, 'singleGossip');
+  const connection = new Connection(url, 'recent');
 
   let roots = [];
   const subscriptionId = connection.onRootChange(root => {

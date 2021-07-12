@@ -30,7 +30,6 @@ pub struct Results {
 
 impl Results {
     /// Keep any result entries which occurred before the starting round.
-    #[allow(clippy::manual_strip)]
     pub fn new(
         file_path: String,
         mut previous_results: HashMap<String, Vec<String>>,
@@ -40,6 +39,7 @@ impl Results {
         previous_results.drain().for_each(|(key, value)| {
             if key.starts_with(ROUND_KEY_PREFIX) {
                 let round_str = &key[ROUND_KEY_PREFIX.len()..];
+                dbg!(round_str);
                 if let Ok(round) = u32::from_str(round_str) {
                     if round < start_round {
                         results.insert(Round(round), value);

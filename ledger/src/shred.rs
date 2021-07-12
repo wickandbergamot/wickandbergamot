@@ -12,7 +12,6 @@ use rayon::{
     ThreadPool,
 };
 use serde::{Deserialize, Serialize};
-use solana_measure::measure::Measure;
 use solana_perf::packet::{limited_deserialize, Packet};
 use solana_rayon_threadlimit::get_thread_count;
 use solana_sdk::{
@@ -22,37 +21,9 @@ use solana_sdk::{
     pubkey::Pubkey,
     signature::{Keypair, Signature, Signer},
 };
-use std::{mem::size_of, sync::Arc};
+use std::{mem::size_of, sync::Arc, time::Instant};
 
 use thiserror::Error;
-
-#[derive(Default, Clone)]
-pub struct ProcessShredsStats {
-    // Per-slot elapsed time
-    pub shredding_elapsed: u64,
-    pub receive_elapsed: u64,
-    pub serialize_elapsed: u64,
-    pub gen_data_elapsed: u64,
-    pub gen_coding_elapsed: u64,
-    pub sign_coding_elapsed: u64,
-    pub coding_send_elapsed: u64,
-    pub get_leader_schedule_elapsed: u64,
-}
-impl ProcessShredsStats {
-    pub fn update(&mut self, new_stats: &ProcessShredsStats) {
-        self.shredding_elapsed += new_stats.shredding_elapsed;
-        self.receive_elapsed += new_stats.receive_elapsed;
-        self.serialize_elapsed += new_stats.serialize_elapsed;
-        self.gen_data_elapsed += new_stats.gen_data_elapsed;
-        self.gen_coding_elapsed += new_stats.gen_coding_elapsed;
-        self.sign_coding_elapsed += new_stats.sign_coding_elapsed;
-        self.coding_send_elapsed += new_stats.gen_coding_elapsed;
-        self.get_leader_schedule_elapsed += new_stats.get_leader_schedule_elapsed;
-    }
-    pub fn reset(&mut self) {
-        *self = Self::default();
-    }
-}
 
 pub type Nonce = u32;
 
@@ -119,7 +90,7 @@ pub enum ShredError {
 
 pub type Result<T> = std::result::Result<T, ShredError>;
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, AbiExample, Deserialize, Serialize)]
+#[derive(Serialize, Clone, Deserialize, PartialEq, Debug)]
 pub struct ShredType(pub u8);
 impl Default for ShredType {
     fn default() -> Self {
@@ -522,7 +493,6 @@ impl Shredder {
         reference_tick: u8,
         version: u16,
     ) -> Result<Self> {
-        #[allow(clippy::manual_range_contains)]
         if fec_rate > 1.0 || fec_rate < 0.0 {
             Err(ShredError::InvalidFecRate(fec_rate))
         } else if slot < parent_slot || slot - parent_slot > u64::from(std::u16::MAX) {
@@ -546,10 +516,9 @@ impl Shredder {
         is_last_in_slot: bool,
         next_shred_index: u32,
     ) -> (Vec<Shred>, Vec<Shred>, u32) {
-        let mut stats = ProcessShredsStats::default();
         let (data_shreds, last_shred_index) =
-            self.entries_to_data_shreds(entries, is_last_in_slot, next_shred_index, &mut stats);
-        let coding_shreds = self.data_shreds_to_coding_shreds(&data_shreds, &mut stats);
+            self.entries_to_data_shreds(entries, is_last_in_slot, next_shred_index);
+        let coding_shreds = self.data_shreds_to_coding_shreds(&data_shreds);
         (data_shreds, coding_shreds, last_shred_index)
     }
 
@@ -558,14 +527,13 @@ impl Shredder {
         entries: &[Entry],
         is_last_in_slot: bool,
         next_shred_index: u32,
-        process_stats: &mut ProcessShredsStats,
     ) -> (Vec<Shred>, u32) {
-        let mut serialize_time = Measure::start("shred_serialize");
+        let now = Instant::now();
         let serialized_shreds =
             bincode::serialize(entries).expect("Expect to serialize all entries");
-        serialize_time.stop();
+        let serialize_time = now.elapsed().as_millis();
 
-        let mut gen_data_time = Measure::start("shred_gen_data_time");
+        let now = Instant::now();
 
         let no_header_size = SIZE_OF_DATA_SHRED_PAYLOAD;
         let num_shreds = (serialized_shreds.len() + no_header_size - 1) / no_header_size;
@@ -610,20 +578,19 @@ impl Shredder {
                     .collect()
             })
         });
-        gen_data_time.stop();
-
-        process_stats.serialize_elapsed += serialize_time.as_us();
-        process_stats.gen_data_elapsed += gen_data_time.as_us();
-
+        let gen_data_time = now.elapsed().as_millis();
+        datapoint_debug!(
+            "shredding-stats",
+            ("slot", self.slot as i64, i64),
+            ("num_data_shreds", data_shreds.len() as i64, i64),
+            ("serializing", serialize_time as i64, i64),
+            ("gen_data", gen_data_time as i64, i64),
+        );
         (data_shreds, last_shred_index + 1)
     }
 
-    pub fn data_shreds_to_coding_shreds(
-        &self,
-        data_shreds: &[Shred],
-        process_stats: &mut ProcessShredsStats,
-    ) -> Vec<Shred> {
-        let mut gen_coding_time = Measure::start("gen_coding_shreds");
+    pub fn data_shreds_to_coding_shreds(&self, data_shreds: &[Shred]) -> Vec<Shred> {
+        let now = Instant::now();
         // 2) Generate coding shreds
         let mut coding_shreds: Vec<_> = PAR_THREAD_POOL.with(|thread_pool| {
             thread_pool.borrow().install(|| {
@@ -641,9 +608,9 @@ impl Shredder {
                     .collect()
             })
         });
-        gen_coding_time.stop();
+        let gen_coding_time = now.elapsed().as_millis();
 
-        let mut sign_coding_time = Measure::start("sign_coding_shreds");
+        let now = Instant::now();
         // 3) Sign coding shreds
         PAR_THREAD_POOL.with(|thread_pool| {
             thread_pool.borrow().install(|| {
@@ -652,10 +619,14 @@ impl Shredder {
                 })
             })
         });
-        sign_coding_time.stop();
+        let sign_coding_time = now.elapsed().as_millis();
 
-        process_stats.gen_coding_elapsed += gen_coding_time.as_us();
-        process_stats.sign_coding_elapsed += sign_coding_time.as_us();
+        datapoint_debug!(
+            "shredding-stats",
+            ("num_coding_shreds", coding_shreds.len() as i64, i64),
+            ("gen_coding", gen_coding_time as i64, i64),
+            ("sign_coding", sign_coding_time as i64, i64),
+        );
         coding_shreds
     }
 
@@ -1751,22 +1722,19 @@ pub mod tests {
             })
             .collect();
 
-        let mut stats = ProcessShredsStats::default();
         let start_index = 0x12;
         let (data_shreds, _next_index) =
-            shredder.entries_to_data_shreds(&entries, true, start_index, &mut stats);
+            shredder.entries_to_data_shreds(&entries, true, start_index);
 
         assert!(data_shreds.len() > MAX_DATA_SHREDS_PER_FEC_BLOCK as usize);
 
         (1..=MAX_DATA_SHREDS_PER_FEC_BLOCK as usize).for_each(|count| {
-            let coding_shreds =
-                shredder.data_shreds_to_coding_shreds(&data_shreds[..count], &mut stats);
+            let coding_shreds = shredder.data_shreds_to_coding_shreds(&data_shreds[..count]);
             assert_eq!(coding_shreds.len(), count);
         });
 
         let coding_shreds = shredder.data_shreds_to_coding_shreds(
             &data_shreds[..MAX_DATA_SHREDS_PER_FEC_BLOCK as usize + 1],
-            &mut stats,
         );
         assert_eq!(
             coding_shreds.len(),

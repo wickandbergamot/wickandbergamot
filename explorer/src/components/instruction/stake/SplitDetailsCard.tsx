@@ -1,33 +1,32 @@
 import React from "react";
 import {
+  TransactionInstruction,
   SignatureResult,
+  StakeInstruction,
   StakeProgram,
-  ParsedInstruction,
 } from "@solana/web3.js";
 import { lamportsToSafeString } from "utils";
 import { InstructionCard } from "../InstructionCard";
+import { UnknownDetailsCard } from "../UnknownDetailsCard";
 import { Address } from "components/common/Address";
-import { SplitInfo } from "./types";
 
 export function SplitDetailsCard(props: {
-  ix: ParsedInstruction;
+  ix: TransactionInstruction;
   index: number;
   result: SignatureResult;
-  info: SplitInfo;
-  innerCards?: JSX.Element[];
-  childIndex?: number;
 }) {
-  const { ix, index, result, info, innerCards, childIndex } = props;
+  const { ix, index, result } = props;
+
+  let params;
+  try {
+    params = StakeInstruction.decodeSplit(ix);
+  } catch (err) {
+    console.error(err);
+    return <UnknownDetailsCard {...props} />;
+  }
 
   return (
-    <InstructionCard
-      ix={ix}
-      index={index}
-      result={result}
-      title="Split Stake"
-      innerCards={innerCards}
-      childIndex={childIndex}
-    >
+    <InstructionCard ix={ix} index={index} result={result} title="Split Stake">
       <tr>
         <td>Program</td>
         <td className="text-lg-right">
@@ -38,27 +37,29 @@ export function SplitDetailsCard(props: {
       <tr>
         <td>Stake Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.stakeAccount} alignRight link />
+          <Address pubkey={params.stakePubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Authority Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.stakeAuthority} alignRight link />
+          <Address pubkey={params.authorizedPubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>New Stake Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.newSplitAccount} alignRight link />
+          <Address pubkey={params.splitStakePubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Split Amount (SAFE)</td>
-        <td className="text-lg-right">{lamportsToSafeString(info.lamports)}</td>
+        <td className="text-lg-right">
+          {lamportsToSafeString(params.lamports)}
+        </td>
       </tr>
     </InstructionCard>
   );

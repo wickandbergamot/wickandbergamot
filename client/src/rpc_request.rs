@@ -1,6 +1,6 @@
 use crate::rpc_response::RpcSimulateTransactionResult;
 use serde_json::{json, Value};
-use solana_sdk::{clock::Slot, pubkey::Pubkey};
+use solana_sdk::pubkey::Pubkey;
 use std::fmt;
 use thiserror::Error;
 
@@ -25,7 +25,6 @@ pub enum RpcRequest {
     GetFees,
     GetFirstAvailableBlock,
     GetGenesisHash,
-    GetHealth,
     GetIdentity,
     GetInflationGovernor,
     GetInflationRate,
@@ -35,7 +34,6 @@ pub enum RpcRequest {
     GetMultipleAccounts,
     GetProgramAccounts,
     GetRecentBlockhash,
-    GetSnapshotSlot,
     GetSignatureStatuses,
     GetSlot,
     GetSlotLeader,
@@ -82,7 +80,6 @@ impl fmt::Display for RpcRequest {
             RpcRequest::GetFees => "getFees",
             RpcRequest::GetFirstAvailableBlock => "getFirstAvailableBlock",
             RpcRequest::GetGenesisHash => "getGenesisHash",
-            RpcRequest::GetHealth => "getHealth",
             RpcRequest::GetIdentity => "getIdentity",
             RpcRequest::GetInflationGovernor => "getInflationGovernor",
             RpcRequest::GetInflationRate => "getInflationRate",
@@ -92,7 +89,6 @@ impl fmt::Display for RpcRequest {
             RpcRequest::GetMultipleAccounts => "getMultipleAccounts",
             RpcRequest::GetProgramAccounts => "getProgramAccounts",
             RpcRequest::GetRecentBlockhash => "getRecentBlockhash",
-            RpcRequest::GetSnapshotSlot => "getSnapshotSlot",
             RpcRequest::GetSignatureStatuses => "getSignatureStatuses",
             RpcRequest::GetSlot => "getSlot",
             RpcRequest::GetSlotLeader => "getSlotLeader",
@@ -147,7 +143,6 @@ impl RpcRequest {
 pub enum RpcResponseErrorData {
     Empty,
     SendTransactionPreflightFailure(RpcSimulateTransactionResult),
-    NodeUnhealthy { num_slots_behind: Option<Slot> },
 }
 
 impl fmt::Display for RpcResponseErrorData {
@@ -248,7 +243,7 @@ mod tests {
     #[test]
     fn test_build_request_json_config_options() {
         let commitment_config = CommitmentConfig {
-            commitment: CommitmentLevel::Finalized,
+            commitment: CommitmentLevel::Max,
         };
         let addr = json!("deadbeefXjn8o3yroDHxUtKsZZgoy4GPkPPXfouKNHhx");
 

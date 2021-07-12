@@ -5,6 +5,9 @@ node_js:
   - "lts/*"
   # - "node" disabled due to flaky test failures
 
+services:
+  - docker
+
 cache:
   directories:
     - ~/.npm

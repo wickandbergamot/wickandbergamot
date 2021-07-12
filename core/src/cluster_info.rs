@@ -27,18 +27,19 @@ use crate::{
     result::{Error, Result},
     weighted_shuffle::weighted_shuffle,
 };
+
 use rand::distributions::{Distribution, WeightedIndex};
 use rand::{CryptoRng, Rng, SeedableRng};
 use rand_chacha::ChaChaRng;
-use solana_ledger::shred::Shred;
 use solana_sdk::sanitize::{Sanitize, SanitizeError};
 
 use bincode::{serialize, serialized_size};
+use core::cmp;
 use itertools::Itertools;
-use rand::thread_rng;
 use rayon::prelude::*;
 use rayon::{ThreadPool, ThreadPoolBuilder};
 use serde::ser::Serialize;
+use solana_ledger::staking_utils;
 use solana_measure::measure::Measure;
 use solana_measure::thread_mem_usage;
 use solana_metrics::{inc_new_counter_debug, inc_new_counter_error};
@@ -63,16 +64,13 @@ use solana_sdk::{
 };
 use solana_streamer::sendmmsg::multicast;
 use solana_streamer::streamer::{PacketReceiver, PacketSender};
-use solana_vote_program::vote_state::MAX_LOCKOUT_HISTORY;
 use std::{
     borrow::Cow,
+    cmp::min,
     collections::{hash_map::Entry, HashMap, HashSet, VecDeque},
-    fmt::Debug,
-    fs::{self, File},
-    io::BufReader,
+    fmt::{self, Debug},
     net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, UdpSocket},
     ops::{Deref, DerefMut},
-    path::{Path, PathBuf},
     sync::atomic::{AtomicBool, AtomicU64, Ordering},
     sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
     thread::{sleep, Builder, JoinHandle},
@@ -97,7 +95,6 @@ const MAX_GOSSIP_TRAFFIC: usize = 128_000_000 / PACKET_DATA_SIZE;
 /// is equal to PACKET_DATA_SIZE minus serialized size of an empty push
 /// message: Protocol::PushMessage(Pubkey::default(), Vec::default())
 const PUSH_MESSAGE_MAX_PAYLOAD_SIZE: usize = PACKET_DATA_SIZE - 44;
-const DUPLICATE_SHRED_MAX_PAYLOAD_SIZE: usize = PACKET_DATA_SIZE - 115;
 /// Maximum number of hashes in SnapshotHashes/AccountsHashes a node publishes
 /// such that the serialized size of the push/pull message stays below
 /// PACKET_DATA_SIZE.
@@ -110,10 +107,6 @@ const MAX_PRUNE_DATA_NODES: usize = 32;
 const GOSSIP_PING_TOKEN_SIZE: usize = 32;
 const GOSSIP_PING_CACHE_CAPACITY: usize = 16384;
 const GOSSIP_PING_CACHE_TTL: Duration = Duration::from_secs(640);
-pub const DEFAULT_CONTACT_DEBUG_INTERVAL_MILLIS: u64 = 10_000;
-pub const DEFAULT_CONTACT_SAVE_INTERVAL_MILLIS: u64 = 60_000;
-/// Minimum serialized size of a Protocol::PullResponse packet.
-const PULL_RESPONSE_MIN_SERIALIZED_SIZE: usize = 167;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ClusterInfoError {
@@ -241,8 +234,10 @@ struct GossipStats {
     entrypoint2: Counter,
     gossip_packets_dropped_count: Counter,
     push_vote_read: Counter,
+    vote_process_push: Counter,
     get_votes: Counter,
     get_accounts_hash: Counter,
+    get_snapshot_hash: Counter,
     all_tvu_peers: Counter,
     tvu_peers: Counter,
     retransmit_peers: Counter,
@@ -275,6 +270,8 @@ struct GossipStats {
     pull_request_ping_pong_check_failed_count: Counter,
     purge: Counter,
     epoch_slots_lookup: Counter,
+    epoch_slots_push: Counter,
+    push_message: Counter,
     new_pull_requests: Counter,
     new_pull_requests_count: Counter,
     mark_pull_request: Counter,
@@ -292,8 +289,8 @@ pub struct ClusterInfo {
     pub gossip: RwLock<CrdsGossip>,
     /// set the keypair that will be used to sign crds values generated. It is unset only in tests.
     pub(crate) keypair: Arc<Keypair>,
-    /// Network entrypoints
-    entrypoints: RwLock<Vec<ContactInfo>>,
+    /// The network entrypoint
+    entrypoint: RwLock<Option<ContactInfo>>,
     outbound_budget: DataBudget,
     my_contact_info: RwLock<ContactInfo>,
     ping_cache: RwLock<PingCache>,
@@ -301,15 +298,36 @@ pub struct ClusterInfo {
     stats: GossipStats,
     socket: UdpSocket,
     local_message_pending_push_queue: RwLock<Vec<(CrdsValue, u64)>>,
-    contact_debug_interval: u64, // milliseconds, 0 = disabled
-    contact_save_interval: u64,  // milliseconds, 0 = disabled
     instance: NodeInstance,
-    contact_info_path: PathBuf,
 }
 
 impl Default for ClusterInfo {
     fn default() -> Self {
         Self::new_with_invalid_keypair(ContactInfo::default())
+    }
+}
+
+#[derive(Default, Clone)]
+pub struct Locality {
+    /// The bounds of the neighborhood represented by this locality
+    pub neighbor_bounds: (usize, usize),
+    /// The `turbine` layer this locality is in
+    pub layer_ix: usize,
+    /// The bounds of the current layer
+    pub layer_bounds: (usize, usize),
+    /// The bounds of the next layer
+    pub next_layer_bounds: Option<(usize, usize)>,
+    /// The indices of the nodes that should be contacted in next layer
+    pub next_layer_peers: Vec<usize>,
+}
+
+impl fmt::Debug for Locality {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Locality {{ neighborhood_bounds: {:?}, current_layer: {:?}, child_layer_bounds: {:?} child_layer_peers: {:?} }}",
+            self.neighbor_bounds, self.layer_ix, self.next_layer_bounds, self.next_layer_peers
+        )
     }
 }
 
@@ -405,7 +423,7 @@ pub fn make_accounts_hashes_message(
 type Ping = ping_pong::Ping<[u8; GOSSIP_PING_TOKEN_SIZE]>;
 
 // TODO These messages should go through the gpu pipeline for spam filtering
-#[frozen_abi(digest = "CH5BWuhAyvUiUQYgu2Lcwu7eoiW6bQitvtLS1yFsdmrE")]
+#[frozen_abi(digest = "6PpTdBvyX37y5ERokb8DejgKobpsuTbFJC39f8Eqz7Vy")]
 #[derive(Serialize, Deserialize, Debug, AbiEnumVisitor, AbiExample)]
 #[allow(clippy::large_enum_variant)]
 enum Protocol {
@@ -525,7 +543,7 @@ impl ClusterInfo {
         let me = Self {
             gossip: RwLock::new(CrdsGossip::default()),
             keypair,
-            entrypoints: RwLock::new(vec![]),
+            entrypoint: RwLock::new(None),
             outbound_budget: DataBudget::default(),
             my_contact_info: RwLock::new(contact_info),
             ping_cache: RwLock::new(PingCache::new(
@@ -536,10 +554,7 @@ impl ClusterInfo {
             stats: GossipStats::default(),
             socket: UdpSocket::bind("0.0.0.0:0").unwrap(),
             local_message_pending_push_queue: RwLock::new(vec![]),
-            contact_debug_interval: DEFAULT_CONTACT_DEBUG_INTERVAL_MILLIS,
-            instance: NodeInstance::new(&mut thread_rng(), id, timestamp()),
-            contact_info_path: PathBuf::default(),
-            contact_save_interval: 0, // disabled
+            instance: NodeInstance::new(&mut rand::thread_rng(), id, timestamp()),
         };
         {
             let mut gossip = me.gossip.write().unwrap();
@@ -560,7 +575,7 @@ impl ClusterInfo {
         ClusterInfo {
             gossip: RwLock::new(gossip),
             keypair: self.keypair.clone(),
-            entrypoints: RwLock::new(self.entrypoints.read().unwrap().clone()),
+            entrypoint: RwLock::new(self.entrypoint.read().unwrap().clone()),
             outbound_budget: self.outbound_budget.clone_non_atomic(),
             my_contact_info: RwLock::new(my_contact_info),
             ping_cache: RwLock::new(self.ping_cache.read().unwrap().mock_clone()),
@@ -573,15 +588,8 @@ impl ClusterInfo {
                     .unwrap()
                     .clone(),
             ),
-            contact_debug_interval: self.contact_debug_interval,
-            instance: NodeInstance::new(&mut thread_rng(), *new_id, timestamp()),
-            contact_info_path: PathBuf::default(),
-            contact_save_interval: 0, // disabled
+            instance: NodeInstance::new(&mut rand::thread_rng(), *new_id, timestamp()),
         }
-    }
-
-    pub fn set_contact_debug_interval(&mut self, new: u64) {
-        self.contact_debug_interval = new;
     }
 
     pub fn update_contact_info<F>(&self, modify: F)
@@ -628,122 +636,7 @@ impl ClusterInfo {
     }
 
     pub fn set_entrypoint(&self, entrypoint: ContactInfo) {
-        self.set_entrypoints(vec![entrypoint]);
-    }
-
-    pub fn set_entrypoints(&self, entrypoints: Vec<ContactInfo>) {
-        *self.entrypoints.write().unwrap() = entrypoints;
-    }
-
-    pub fn save_contact_info(&self) {
-        let nodes = {
-            let gossip = self.gossip.read().unwrap();
-            let entrypoint_gossip_addrs = self
-                .entrypoints
-                .read()
-                .unwrap()
-                .iter()
-                .map(|contact_info| contact_info.gossip)
-                .collect::<HashSet<_>>();
-
-            gossip
-                .crds
-                .get_nodes()
-                .filter_map(|v| {
-                    // Don't save:
-                    // 1. Our ContactInfo. No point
-                    // 2. Entrypoint ContactInfo. This will avoid adopting the incorrect shred
-                    //    version on restart if the entrypoint shred version changes.  Also
-                    //    there's not much point in saving entrypoint ContactInfo since by
-                    //    definition that information is already available
-                    let contact_info = v.value.contact_info().unwrap();
-                    if contact_info.id != self.id()
-                        && !entrypoint_gossip_addrs.contains(&contact_info.gossip)
-                    {
-                        return Some(v.value.clone());
-                    }
-                    None
-                })
-                .collect::<Vec<_>>()
-        };
-
-        if nodes.is_empty() {
-            return;
-        }
-
-        let filename = self.contact_info_path.join("contact-info.bin");
-        let tmp_filename = &filename.with_extension("tmp");
-
-        match File::create(&tmp_filename) {
-            Ok(mut file) => {
-                if let Err(err) = bincode::serialize_into(&mut file, &nodes) {
-                    warn!(
-                        "Failed to serialize contact info info {}: {}",
-                        tmp_filename.display(),
-                        err
-                    );
-                    return;
-                }
-            }
-            Err(err) => {
-                warn!("Failed to create {}: {}", tmp_filename.display(), err);
-                return;
-            }
-        }
-
-        match fs::rename(&tmp_filename, &filename) {
-            Ok(()) => {
-                info!(
-                    "Saved contact info for {} nodes into {}",
-                    nodes.len(),
-                    filename.display()
-                );
-            }
-            Err(err) => {
-                warn!(
-                    "Failed to rename {} to {}: {}",
-                    tmp_filename.display(),
-                    filename.display(),
-                    err
-                );
-            }
-        }
-    }
-
-    pub fn restore_contact_info(&mut self, contact_info_path: &Path, contact_save_interval: u64) {
-        self.contact_info_path = contact_info_path.into();
-        self.contact_save_interval = contact_save_interval;
-
-        let filename = contact_info_path.join("contact-info.bin");
-        if !filename.exists() {
-            return;
-        }
-
-        let nodes: Vec<CrdsValue> = match File::open(&filename) {
-            Ok(file) => {
-                bincode::deserialize_from(&mut BufReader::new(file)).unwrap_or_else(|err| {
-                    warn!("Failed to deserialize {}: {}", filename.display(), err);
-                    vec![]
-                })
-            }
-            Err(err) => {
-                warn!("Failed to open {}: {}", filename.display(), err);
-                vec![]
-            }
-        };
-
-        info!(
-            "Loaded contact info for {} nodes from {}",
-            nodes.len(),
-            filename.display()
-        );
-        let now = timestamp();
-        let mut gossip = self.gossip.write().unwrap();
-        for node in nodes {
-            if let Err(err) = gossip.crds.insert(node, now) {
-                warn!("crds insert failed {:?}", err);
-            }
-        }
+        *self.entrypoint.write().unwrap() = Some(entrypoint)
     }
 
     pub fn id(&self) -> Pubkey {
@@ -983,7 +876,7 @@ impl ClusterInfo {
                 ))
             })
             .collect();
-        current_slots.sort_unstable();
+        current_slots.sort();
         let min_slot: Slot = current_slots
             .iter()
             .map(|((_, s), _)| *s)
@@ -1078,60 +971,22 @@ impl ClusterInfo {
         self.push_message(CrdsValue::new_signed(message, &self.keypair));
     }
 
-    pub fn push_vote(&self, tower: &[Slot], vote: Transaction) {
-        debug_assert!(tower.iter().tuple_windows().all(|(a, b)| a < b));
+    pub fn push_vote(&self, tower_index: usize, vote: Transaction) {
         let now = timestamp();
-        // Find a crds vote which is evicted from the tower, and recycle its
-        // vote-index. This can be either an old vote which is popped off the
-        // deque, or recent vote which has expired before getting enough
-        // confirmations.
-        // If all votes are still in the tower, add a new vote-index. If more
-        // than one vote is evicted, the oldest one by wallclock is returned in
-        // order to allow more recent votes more time to propagate through
-        // gossip.
-        // TODO: When there are more than one vote evicted from the tower, only
-        // one crds vote is overwritten here. Decide what to do with the rest.
-        let mut num_crds_votes = 0;
-        let self_pubkey = self.id();
-        // Returns true if the tower does not contain the vote.slot.
-        let should_evict_vote = |vote: &Vote| -> bool {
-            match vote.slot() {
-                Some(slot) => !tower.contains(&slot),
-                None => {
-                    error!("crds vote with no slots!");
-                    true
-                }
-            }
-        };
-        let vote_index = {
-            let gossip =
+        let vote = Vote::new(&self.id(), vote, now);
+        let vote_ix = {
+            let r_gossip =
                 self.time_gossip_read_lock("gossip_read_push_vote", &self.stats.push_vote_read);
-            (0..MAX_LOCKOUT_HISTORY as u8)
-                .filter_map(|ix| {
-                    let vote = CrdsValueLabel::Vote(ix, self_pubkey);
-                    let vote = gossip.crds.lookup(&vote)?;
-                    num_crds_votes += 1;
-                    match &vote.data {
-                        CrdsData::Vote(_, vote) if should_evict_vote(vote) => {
-                            Some((vote.wallclock, ix))
-                        }
-                        CrdsData::Vote(_, _) => None,
-                        _ => panic!("this should not happen!"),
-                    }
-                })
-                .min() // Boot the oldest evicted vote by wallclock.
-                .map(|(_ /*wallclock*/, ix)| ix)
+            let current_votes: Vec<_> = (0..crds_value::MAX_VOTES)
+                .filter_map(|ix| r_gossip.crds.lookup(&CrdsValueLabel::Vote(ix, self.id())))
+                .collect();
+            CrdsValue::compute_vote_index(tower_index, current_votes)
         };
-        let vote_index = vote_index.unwrap_or(num_crds_votes);
-        assert!((vote_index as usize) < MAX_LOCKOUT_HISTORY);
-        let vote = Vote::new(self_pubkey, vote, now);
-        debug_assert_eq!(vote.slot().unwrap(), *tower.last().unwrap());
-        let vote = CrdsData::Vote(vote_index, vote);
-        let vote = CrdsValue::new_signed(vote, &self.keypair);
-        self.gossip
+        let entry = CrdsValue::new_signed(CrdsData::Vote(vote_ix, vote), &self.keypair);
+        self.local_message_pending_push_queue
             .write()
             .unwrap()
-            .process_push_message(&self_pubkey, vec![vote], now);
+            .push((entry, now));
     }
 
     pub fn send_vote(&self, vote: &Transaction) -> Result<()> {
@@ -1151,30 +1006,33 @@ impl ClusterInfo {
         let (labels, txs): (Vec<CrdsValueLabel>, Vec<Transaction>) = self
             .time_gossip_read_lock("get_votes", &self.stats.get_votes)
             .crds
-            .get_votes()
-            .filter(|vote| vote.insert_timestamp > since)
-            .map(|vote| {
-                max_ts = std::cmp::max(vote.insert_timestamp, max_ts);
-                let transaction = match &vote.value.data {
-                    CrdsData::Vote(_, vote) => vote.transaction().clone(),
-                    _ => panic!("this should not happen!"),
-                };
-                (vote.value.label(), transaction)
+            .iter()
+            .filter(|(_, x)| x.insert_timestamp > since)
+            .filter_map(|(label, x)| {
+                max_ts = std::cmp::max(x.insert_timestamp, max_ts);
+                x.value
+                    .vote()
+                    .map(|v| (label.clone(), v.transaction.clone()))
             })
             .unzip();
         inc_new_counter_info!("cluster_info-get_votes-count", txs.len());
         (labels, txs, max_ts)
     }
 
-    pub(crate) fn push_duplicate_shred(&self, shred: &Shred, other_payload: &[u8]) -> Result<()> {
-        self.gossip.write().unwrap().push_duplicate_shred(
-            &self.keypair,
-            shred,
-            other_payload,
-            None::<fn(Slot) -> Option<Pubkey>>, // Leader schedule
-            DUPLICATE_SHRED_MAX_PAYLOAD_SIZE,
-        )?;
-        Ok(())
+    pub fn get_snapshot_hash(&self, slot: Slot) -> Vec<(Pubkey, Hash)> {
+        self.time_gossip_read_lock("get_snapshot_hash", &self.stats.get_snapshot_hash)
+            .crds
+            .values()
+            .filter_map(|x| x.value.snapshot_hash())
+            .filter_map(|x| {
+                for (table_slot, hash) in &x.hashes {
+                    if *table_slot == slot {
+                        return Some((x.from, *hash));
+                    }
+                }
+                None
+            })
+            .collect()
     }
 
     pub fn get_accounts_hash_for_node<F, Y>(&self, pubkey: &Pubkey, map: F) -> Option<Y>
@@ -1374,9 +1232,9 @@ impl ClusterInfo {
             || !ContactInfo::is_valid_address(&contact_info.tvu)
     }
 
-    fn sorted_stakes_with_index(
+    fn sorted_stakes_with_index<S: std::hash::BuildHasher>(
         peers: &[ContactInfo],
-        stakes: Option<&HashMap<Pubkey, u64>>,
+        stakes: Option<Arc<HashMap<Pubkey, u64, S>>>,
     ) -> Vec<(u64, usize)> {
         let stakes_and_index: Vec<_> = peers
             .iter()
@@ -1417,7 +1275,7 @@ impl ClusterInfo {
     // Return sorted_retransmit_peers(including self) and their stakes
     pub fn sorted_retransmit_peers_and_stakes(
         &self,
-        stakes: Option<&HashMap<Pubkey, u64>>,
+        stakes: Option<Arc<HashMap<Pubkey, u64>>>,
     ) -> (Vec<ContactInfo>, Vec<(u64, usize)>) {
         let mut peers = self.retransmit_peers();
         // insert "self" into this list for the layer and neighborhood computation
@@ -1434,17 +1292,15 @@ impl ClusterInfo {
         seed: [u8; 32],
     ) -> (usize, Vec<(u64, usize)>) {
         let shuffled_stakes_and_index = ClusterInfo::stake_weighted_shuffle(stakes_and_index, seed);
-        let self_index = shuffled_stakes_and_index
+        let mut self_index = 0;
+        shuffled_stakes_and_index
             .iter()
             .enumerate()
-            .find_map(|(i, (_stake, index))| {
-                if peers[*index].id == *id {
-                    Some(i)
-                } else {
-                    None
+            .for_each(|(i, (_stake, index))| {
+                if &peers[*index].id == id {
+                    self_index = i;
                 }
-            })
-            .unwrap();
+            });
         (self_index, shuffled_stakes_and_index)
     }
 
@@ -1457,6 +1313,135 @@ impl ClusterInfo {
             .get_nodes_contact_info()
             .filter(|x| x.id != self.id() && ContactInfo::is_valid_address(&x.tpu))
             .cloned()
+            .collect()
+    }
+
+    /// Given a node count and fanout, it calculates how many layers are needed and at what index each layer begins.
+    pub fn describe_data_plane(nodes: usize, fanout: usize) -> (usize, Vec<usize>) {
+        let mut layer_indices: Vec<usize> = vec![0];
+        if nodes == 0 {
+            (0, vec![])
+        } else if nodes <= fanout {
+            // single layer data plane
+            (1, layer_indices)
+        } else {
+            //layer 1 is going to be the first num fanout nodes, so exclude those
+            let mut remaining_nodes = nodes - fanout;
+            layer_indices.push(fanout);
+            let mut num_layers = 2;
+            // fanout * num_nodes in a neighborhood, which is also fanout.
+            let mut layer_capacity = fanout * fanout;
+            while remaining_nodes > 0 {
+                if remaining_nodes > layer_capacity {
+                    // Needs more layers.
+                    num_layers += 1;
+                    remaining_nodes -= layer_capacity;
+                    let end = *layer_indices.last().unwrap();
+                    layer_indices.push(layer_capacity + end);
+
+                    // Next layer's capacity
+                    layer_capacity *= fanout;
+                } else {
+                    //everything will now fit in the layers we have
+                    let end = *layer_indices.last().unwrap();
+                    layer_indices.push(layer_capacity + end);
+                    break;
+                }
+            }
+            assert_eq!(num_layers, layer_indices.len() - 1);
+            (num_layers, layer_indices)
+        }
+    }
+
+    fn localize_item(
+        layer_indices: &[usize],
+        fanout: usize,
+        select_index: usize,
+        curr_index: usize,
+    ) -> Option<Locality> {
+        let end = layer_indices.len() - 1;
+        let next = min(end, curr_index + 1);
+        let layer_start = layer_indices[curr_index];
+        // localized if selected index lies within the current layer's bounds
+        let localized = select_index >= layer_start && select_index < layer_indices[next];
+        if localized {
+            let mut locality = Locality::default();
+            let hood_ix = (select_index - layer_start) / fanout;
+            match curr_index {
+                _ if curr_index == 0 => {
+                    locality.layer_ix = 0;
+                    locality.layer_bounds = (0, fanout);
+                    locality.neighbor_bounds = locality.layer_bounds;
+
+                    if next == end {
+                        locality.next_layer_bounds = None;
+                        locality.next_layer_peers = vec![];
+                    } else {
+                        locality.next_layer_bounds =
+                            Some((layer_indices[next], layer_indices[next + 1]));
+                        locality.next_layer_peers = ClusterInfo::next_layer_peers(
+                            select_index,
+                            hood_ix,
+                            layer_indices[next],
+                            fanout,
+                        );
+                    }
+                }
+                _ if curr_index == end => {
+                    locality.layer_ix = end;
+                    locality.layer_bounds = (end - fanout, end);
+                    locality.neighbor_bounds = locality.layer_bounds;
+                    locality.next_layer_bounds = None;
+                    locality.next_layer_peers = vec![];
+                }
+                ix => {
+                    locality.layer_ix = ix;
+                    locality.layer_bounds = (layer_start, layer_indices[next]);
+                    locality.neighbor_bounds = (
+                        ((hood_ix * fanout) + layer_start),
+                        ((hood_ix + 1) * fanout + layer_start),
+                    );
+
+                    if next == end {
+                        locality.next_layer_bounds = None;
+                        locality.next_layer_peers = vec![];
+                    } else {
+                        locality.next_layer_bounds =
+                            Some((layer_indices[next], layer_indices[next + 1]));
+                        locality.next_layer_peers = ClusterInfo::next_layer_peers(
+                            select_index,
+                            hood_ix,
+                            layer_indices[next],
+                            fanout,
+                        );
+                    }
+                }
+            }
+            Some(locality)
+        } else {
+            None
+        }
+    }
+
+    /// Given a array of layer indices and an index of interest, returns (as a `Locality`) the layer,
+    /// layer-bounds, and neighborhood-bounds in which the index resides
+    fn localize(layer_indices: &[usize], fanout: usize, select_index: usize) -> Locality {
+        (0..layer_indices.len())
+            .find_map(|i| ClusterInfo::localize_item(layer_indices, fanout, select_index, i))
+            .or_else(|| Some(Locality::default()))
+            .unwrap()
+    }
+
+    /// Selects a range in the next layer and chooses nodes from that range as peers for the given index
+    fn next_layer_peers(index: usize, hood_ix: usize, start: usize, fanout: usize) -> Vec<usize> {
+        // Each neighborhood is only tasked with pushing to `fanout` neighborhoods where each neighborhood contains `fanout` nodes.
+        let fanout_nodes = fanout * fanout;
+        // Skip first N nodes, where N is hood_ix * (fanout_nodes)
+        let start = start + (hood_ix * fanout_nodes);
+        let end = start + fanout_nodes;
+        (start..end)
+            .step_by(fanout)
+            .map(|x| x + index % fanout)
             .collect()
     }
 
@@ -1507,49 +1492,52 @@ impl ClusterInfo {
         thread_pool: &ThreadPool,
         pulls: &mut Vec<(Pubkey, CrdsFilter, SocketAddr, CrdsValue)>,
     ) {
-        let entrypoint_id_and_gossip = {
-            let mut entrypoints = self.entrypoints.write().unwrap();
-            if entrypoints.is_empty() {
-                None
-            } else {
-                let i = thread_rng().gen_range(0, entrypoints.len());
-                let entrypoint = &mut entrypoints[i];
-
+        let pull_from_entrypoint = {
+            let mut w_entrypoint = self.entrypoint.write().unwrap();
+            if let Some(ref mut entrypoint) = &mut *w_entrypoint {
                 if pulls.is_empty() {
-                    // Nobody else to pull from, try an entrypoint
-                    Some((entrypoint.id, entrypoint.gossip))
+                    // Nobody else to pull from, try the entrypoint
+                    true
                 } else {
                     let now = timestamp();
-                    if now - entrypoint.wallclock <= CRDS_GOSSIP_PULL_CRDS_TIMEOUT_MS / 2 {
-                        None
+                    // Only consider pulling from the entrypoint periodically to avoid spamming it
+                    if timestamp() - entrypoint.wallclock <= CRDS_GOSSIP_PULL_CRDS_TIMEOUT_MS / 2 {
+                        false
                     } else {
                         entrypoint.wallclock = now;
-                        if self
+                        let found_entrypoint = self
                             .time_gossip_read_lock("entrypoint", &self.stats.entrypoint)
                             .crds
                             .get_nodes_contact_info()
-                            .any(|node| node.gossip == entrypoint.gossip)
-                        {
-                            None // Found the entrypoint, no need to pull from it
-                        } else {
-                            Some((entrypoint.id, entrypoint.gossip))
-                        }
+                            .any(|node| node.gossip == entrypoint.gossip);
+                        !found_entrypoint
                     }
                 }
+            } else {
+                false
             }
         };
 
-        if let Some((id, gossip)) = entrypoint_id_and_gossip {
-            let r_gossip = self.time_gossip_read_lock("entrypoint", &self.stats.entrypoint2);
-            let self_info = r_gossip
-                .crds
-                .lookup(&CrdsValueLabel::ContactInfo(self.id()))
-                .unwrap_or_else(|| panic!("self_id invalid {}", self.id()));
-            r_gossip
-                .pull
-                .build_crds_filters(thread_pool, &r_gossip.crds, MAX_BLOOM_SIZE)
-                .into_iter()
-                .for_each(|filter| pulls.push((id, filter, gossip, self_info.clone())));
+        if pull_from_entrypoint {
+            let id_and_gossip = {
+                self.entrypoint
+                    .read()
+                    .unwrap()
+                    .as_ref()
+                    .map(|e| (e.id, e.gossip))
+            };
+            if let Some((id, gossip)) = id_and_gossip {
+                let r_gossip = self.time_gossip_read_lock("entrypoint", &self.stats.entrypoint2);
+                let self_info = r_gossip
+                    .crds
+                    .lookup(&CrdsValueLabel::ContactInfo(self.id()))
+                    .unwrap_or_else(|| panic!("self_id invalid {}", self.id()));
+                r_gossip
+                    .pull
+                    .build_crds_filters(thread_pool, &r_gossip.crds, MAX_BLOOM_SIZE)
+                    .into_iter()
+                    .for_each(|filter| pulls.push((id, filter, gossip, self_info.clone())));
+            }
         }
     }
 
@@ -1734,55 +1722,41 @@ impl ClusterInfo {
         Ok(())
     }
 
-    fn process_entrypoints(&self, entrypoints_processed: &mut bool) {
-        if *entrypoints_processed {
-            return;
-        }
+    fn handle_adopt_shred_version(self: &Arc<Self>, adopt_shred_version: &mut bool) {
+        // Adopt the entrypoint's `shred_version` if ours is unset
+        if *adopt_shred_version {
+            // If gossip was given an entrypoint, look up the ContactInfo by the given
+            // entrypoint gossip adddress
+            let gossip_addr = self.entrypoint.read().unwrap().as_ref().map(|e| e.gossip);
 
-        let mut entrypoints = self.entrypoints.write().unwrap();
-        if entrypoints.is_empty() {
-            // No entrypoint specified.  Nothing more to process
-            *entrypoints_processed = true;
-            return;
-        }
-
-        for entrypoint in entrypoints.iter_mut() {
-            if entrypoint.id == Pubkey::default() {
-                // If a pull from the entrypoint was successful it should exist in the CRDS table
-                if let Some(entrypoint_from_gossip) =
-                    self.lookup_contact_info_by_gossip_addr(&entrypoint.gossip)
-                {
-                    // Update the entrypoint's id so future entrypoint pulls correctly reference it
-                    *entrypoint = entrypoint_from_gossip;
+            if let Some(gossip_addr) = gossip_addr {
+                // If a pull from the entrypoint was successful, it should exist in the crds table
+                let entrypoint = self.lookup_contact_info_by_gossip_addr(&gossip_addr);
+                if let Some(entrypoint) = entrypoint {
+                    if entrypoint.shred_version == 0 {
+                        info!("Unable to adopt entrypoint's shred version");
+                    } else {
+                        info!(
+                            "Setting shred version to {:?} from entrypoint {:?}",
+                            entrypoint.shred_version, entrypoint.id
+                        );
+                        self.my_contact_info.write().unwrap().shred_version =
+                            entrypoint.shred_version;
+                        self.gossip
+                            .write()
+                            .unwrap()
+                            .set_shred_version(entrypoint.shred_version);
+                        self.insert_self();
+                        *self.entrypoint.write().unwrap() = Some(entrypoint);
+                        *adopt_shred_version = false;
+                    }
                 }
             }
         }
-        // Adopt an entrypoint's `shred_version` if ours is unset
-        if self.my_shred_version() == 0 {
-            if let Some(entrypoint) = entrypoints
-                .iter()
-                .find(|entrypoint| entrypoint.shred_version != 0)
-            {
-                info!(
-                    "Setting shred version to {:?} from entrypoint {:?}",
-                    entrypoint.shred_version, entrypoint.id
-                );
-                self.my_contact_info.write().unwrap().shred_version = entrypoint.shred_version;
-                self.gossip
-                    .write()
-                    .unwrap()
-                    .set_shred_version(entrypoint.shred_version);
-            }
-        }
-
-        *entrypoints_processed = self.my_shred_version() != 0
-            && entrypoints
-                .iter()
-                .all(|entrypoint| entrypoint.id != Pubkey::default());
     }
 
     fn handle_purge(
-        &self,
+        self: &Arc<Self>,
         thread_pool: &ThreadPool,
         bank_forks: &Option<Arc<RwLock<BankForks>>>,
         stakes: &HashMap<Pubkey, u64>,
@@ -1824,8 +1798,7 @@ impl ClusterInfo {
             .spawn(move || {
                 let mut last_push = timestamp();
                 let mut last_contact_info_trace = timestamp();
-                let mut last_contact_info_save = timestamp();
-                let mut entrypoints_processed = false;
+                let mut adopt_shred_version = self.my_shred_version() == 0;
                 let recycler = PacketsRecycler::default();
                 let crds_data = vec![
                     CrdsData::Version(Version::new(self.id())),
@@ -1839,10 +1812,8 @@ impl ClusterInfo {
                 loop {
                     let start = timestamp();
                     thread_mem_usage::datapoint("safecoin-gossip");
-                    if self.contact_debug_interval != 0
-                        && start - last_contact_info_trace > self.contact_debug_interval
-                    {
-                        // Log contact info
+                    if start - last_contact_info_trace > 10000 {
+                        // Log contact info every 10 seconds
                         info!(
                             "\n{}\n\n{}",
                             self.contact_info_trace(),
@@ -1851,16 +1822,9 @@ impl ClusterInfo {
                         last_contact_info_trace = start;
                     }
 
-                    if self.contact_save_interval != 0
-                        && start - last_contact_info_save > self.contact_save_interval
-                    {
-                        self.save_contact_info();
-                        last_contact_info_save = start;
-                    }
-
                     let stakes: HashMap<_, _> = match bank_forks {
                         Some(ref bank_forks) => {
-                            bank_forks.read().unwrap().root_bank().staked_nodes()
+                            staking_utils::staked_nodes(&bank_forks.read().unwrap().working_bank())
                         }
                         None => HashMap::new(),
                     };
@@ -1879,7 +1843,7 @@ impl ClusterInfo {
 
                     self.handle_purge(&thread_pool, &bank_forks, &stakes);
 
-                    self.process_entrypoints(&mut entrypoints_processed);
+                    self.handle_adopt_shred_version(&mut adopt_shred_version);
 
                     //TODO: possibly tune this parameter
                     //we saw a deadlock passing an self.read().unwrap().timeout into sleep
@@ -2000,7 +1964,7 @@ impl ClusterInfo {
         }
     }
 
-    fn update_data_budget(&self, num_staked: usize) -> usize {
+    fn update_data_budget(&self, num_staked: usize) {
         const INTERVAL_MS: u64 = 100;
         // allow 50kBps per staked validator, epoch slots + votes ~= 1.5kB/slot ~= 4kB/s
         const BYTES_PER_INTERVAL: usize = 5000;
@@ -2011,7 +1975,7 @@ impl ClusterInfo {
                 bytes + num_staked * BYTES_PER_INTERVAL,
                 MAX_BUDGET_MULTIPLE * num_staked * BYTES_PER_INTERVAL,
             )
-        })
+        });
     }
 
     // Returns a predicate checking if the pull request is from a valid
@@ -2072,8 +2036,7 @@ impl ClusterInfo {
         let callers = crds_value::filter_current(requests.iter().map(|r| &r.caller));
         self.time_gossip_write_lock("process_pull_reqs", &self.stats.process_pull_requests)
             .process_pull_requests(callers.cloned(), timestamp());
-        let output_size_limit =
-            self.update_data_budget(stakes.len()) / PULL_RESPONSE_MIN_SERIALIZED_SIZE;
+        self.update_data_budget(stakes.len());
         let mut packets = Packets::new_with_recycler(recycler.clone(), 64, "handle_pull_requests");
         let (caller_and_filters, addrs): (Vec<_>, Vec<_>) = {
             let mut rng = rand::thread_rng();
@@ -2093,7 +2056,7 @@ impl ClusterInfo {
                 "generate_pull_responses",
                 &self.stats.generate_pull_responses,
             )
-            .generate_pull_responses(&caller_and_filters, output_size_limit, now);
+            .generate_pull_responses(&caller_and_filters, now);
 
         let pull_responses: Vec<_> = pull_responses
             .into_iter()
@@ -2511,24 +2474,24 @@ impl ClusterInfo {
 
     fn get_stakes_and_epoch_time(
         bank_forks: Option<&Arc<RwLock<BankForks>>>,
-    ) -> (
-        HashMap<Pubkey, u64>, // staked nodes
-        u64,                  // epoch time ms
-    ) {
-        match bank_forks {
+    ) -> (HashMap<Pubkey, u64>, u64) {
+        let epoch_time_ms;
+        let stakes: HashMap<_, _> = match bank_forks {
             Some(ref bank_forks) => {
-                let bank = bank_forks.read().unwrap().root_bank();
+                let bank = bank_forks.read().unwrap().working_bank();
                 let epoch = bank.epoch();
-                (
-                    bank.staked_nodes(),
-                    bank.get_slots_in_epoch(epoch) * DEFAULT_MS_PER_SLOT,
-                )
+                let epoch_schedule = bank.epoch_schedule();
+                epoch_time_ms = epoch_schedule.get_slots_in_epoch(epoch) * DEFAULT_MS_PER_SLOT;
+                staking_utils::staked_nodes(&bank)
             }
             None => {
                 inc_new_counter_info!("cluster_info-purge-no_working_bank", 1);
-                (HashMap::new(), CRDS_GOSSIP_PULL_CRDS_TIMEOUT_MS)
+                epoch_time_ms = CRDS_GOSSIP_PULL_CRDS_TIMEOUT_MS;
+                HashMap::new()
             }
-        }
+        };
+
+        (stakes, epoch_time_ms)
     }
 
     fn process_packets(
@@ -2540,7 +2503,6 @@ impl ClusterInfo {
         stakes: HashMap<Pubkey, u64>,
         feature_set: Option<&FeatureSet>,
         epoch_time_ms: u64,
-        should_check_duplicate_instance: bool,
     ) -> Result<()> {
         let _st = ScopedTimer::from(&self.stats.process_gossip_packets_time);
         let packets: Vec<_> = thread_pool.install(|| {
@@ -2558,11 +2520,9 @@ impl ClusterInfo {
         // Check if there is a duplicate instance of
         // this node with more recent timestamp.
         let check_duplicate_instance = |values: &[CrdsValue]| {
-            if should_check_duplicate_instance {
-                for value in values {
-                    if self.instance.check_duplicate(value) {
-                        return Err(Error::DuplicateNodeInstance);
-                    }
+            for value in values {
+                if self.instance.check_duplicate(value) {
+                    return Err(Error::DuplicateNodeInstance);
                 }
             }
             Ok(())
@@ -2623,7 +2583,6 @@ impl ClusterInfo {
         response_sender: &PacketSender,
         thread_pool: &ThreadPool,
         last_print: &mut Instant,
-        should_check_duplicate_instance: bool,
     ) -> Result<()> {
         const RECV_TIMEOUT: Duration = Duration::from_secs(1);
         let packets: Vec<_> = requests_receiver.recv_timeout(RECV_TIMEOUT)?.packets.into();
@@ -2659,7 +2618,6 @@ impl ClusterInfo {
             stakes,
             feature_set.as_deref(),
             epoch_time_ms,
-            should_check_duplicate_instance,
         )?;
 
         self.print_reset_stats(last_print);
@@ -2682,6 +2640,11 @@ impl ClusterInfo {
                 ("entrypoint", self.stats.entrypoint.clear(), i64),
                 ("entrypoint2", self.stats.entrypoint2.clear(), i64),
                 ("push_vote_read", self.stats.push_vote_read.clear(), i64),
+                (
+                    "vote_process_push",
+                    self.stats.vote_process_push.clear(),
+                    i64
+                ),
                 ("get_votes", self.stats.get_votes.clear(), i64),
                 (
                     "get_accounts_hash",
@@ -2833,6 +2796,8 @@ impl ClusterInfo {
                     self.stats.epoch_slots_lookup.clear(),
                     i64
                 ),
+                ("epoch_slots_push", self.stats.epoch_slots_push.clear(), i64),
+                ("push_message", self.stats.push_message.clear(), i64),
                 (
                     "new_pull_requests",
                     self.stats.new_pull_requests.clear(),
@@ -2905,7 +2870,6 @@ impl ClusterInfo {
         bank_forks: Option<Arc<RwLock<BankForks>>>,
         requests_receiver: PacketReceiver,
         response_sender: PacketSender,
-        should_check_duplicate_instance: bool,
         exit: &Arc<AtomicBool>,
     ) -> JoinHandle<()> {
         let exit = exit.clone();
@@ -2927,7 +2891,6 @@ impl ClusterInfo {
                         &response_sender,
                         &thread_pool,
                         &mut last_print,
-                        should_check_duplicate_instance,
                     ) {
                         match err {
                             Error::RecvTimeoutError(_) => {
@@ -3005,28 +2968,31 @@ impl ClusterInfo {
 /// Returns Neighbor Nodes and Children Nodes `(neighbors, children)` for a given node based on its stake
 pub fn compute_retransmit_peers(
     fanout: usize,
-    node: usize,
-    index: &[usize],
-) -> (Vec<usize> /*neighbors*/, Vec<usize> /*children*/) {
-    // 1st layer: fanout    nodes starting at 0
-    // 2nd layer: fanout**2 nodes starting at fanout
-    // 3rd layer: fanout**3 nodes starting at fanout + fanout**2
-    // ...
-    // Each layer is divided into neighborhoods of fanout nodes each.
-    let offset = node % fanout; // Node's index within its neighborhood.
-    let anchor = node - offset; // First node in the neighborhood.
-    let neighbors = (anchor..)
-        .take(fanout)
-        .map(|i| index.get(i).copied())
-        .while_some()
-        .collect();
-    let children = ((anchor + 1) * fanout + offset..)
-        .step_by(fanout)
-        .take(fanout)
-        .map(|i| index.get(i).copied())
-        .while_some()
-        .collect();
-    (neighbors, children)
+    my_index: usize,
+    stakes_and_index: Vec<usize>,
+) -> (Vec<usize>, Vec<usize>) {
+    //calc num_layers and num_neighborhoods using the total number of nodes
+    let (num_layers, layer_indices) =
+        ClusterInfo::describe_data_plane(stakes_and_index.len(), fanout);
+
+    if num_layers <= 1 {
+        /* single layer data plane */
+        (stakes_and_index, vec![])
+    } else {
+        //find my layer
+        let locality = ClusterInfo::localize(&layer_indices, fanout, my_index);
+        let upper_bound = cmp::min(locality.neighbor_bounds.1, stakes_and_index.len());
+        let neighbors = stakes_and_index[locality.neighbor_bounds.0..upper_bound].to_vec();
+        let mut children = Vec::new();
+        for ix in locality.next_layer_peers {
+            if let Some(peer) = stakes_and_index.get(ix) {
+                children.push(*peer);
+                continue;
+            }
+            break;
+        }
+        (neighbors, children)
+    }
 }
 
 #[derive(Debug)]
@@ -3190,9 +3156,9 @@ impl Node {
     }
 }
 
-pub fn stake_weight_peers(
+pub fn stake_weight_peers<S: std::hash::BuildHasher>(
     peers: &mut Vec<ContactInfo>,
-    stakes: Option<&HashMap<Pubkey, u64>>,
+    stakes: Option<Arc<HashMap<Pubkey, u64, S>>>,
 ) -> Vec<(u64, usize)> {
     peers.dedup();
     ClusterInfo::sorted_stakes_with_index(peers, stakes)
@@ -3201,15 +3167,12 @@ pub fn stake_weight_peers(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        crds_value::{CrdsValue, CrdsValueLabel, Vote as CrdsVote},
-        duplicate_shred::{self, tests::new_rand_shred, MAX_DUPLICATE_SHREDS},
-    };
+    use crate::crds_value::{CrdsValue, CrdsValueLabel, Vote as CrdsVote};
     use itertools::izip;
-    use rand::seq::SliceRandom;
-    use solana_ledger::shred::Shredder;
+    use solana_perf::test_tx::test_tx;
     use solana_sdk::signature::{Keypair, Signer};
     use solana_vote_program::{vote_instruction, vote_state::Vote};
+    use std::collections::HashSet;
     use std::iter::repeat_with;
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddrV4};
     use std::sync::Arc;
@@ -3495,64 +3458,6 @@ mod tests {
     }
 
     #[test]
-    fn test_duplicate_shred_max_payload_size() {
-        let mut rng = rand::thread_rng();
-        let leader = Arc::new(Keypair::new());
-        let keypair = Keypair::new();
-        let (slot, parent_slot, fec_rate, reference_tick, version) =
-            (53084024, 53084023, 0.0, 0, 0);
-        let shredder = Shredder::new(
-            slot,
-            parent_slot,
-            fec_rate,
-            leader.clone(),
-            reference_tick,
-            version,
-        )
-        .unwrap();
-        let next_shred_index = rng.gen();
-        let shred = new_rand_shred(&mut rng, next_shred_index, &shredder);
-        let other_payload = new_rand_shred(&mut rng, next_shred_index, &shredder).payload;
-        let leader_schedule = |s| {
-            if s == slot {
-                Some(leader.pubkey())
-            } else {
-                None
-            }
-        };
-        let chunks: Vec<_> = duplicate_shred::from_shred(
-            shred,
-            keypair.pubkey(),
-            other_payload,
-            Some(leader_schedule),
-            timestamp(),
-            DUPLICATE_SHRED_MAX_PAYLOAD_SIZE,
-        )
-        .unwrap()
-        .collect();
-        assert!(chunks.len() > 1);
-        for chunk in chunks {
-            let data = CrdsData::DuplicateShred(MAX_DUPLICATE_SHREDS - 1, chunk);
-            let value = CrdsValue::new_signed(data, &keypair);
-            let pull_response = Protocol::PullResponse(keypair.pubkey(), vec![value.clone()]);
-            assert!(serialized_size(&pull_response).unwrap() < PACKET_DATA_SIZE as u64);
-            let push_message = Protocol::PushMessage(keypair.pubkey(), vec![value.clone()]);
-            assert!(serialized_size(&push_message).unwrap() < PACKET_DATA_SIZE as u64);
-        }
-    }
-
-    #[test]
-    fn test_pull_response_min_serialized_size() {
-        let mut rng = rand::thread_rng();
-        for _ in 0..100 {
-            let crds_values = vec![CrdsValue::new_rand(&mut rng, None)];
-            let pull_response = Protocol::PullResponse(Pubkey::new_unique(), crds_values);
-            let size = serialized_size(&pull_response).unwrap();
-            assert!(PULL_RESPONSE_MIN_SERIALIZED_SIZE as u64 <= size);
-        }
-    }
-
-    #[test]
     fn test_cluster_spy_gossip() {
         let thread_pool = ThreadPoolBuilder::new().build().unwrap();
         //check that gossip doesn't try to push to invalid addresses
@@ -3738,9 +3643,152 @@ mod tests {
         assert!(val.verify());
     }
 
+    fn num_layers(nodes: usize, fanout: usize) -> usize {
+        ClusterInfo::describe_data_plane(nodes, fanout).0
+    }
+
+    #[test]
+    fn test_describe_data_plane() {
+        // no nodes
+        assert_eq!(num_layers(0, 200), 0);
+
+        // 1 node
+        assert_eq!(num_layers(1, 200), 1);
+
+        // 10 nodes with fanout of 2
+        assert_eq!(num_layers(10, 2), 3);
+
+        // fanout + 1 nodes with fanout of 2
+        assert_eq!(num_layers(3, 2), 2);
+
+        // A little more realistic
+        assert_eq!(num_layers(100, 10), 2);
+
+        // A little more realistic with odd numbers
+        assert_eq!(num_layers(103, 13), 2);
+
+        // A little more realistic with just enough for 3 layers
+        assert_eq!(num_layers(111, 10), 3);
+
+        // larger
+        let (layer_cnt, layer_indices) = ClusterInfo::describe_data_plane(10_000, 10);
+        assert_eq!(layer_cnt, 4);
+        // distances between index values should increase by `fanout` for every layer.
+        let mut capacity = 10 * 10;
+        assert_eq!(layer_indices[1], 10);
+        layer_indices[1..].windows(2).for_each(|x| {
+            if x.len() == 2 {
+                assert_eq!(x[1] - x[0], capacity);
+                capacity *= 10;
+            }
+        });
+
+        // massive
+        let (layer_cnt, layer_indices) = ClusterInfo::describe_data_plane(500_000, 200);
+        let mut capacity = 200 * 200;
+        assert_eq!(layer_cnt, 3);
+        // distances between index values should increase by `fanout` for every layer.
+        assert_eq!(layer_indices[1], 200);
+        layer_indices[1..].windows(2).for_each(|x| {
+            if x.len() == 2 {
+                assert_eq!(x[1] - x[0], capacity);
+                capacity *= 200;
+            }
+        });
+        let total_capacity: usize = *layer_indices.last().unwrap();
+        assert!(total_capacity >= 500_000);
+    }
+
+    #[test]
+    fn test_localize() {
+        // go for gold
+        let (_, layer_indices) = ClusterInfo::describe_data_plane(500_000, 200);
+        let mut me = 0;
+        let mut layer_ix = 0;
+        let locality = ClusterInfo::localize(&layer_indices, 200, me);
+        assert_eq!(locality.layer_ix, layer_ix);
+        assert_eq!(
+            locality.next_layer_bounds,
+            Some((layer_indices[layer_ix + 1], layer_indices[layer_ix + 2]))
+        );
+        me = 201;
+        layer_ix = 1;
+        let locality = ClusterInfo::localize(&layer_indices, 200, me);
+        assert_eq!(
+            locality.layer_ix, layer_ix,
+            "layer_indices[layer_ix] is actually {}",
+            layer_indices[layer_ix]
+        );
+        assert_eq!(
+            locality.next_layer_bounds,
+            Some((layer_indices[layer_ix + 1], layer_indices[layer_ix + 2]))
+        );
+        me = 20_000;
+        layer_ix = 1;
+        let locality = ClusterInfo::localize(&layer_indices, 200, me);
+        assert_eq!(
+            locality.layer_ix, layer_ix,
+            "layer_indices[layer_ix] is actually {}",
+            layer_indices[layer_ix]
+        );
+        assert_eq!(
+            locality.next_layer_bounds,
+            Some((layer_indices[layer_ix + 1], layer_indices[layer_ix + 2]))
+        );
+
+        // test no child layer since last layer should have massive capacity
+        let (_, layer_indices) = ClusterInfo::describe_data_plane(500_000, 200);
+        me = 40_201;
+        layer_ix = 2;
+        let locality = ClusterInfo::localize(&layer_indices, 200, me);
+        assert_eq!(
+            locality.layer_ix, layer_ix,
+            "layer_indices[layer_ix] is actually {}",
+            layer_indices[layer_ix]
+        );
+        assert_eq!(locality.next_layer_bounds, None);
+    }
+
+    #[test]
+    fn test_localize_child_peer_overlap() {
+        let (_, layer_indices) = ClusterInfo::describe_data_plane(500_000, 200);
+        let last_ix = layer_indices.len() - 1;
+        // sample every 33 pairs to reduce test time
+        for x in (0..*layer_indices.get(last_ix - 2).unwrap()).step_by(33) {
+            let me_locality = ClusterInfo::localize(&layer_indices, 200, x);
+            let buddy_locality = ClusterInfo::localize(&layer_indices, 200, x + 1);
+            assert!(!me_locality.next_layer_peers.is_empty());
+            assert!(!buddy_locality.next_layer_peers.is_empty());
+            me_locality
+                .next_layer_peers
+                .iter()
+                .zip(buddy_locality.next_layer_peers.iter())
+                .for_each(|(x, y)| assert_ne!(x, y));
+        }
+    }
+
+    #[test]
+    fn test_network_coverage() {
+        // pretend to be each node in a scaled down network and make sure the set of all the broadcast peers
+        // includes every node in the network.
+        let (_, layer_indices) = ClusterInfo::describe_data_plane(25_000, 10);
+        let mut broadcast_set = HashSet::new();
+        for my_index in 0..25_000 {
+            let my_locality = ClusterInfo::localize(&layer_indices, 10, my_index);
+            broadcast_set.extend(my_locality.neighbor_bounds.0..my_locality.neighbor_bounds.1);
+            broadcast_set.extend(my_locality.next_layer_peers);
+        }
+
+        for i in 0..25_000 {
+            assert!(broadcast_set.contains(&(i as usize)));
+        }
+        assert!(broadcast_set.contains(&(layer_indices.last().unwrap() - 1)));
+        //sanity check for past total capacity.
+        assert!(!broadcast_set.contains(&(layer_indices.last().unwrap())));
+    }
+
     #[test]
     fn test_push_vote() {
-        let mut rng = rand::thread_rng();
         let keys = Keypair::new();
         let contact_info = ContactInfo::new_localhost(&keys.pubkey(), 0);
         let cluster_info = ClusterInfo::new_with_invalid_keypair(contact_info);
@@ -3752,21 +3800,9 @@ mod tests {
         assert_eq!(max_ts, now);
 
         // add a vote
-        let vote = Vote::new(
-            vec![1, 3, 7], // slots
-            solana_sdk::hash::new_rand(&mut rng),
-        );
-        let ix = vote_instruction::vote(
-            &Pubkey::new_unique(), // vote_pubkey
-            &Pubkey::new_unique(), // authorized_voter_pubkey
-            vote,
-        );
-        let tx = Transaction::new_with_payer(
-            &[ix], // instructions
-            None,  // payer
-        );
-        let tower = vec![7]; // Last slot in the vote.
-        cluster_info.push_vote(&tower, tx.clone());
+        let tx = test_tx();
+        let index = 1;
+        cluster_info.push_vote(index, tx.clone());
         cluster_info.flush_push_queue();
 
         // -1 to make sure that the clock is strictly lower then when insert occurred
@@ -3786,81 +3822,6 @@ mod tests {
         let (_, votes, new_max_ts) = cluster_info.get_votes(max_ts);
         assert_eq!(votes, vec![]);
         assert_eq!(max_ts, new_max_ts);
-    }
-
-    fn new_vote_transaction<R: Rng>(rng: &mut R, slots: Vec<Slot>) -> Transaction {
-        let vote = Vote::new(slots, solana_sdk::hash::new_rand(rng));
-        let ix = vote_instruction::vote(
-            &Pubkey::new_unique(), // vote_pubkey
-            &Pubkey::new_unique(), // authorized_voter_pubkey
-            vote,
-        );
-        Transaction::new_with_payer(
-            &[ix], // instructions
-            None,  // payer
-        )
-    }
-
-    #[test]
-    fn test_push_votes_with_tower() {
-        let get_vote_slots = |cluster_info: &ClusterInfo, now| -> Vec<Slot> {
-            let (labels, _, _) = cluster_info.get_votes(now);
-            let gossip = cluster_info.gossip.read().unwrap();
-            let mut vote_slots = HashSet::new();
-            for label in labels {
-                match &gossip.crds.lookup(&label).unwrap().data {
-                    CrdsData::Vote(_, vote) => {
-                        assert!(vote_slots.insert(vote.slot().unwrap()));
-                    }
-                    _ => panic!("this should not happen!"),
-                }
-            }
-            vote_slots.into_iter().collect()
-        };
-        let mut rng = rand::thread_rng();
-        let now = timestamp();
-        let keys = Keypair::new();
-        let contact_info = ContactInfo::new_localhost(&keys.pubkey(), 0);
-        let cluster_info = ClusterInfo::new_with_invalid_keypair(contact_info);
-        let mut tower = Vec::new();
-        for k in 0..MAX_LOCKOUT_HISTORY {
-            let slot = k as Slot;
-            tower.push(slot);
-            let vote = new_vote_transaction(&mut rng, vec![slot]);
-            cluster_info.push_vote(&tower, vote);
-        }
-        let vote_slots = get_vote_slots(&cluster_info, now);
-        assert_eq!(vote_slots.len(), MAX_LOCKOUT_HISTORY);
-        for vote_slot in vote_slots {
-            assert!(vote_slot < MAX_LOCKOUT_HISTORY as u64);
-        }
-        // Push a new vote evicting one.
-        let slot = MAX_LOCKOUT_HISTORY as Slot;
-        tower.push(slot);
-        tower.remove(23);
-        let vote = new_vote_transaction(&mut rng, vec![slot]);
-        cluster_info.push_vote(&tower, vote);
-        let vote_slots = get_vote_slots(&cluster_info, now);
-        assert_eq!(vote_slots.len(), MAX_LOCKOUT_HISTORY);
-        for vote_slot in vote_slots {
-            assert!(vote_slot <= slot);
-            assert!(vote_slot != 23);
-        }
-        // Push a new vote evicting two.
-        // Older one should be evicted from the crds table.
-        let slot = slot + 1;
-        tower.push(slot);
-        tower.remove(17);
-        tower.remove(5);
-        let vote = new_vote_transaction(&mut rng, vec![slot]);
-        cluster_info.push_vote(&tower, vote);
-        let vote_slots = get_vote_slots(&cluster_info, now);
-        assert_eq!(vote_slots.len(), MAX_LOCKOUT_HISTORY);
-        for vote_slot in vote_slots {
-            assert!(vote_slot <= slot);
-            assert!(vote_slot != 23);
-            assert!(vote_slot != 5);
-        }
     }
 
     #[test]
@@ -3927,7 +3888,7 @@ mod tests {
         );
         let pulls = cluster_info.new_pull_requests(&thread_pool, None, &HashMap::new());
         assert_eq!(1, pulls.len() as u64);
-        assert_eq!(*cluster_info.entrypoints.read().unwrap(), vec![entrypoint]);
+        assert_eq!(*cluster_info.entrypoint.read().unwrap(), Some(entrypoint));
     }
 
     #[test]
@@ -4073,8 +4034,9 @@ mod tests {
         cluster_info.insert_info(contact_info);
         stakes.insert(id4, 10);
 
+        let stakes = Arc::new(stakes);
         let mut peers = cluster_info.tvu_peers();
-        let peers_and_stakes = stake_weight_peers(&mut peers, Some(&stakes));
+        let peers_and_stakes = stake_weight_peers(&mut peers, Some(stakes));
         assert_eq!(peers.len(), 2);
         assert_eq!(peers[0].id, id);
         assert_eq!(peers[1].id, id2);
@@ -4112,7 +4074,13 @@ mod tests {
 
         // Pull request 2: pretend it's been a while since we've pulled from `entrypoint`.  There should
         // now be two pull requests
-        cluster_info.entrypoints.write().unwrap()[0].wallclock = 0;
+        cluster_info
+            .entrypoint
+            .write()
+            .unwrap()
+            .as_mut()
+            .unwrap()
+            .wallclock = 0;
         let pulls = cluster_info.new_pull_requests(&thread_pool, None, &stakes);
         assert_eq!(2, pulls.len() as u64);
         assert_eq!(pulls.get(0).unwrap().0, other_node.gossip);
@@ -4161,10 +4129,8 @@ mod tests {
 
     #[test]
     fn test_protocol_sanitize() {
-        let pd = PruneData {
-            wallclock: MAX_WALLCLOCK,
-            ..PruneData::default()
-        };
+        let mut pd = PruneData::default();
+        pd.wallclock = MAX_WALLCLOCK;
         let msg = Protocol::PruneMessage(Pubkey::default(), pd);
         assert_eq!(msg.sanitize(), Err(SanitizeError::ValueOutOfBounds));
     }
@@ -4224,108 +4190,22 @@ mod tests {
         vote_tx.partial_sign(&[keypair.as_ref()], Hash::default());
         vote_tx.partial_sign(&[keypair.as_ref()], Hash::default());
 
-        let vote = CrdsVote::new(
-            keypair.pubkey(),
-            vote_tx,
-            0, // wallclock
-        );
+        let vote = CrdsVote {
+            from: keypair.pubkey(),
+            transaction: vote_tx,
+            wallclock: 0,
+        };
         let vote = CrdsValue::new_signed(CrdsData::Vote(1, vote), &Keypair::new());
         assert!(bincode::serialized_size(&vote).unwrap() <= PUSH_MESSAGE_MAX_PAYLOAD_SIZE as u64);
     }
 
     #[test]
-    fn test_process_entrypoint_adopt_shred_version() {
+    fn test_handle_adopt_shred_version() {
         let node_keypair = Arc::new(Keypair::new());
         let cluster_info = Arc::new(ClusterInfo::new(
             ContactInfo::new_localhost(&node_keypair.pubkey(), timestamp()),
             node_keypair,
         ));
-        assert_eq!(cluster_info.my_shred_version(), 0);
-
-        // Simulating starting up with two entrypoints, no known id, only a gossip
-        // address
-        let entrypoint1_gossip_addr = socketaddr!("127.0.0.2:1234");
-        let mut entrypoint1 = ContactInfo::new_localhost(&Pubkey::default(), timestamp());
-        entrypoint1.gossip = entrypoint1_gossip_addr;
-        assert_eq!(entrypoint1.shred_version, 0);
-
-        let entrypoint2_gossip_addr = socketaddr!("127.0.0.2:5678");
-        let mut entrypoint2 = ContactInfo::new_localhost(&Pubkey::default(), timestamp());
-        entrypoint2.gossip = entrypoint2_gossip_addr;
-        assert_eq!(entrypoint2.shred_version, 0);
-        cluster_info.set_entrypoints(vec![entrypoint1, entrypoint2]);
-
-        // Simulate getting entrypoint ContactInfo from gossip with an entrypoint1 shred version of
-        // 0
-        let mut gossiped_entrypoint1_info =
-            ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
-        gossiped_entrypoint1_info.gossip = entrypoint1_gossip_addr;
-        gossiped_entrypoint1_info.shred_version = 0;
-        cluster_info.insert_info(gossiped_entrypoint1_info.clone());
-        assert!(!cluster_info
-            .entrypoints
-            .read()
-            .unwrap()
-            .iter()
-            .any(|entrypoint| *entrypoint == gossiped_entrypoint1_info));
-
-        // Adopt the entrypoint's gossiped contact info and verify
-        let mut entrypoints_processed = false;
-        ClusterInfo::process_entrypoints(&cluster_info, &mut entrypoints_processed);
-        assert_eq!(cluster_info.entrypoints.read().unwrap().len(), 2);
-        assert!(cluster_info
-            .entrypoints
-            .read()
-            .unwrap()
-            .iter()
-            .any(|entrypoint| *entrypoint == gossiped_entrypoint1_info));
-
-        assert!(!entrypoints_processed); // <--- entrypoint processing incomplete because shred adoption still pending
-        assert_eq!(cluster_info.my_shred_version(), 0); // <-- shred version still 0
-
-        // Simulate getting entrypoint ContactInfo from gossip with an entrypoint2 shred version of
-        // !0
-        let mut gossiped_entrypoint2_info =
-            ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
-        gossiped_entrypoint2_info.gossip = entrypoint2_gossip_addr;
-        gossiped_entrypoint2_info.shred_version = 1;
-        cluster_info.insert_info(gossiped_entrypoint2_info.clone());
-        assert!(!cluster_info
-            .entrypoints
-            .read()
-            .unwrap()
-            .iter()
-            .any(|entrypoint| *entrypoint == gossiped_entrypoint2_info));
-
-        // Adopt the entrypoint's gossiped contact info and verify
-        error!("Adopt the entrypoint's gossiped contact info and verify");
-        let mut entrypoints_processed = false;
-        ClusterInfo::process_entrypoints(&cluster_info, &mut entrypoints_processed);
-        assert_eq!(cluster_info.entrypoints.read().unwrap().len(), 2);
-        assert!(cluster_info
-            .entrypoints
-            .read()
-            .unwrap()
-            .iter()
-            .any(|entrypoint| *entrypoint == gossiped_entrypoint2_info));
-
-        assert!(entrypoints_processed);
-        assert_eq!(cluster_info.my_shred_version(), 1); // <-- shred version now adopted from entrypoint2
-    }
-
-    #[test]
-    fn test_process_entrypoint_without_adopt_shred_version() {
-        let node_keypair = Arc::new(Keypair::new());
-        let cluster_info = Arc::new(ClusterInfo::new(
-            {
-                let mut contact_info =
-                    ContactInfo::new_localhost(&node_keypair.pubkey(), timestamp());
-                contact_info.shred_version = 2;
-                contact_info
-            },
-            node_keypair,
-        ));
-        assert_eq!(cluster_info.my_shred_version(), 2);
 
         // Simulating starting up with default entrypoint, no known id, only a gossip
         // address
@@ -4343,152 +4223,11 @@ mod tests {
         cluster_info.insert_info(gossiped_entrypoint_info.clone());
 
         // Adopt the entrypoint's gossiped contact info and verify
-        let mut entrypoints_processed = false;
-        ClusterInfo::process_entrypoints(&cluster_info, &mut entrypoints_processed);
-        assert_eq!(cluster_info.entrypoints.read().unwrap().len(), 1);
+        ClusterInfo::handle_adopt_shred_version(&cluster_info, &mut true);
         assert_eq!(
-            cluster_info.entrypoints.read().unwrap()[0],
-            gossiped_entrypoint_info
+            cluster_info.entrypoint.read().unwrap().as_ref().unwrap(),
+            &gossiped_entrypoint_info
         );
-        assert!(entrypoints_processed);
-        assert_eq!(cluster_info.my_shred_version(), 2); // <--- No change to shred version
-    }
-
-    #[test]
-    fn test_compute_retransmit_peers_small() {
-        const FANOUT: usize = 3;
-        let index = vec![
-            14, 15, 28, // 1st layer
-            // 2nd layer
-            29, 4, 5, // 1st neighborhood
-            9, 16, 7, // 2nd neighborhood
-            26, 23, 2, // 3rd neighborhood
-            // 3rd layer
-            31, 3, 17, // 1st neighborhood
-            20, 25, 0, // 2nd neighborhood
-            13, 30, 18, // 3rd neighborhood
-            19, 21, 22, // 4th neighborhood
-            6, 8, 11, // 5th neighborhood
-            27, 1, 10, // 6th neighborhood
-            12, 24, 34, // 7th neighborhood
-            33, 32, // 8th neighborhood
-        ];
-        // 1st layer
-        assert_eq!(
-            compute_retransmit_peers(FANOUT, 0, &index),
-            (vec![14, 15, 28], vec![29, 9, 26])
-        );
-        assert_eq!(
-            compute_retransmit_peers(FANOUT, 1, &index),
-            (vec![14, 15, 28], vec![4, 16, 23])
-        );
-        assert_eq!(
-            compute_retransmit_peers(FANOUT, 2, &index),
-            (vec![14, 15, 28], vec![5, 7, 2])
-        );
-        // 2nd layer, 1st neighborhood
-        assert_eq!(
-            compute_retransmit_peers(FANOUT, 3, &index),
-            (vec![29, 4, 5], vec![31, 20, 13])
-        );
-        assert_eq!(
-            compute_retransmit_peers(FANOUT, 4, &index),
-            (vec![29, 4, 5], vec![3, 25, 30])
-        );
-        assert_eq!(
-            compute_retransmit_peers(FANOUT, 5, &index),
-            (vec![29, 4, 5], vec![17, 0, 18])
-        );
-        // 2nd layer, 2nd neighborhood
-        assert_eq!(
-            compute_retransmit_peers(FANOUT, 6, &index),
-            (vec![9, 16, 7], vec![19, 6, 27])
-        );
-        assert_eq!(
-            compute_retransmit_peers(FANOUT, 7, &index),
-            (vec![9, 16, 7], vec![21, 8, 1])
-        );
-        assert_eq!(
-            compute_retransmit_peers(FANOUT, 8, &index),
-            (vec![9, 16, 7], vec![22, 11, 10])
-        );
-        // 2nd layer, 3rd neighborhood
-        assert_eq!(
-            compute_retransmit_peers(FANOUT, 9, &index),
-            (vec![26, 23, 2], vec![12, 33])
-        );
-        assert_eq!(
-            compute_retransmit_peers(FANOUT, 10, &index),
-            (vec![26, 23, 2], vec![24, 32])
-        );
-        assert_eq!(
-            compute_retransmit_peers(FANOUT, 11, &index),
-            (vec![26, 23, 2], vec![34])
-        );
-        // 3rd layer
-        let num_nodes = index.len();
-        for k in (12..num_nodes).step_by(3) {
-            let end = num_nodes.min(k + 3);
-            let neighbors = index[k..end].to_vec();
-            for i in k..end {
-                assert_eq!(
-                    compute_retransmit_peers(FANOUT, i, &index),
-                    (neighbors.clone(), vec![])
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn test_compute_retransmit_peers_with_fanout_five() {
-        const FANOUT: usize = 5;
-        const NUM_NODES: usize = 2048;
-        const SEED: [u8; 32] = [0x55; 32];
-        let mut rng = ChaChaRng::from_seed(SEED);
-        let mut index: Vec<_> = (0..NUM_NODES).collect();
-        index.shuffle(&mut rng);
-        let (neighbors, children) = compute_retransmit_peers(FANOUT, 17, &index);
-        assert_eq!(neighbors, vec![1410, 1293, 1810, 552, 512]);
-        assert_eq!(children, vec![511, 1989, 283, 1606, 1154]);
-    }
-
-    #[test]
-    fn test_compute_retransmit_peers_large() {
-        const FANOUT: usize = 7;
-        const NUM_NODES: usize = 512;
-        let mut rng = rand::thread_rng();
-        let mut index: Vec<_> = (0..NUM_NODES).collect();
-        index.shuffle(&mut rng);
-        let pos: HashMap<usize, usize> = index
-            .iter()
-            .enumerate()
-            .map(|(i, node)| (*node, i))
-            .collect();
-        let mut seen = vec![0; NUM_NODES];
-        for i in 0..NUM_NODES {
-            let node = index[i];
-            let (neighbors, children) = compute_retransmit_peers(FANOUT, i, &index);
-            assert!(neighbors.len() <= FANOUT);
-            assert!(children.len() <= FANOUT);
-            // If x is neighbor of y then y is also neighbor of x.
-            for other in &neighbors {
-                let j = pos[other];
-                let (other_neighbors, _) = compute_retransmit_peers(FANOUT, j, &index);
-                assert!(other_neighbors.contains(&node));
-            }
-            for i in children {
-                seen[i] += 1;
-            }
-        }
-        // Except for the first layer, each node
-        // is child of exactly one other node.
-        let (seed, _) = compute_retransmit_peers(FANOUT, 0, &index);
-        for (i, k) in seen.into_iter().enumerate() {
-            if seed.contains(&i) {
-                assert_eq!(k, 0);
-            } else {
-                assert_eq!(k, 1);
-            }
-        }
+        assert_eq!(cluster_info.my_shred_version(), 1);
     }
 }

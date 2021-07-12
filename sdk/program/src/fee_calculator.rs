@@ -1,4 +1,4 @@
-use crate::clock::DEFAULT_MS_PER_SLOT;
+use crate::clock::{DEFAULT_TICKS_PER_SECOND, DEFAULT_TICKS_PER_SLOT};
 use crate::message::Message;
 use crate::secp256k1_program;
 use log::*;
@@ -86,8 +86,9 @@ pub struct FeeRateGovernor {
     pub burn_percent: u8,
 }
 
-pub const DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE: u64 = 200_000;
-pub const DEFAULT_TARGET_SIGNATURES_PER_SLOT: u64 = 10 * DEFAULT_MS_PER_SLOT;
+pub const DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE: u64 = 10_000;
+pub const DEFAULT_TARGET_SIGNATURES_PER_SLOT: u64 =
+    50_000 * DEFAULT_TICKS_PER_SLOT / DEFAULT_TICKS_PER_SECOND;
 
 // Percentage of tx fees to burn
 pub const DEFAULT_BURN_PERCENT: u8 = 50;
@@ -308,11 +309,9 @@ mod tests {
     fn test_fee_rate_governor_derived_adjust() {
         solana_logger::setup();
 
-        let mut f = FeeRateGovernor {
-            target_lamports_per_signature: 100,
-            target_signatures_per_slot: 100,
-            ..FeeRateGovernor::default()
-        };
+        let mut f = FeeRateGovernor::default();
+        f.target_lamports_per_signature = 100;
+        f.target_signatures_per_slot = 100;
         f = FeeRateGovernor::new_derived(&f, 0);
 
         // Ramp fees up

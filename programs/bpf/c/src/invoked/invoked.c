@@ -129,9 +129,9 @@ extern uint64_t entrypoint(const uint8_t *input) {
     const SafeSignerSeeds signers_seeds[] = {{seeds1, SAFE_ARRAY_SIZE(seeds1)},
                                             {seeds2, SAFE_ARRAY_SIZE(seeds2)}};
 
-    sol_assert(SUCCESS == sol_invoke_signed(&instruction, accounts,
-                                            params.ka_num, signers_seeds,
-                                            SAFE_ARRAY_SIZE(signers_seeds)));
+    sol_assert(SUCCESS == sol_invoke_signed(
+                              &instruction, accounts, SAFE_ARRAY_SIZE(accounts),
+                              signers_seeds, SAFE_ARRAY_SIZE(signers_seeds)));
 
     break;
   }
@@ -158,7 +158,6 @@ extern uint64_t entrypoint(const uint8_t *input) {
     sol_assert(accounts[ARGUMENT_INDEX].is_writable);
     break;
   }
-
   case VERIFY_PRIVILEGE_ESCALATION: {
     sol_log("Should never get here!");
     break;
@@ -189,7 +188,6 @@ extern uint64_t entrypoint(const uint8_t *input) {
                sol_invoke(&instruction, accounts, SAFE_ARRAY_SIZE(accounts)));
     break;
   }
-
   case VERIFY_PRIVILEGE_DEESCALATION_ESCALATION_WRITABLE: {
     sol_log("verify privilege deescalation escalation writable");
     static const int INVOKED_PROGRAM_INDEX = 0;
@@ -238,7 +236,8 @@ extern uint64_t entrypoint(const uint8_t *input) {
                                           data, SAFE_ARRAY_SIZE(data)};
 
       sol_log("Invoke again");
-      sol_assert(SUCCESS == sol_invoke(&instruction, accounts, params.ka_num));
+      sol_assert(SUCCESS ==
+                 sol_invoke(&instruction, accounts, SAFE_ARRAY_SIZE(accounts)));
     } else {
       sol_log("Last invoked");
       for (int i = 0; i < accounts[INVOKED_ARGUMENT_INDEX].data_len; i++) {
@@ -247,18 +246,6 @@ extern uint64_t entrypoint(const uint8_t *input) {
     }
     break;
   }
-
-  case WRITE_ACCOUNT: {
-    sol_log("write account");
-    static const int INVOKED_ARGUMENT_INDEX = 0;
-    sol_assert(sol_deserialize(input, &params, 1));
-
-    for (int i = 0; i < params.data[1]; i++) {
-      accounts[INVOKED_ARGUMENT_INDEX].data[i] = params.data[1];
-    }
-    break;
-  }
-
   default:
     return ERROR_INVALID_INSTRUCTION_DATA;
   }

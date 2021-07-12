@@ -1,4 +1,3 @@
-#![cfg_attr(RUSTC_WITH_SPECIALIZATION, feature(specialization))]
 #[macro_use]
 extern crate solana_bpf_loader_program;
 
@@ -33,6 +32,3 @@ extern crate log;
 
 #[macro_use]
 extern crate lazy_static;
-
-#[macro_use]
-extern crate solana_frozen_abi_macro;

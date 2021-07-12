@@ -1,8 +1,14 @@
 import React from "react";
-import { PublicKey, Connection, StakeActivationData } from "@solana/web3.js";
+import { StakeAccount as StakeAccountWasm } from "solana-sdk-wasm";
+import {
+  PublicKey,
+  Connection,
+  StakeProgram,
+  StakeActivationData,
+} from "@solana/web3.js";
 import { useCluster, Cluster } from "../cluster";
 import { HistoryProvider } from "./history";
-import { TokensProvider } from "./tokens";
+import { TokensProvider, TOKEN_PROGRAM_ID } from "./tokens";
 import { coerce } from "superstruct";
 import { ParsedInfo } from "validators";
 import { StakeAccount } from "validators/accounts/stake";
@@ -14,15 +20,11 @@ import {
 import * as Cache from "providers/cache";
 import { ActionType, FetchStatus } from "providers/cache";
 import { reportError } from "utils/sentry";
-import { VoteAccount } from "validators/accounts/vote";
-import { NonceAccount } from "validators/accounts/nonce";
-import { SysvarAccount } from "validators/accounts/sysvar";
-import { ConfigAccount } from "validators/accounts/config";
 export { useAccountHistory } from "./history";
 
 export type StakeProgramData = {
   program: "stake";
-  parsed: StakeAccount;
+  parsed: StakeAccount | StakeAccountWasm;
   activation?: StakeActivationData;
 };
 
@@ -31,33 +33,7 @@ export type TokenProgramData = {
   parsed: TokenAccount;
 };
 
-export type VoteProgramData = {
-  program: "vote";
-  parsed: VoteAccount;
-};
-
-export type NonceProgramData = {
-  program: "nonce";
-  parsed: NonceAccount;
-};
-
-export type SysvarProgramData = {
-  program: "sysvar";
-  parsed: SysvarAccount;
-};
-
-export type ConfigProgramData = {
-  program: "config";
-  parsed: ConfigAccount;
-};
-
-export type ProgramData =
-  | StakeProgramData
-  | TokenProgramData
-  | VoteProgramData
-  | NonceProgramData
-  | SysvarProgramData
-  | ConfigProgramData;
+export type ProgramData = StakeProgramData | TokenProgramData;
 
 export interface Details {
   executable: boolean;
@@ -131,60 +107,47 @@ async function fetchAccountInfo(
       }
 
       let data: ProgramData | undefined;
-      if ("parsed" in result.data) {
+      if (result.owner.equals(StakeProgram.programId)) {
         try {
-          const info = coerce(result.data.parsed, ParsedInfo);
-          switch (result.data.program) {
-            case "stake": {
-              const parsed = coerce(info, StakeAccount);
-              const isDelegated = parsed.type === "delegated";
-              const activation = isDelegated
-                ? await connection.getStakeActivation(pubkey)
-                : undefined;
-
-              data = {
-                program: result.data.program,
-                parsed,
-                activation,
-              };
-              break;
-            }
-            case "vote":
-              data = {
-                program: result.data.program,
-                parsed: coerce(info, VoteAccount),
-              };
-              break;
-            case "nonce":
-              data = {
-                program: result.data.program,
-                parsed: coerce(info, NonceAccount),
-              };
-              break;
-            case "sysvar":
-              data = {
-                program: result.data.program,
-                parsed: coerce(info, SysvarAccount),
-              };
-              break;
-            case "config":
-              data = {
-                program: result.data.program,
-                parsed: coerce(info, ConfigAccount),
-              };
-              break;
-
-            case "spl-token":
-              data = {
-                program: result.data.program,
-                parsed: coerce(info, TokenAccount),
-              };
-              break;
-            default:
-              data = undefined;
+          let parsed: StakeAccount | StakeAccountWasm;
+          let isDelegated: boolean = false;
+          if ("parsed" in result.data) {
+            const info = coerce(result.data.parsed, ParsedInfo);
+            parsed = coerce(info, StakeAccount);
+            isDelegated = parsed.type === "delegated";
+          } else {
+            const wasm = await import("solana-sdk-wasm");
+            parsed = wasm.StakeAccount.fromAccountData(result.data);
+            isDelegated = (parsed.accountType as any) === "delegated";
           }
-        } catch (error) {
-          reportError(error, { url, address: pubkey.toBase58() });
+
+          const activation = isDelegated
+            ? await connection.getStakeActivation(pubkey)
+            : undefined;
+
+          data = {
+            program: "stake",
+            parsed,
+            activation,
+          };
+        } catch (err) {
+          reportError(err, { url, address: pubkey.toBase58() });
+          // TODO store error state in Account info
+        }
+      } else if ("parsed" in result.data) {
+        if (result.owner.equals(TOKEN_PROGRAM_ID)) {
+          try {
+            const info = coerce(result.data.parsed, ParsedInfo);
+            const parsed = coerce(info, TokenAccount);
+
+            data = {
+              program: "spl-token",
+              parsed,
+            };
+          } catch (err) {
+            reportError(err, { url, address: pubkey.toBase58() });
+            // TODO store error state in Account info
+          }
         }
       }
 
@@ -236,21 +199,19 @@ export function useMintAccountInfo(
   address: string | undefined
 ): MintAccountInfo | undefined {
   const accountInfo = useAccountInfo(address);
-  return React.useMemo(() => {
-    if (address === undefined) return;
+  if (address === undefined) return;
 
-    try {
-      const data = accountInfo?.data?.details?.data;
-      if (!data) return;
-      if (data.program !== "spl-token" || data.parsed.type !== "mint") {
-        return;
-      }
-
-      return coerce(data.parsed.info, MintAccountInfo);
-    } catch (err) {
-      reportError(err, { address });
+  try {
+    const data = accountInfo?.data?.details?.data;
+    if (!data) return;
+    if (data.program !== "spl-token" || data.parsed.type !== "mint") {
+      throw new Error("Expected mint");
     }
-  }, [address, accountInfo]);
+
+    return coerce(data.parsed.info, MintAccountInfo);
+  } catch (err) {
+    reportError(err, { address });
+  }
 }
 
 export function useTokenAccountInfo(
@@ -263,7 +224,7 @@ export function useTokenAccountInfo(
     const data = accountInfo?.data?.details?.data;
     if (!data) return;
     if (data.program !== "spl-token" || data.parsed.type !== "account") {
-      return;
+      throw new Error("Expected token account");
     }
 
     return coerce(data.parsed.info, TokenAccountInfo);

@@ -5,8 +5,6 @@ pub mod deprecated;
 pub mod serialization;
 pub mod syscalls;
 pub mod upgradeable;
-pub mod upgradeable_with_jit;
-pub mod with_jit;
 
 use crate::{
     bpf_verifier::VerifierError,
@@ -14,7 +12,6 @@ use crate::{
     syscalls::SyscallError,
 };
 use solana_rbpf::{
-    ebpf::MM_HEAP_START,
     error::{EbpfError, UserDefinedError},
     memory_region::MemoryRegion,
     vm::{Config, EbpfVm, Executable, InstructionMeter},
@@ -30,7 +27,6 @@ use solana_sdk::{
         bpf_compute_budget_balancing, matching_buffer_upgrade_authorities,
         prevent_upgrade_and_invoke,
     },
-    ic_logger_msg, ic_msg,
     instruction::InstructionError,
     keyed_account::{from_keyed_account, next_keyed_account, KeyedAccount},
     loader_instruction::LoaderInstruction,
@@ -60,11 +56,30 @@ pub enum BPFError {
 }
 impl UserDefinedError for BPFError {}
 
+/// Point all log messages to the log collector
+macro_rules! log {
+    ($logger:ident, $message:expr) => {
+            if let Ok(logger) = $logger.try_borrow_mut() {
+            if logger.log_enabled() {
+                logger.log($message);
+            }
+        }
+    };
+    ($logger:ident, $fmt:expr, $($arg:tt)*) => {
+            if let Ok(logger) = $logger.try_borrow_mut() {
+            if logger.log_enabled() {
+                logger.log(&format!($fmt, $($arg)*));
+            }
+        }
+    };
+}
+
 fn map_ebpf_error(
     invoke_context: &mut dyn InvokeContext,
     e: EbpfError<BPFError>,
 ) -> InstructionError {
-    ic_msg!(invoke_context, "{}", e);
+    let logger = invoke_context.get_logger();
+    log!(logger, "{}", e);
     InstructionError::InvalidAccountData
 }
 
@@ -72,21 +87,10 @@ pub fn create_and_cache_executor(
     key: &Pubkey,
     data: &[u8],
     invoke_context: &mut dyn InvokeContext,
-    use_jit: bool,
 ) -> Result<Arc<BPFExecutor>, InstructionError> {
-    let bpf_compute_budget = invoke_context.get_bpf_compute_budget();
-    let mut program = Executable::<BPFError, ThisInstructionMeter>::from_elf(
-        data,
-        None,
-        Config {
-            max_call_depth: bpf_compute_budget.max_call_depth,
-            stack_frame_size: bpf_compute_budget.stack_frame_size,
-            enable_instruction_meter: true,
-            enable_instruction_tracing: false,
-        },
-    )
-    .map_err(|e| map_ebpf_error(invoke_context, e))?;
-    let (_, elf_bytes) = program
+    let executable = EbpfVm::create_executable_from_elf(data, None)
+        .map_err(|e| map_ebpf_error(invoke_context, e))?;
+    let (_, elf_bytes) = executable
         .get_text_bytes()
         .map_err(|e| map_ebpf_error(invoke_context, e))?;
     bpf_verifier::check(
@@ -94,18 +98,7 @@ pub fn create_and_cache_executor(
         !invoke_context.is_feature_active(&bpf_compute_budget_balancing::id()),
     )
     .map_err(|e| map_ebpf_error(invoke_context, EbpfError::UserError(e)))?;
-    let syscall_registry = syscalls::register_syscalls(invoke_context).map_err(|e| {
-        ic_msg!(invoke_context, "Failed to register syscalls: {}", e);
-        InstructionError::ProgramEnvironmentSetupFailure
-    })?;
-    program.set_syscall_registry(syscall_registry);
-    if use_jit {
-        if let Err(err) = program.jit_compile() {
-            ic_msg!(invoke_context, "Failed to compile program {:?}", err);
-            return Err(InstructionError::ProgramFailedToCompile);
-        }
-    }
-    let executor = Arc::new(BPFExecutor { program });
+    let executor = Arc::new(BPFExecutor { executable });
     invoke_context.add_executor(key, executor.clone());
     Ok(executor)
 }
@@ -116,14 +109,11 @@ fn write_program_data(
     bytes: &[u8],
     invoke_context: &mut dyn InvokeContext,
 ) -> Result<(), InstructionError> {
+    let logger = invoke_context.get_logger();
+
     let len = bytes.len();
     if data.len() < offset + len {
-        ic_msg!(
-            invoke_context,
-            "Write overflow: {} < {}",
-            data.len(),
-            offset + len
-        );
+        log!(logger, "Write overflow: {} < {}", data.len(), offset + len);
         return Err(InstructionError::AccountDataTooSmall);
     }
     data[offset..offset + len].copy_from_slice(&bytes);
@@ -136,29 +126,24 @@ fn check_loader_id(id: &Pubkey) -> bool {
         || bpf_loader_upgradeable::check_id(id)
 }
 
-/// Default program heap size, allocators
-/// are expected to enforce this
-const DEFAULT_HEAP_SIZE: usize = 32 * 1024;
-
 /// Create the BPF virtual machine
 pub fn create_vm<'a>(
     loader_id: &'a Pubkey,
-    program: &'a dyn Executable<BPFError, ThisInstructionMeter>,
-    parameter_bytes: &mut [u8],
+    executable: &'a dyn Executable<BPFError>,
     parameter_accounts: &'a [KeyedAccount<'a>],
     invoke_context: &'a mut dyn InvokeContext,
-) -> Result<EbpfVm<'a, BPFError, ThisInstructionMeter>, EbpfError<BPFError>> {
-    let heap = vec![0_u8; DEFAULT_HEAP_SIZE];
-    let heap_region = MemoryRegion::new_from_slice(&heap, MM_HEAP_START, 0, true);
-    let mut vm = EbpfVm::new(program, parameter_bytes, &[heap_region])?;
-    syscalls::bind_syscall_context_objects(
-        loader_id,
-        &mut vm,
-        parameter_accounts,
-        invoke_context,
-        heap,
+) -> Result<(EbpfVm<'a, BPFError>, MemoryRegion), EbpfError<BPFError>> {
+    let bpf_compute_budget = invoke_context.get_bpf_compute_budget();
+    let mut vm = EbpfVm::new(
+        executable,
+        Config {
+            max_call_depth: bpf_compute_budget.max_call_depth,
+            stack_frame_size: bpf_compute_budget.stack_frame_size,
+        },
     )?;
-    Ok(vm)
+    let heap_region =
+        syscalls::register_syscalls(loader_id, &mut vm, parameter_accounts, invoke_context)?;
+    Ok((vm, heap_region))
 }
 
 pub fn process_instruction(
@@ -167,44 +152,13 @@ pub fn process_instruction(
     instruction_data: &[u8],
     invoke_context: &mut dyn InvokeContext,
 ) -> Result<(), InstructionError> {
-    process_instruction_common(
-        program_id,
-        keyed_accounts,
-        instruction_data,
-        invoke_context,
-        false,
-    )
-}
-
-pub fn process_instruction_jit(
-    program_id: &Pubkey,
-    keyed_accounts: &[KeyedAccount],
-    instruction_data: &[u8],
-    invoke_context: &mut dyn InvokeContext,
-) -> Result<(), InstructionError> {
-    process_instruction_common(
-        program_id,
-        keyed_accounts,
-        instruction_data,
-        invoke_context,
-        true,
-    )
-}
-
-fn process_instruction_common(
-    program_id: &Pubkey,
-    keyed_accounts: &[KeyedAccount],
-    instruction_data: &[u8],
-    invoke_context: &mut dyn InvokeContext,
-    use_jit: bool,
-) -> Result<(), InstructionError> {
     let logger = invoke_context.get_logger();
 
     let account_iter = &mut keyed_accounts.iter();
     let first_account = next_keyed_account(account_iter)?;
     if first_account.executable()? {
         if first_account.unsigned_key() != program_id {
-            ic_logger_msg!(logger, "Program id mismatch");
+            log!(logger, "Program id mismatch");
             return Err(InstructionError::IncorrectProgramId);
         }
 
@@ -216,10 +170,7 @@ fn process_instruction_common(
                 {
                     let programdata = next_keyed_account(account_iter)?;
                     if programdata_address != *programdata.unsigned_key() {
-                        ic_logger_msg!(
-                            logger,
-                            "Wrong ProgramData account for this Program account"
-                        );
+                        log!(logger, "Wrong ProgramData account for this Program account");
                         return Err(InstructionError::InvalidArgument);
                     }
                     (
@@ -228,7 +179,7 @@ fn process_instruction_common(
                         UpgradeableLoaderState::programdata_data_offset()?,
                     )
                 } else {
-                    ic_logger_msg!(logger, "Invalid Program account");
+                    log!(logger, "Invalid Program account");
                     return Err(InstructionError::InvalidAccountData);
                 }
             } else {
@@ -238,7 +189,7 @@ fn process_instruction_common(
         let loader_id = &program.owner()?;
 
         if !check_loader_id(loader_id) {
-            ic_logger_msg!(logger, "Executable account not owned by the BPF loader");
+            log!(logger, "Executable account not owned by the BPF loader");
             return Err(InstructionError::IncorrectProgramId);
         }
 
@@ -248,7 +199,6 @@ fn process_instruction_common(
                 program_id,
                 &program.try_account_ref()?.data[offset..],
                 invoke_context,
-                use_jit,
             )?,
         };
         executor.execute(
@@ -257,11 +207,10 @@ fn process_instruction_common(
             keyed_accounts,
             instruction_data,
             invoke_context,
-            use_jit,
         )?
     } else {
         if !check_loader_id(program_id) {
-            ic_logger_msg!(logger, "Invalid BPF loader id");
+            log!(logger, "Invalid BPF loader id");
             return Err(InstructionError::IncorrectProgramId);
         }
 
@@ -271,7 +220,6 @@ fn process_instruction_common(
                 keyed_accounts,
                 instruction_data,
                 invoke_context,
-                use_jit,
             )?;
         } else {
             process_loader_instruction(
@@ -279,7 +227,6 @@ fn process_instruction_common(
                 keyed_accounts,
                 instruction_data,
                 invoke_context,
-                use_jit,
             )?;
         }
     }
@@ -291,7 +238,6 @@ fn process_loader_upgradeable_instruction(
     keyed_accounts: &[KeyedAccount],
     instruction_data: &[u8],
     invoke_context: &mut dyn InvokeContext,
-    use_jit: bool,
 ) -> Result<(), InstructionError> {
     let logger = invoke_context.get_logger();
     let account_iter = &mut keyed_accounts.iter();
@@ -301,7 +247,7 @@ fn process_loader_upgradeable_instruction(
             let buffer = next_keyed_account(account_iter)?;
 
             if UpgradeableLoaderState::Uninitialized != buffer.state()? {
-                ic_logger_msg!(logger, "Buffer account already initialized");
+                log!(logger, "Buffer account already initialized");
                 return Err(InstructionError::AccountAlreadyInitialized);
             }
 
@@ -326,19 +272,19 @@ fn process_loader_upgradeable_instruction(
 
             if let UpgradeableLoaderState::Buffer { authority_address } = buffer.state()? {
                 if authority_address == None {
-                    ic_logger_msg!(logger, "Buffer is immutable");
+                    log!(logger, "Buffer is immutable");
                     return Err(InstructionError::Immutable); // TODO better error code
                 }
                 if authority_address != Some(*authority.unsigned_key()) {
-                    ic_logger_msg!(logger, "Incorrect buffer authority provided");
+                    log!(logger, "Incorrect buffer authority provided");
                     return Err(InstructionError::IncorrectAuthority);
                 }
                 if authority.signer_key().is_none() {
-                    ic_logger_msg!(logger, "Buffer authority did not sign");
+                    log!(logger, "Buffer authority did not sign");
                     return Err(InstructionError::MissingRequiredSignature);
                 }
             } else {
-                ic_logger_msg!(logger, "Invalid Buffer account");
+                log!(logger, "Invalid Buffer account");
                 return Err(InstructionError::InvalidAccountData);
             }
             write_program_data(
@@ -373,15 +319,15 @@ fn process_loader_upgradeable_instruction(
             // Verify Program account
 
             if UpgradeableLoaderState::Uninitialized != program.state()? {
-                ic_logger_msg!(logger, "Program account already initialized");
+                log!(logger, "Program account already initialized");
                 return Err(InstructionError::AccountAlreadyInitialized);
             }
             if program.data_len()? < UpgradeableLoaderState::program_len()? {
-                ic_logger_msg!(logger, "Program account too small");
+                log!(logger, "Program account too small");
                 return Err(InstructionError::AccountDataTooSmall);
             }
             if program.lamports()? < rent.minimum_balance(program.data_len()?) {
-                ic_logger_msg!(logger, "Program account not rent-exempt");
+                log!(logger, "Program account not rent-exempt");
                 return Err(InstructionError::ExecutableAccountNotRentExempt);
             }
 
@@ -390,16 +336,16 @@ fn process_loader_upgradeable_instruction(
             if let UpgradeableLoaderState::Buffer { authority_address } = buffer.state()? {
                 if invoke_context.is_feature_active(&matching_buffer_upgrade_authorities::id()) {
                     if authority_address != upgrade_authority_address {
-                        ic_logger_msg!(logger, "Buffer and upgrade authority don't match");
+                        log!(logger, "Buffer and upgrade authority don't match");
                         return Err(InstructionError::IncorrectAuthority);
                     }
                     if upgrade_authority_signer {
-                        ic_logger_msg!(logger, "Upgrade authority did not sign");
+                        log!(logger, "Upgrade authority did not sign");
                         return Err(InstructionError::MissingRequiredSignature);
                     }
                 }
             } else {
-                ic_logger_msg!(logger, "Invalid Buffer account");
+                log!(logger, "Invalid Buffer account");
                 return Err(InstructionError::InvalidArgument);
             }
 
@@ -411,15 +357,15 @@ fn process_loader_upgradeable_instruction(
             if buffer.data_len()? < UpgradeableLoaderState::buffer_data_offset()?
                 || buffer_data_len == 0
             {
-                ic_logger_msg!(logger, "Buffer account too small");
+                log!(logger, "Buffer account too small");
                 return Err(InstructionError::InvalidAccountData);
             }
             if max_data_len < buffer_data_len {
-                ic_logger_msg!(logger, "Max data length is too small to hold Buffer data");
+                log!(logger, "Max data length is too small to hold Buffer data");
                 return Err(InstructionError::AccountDataTooSmall);
             }
             if programdata_len > MAX_PERMITTED_DATA_LENGTH as usize {
-                ic_logger_msg!(logger, "Max data length is too large");
+                log!(logger, "Max data length is too large");
                 return Err(InstructionError::InvalidArgument);
             }
 
@@ -428,7 +374,7 @@ fn process_loader_upgradeable_instruction(
             let (derived_address, bump_seed) =
                 Pubkey::find_program_address(&[program.unsigned_key().as_ref()], &program_id);
             if derived_address != *programdata.unsigned_key() {
-                ic_logger_msg!(logger, "ProgramData address is not derived");
+                log!(logger, "ProgramData address is not derived");
                 return Err(InstructionError::InvalidArgument);
             }
 
@@ -450,7 +396,6 @@ fn process_loader_upgradeable_instruction(
                 program_id,
                 &buffer.try_account_ref()?.data[buffer_data_offset..],
                 invoke_context,
-                use_jit,
             )?;
 
             // Update the ProgramData account and record the program bits
@@ -473,7 +418,7 @@ fn process_loader_upgradeable_instruction(
             payer.try_account_ref_mut()?.lamports += buffer.lamports()?;
             buffer.try_account_ref_mut()?.lamports = 0;
 
-            ic_logger_msg!(logger, "Deployed program {:?}", program.unsigned_key());
+            log!(logger, "Deployed program {:?}", program.unsigned_key());
         }
         UpgradeableLoaderInstruction::Upgrade => {
             let programdata = next_keyed_account(account_iter)?;
@@ -487,17 +432,17 @@ fn process_loader_upgradeable_instruction(
             // Verify Program account
 
             if !program.executable()? {
-                ic_logger_msg!(logger, "Program account not executable");
+                log!(logger, "Program account not executable");
                 return Err(InstructionError::AccountNotExecutable);
             }
             if !program.is_writable()
                 && invoke_context.is_feature_active(&prevent_upgrade_and_invoke::id())
             {
-                ic_logger_msg!(logger, "Program account not writeable");
+                log!(logger, "Program account not writeable");
                 return Err(InstructionError::InvalidArgument);
             }
             if &program.owner()? != program_id {
-                ic_logger_msg!(logger, "Program account not owned by loader");
+                log!(logger, "Program account not owned by loader");
                 return Err(InstructionError::IncorrectProgramId);
             }
             if let UpgradeableLoaderState::Program {
@@ -505,11 +450,11 @@ fn process_loader_upgradeable_instruction(
             } = program.state()?
             {
                 if programdata_address != *programdata.unsigned_key() {
-                    ic_logger_msg!(logger, "Program and ProgramData account mismatch");
+                    log!(logger, "Program and ProgramData account mismatch");
                     return Err(InstructionError::InvalidArgument);
                 }
             } else {
-                ic_logger_msg!(logger, "Invalid Program account");
+                log!(logger, "Invalid Program account");
                 return Err(InstructionError::InvalidAccountData);
             }
 
@@ -518,16 +463,16 @@ fn process_loader_upgradeable_instruction(
             if let UpgradeableLoaderState::Buffer { authority_address } = buffer.state()? {
                 if invoke_context.is_feature_active(&matching_buffer_upgrade_authorities::id()) {
                     if authority_address != Some(*authority.unsigned_key()) {
-                        ic_logger_msg!(logger, "Buffer and upgrade authority don't match");
+                        log!(logger, "Buffer and upgrade authority don't match");
                         return Err(InstructionError::IncorrectAuthority);
                     }
                     if authority.signer_key().is_none() {
-                        ic_logger_msg!(logger, "Upgrade authority did not sign");
+                        log!(logger, "Upgrade authority did not sign");
                         return Err(InstructionError::MissingRequiredSignature);
                     }
                 }
             } else {
-                ic_logger_msg!(logger, "Invalid Buffer account");
+                log!(logger, "Invalid Buffer account");
                 return Err(InstructionError::InvalidArgument);
             }
 
@@ -539,18 +484,18 @@ fn process_loader_upgradeable_instruction(
             if buffer.data_len()? < UpgradeableLoaderState::buffer_data_offset()?
                 || buffer_data_len == 0
             {
-                ic_logger_msg!(logger, "Buffer account too small");
+                log!(logger, "Buffer account too small");
                 return Err(InstructionError::InvalidAccountData);
             }
 
             // Verify ProgramData account
 
             if programdata.data_len()? < UpgradeableLoaderState::programdata_len(buffer_data_len)? {
-                ic_logger_msg!(logger, "ProgramData account not large enough");
+                log!(logger, "ProgramData account not large enough");
                 return Err(InstructionError::AccountDataTooSmall);
             }
             if programdata.lamports()? + buffer.lamports()? < programdata_balance_required {
-                ic_logger_msg!(logger, "Buffer account balance too low to fund upgrade");
+                log!(logger, "Buffer account balance too low to fund upgrade");
                 return Err(InstructionError::InsufficientFunds);
             }
             if let UpgradeableLoaderState::ProgramData {
@@ -559,19 +504,19 @@ fn process_loader_upgradeable_instruction(
             } = programdata.state()?
             {
                 if upgrade_authority_address == None {
-                    ic_logger_msg!(logger, "Program not upgradeable");
+                    log!(logger, "Program not upgradeable");
                     return Err(InstructionError::Immutable);
                 }
                 if upgrade_authority_address != Some(*authority.unsigned_key()) {
-                    ic_logger_msg!(logger, "Incorrect upgrade authority provided");
+                    log!(logger, "Incorrect upgrade authority provided");
                     return Err(InstructionError::IncorrectAuthority);
                 }
                 if authority.signer_key().is_none() {
-                    ic_logger_msg!(logger, "Upgrade authority did not sign");
+                    log!(logger, "Upgrade authority did not sign");
                     return Err(InstructionError::MissingRequiredSignature);
                 }
             } else {
-                ic_logger_msg!(logger, "Invalid ProgramData account");
+                log!(logger, "Invalid ProgramData account");
                 return Err(InstructionError::InvalidAccountData);
             }
 
@@ -581,7 +526,6 @@ fn process_loader_upgradeable_instruction(
                 program.unsigned_key(),
                 &buffer.try_account_ref()?.data[buffer_data_offset..],
                 invoke_context,
-                use_jit,
             )?;
 
             // Update the ProgramData account, record the upgraded data, and zero
@@ -608,7 +552,7 @@ fn process_loader_upgradeable_instruction(
             buffer.try_account_ref_mut()?.lamports = 0;
             programdata.try_account_ref_mut()?.lamports = programdata_balance_required;
 
-            ic_logger_msg!(logger, "Upgraded program {:?}", program.unsigned_key());
+            log!(logger, "Upgraded program {:?}", program.unsigned_key());
         }
         UpgradeableLoaderInstruction::SetAuthority => {
             let account = next_keyed_account(account_iter)?;
@@ -622,19 +566,19 @@ fn process_loader_upgradeable_instruction(
                     if invoke_context.is_feature_active(&matching_buffer_upgrade_authorities::id())
                         && new_authority == None
                     {
-                        ic_logger_msg!(logger, "Buffer authority is not optional");
+                        log!(logger, "Buffer authority is not optional");
                         return Err(InstructionError::IncorrectAuthority);
                     }
                     if authority_address == None {
-                        ic_logger_msg!(logger, "Buffer is immutable");
+                        log!(logger, "Buffer is immutable");
                         return Err(InstructionError::Immutable);
                     }
                     if authority_address != Some(*present_authority.unsigned_key()) {
-                        ic_logger_msg!(logger, "Incorrect buffer authority provided");
+                        log!(logger, "Incorrect buffer authority provided");
                         return Err(InstructionError::IncorrectAuthority);
                     }
                     if present_authority.signer_key().is_none() {
-                        ic_logger_msg!(logger, "Buffer authority did not sign");
+                        log!(logger, "Buffer authority did not sign");
                         return Err(InstructionError::MissingRequiredSignature);
                     }
                     account.set_state(&UpgradeableLoaderState::Buffer {
@@ -646,15 +590,15 @@ fn process_loader_upgradeable_instruction(
                     upgrade_authority_address,
                 } => {
                     if upgrade_authority_address == None {
-                        ic_logger_msg!(logger, "Program not upgradeable");
+                        log!(logger, "Program not upgradeable");
                         return Err(InstructionError::Immutable);
                     }
                     if upgrade_authority_address != Some(*present_authority.unsigned_key()) {
-                        ic_logger_msg!(logger, "Incorrect upgrade authority provided");
+                        log!(logger, "Incorrect upgrade authority provided");
                         return Err(InstructionError::IncorrectAuthority);
                     }
                     if present_authority.signer_key().is_none() {
-                        ic_logger_msg!(logger, "Upgrade authority did not sign");
+                        log!(logger, "Upgrade authority did not sign");
                         return Err(InstructionError::MissingRequiredSignature);
                     }
                     account.set_state(&UpgradeableLoaderState::ProgramData {
@@ -663,12 +607,12 @@ fn process_loader_upgradeable_instruction(
                     })?;
                 }
                 _ => {
-                    ic_logger_msg!(logger, "Account does not support authorities");
+                    log!(logger, "Account does not support authorities");
                     return Err(InstructionError::InvalidAccountData);
                 }
             }
 
-            ic_logger_msg!(logger, "New authority {:?}", new_authority);
+            log!(logger, "New authority {:?}", new_authority);
         }
     }
 
@@ -680,22 +624,19 @@ fn process_loader_instruction(
     keyed_accounts: &[KeyedAccount],
     instruction_data: &[u8],
     invoke_context: &mut dyn InvokeContext,
-    use_jit: bool,
 ) -> Result<(), InstructionError> {
+    let logger = invoke_context.get_logger();
     let account_iter = &mut keyed_accounts.iter();
 
     let program = next_keyed_account(account_iter)?;
     if program.owner()? != *program_id {
-        ic_msg!(
-            invoke_context,
-            "Executable account not owned by the BPF loader"
-        );
+        log!(logger, "Executable account not owned by the BPF loader");
         return Err(InstructionError::IncorrectProgramId);
     }
     match limited_deserialize(instruction_data)? {
         LoaderInstruction::Write { offset, bytes } => {
             if program.signer_key().is_none() {
-                ic_msg!(invoke_context, "Program account did not sign");
+                log!(logger, "Program account did not sign");
                 return Err(InstructionError::MissingRequiredSignature);
             }
             write_program_data(
@@ -707,7 +648,7 @@ fn process_loader_instruction(
         }
         LoaderInstruction::Finalize => {
             if program.signer_key().is_none() {
-                ic_msg!(invoke_context, "key[0] did not sign the transaction");
+                log!(logger, "key[0] did not sign the transaction");
                 return Err(InstructionError::MissingRequiredSignature);
             }
 
@@ -715,14 +656,9 @@ fn process_loader_instruction(
                 program.unsigned_key(),
                 &program.try_account_ref()?.data,
                 invoke_context,
-                use_jit,
             )?;
             program.try_account_ref_mut()?.executable = true;
-            ic_msg!(
-                invoke_context,
-                "Finalized account {:?}",
-                program.unsigned_key()
-            );
+            log!(logger, "Finalized account {:?}", program.unsigned_key());
         }
     }
 
@@ -730,8 +666,8 @@ fn process_loader_instruction(
 }
 
 /// Passed to the VM to enforce the compute budget
-pub struct ThisInstructionMeter {
-    pub compute_meter: Rc<RefCell<dyn ComputeMeter>>,
+struct ThisInstructionMeter {
+    compute_meter: Rc<RefCell<dyn ComputeMeter>>,
 }
 impl ThisInstructionMeter {
     fn new(compute_meter: Rc<RefCell<dyn ComputeMeter>>) -> Self {
@@ -751,7 +687,7 @@ impl InstructionMeter for ThisInstructionMeter {
 
 /// BPF Loader's Executor implementation
 pub struct BPFExecutor {
-    program: Box<dyn Executable<BPFError, ThisInstructionMeter>>,
+    executable: Box<dyn Executable<BPFError>>,
 }
 
 // Well, implement Debug for solana_rbpf::vm::Executable in solana-rbpf...
@@ -769,7 +705,6 @@ impl Executor for BPFExecutor {
         keyed_accounts: &[KeyedAccount],
         instruction_data: &[u8],
         invoke_context: &mut dyn InvokeContext,
-        use_jit: bool,
     ) -> Result<(), InstructionError> {
         let logger = invoke_context.get_logger();
         let invoke_depth = invoke_context.invoke_depth();
@@ -777,34 +712,34 @@ impl Executor for BPFExecutor {
         let mut keyed_accounts_iter = keyed_accounts.iter();
         let _ = next_keyed_account(&mut keyed_accounts_iter)?;
         let parameter_accounts = keyed_accounts_iter.as_slice();
-        let mut parameter_bytes =
+        let parameter_bytes =
             serialize_parameters(loader_id, program_id, parameter_accounts, &instruction_data)?;
         {
             let compute_meter = invoke_context.get_compute_meter();
-            let mut vm = match create_vm(
+            let (mut vm, heap_region) = match create_vm(
                 loader_id,
-                self.program.as_ref(),
-                &mut parameter_bytes,
+                self.executable.as_ref(),
                 &parameter_accounts,
                 invoke_context,
             ) {
                 Ok(info) => info,
                 Err(e) => {
-                    ic_logger_msg!(logger, "Failed to create BPF VM: {}", e);
+                    log!(logger, "Failed to create BPF VM: {}", e);
                     return Err(InstructionError::ProgramEnvironmentSetupFailure);
                 }
             };
 
             stable_log::program_invoke(&logger, program_id, invoke_depth);
-            let mut instruction_meter = ThisInstructionMeter::new(compute_meter.clone());
+            let instruction_meter = ThisInstructionMeter::new(compute_meter.clone());
             let before = compute_meter.borrow().get_remaining();
-            let result = if use_jit {
-                vm.execute_program_jit(&mut instruction_meter)
-            } else {
-                vm.execute_program_interpreted(&mut instruction_meter)
-            };
+            let result = vm.execute_program_metered(
+                parameter_bytes.as_slice(),
+                &[],
+                &[heap_region],
+                instruction_meter,
+            );
             let after = compute_meter.borrow().get_remaining();
-            ic_logger_msg!(
+            log!(
                 logger,
                 "Program {} consumed {} of {} compute units",
                 program_id,
@@ -820,15 +755,17 @@ impl Executor for BPFExecutor {
                     }
                 }
                 Err(error) => {
+                    log!(logger, "Program {} BPF VM error: {}", program_id, error);
                     let error = match error {
                         EbpfError::UserError(BPFError::SyscallError(
                             SyscallError::InstructionError(error),
                         )) => error,
                         err => {
-                            ic_logger_msg!(logger, "Program failed to complete: {}", err);
+                            log!(logger, "Program failed to complete: {:?}", err);
                             InstructionError::ProgramFailedToComplete
                         }
                     };
+
                     stable_log::program_failure(&logger, program_id, &error);
                     return Err(error);
                 }
@@ -860,7 +797,6 @@ mod tests {
         instruction::{AccountMeta, InstructionError},
         message::Message,
         process_instruction::{BpfComputeBudget, MockInvokeContext},
-        pubkey::Pubkey,
         rent::Rent,
         signature::{Keypair, Signer},
         system_program, sysvar,
@@ -881,7 +817,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "ExceededMaxInstructions(31, 10)")]
+    #[should_panic(expected = "ExceededMaxInstructions(10)")]
     fn test_bpf_loader_non_terminating_program() {
         #[rustfmt::skip]
         let program = &[
@@ -891,16 +827,10 @@ mod tests {
         ];
         let input = &mut [0x00];
 
-        let program = Executable::<BPFError, TestInstructionMeter>::from_text_bytes(
-            program,
-            None,
-            Config::default(),
-        )
-        .unwrap();
-        let mut vm =
-            EbpfVm::<BPFError, TestInstructionMeter>::new(program.as_ref(), input, &[]).unwrap();
-        let mut instruction_meter = TestInstructionMeter { remaining: 10 };
-        vm.execute_program_interpreted(&mut instruction_meter)
+        let executable = EbpfVm::create_executable_from_text_bytes(program, None).unwrap();
+        let mut vm = EbpfVm::<BPFError>::new(executable.as_ref(), Config::default()).unwrap();
+        let instruction_meter = TestInstructionMeter { remaining: 10 };
+        vm.execute_program_metered(input, &[], &[], instruction_meter)
             .unwrap();
     }
 

@@ -1,16 +1,16 @@
 import React from "react";
 import { ParsedInstruction } from "@solana/web3.js";
+import { Address } from "components/common/Address";
 
-export function RawParsedDetails({
-  ix,
-  children,
-}: {
-  ix: ParsedInstruction;
-  children?: React.ReactNode;
-}) {
+export function RawParsedDetails({ ix }: { ix: ParsedInstruction }) {
   return (
     <>
-      {children}
+      <tr>
+        <td>Program</td>
+        <td className="text-lg-right">
+          <Address pubkey={ix.programId} alignRight link />
+        </td>
+      </tr>
 
       <tr>
         <td>Instruction Data (JSON)</td>

@@ -1,22 +1,28 @@
 import React from "react";
 import {
+  TransactionInstruction,
   SystemProgram,
   SignatureResult,
-  ParsedInstruction,
+  SystemInstruction,
 } from "@solana/web3.js";
 import { InstructionCard } from "../InstructionCard";
+import { UnknownDetailsCard } from "../UnknownDetailsCard";
 import { Address } from "components/common/Address";
-import { AllocateInfo } from "./types";
 
 export function AllocateDetailsCard(props: {
-  ix: ParsedInstruction;
+  ix: TransactionInstruction;
   index: number;
   result: SignatureResult;
-  info: AllocateInfo;
-  innerCards?: JSX.Element[];
-  childIndex?: number;
 }) {
-  const { ix, index, result, info, innerCards, childIndex } = props;
+  const { ix, index, result } = props;
+
+  let params;
+  try {
+    params = SystemInstruction.decodeAllocate(ix);
+  } catch (err) {
+    console.error(err);
+    return <UnknownDetailsCard {...props} />;
+  }
 
   return (
     <InstructionCard
@@ -24,8 +30,6 @@ export function AllocateDetailsCard(props: {
       index={index}
       result={result}
       title="Allocate Account"
-      innerCards={innerCards}
-      childIndex={childIndex}
     >
       <tr>
         <td>Program</td>
@@ -37,13 +41,13 @@ export function AllocateDetailsCard(props: {
       <tr>
         <td>Account Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.account} alignRight link />
+          <Address pubkey={params.accountPubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Allocated Space (Bytes)</td>
-        <td className="text-lg-right">{info.space}</td>
+        <td className="text-lg-right">{params.space}</td>
       </tr>
     </InstructionCard>
   );

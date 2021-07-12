@@ -12,13 +12,11 @@ use solana_runtime::{
     genesis_utils::{create_genesis_config, GenesisConfigInfo},
 };
 use solana_sdk::{
-    commitment_config::CommitmentConfig,
-    native_token::sol_to_lamports,
-    rpc_port,
-    signature::{Keypair, Signer},
-    system_transaction,
+    commitment_config::CommitmentConfig, native_token::sol_to_lamports, rpc_port,
+    signature::Signer, system_transaction,
 };
 use std::{
+    fs::remove_dir_all,
     net::{IpAddr, SocketAddr},
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -33,12 +31,16 @@ use systemstat::Ipv4Addr;
 fn test_rpc_client() {
     solana_logger::setup();
 
-    let alice = Keypair::new();
-    let test_validator = TestValidator::with_no_fees(alice.pubkey());
-
+    let TestValidator {
+        server,
+        leader_data,
+        alice,
+        ledger_path,
+        ..
+    } = TestValidator::run();
     let bob_pubkey = solana_sdk::pubkey::new_rand();
 
-    let client = RpcClient::new(test_validator.rpc_url());
+    let client = RpcClient::new_socket(leader_data.rpc);
 
     assert_eq!(
         client.get_version().unwrap().solana_core,
@@ -49,7 +51,10 @@ fn test_rpc_client() {
 
     assert_eq!(client.get_balance(&bob_pubkey).unwrap(), 0);
 
-    let original_alice_balance = client.get_balance(&alice.pubkey()).unwrap();
+    assert_eq!(
+        client.get_balance(&alice.pubkey()).unwrap(),
+        sol_to_lamports(1_000_000.0)
+    );
 
     let (blockhash, _fee_calculator) = client.get_recent_blockhash().unwrap();
 
@@ -80,8 +85,11 @@ fn test_rpc_client() {
     );
     assert_eq!(
         client.get_balance(&alice.pubkey()).unwrap(),
-        original_alice_balance - sol_to_lamports(20.0)
+        sol_to_lamports(999_980.0)
     );
+
+    server.close().unwrap();
+    remove_dir_all(ledger_path).unwrap();
 }
 
 #[test]

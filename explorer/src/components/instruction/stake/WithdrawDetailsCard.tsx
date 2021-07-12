@@ -1,23 +1,29 @@
 import React from "react";
 import {
+  TransactionInstruction,
   SignatureResult,
+  StakeInstruction,
   StakeProgram,
-  ParsedInstruction,
 } from "@solana/web3.js";
 import { lamportsToSafeString } from "utils";
 import { InstructionCard } from "../InstructionCard";
+import { UnknownDetailsCard } from "../UnknownDetailsCard";
 import { Address } from "components/common/Address";
-import { WithdrawInfo } from "./types";
 
 export function WithdrawDetailsCard(props: {
-  ix: ParsedInstruction;
+  ix: TransactionInstruction;
   index: number;
   result: SignatureResult;
-  info: WithdrawInfo;
-  innerCards?: JSX.Element[];
-  childIndex?: number;
 }) {
-  const { ix, index, result, info, innerCards, childIndex } = props;
+  const { ix, index, result } = props;
+
+  let params;
+  try {
+    params = StakeInstruction.decodeWithdraw(ix);
+  } catch (err) {
+    console.error(err);
+    return <UnknownDetailsCard {...props} />;
+  }
 
   return (
     <InstructionCard
@@ -25,8 +31,6 @@ export function WithdrawDetailsCard(props: {
       index={index}
       result={result}
       title="Withdraw Stake"
-      innerCards={innerCards}
-      childIndex={childIndex}
     >
       <tr>
         <td>Program</td>
@@ -38,27 +42,29 @@ export function WithdrawDetailsCard(props: {
       <tr>
         <td>Stake Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.stakeAccount} alignRight link />
+          <Address pubkey={params.stakePubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Authority Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.withdrawAuthority} alignRight link />
+          <Address pubkey={params.authorizedPubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>To Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.destination} alignRight link />
+          <Address pubkey={params.toPubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Withdraw Amount (SAFE)</td>
-        <td className="text-lg-right">{lamportsToSafeString(info.lamports)}</td>
+        <td className="text-lg-right">
+          {lamportsToSafeString(params.lamports)}
+        </td>
       </tr>
     </InstructionCard>
   );

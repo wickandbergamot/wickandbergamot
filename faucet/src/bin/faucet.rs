@@ -6,13 +6,13 @@ use safecoin_faucet::{
 };
 use solana_sdk::signature::read_keypair_file;
 use std::{
+    error,
     net::{Ipv4Addr, SocketAddr},
     sync::{Arc, Mutex},
     thread,
 };
 
-#[tokio::main]
-async fn main() {
+fn main() -> Result<(), Box<dyn error::Error>> {
     let default_keypair = solana_cli_config::Config::default().keypair_path;
 
     solana_logger::setup_with_default("solana=info");
@@ -77,5 +77,6 @@ async fn main() {
         faucet1.lock().unwrap().clear_request_count();
     });
 
-    run_faucet(faucet, faucet_addr, None).await;
+    run_faucet(faucet, faucet_addr, None);
+    Ok(())
 }

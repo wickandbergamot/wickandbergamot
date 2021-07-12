@@ -109,6 +109,9 @@ while [[ -n $1 ]]; do
     elif [[ $1 = --rpc-faucet-address ]]; then
       args+=("$1" "$2")
       shift 2
+    elif [[ $1 = --vote-signer-address ]]; then
+      args+=("$1" "$2")
+      shift 2
     elif [[ $1 = --accounts ]]; then
       args+=("$1" "$2")
       shift 2
@@ -128,9 +131,6 @@ while [[ -n $1 ]]; do
       args+=("$1")
       shift
     elif [[ $1 = --enable-rpc-transaction-history ]]; then
-      args+=("$1")
-      shift
-    elif [[ $1 = --enable-cpi-and-log-storage ]]; then
       args+=("$1")
       shift
     elif [[ $1 = --skip-poh-verify ]]; then
@@ -295,8 +295,8 @@ setup_validator_accounts() {
 
 rpc_url=$($safecoin_gossip rpc-url --timeout 180 --entrypoint "$gossip_entrypoint")
 
-[[ -r "$identity" ]] || $solana_keygen new --no-passphrase -so "$identity"
-[[ -r "$vote_account" ]] || $solana_keygen new --no-passphrase -so "$vote_account"
+[[ -r "$identity" ]] || $safecoin_keygen new --no-passphrase -so "$identity"
+[[ -r "$vote_account" ]] || $safecoin_keygen new --no-passphrase -so "$vote_account"
 
 setup_validator_accounts "$node_sol"
 

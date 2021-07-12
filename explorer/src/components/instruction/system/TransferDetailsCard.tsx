@@ -1,33 +1,32 @@
 import React from "react";
 import {
+  TransactionInstruction,
   SystemProgram,
   SignatureResult,
-  ParsedInstruction,
+  SystemInstruction,
 } from "@solana/web3.js";
 import { lamportsToSafeString } from "utils";
 import { InstructionCard } from "../InstructionCard";
+import { UnknownDetailsCard } from "../UnknownDetailsCard";
 import { Address } from "components/common/Address";
-import { TransferInfo } from "./types";
 
 export function TransferDetailsCard(props: {
-  ix: ParsedInstruction;
+  ix: TransactionInstruction;
   index: number;
   result: SignatureResult;
-  info: TransferInfo;
-  innerCards?: JSX.Element[];
-  childIndex?: number;
 }) {
-  const { ix, index, result, info, innerCards, childIndex } = props;
+  const { ix, index, result } = props;
+
+  let transfer;
+  try {
+    transfer = SystemInstruction.decodeTransfer(ix);
+  } catch (err) {
+    console.error(err);
+    return <UnknownDetailsCard {...props} />;
+  }
 
   return (
-    <InstructionCard
-      ix={ix}
-      index={index}
-      result={result}
-      title="Transfer"
-      innerCards={innerCards}
-      childIndex={childIndex}
-    >
+    <InstructionCard ix={ix} index={index} result={result} title="Transfer">
       <tr>
         <td>Program</td>
         <td className="text-lg-right">
@@ -38,20 +37,22 @@ export function TransferDetailsCard(props: {
       <tr>
         <td>From Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.source} alignRight link />
+          <Address pubkey={transfer.fromPubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>To Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.destination} alignRight link />
+          <Address pubkey={transfer.toPubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Transfer Amount (SAFE)</td>
-        <td className="text-lg-right">{lamportsToSafeString(info.lamports)}</td>
+        <td className="text-lg-right">
+          {lamportsToSafeString(transfer.lamports)}
+        </td>
       </tr>
     </InstructionCard>
   );

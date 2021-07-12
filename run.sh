@@ -102,9 +102,7 @@ args=(
   --log -
   --enable-rpc-exit
   --enable-rpc-transaction-history
-  --enable-cpi-and-log-storage
   --init-complete-file "$dataDir"/init-completed
-  --snapshot-compression none
   --require-tower
 )
 # shellcheck disable=SC2086

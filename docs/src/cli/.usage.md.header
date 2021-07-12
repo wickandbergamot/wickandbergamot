@@ -50,7 +50,7 @@ $ safecoin confirm <TX_SIGNATURE>
 
 ```bash
 // Command
-$ safecoin program deploy <PATH>
+$ safecoin deploy <PATH>
 
 // Return
 <PROGRAM_ID>

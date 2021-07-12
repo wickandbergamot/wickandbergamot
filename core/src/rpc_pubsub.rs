@@ -488,9 +488,9 @@ mod tests {
         rpc_subscriptions::tests::robust_poll_or_panic,
     };
     use crossbeam_channel::unbounded;
-    use jsonrpc_core::{futures::channel::mpsc, Response};
+    use jsonrpc_core::{futures::sync::mpsc, Response};
     use jsonrpc_pubsub::{PubSubHandler, Session};
-    use serial_test::serial;
+    use serial_test_derive::serial;
     use solana_account_decoder::{parse_account_data::parse_account_data, UiAccountEncoding};
     use solana_client::rpc_response::{ProcessedSignatureResult, ReceivedSignatureResult};
     use solana_runtime::{
@@ -534,16 +534,14 @@ mod tests {
             .get(current_slot)
             .unwrap()
             .process_transaction(tx)?;
-        let commitment_slots = CommitmentSlots {
-            slot: current_slot,
-            ..CommitmentSlots::default()
-        };
+        let mut commitment_slots = CommitmentSlots::default();
+        commitment_slots.slot = current_slot;
         subscriptions.notify_subscribers(commitment_slots);
         Ok(())
     }
 
     fn create_session() -> Arc<Session> {
-        Arc::new(Session::new(mpsc::unbounded().0))
+        Arc::new(Session::new(mpsc::channel(1).0))
     }
 
     #[test]
@@ -579,7 +577,7 @@ mod tests {
             subscriber,
             tx.signatures[0].to_string(),
             Some(RpcSignatureSubscribeConfig {
-                commitment: Some(CommitmentConfig::finalized()),
+                commitment: Some(CommitmentConfig::single()),
                 ..RpcSignatureSubscribeConfig::default()
             }),
         );
@@ -612,7 +610,7 @@ mod tests {
             subscriber,
             tx.signatures[0].to_string(),
             Some(RpcSignatureSubscribeConfig {
-                commitment: Some(CommitmentConfig::finalized()),
+                commitment: Some(CommitmentConfig::single()),
                 enable_received_notification: Some(true),
             }),
         );
@@ -721,7 +719,7 @@ mod tests {
             subscriber,
             stake_account.pubkey().to_string(),
             Some(RpcAccountInfoConfig {
-                commitment: Some(CommitmentConfig::processed()),
+                commitment: Some(CommitmentConfig::recent()),
                 encoding: None,
                 data_slice: None,
             }),
@@ -831,7 +829,7 @@ mod tests {
             subscriber,
             nonce_account.pubkey().to_string(),
             Some(RpcAccountInfoConfig {
-                commitment: Some(CommitmentConfig::processed()),
+                commitment: Some(CommitmentConfig::recent()),
                 encoding: Some(UiAccountEncoding::JsonParsed),
                 data_slice: None,
             }),
@@ -953,7 +951,7 @@ mod tests {
             subscriber,
             bob.pubkey().to_string(),
             Some(RpcAccountInfoConfig {
-                commitment: Some(CommitmentConfig::finalized()),
+                commitment: Some(CommitmentConfig::root()),
                 encoding: None,
                 data_slice: None,
             }),
@@ -1007,7 +1005,7 @@ mod tests {
             subscriber,
             bob.pubkey().to_string(),
             Some(RpcAccountInfoConfig {
-                commitment: Some(CommitmentConfig::finalized()),
+                commitment: Some(CommitmentConfig::root()),
                 encoding: None,
                 data_slice: None,
             }),
@@ -1021,10 +1019,8 @@ mod tests {
             .unwrap()
             .process_transaction(&tx)
             .unwrap();
-        let commitment_slots = CommitmentSlots {
-            slot: 1,
-            ..CommitmentSlots::default()
-        };
+        let mut commitment_slots = CommitmentSlots::default();
+        commitment_slots.slot = 1;
         rpc.subscriptions.notify_subscribers(commitment_slots);
 
         let commitment_slots = CommitmentSlots {

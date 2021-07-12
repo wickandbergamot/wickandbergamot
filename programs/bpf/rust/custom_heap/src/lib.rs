@@ -53,8 +53,7 @@ unsafe impl std::alloc::GlobalAlloc for BumpAllocator {
 static A: BumpAllocator = BumpAllocator;
 
 entrypoint!(process_instruction);
-#[allow(clippy::unnecessary_wraps)]
-pub fn process_instruction(
+fn process_instruction(
     _program_id: &Pubkey,
     _accounts: &[AccountInfo],
     _instruction_data: &[u8],

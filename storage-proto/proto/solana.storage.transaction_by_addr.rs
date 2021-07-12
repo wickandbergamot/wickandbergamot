@@ -1,32 +1,32 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionByAddr {
     #[prost(message, repeated, tag = "1")]
-    pub tx_by_addrs: ::prost::alloc::vec::Vec<TransactionByAddrInfo>,
+    pub tx_by_addrs: ::std::vec::Vec<TransactionByAddrInfo>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionByAddrInfo {
-    #[prost(bytes = "vec", tag = "1")]
-    pub signature: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes, tag = "1")]
+    pub signature: std::vec::Vec<u8>,
     #[prost(message, optional, tag = "2")]
-    pub err: ::core::option::Option<TransactionError>,
+    pub err: ::std::option::Option<TransactionError>,
     #[prost(uint32, tag = "3")]
     pub index: u32,
     #[prost(message, optional, tag = "4")]
-    pub memo: ::core::option::Option<Memo>,
+    pub memo: ::std::option::Option<Memo>,
     #[prost(message, optional, tag = "5")]
-    pub block_time: ::core::option::Option<UnixTimestamp>,
+    pub block_time: ::std::option::Option<UnixTimestamp>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Memo {
     #[prost(string, tag = "1")]
-    pub memo: ::prost::alloc::string::String,
+    pub memo: std::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionError {
     #[prost(enumeration = "TransactionErrorType", tag = "1")]
     pub transaction_error: i32,
     #[prost(message, optional, tag = "2")]
-    pub instruction_error: ::core::option::Option<InstructionError>,
+    pub instruction_error: ::std::option::Option<InstructionError>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InstructionError {
@@ -35,7 +35,7 @@ pub struct InstructionError {
     #[prost(enumeration = "InstructionErrorType", tag = "2")]
     pub error: i32,
     #[prost(message, optional, tag = "3")]
-    pub custom: ::core::option::Option<CustomError>,
+    pub custom: ::std::option::Option<CustomError>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UnixTimestamp {

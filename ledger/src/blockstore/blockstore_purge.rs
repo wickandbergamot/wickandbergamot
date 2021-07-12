@@ -1,5 +1,4 @@
 use super::*;
-use std::time::Instant;
 
 #[derive(Default)]
 pub struct PurgeStats {
@@ -48,10 +47,6 @@ impl Blockstore {
     ///
     /// Dangerous; Use with care
     pub fn purge_from_next_slots(&self, from_slot: Slot, to_slot: Slot) {
-        let mut count = 0;
-        let mut rewritten = 0;
-        let mut last_print = Instant::now();
-        let mut total_retain_us = 0;
         for (slot, mut meta) in self
             .slot_meta_iterator(0)
             .expect("unable to iterate over meta")
@@ -60,23 +55,10 @@ impl Blockstore {
                 break;
             }
 
-            count += 1;
-            if last_print.elapsed().as_millis() > 2000 {
-                info!(
-                    "purged: {} slots rewritten: {} retain_time: {}us",
-                    count, rewritten, total_retain_us
-                );
-                count = 0;
-                rewritten = 0;
-                total_retain_us = 0;
-                last_print = Instant::now();
-            }
-            let mut time = Measure::start("retain");
             let original_len = meta.next_slots.len();
             meta.next_slots
                 .retain(|slot| *slot < from_slot || *slot > to_slot);
             if meta.next_slots.len() != original_len {
-                rewritten += 1;
                 info!(
                     "purge_from_next_slots: meta for slot {} no longer refers to slots {:?}",
                     slot,
@@ -88,8 +70,6 @@ impl Blockstore {
                 )
                 .expect("couldn't update meta");
             }
-            time.stop();
-            total_retain_us += time.as_us();
         }
     }
 
@@ -115,7 +95,7 @@ impl Blockstore {
             .batch()
             .expect("Database Error: Failed to get write batch");
         // delete range cf is not inclusive
-        let to_slot = to_slot.checked_add(1).unwrap_or(std::u64::MAX);
+        let to_slot = to_slot.checked_add(1).unwrap_or_else(|| std::u64::MAX);
 
         let mut delete_range_timer = Measure::start("delete_range");
         let mut columns_purged = self

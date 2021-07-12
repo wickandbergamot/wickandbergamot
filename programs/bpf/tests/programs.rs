@@ -7,11 +7,9 @@ use itertools::izip;
 use solana_bpf_loader_program::{
     create_vm,
     serialization::{deserialize_parameters, serialize_parameters},
-    syscalls::register_syscalls,
-    ThisInstructionMeter,
 };
 use solana_cli_output::display::println_transaction;
-use solana_rbpf::vm::{Config, Executable, Tracer};
+use solana_rbpf::vm::EbpfVm;
 use solana_runtime::{
     bank::{Bank, ExecuteTimings, NonceRollbackInfo, TransactionBalancesSet, TransactionResults},
     bank_client::BankClient,
@@ -27,11 +25,10 @@ use solana_sdk::{
     client::SyncClient,
     clock::{DEFAULT_SLOTS_PER_EPOCH, MAX_PROCESSING_AGE},
     entrypoint::{MAX_PERMITTED_DATA_INCREASE, SUCCESS},
-    feature_set::try_find_program_address_syscall_enabled,
     instruction::{AccountMeta, CompiledInstruction, Instruction, InstructionError},
     keyed_account::KeyedAccount,
     message::Message,
-    process_instruction::{InvokeContext, MockInvokeContext},
+    process_instruction::MockInvokeContext,
     pubkey::Pubkey,
     signature::{keypair_from_seed, Keypair, Signer},
     system_instruction,
@@ -129,11 +126,12 @@ fn load_upgradeable_bpf_program(
     );
 }
 
-fn load_upgradeable_buffer(
+fn upgrade_bpf_program(
     bank_client: &BankClient,
     payer_keypair: &Keypair,
     buffer_keypair: &Keypair,
-    buffer_authority_keypair: &Keypair,
+    executable_pubkey: &Pubkey,
+    authority_keypair: &Keypair,
     name: &str,
 ) {
     let path = create_bpf_path(name);
@@ -146,25 +144,8 @@ fn load_upgradeable_buffer(
         bank_client,
         payer_keypair,
         &buffer_keypair,
-        buffer_authority_keypair,
-        &elf,
-    );
-}
-
-fn upgrade_bpf_program(
-    bank_client: &BankClient,
-    payer_keypair: &Keypair,
-    buffer_keypair: &Keypair,
-    executable_pubkey: &Pubkey,
-    authority_keypair: &Keypair,
-    name: &str,
-) {
-    load_upgradeable_buffer(
-        bank_client,
-        payer_keypair,
-        buffer_keypair,
         authority_keypair,
-        name,
+        &elf,
     );
     upgrade_program(
         bank_client,
@@ -189,72 +170,29 @@ fn run_program(
     file.read_to_end(&mut data).unwrap();
     let loader_id = bpf_loader::id();
     let mut invoke_context = MockInvokeContext::default();
-    let parameter_bytes = serialize_parameters(
+
+    let executable = EbpfVm::create_executable_from_elf(&data, None).unwrap();
+    let (mut vm, heap_region) = create_vm(
+        &loader_id,
+        executable.as_ref(),
+        parameter_accounts,
+        &mut invoke_context,
+    )
+    .unwrap();
+    let mut parameter_bytes = serialize_parameters(
         &bpf_loader::id(),
         program_id,
         parameter_accounts,
         &instruction_data,
     )
     .unwrap();
-    let compute_meter = invoke_context.get_compute_meter();
-    let mut instruction_meter = ThisInstructionMeter { compute_meter };
-
-    let config = Config {
-        max_call_depth: 20,
-        stack_frame_size: 4096,
-        enable_instruction_meter: true,
-        enable_instruction_tracing: true,
-    };
-    let mut executable = Executable::from_elf(&data, None, config).unwrap();
-    executable.set_syscall_registry(register_syscalls(&mut invoke_context).unwrap());
-    executable.jit_compile().unwrap();
-
-    let mut instruction_count = 0;
-    let mut tracer = None;
-    for i in 0..2 {
-        let mut parameter_bytes = parameter_bytes.clone();
-        let mut vm = create_vm(
-            &loader_id,
-            executable.as_ref(),
-            &mut parameter_bytes,
-            parameter_accounts,
-            &mut invoke_context,
-        )
-        .unwrap();
-        let result = if i == 0 {
-            vm.execute_program_interpreted(&mut instruction_meter)
-        } else {
-            vm.execute_program_jit(&mut instruction_meter)
-        };
-        assert_eq!(SUCCESS, result.unwrap());
-        deserialize_parameters(&bpf_loader::id(), parameter_accounts, &parameter_bytes).unwrap();
-        if i == 1 {
-            assert_eq!(instruction_count, vm.get_total_instruction_count());
-        }
-        instruction_count = vm.get_total_instruction_count();
-        if config.enable_instruction_tracing {
-            if i == 1 {
-                if !Tracer::compare(tracer.as_ref().unwrap(), vm.get_tracer()) {
-                    let mut tracer_display = String::new();
-                    tracer
-                        .as_ref()
-                        .unwrap()
-                        .write(&mut tracer_display, vm.get_program())
-                        .unwrap();
-                    println!("TRACE (interpreted): {}", tracer_display);
-                    let mut tracer_display = String::new();
-                    vm.get_tracer()
-                        .write(&mut tracer_display, vm.get_program())
-                        .unwrap();
-                    println!("TRACE (jit): {}", tracer_display);
-                    assert!(false);
-                }
-            }
-            tracer = Some(vm.get_tracer().clone());
-        }
-    }
-
-    Ok(instruction_count)
+    assert_eq!(
+        SUCCESS,
+        vm.execute_program(parameter_bytes.as_mut_slice(), &[], &[heap_region.clone()])
+            .unwrap()
+    );
+    deserialize_parameters(&bpf_loader::id(), parameter_accounts, &parameter_bytes).unwrap();
+    Ok(vm.get_total_instruction_count())
 }
 
 fn process_transaction_and_record_inner(
@@ -720,7 +658,6 @@ fn test_program_bpf_invoke_sanity() {
     const TEST_RETURN_ERROR: u8 = 11;
     const TEST_PRIVILEGE_DEESCALATION_ESCALATION_SIGNER: u8 = 12;
     const TEST_PRIVILEGE_DEESCALATION_ESCALATION_WRITABLE: u8 = 13;
-    const TEST_WRITE_DEESCALATION: u8 = 14;
 
     #[allow(dead_code)]
     #[derive(Debug)]
@@ -837,12 +774,10 @@ fn test_program_bpf_invoke_sanity() {
                 invoked_program_id.clone(),
                 invoked_program_id.clone(),
                 invoked_program_id.clone(),
-                invoked_program_id.clone(),
             ],
             Languages::Rust => vec![
                 solana_sdk::system_program::id(),
                 solana_sdk::system_program::id(),
-                invoked_program_id.clone(),
                 invoked_program_id.clone(),
                 invoked_program_id.clone(),
                 invoked_program_id.clone(),
@@ -906,7 +841,7 @@ fn test_program_bpf_invoke_sanity() {
         do_invoke_failure_test_local(
             TEST_PPROGRAM_NOT_EXECUTABLE,
             TransactionError::InstructionError(0, InstructionError::AccountNotExecutable),
-            &[],
+            &[argument_keypair.pubkey().clone()],
         );
 
         do_invoke_failure_test_local(
@@ -929,13 +864,13 @@ fn test_program_bpf_invoke_sanity() {
 
         do_invoke_failure_test_local(
             TEST_INSTRUCTION_DATA_TOO_LARGE,
-            TransactionError::InstructionError(0, InstructionError::ProgramFailedToComplete),
+            TransactionError::InstructionError(0, InstructionError::ComputationalBudgetExceeded),
             &[],
         );
 
         do_invoke_failure_test_local(
             TEST_INSTRUCTION_META_TOO_LARGE,
-            TransactionError::InstructionError(0, InstructionError::ProgramFailedToComplete),
+            TransactionError::InstructionError(0, InstructionError::ComputationalBudgetExceeded),
             &[],
         );
 
@@ -954,12 +889,6 @@ fn test_program_bpf_invoke_sanity() {
         do_invoke_failure_test_local(
             TEST_PRIVILEGE_DEESCALATION_ESCALATION_WRITABLE,
             TransactionError::InstructionError(0, InstructionError::PrivilegeEscalation),
-            &[invoked_program_id.clone()],
-        );
-
-        do_invoke_failure_test_local(
-            TEST_WRITE_DEESCALATION,
-            TransactionError::InstructionError(0, InstructionError::ReadonlyDataModified),
             &[invoked_program_id.clone()],
         );
 
@@ -1012,58 +941,6 @@ fn test_program_bpf_invoke_sanity() {
             TransactionError::InstructionError(0, InstructionError::ProgramFailedToComplete)
         );
     }
-}
-
-#[cfg(feature = "bpf_rust")]
-#[test]
-fn test_program_bpf_program_id_spoofing() {
-    let GenesisConfigInfo {
-        genesis_config,
-        mint_keypair,
-        ..
-    } = create_genesis_config(50);
-    let mut bank = Bank::new(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
-    bank.add_builtin(&name, id, entrypoint);
-    let bank = Arc::new(bank);
-    let bank_client = BankClient::new_shared(&bank);
-
-    let malicious_swap_pubkey = load_bpf_program(
-        &bank_client,
-        &bpf_loader::id(),
-        &mint_keypair,
-        "solana_bpf_rust_spoof1",
-    );
-    let malicious_system_pubkey = load_bpf_program(
-        &bank_client,
-        &bpf_loader::id(),
-        &mint_keypair,
-        "solana_bpf_rust_spoof1_system",
-    );
-
-    let from_pubkey = Pubkey::new_unique();
-    let account = Account::new(10, 0, &solana_sdk::system_program::id());
-    bank.store_account(&from_pubkey, &account);
-
-    let to_pubkey = Pubkey::new_unique();
-    let account = Account::new(0, 0, &solana_sdk::system_program::id());
-    bank.store_account(&to_pubkey, &account);
-
-    let account_metas = vec![
-        AccountMeta::new_readonly(solana_sdk::system_program::id(), false),
-        AccountMeta::new_readonly(malicious_system_pubkey, false),
-        AccountMeta::new(from_pubkey, false),
-        AccountMeta::new(to_pubkey, false),
-    ];
-
-    let instruction = Instruction::new(malicious_swap_pubkey, &(), account_metas.clone());
-    let result = bank_client.send_and_confirm_instruction(&mint_keypair, instruction);
-    assert_eq!(
-        result.unwrap_err().unwrap(),
-        TransactionError::InstructionError(0, InstructionError::MissingRequiredSignature)
-    );
-    assert_eq!(10, bank.get_balance(&from_pubkey));
-    assert_eq!(0, bank.get_balance(&to_pubkey));
 }
 
 #[cfg(feature = "bpf_rust")]
@@ -1348,7 +1225,7 @@ fn test_program_bpf_test_use_latest_executor() {
             &mint_keypair.pubkey(),
             &program_keypair.pubkey(),
             1,
-            elf.len() as u64 * 2,
+            elf.len() as u64 * 10, // needs to be big enough for second write
             &bpf_loader::id(),
         )],
         Some(&mint_keypair.pubkey()),
@@ -1447,7 +1324,7 @@ fn test_program_bpf_test_use_latest_executor2() {
             &mint_keypair.pubkey(),
             &program_keypair.pubkey(),
             1,
-            elf.len() as u64 * 2,
+            elf.len() as u64 * 10, // needs to be big enough for second write
             &bpf_loader::id(),
         )],
         Some(&mint_keypair.pubkey()),
@@ -1675,12 +1552,18 @@ fn test_program_bpf_upgrade_and_invoke_in_same_tx() {
 
     // Prepare for upgrade
     let buffer_keypair = Keypair::new();
-    load_upgradeable_buffer(
+    let path = create_bpf_path("solana_bpf_rust_panic");
+    let mut file = File::open(&path).unwrap_or_else(|err| {
+        panic!("Failed to open {}: {}", path.display(), err);
+    });
+    let mut elf = Vec::new();
+    file.read_to_end(&mut elf).unwrap();
+    load_buffer_account(
         &bank_client,
         &mint_keypair,
         &buffer_keypair,
         &authority_keypair,
-        "solana_bpf_rust_panic",
+        &elf,
     );
 
     // Invoke, then upgrade the program, and then invoke again in same tx
@@ -2010,12 +1893,18 @@ fn test_program_bpf_upgrade_self_via_cpi() {
 
     // Prepare for upgrade
     let buffer_keypair = Keypair::new();
-    load_upgradeable_buffer(
+    let path = create_bpf_path("solana_bpf_rust_panic");
+    let mut file = File::open(&path).unwrap_or_else(|err| {
+        panic!("Failed to open {}: {}", path.display(), err);
+    });
+    let mut elf = Vec::new();
+    file.read_to_end(&mut elf).unwrap();
+    load_buffer_account(
         &bank_client,
         &mint_keypair,
         &buffer_keypair,
         &authority_keypair,
-        "solana_bpf_rust_panic",
+        &elf,
     );
 
     // Invoke, then upgrade the program, and then invoke again in same tx
@@ -2182,42 +2071,4 @@ fn test_program_upgradeable_locks() {
     } else {
         panic!("no meta");
     }
-}
-
-#[cfg(feature = "bpf_rust")]
-#[test]
-fn test_program_bpf_syscall_feature_activation() {
-    solana_logger::setup();
-
-    let GenesisConfigInfo {
-        genesis_config,
-        mint_keypair,
-        ..
-    } = create_genesis_config(50);
-    let mut bank = Bank::new(&genesis_config);
-    bank.deactivate_feature(&try_find_program_address_syscall_enabled::id());
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
-    bank.add_builtin(&name, id, entrypoint);
-    let bank = Arc::new(bank);
-    let bank_client = BankClient::new_shared(&bank);
-
-    let program_id = load_bpf_program(
-        &bank_client,
-        &bpf_loader::id(),
-        &mint_keypair,
-        "solana_bpf_rust_noop",
-    );
-    let instruction = Instruction::new(program_id, &0u8, vec![]);
-    let result = bank_client.send_and_confirm_instruction(&mint_keypair, instruction);
-    assert!(result.is_ok());
-
-    let mut bank = Bank::new_from_parent(&bank, &Pubkey::default(), 1);
-    bank.activate_feature(&try_find_program_address_syscall_enabled::id());
-
-    let bank = Arc::new(bank);
-    let bank_client = BankClient::new_shared(&bank);
-    let instruction = Instruction::new(program_id, &1u8, vec![]);
-    let result = bank_client.send_and_confirm_instruction(&mint_keypair, instruction);
-    println!("result: {:?}", result);
-    assert!(result.is_ok());
 }

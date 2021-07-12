@@ -1,8 +1,10 @@
 //! @brief Example Rust-based BPF program that prints out the parameters passed to it
 
+#![allow(unreachable_code)]
 
-use solana_program::{
-    account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg, log::*, pubkey::Pubkey,
+extern crate solana_sdk;
+use solana_sdk::{
+    account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, info, log::*, pubkey::Pubkey,
 };
 
 #[derive(Debug, PartialEq)]
@@ -23,13 +25,13 @@ fn process_instruction(
     accounts: &[AccountInfo],
     instruction_data: &[u8],
 ) -> ProgramResult {
-    msg!("Program identifier:");
+    info!("Program identifier:");
     program_id.log();
 
     // Log the provided account keys and instruction input data.  In the case of
     // the no-op program, no account keys or input data are expected but real
     // programs will have specific requirements so they can do their work.
-    msg!("Account keys and instruction input data:");
+    info!("Account keys and instruction input data:");
     sol_log_params(accounts, instruction_data);
 
     {
@@ -40,7 +42,7 @@ fn process_instruction(
         let result_str = std::str::from_utf8(&sparkle_heart).unwrap();
         assert_eq!(4, result_str.len());
         assert_eq!("💖", result_str);
-        msg!(result_str);
+        info!(result_str);
     }
 
     {

@@ -1,23 +1,29 @@
 import React from "react";
 import {
+  TransactionInstruction,
   SystemProgram,
   SignatureResult,
-  ParsedInstruction,
+  SystemInstruction,
 } from "@solana/web3.js";
 import { InstructionCard } from "../InstructionCard";
 import { Copyable } from "components/common/Copyable";
+import { UnknownDetailsCard } from "../UnknownDetailsCard";
 import { Address } from "components/common/Address";
-import { AllocateWithSeedInfo } from "./types";
 
 export function AllocateWithSeedDetailsCard(props: {
-  ix: ParsedInstruction;
+  ix: TransactionInstruction;
   index: number;
   result: SignatureResult;
-  info: AllocateWithSeedInfo;
-  innerCards?: JSX.Element[];
-  childIndex?: number;
 }) {
-  const { ix, index, result, info, innerCards, childIndex } = props;
+  const { ix, index, result } = props;
+
+  let params;
+  try {
+    params = SystemInstruction.decodeAllocateWithSeed(ix);
+  } catch (err) {
+    console.error(err);
+    return <UnknownDetailsCard {...props} />;
+  }
 
   return (
     <InstructionCard
@@ -25,8 +31,6 @@ export function AllocateWithSeedDetailsCard(props: {
       index={index}
       result={result}
       title="Allocate Account w/ Seed"
-      innerCards={innerCards}
-      childIndex={childIndex}
     >
       <tr>
         <td>Program</td>
@@ -38,35 +42,35 @@ export function AllocateWithSeedDetailsCard(props: {
       <tr>
         <td>Account Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.account} alignRight link />
+          <Address pubkey={params.accountPubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Base Address</td>
         <td className="text-lg-right">
-          <Address pubkey={info.base} alignRight link />
+          <Address pubkey={params.basePubkey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Seed</td>
         <td className="text-lg-right">
-          <Copyable right text={info.seed}>
-            <code>{info.seed}</code>
+          <Copyable right text={params.seed}>
+            <code>{params.seed}</code>
           </Copyable>
         </td>
       </tr>
 
       <tr>
         <td>Allocated Space (Bytes)</td>
-        <td className="text-lg-right">{info.space}</td>
+        <td className="text-lg-right">{params.space}</td>
       </tr>
 
       <tr>
         <td>Assigned Owner</td>
         <td className="text-lg-right">
-          <Address pubkey={info.owner} alignRight link />
+          <Address pubkey={params.programId} alignRight link />
         </td>
       </tr>
     </InstructionCard>

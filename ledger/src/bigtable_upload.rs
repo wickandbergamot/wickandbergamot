@@ -11,6 +11,7 @@ use std::{
     },
     time::Duration,
 };
+use tokio::time::delay_for;
 
 // Attempt to upload this many blocks in parallel
 const NUM_BLOCKS_TO_UPLOAD_IN_PARALLEL: usize = 32;
@@ -80,7 +81,7 @@ pub async fn upload_confirmed_blocks(
                     Err(err) => {
                         error!("get_confirmed_blocks for {} failed: {:?}", start_slot, err);
                         // Consider exponential backoff...
-                        tokio::time::sleep(Duration::from_secs(2)).await;
+                        delay_for(Duration::from_secs(2)).await;
                     }
                 }
             };
@@ -106,7 +107,7 @@ pub async fn upload_confirmed_blocks(
             .difference(&bigtable_slots)
             .cloned()
             .collect::<Vec<_>>();
-        blocks_to_upload.sort_unstable();
+        blocks_to_upload.sort();
         blocks_to_upload
     };
 

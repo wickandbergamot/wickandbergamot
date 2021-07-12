@@ -33,7 +33,7 @@ pub fn sample_txs<T>(
     let mut now = Instant::now();
     let start_time = now;
     let initial_txs = client
-        .get_transaction_count_with_commitment(CommitmentConfig::processed())
+        .get_transaction_count_with_commitment(CommitmentConfig::recent())
         .expect("transaction count");
     let mut last_txs = initial_txs;
 
@@ -42,7 +42,7 @@ pub fn sample_txs<T>(
         let elapsed = now.elapsed();
         now = Instant::now();
         let mut txs;
-        match client.get_transaction_count_with_commitment(CommitmentConfig::processed()) {
+        match client.get_transaction_count_with_commitment(CommitmentConfig::recent()) {
             Err(e) => {
                 // ThinClient with multiple options should pick a better one now.
                 info!("Couldn't get transaction count {:?}", e);

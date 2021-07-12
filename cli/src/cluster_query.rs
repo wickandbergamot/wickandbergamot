@@ -16,7 +16,7 @@ use solana_clap_utils::{
 use solana_cli_output::{
     display::{
         build_balance_message, format_labeled_address, new_spinner_progress_bar,
-        println_name_value, println_transaction, unix_timestamp_to_string, writeln_name_value,
+        println_name_value, println_transaction, writeln_name_value,
     },
     *,
 };
@@ -902,7 +902,7 @@ pub fn process_get_block(
     let slot = if let Some(slot) = slot {
         slot
     } else {
-        rpc_client.get_slot_with_commitment(CommitmentConfig::finalized())?
+        rpc_client.get_slot_with_commitment(CommitmentConfig::max())?
     };
 
     let mut block =
@@ -981,7 +981,7 @@ pub fn process_get_block_time(
     let slot = if let Some(slot) = slot {
         slot
     } else {
-        rpc_client.get_slot_with_commitment(CommitmentConfig::finalized())?
+        rpc_client.get_slot_with_commitment(CommitmentConfig::max())?
     };
     let timestamp = rpc_client.get_block_time(slot)?;
     let block_time = CliBlockTime { slot, timestamp };
@@ -1030,7 +1030,7 @@ pub fn process_show_block_production(
     slot_limit: Option<u64>,
 ) -> ProcessResult {
     let epoch_schedule = rpc_client.get_epoch_schedule()?;
-    let epoch_info = rpc_client.get_epoch_info_with_commitment(CommitmentConfig::finalized())?;
+    let epoch_info = rpc_client.get_epoch_info_with_commitment(CommitmentConfig::max())?;
 
     let epoch = epoch.unwrap_or(epoch_info.epoch);
     if epoch > epoch_info.epoch {
@@ -1089,7 +1089,7 @@ pub fn process_show_block_production(
 
     progress_bar.set_message(&format!("Fetching leader schedule for epoch {}...", epoch));
     let leader_schedule = rpc_client
-        .get_leader_schedule_with_commitment(Some(start_slot), CommitmentConfig::finalized())?;
+        .get_leader_schedule_with_commitment(Some(start_slot), CommitmentConfig::root())?;
     if leader_schedule.is_none() {
         return Err(format!("Unable to fetch leader schedule for slot {}", start_slot).into());
     }
@@ -1339,7 +1339,9 @@ pub fn process_ping(
 
                     // Sleep for half a slot
                     if signal_receiver
-                        .recv_timeout(Duration::from_millis(clock::DEFAULT_MS_PER_SLOT / 2))
+                        .recv_timeout(Duration::from_millis(
+                            500 * clock::DEFAULT_TICKS_PER_SLOT / clock::DEFAULT_TICKS_PER_SECOND,
+                        ))
                         .is_ok()
                     {
                         break 'mainloop;
@@ -1635,8 +1637,8 @@ pub fn process_show_stakes(
     let stake_history = from_account(&stake_history_account).ok_or_else(|| {
         CliError::RpcRequestError("Failed to deserialize stake history".to_string())
     })?;
-    
-    let stake_program_v2_enabled = true;
+    // At v1.6, this check can be removed and simply passed as `true`
+    let stake_program_v2_enabled = is_stake_program_v2_enabled(rpc_client)?;
 
     let mut stake_accounts: Vec<CliKeyedStakeState> = vec![];
     for (stake_pubkey, stake_account) in all_stake_accounts {
@@ -1812,14 +1814,9 @@ pub fn process_transaction_history(
     for result in results {
         if config.verbose {
             println!(
-                "{} [slot={} {}status={}] {}",
+                "{} [slot={} status={}] {}",
                 result.signature,
                 result.slot,
-                match result.block_time {
-                    None => "".to_string(),
-                    Some(block_time) =>
-                        format!("timestamp={} ", unix_timestamp_to_string(block_time)),
-                },
                 match result.err {
                     None => "Confirmed".to_string(),
                     Some(err) => format!("Failed: {:?}", err),

@@ -1,16 +1,16 @@
 //! Stakes serve as a cache of stake and vote accounts to derive
 //! node stakes
-use crate::vote_account::{ArcVoteAccount, VoteAccounts};
+use crate::vote_account::ArcVoteAccount;
 use solana_sdk::{
     account::Account, clock::Epoch, pubkey::Pubkey, sysvar::stake_history::StakeHistory,
 };
 use solana_stake_program::stake_state::{new_stake_history_entry, Delegation, StakeState};
-use std::{borrow::Borrow, collections::HashMap};
+use std::collections::HashMap;
 
 #[derive(Default, Clone, PartialEq, Debug, Deserialize, Serialize, AbiExample)]
 pub struct Stakes {
     /// vote accounts
-    vote_accounts: VoteAccounts,
+    vote_accounts: HashMap<Pubkey, (u64, ArcVoteAccount)>,
 
     /// stake_delegations
     stake_delegations: HashMap<Pubkey, Delegation>,
@@ -52,14 +52,19 @@ impl Stakes {
             let vote_accounts_for_next_epoch = self
                 .vote_accounts
                 .iter()
-                .map(|(pubkey, (_ /*stake*/, account))| {
-                    let stake = self.calculate_stake(
-                        pubkey,
-                        next_epoch,
-                        Some(&stake_history_upto_prev_epoch),
-                        fix_stake_deactivate,
-                    );
-                    (*pubkey, (stake, account.clone()))
+                .map(|(pubkey, (_stake, account))| {
+                    (
+                        *pubkey,
+                        (
+                            self.calculate_stake(
+                                pubkey,
+                                next_epoch,
+                                Some(&stake_history_upto_prev_epoch),
+                                fix_stake_deactivate,
+                            ),
+                            account.clone(),
+                        ),
+                    )
                 })
                 .collect();
 
@@ -174,10 +179,14 @@ impl Stakes {
             // if adjustments need to be made...
             if stake != old_stake {
                 if let Some((voter_pubkey, stake)) = old_stake {
-                    self.vote_accounts.sub_stake(&voter_pubkey, stake);
+                    self.vote_accounts
+                        .entry(voter_pubkey)
+                        .and_modify(|e| e.0 -= stake);
                 }
                 if let Some((voter_pubkey, stake)) = stake {
-                    self.vote_accounts.add_stake(&voter_pubkey, stake);
+                    self.vote_accounts
+                        .entry(voter_pubkey)
+                        .and_modify(|e| e.0 += stake);
                 }
             }
 
@@ -200,15 +209,11 @@ impl Stakes {
     }
 
     pub fn vote_accounts(&self) -> &HashMap<Pubkey, (u64, ArcVoteAccount)> {
-        self.vote_accounts.borrow()
+        &self.vote_accounts
     }
 
     pub fn stake_delegations(&self) -> &HashMap<Pubkey, Delegation> {
         &self.stake_delegations
-    }
-
-    pub fn staked_nodes(&self) -> HashMap<Pubkey, u64> {
-        self.vote_accounts.staked_nodes()
     }
 
     pub fn highest_staked_node(&self) -> Option<Pubkey> {
@@ -267,7 +272,7 @@ pub mod tests {
         )
     }
 
-    // add stake to a vote_pubkey                               (   stake    )
+    //   add stake to a vote_pubkey                               (   stake    )
     pub fn create_warming_stake_account(
         stake: u64,
         epoch: Epoch,
@@ -290,10 +295,8 @@ pub mod tests {
     #[test]
     fn test_stakes_basic() {
         for i in 0..4 {
-            let mut stakes = Stakes {
-                epoch: i,
-                ..Stakes::default()
-            };
+            let mut stakes = Stakes::default();
+            stakes.epoch = i;
 
             let ((vote_pubkey, vote_account), (stake_pubkey, mut stake_account)) =
                 create_staked_node_accounts(10);
@@ -369,10 +372,8 @@ pub mod tests {
 
     #[test]
     fn test_stakes_vote_account_disappear_reappear() {
-        let mut stakes = Stakes {
-            epoch: 4,
-            ..Stakes::default()
-        };
+        let mut stakes = Stakes::default();
+        stakes.epoch = 4;
 
         let ((vote_pubkey, mut vote_account), (stake_pubkey, stake_account)) =
             create_staked_node_accounts(10);
@@ -405,10 +406,8 @@ pub mod tests {
 
     #[test]
     fn test_stakes_change_delegate() {
-        let mut stakes = Stakes {
-            epoch: 4,
-            ..Stakes::default()
-        };
+        let mut stakes = Stakes::default();
+        stakes.epoch = 4;
 
         let ((vote_pubkey, vote_account), (stake_pubkey, stake_account)) =
             create_staked_node_accounts(10);
@@ -451,10 +450,8 @@ pub mod tests {
     }
     #[test]
     fn test_stakes_multiple_stakers() {
-        let mut stakes = Stakes {
-            epoch: 4,
-            ..Stakes::default()
-        };
+        let mut stakes = Stakes::default();
+        stakes.epoch = 4;
 
         let ((vote_pubkey, vote_account), (stake_pubkey, stake_account)) =
             create_staked_node_accounts(10);
@@ -503,10 +500,8 @@ pub mod tests {
 
     #[test]
     fn test_stakes_not_delegate() {
-        let mut stakes = Stakes {
-            epoch: 4,
-            ..Stakes::default()
-        };
+        let mut stakes = Stakes::default();
+        stakes.epoch = 4;
 
         let ((vote_pubkey, vote_account), (stake_pubkey, stake_account)) =
             create_staked_node_accounts(10);

@@ -167,12 +167,12 @@ pub fn resolve_signer(
     name: &str,
     wallet_manager: &mut Option<Arc<RemoteWalletManager>>,
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
-    resolve_signer_from_path(
+    Ok(resolve_signer_from_path(
         matches,
         matches.value_of(name).unwrap(),
         name,
         wallet_manager,
-    )
+    )?)
 }
 
 pub fn lamports_of_sol(matches: &ArgMatches<'_>, name: &str) -> Option<u64> {
@@ -356,7 +356,7 @@ mod tests {
         let matches = app()
             .clone()
             .get_matches_from(vec!["test", "--single", "1.5"]);
-        assert_eq!(lamports_of_sol(&matches, "single"), Some(1_500_000_000));
+        assert_eq!(lamports_of_sol(&matches, "single"), Some(1_33_370_166));
         assert_eq!(lamports_of_sol(&matches, "multiple"), None);
         let matches = app()
             .clone()

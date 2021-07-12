@@ -196,7 +196,6 @@ impl SendTransactionService {
                             &tpu_address,
                             &mut transactions,
                             &leader_info,
-                            leader_forward_count,
                         );
                     }
                     last_status_check = Instant::now();
@@ -218,7 +217,6 @@ impl SendTransactionService {
         tpu_address: &SocketAddr,
         transactions: &mut HashMap<Signature, TransactionInfo>,
         leader_info: &Option<LeaderInfo>,
-        leader_forward_count: u64,
     ) -> ProcessTransactionsResult {
         let mut result = ProcessTransactionsResult::default();
 
@@ -257,25 +255,23 @@ impl SendTransactionService {
                     info!("Retrying transaction: {}", signature);
                     result.retried += 1;
                     inc_new_counter_info!("send_transaction_service-retry", 1);
-                    let addresses = leader_info
+                    let leaders = leader_info
                         .as_ref()
-                        .map(|leader_info| leader_info.get_leader_tpus(leader_forward_count));
-                    let addresses = addresses
-                        .map(|address_list| {
-                            if address_list.is_empty() {
-                                vec![tpu_address]
-                            } else {
-                                address_list
-                            }
-                        })
-                        .unwrap_or_else(|| vec![&tpu_address]);
-                    for address in addresses {
-                        Self::send_transaction(
-                            &send_socket,
-                            address,
-                            &transaction_info.wire_transaction,
-                        );
-                    }
+                        .map(|leader_info| leader_info.get_leader_tpus(1));
+                    let leader = if let Some(leaders) = leaders {
+                        if leaders.is_empty() {
+                            &tpu_address
+                        } else {
+                            leaders[0]
+                        }
+                    } else {
+                        &tpu_address
+                    };
+                    Self::send_transaction(
+                        &send_socket,
+                        leader,
+                        &transaction_info.wire_transaction,
+                    );
                     true
                 }
                 Some((_slot, status)) => {
@@ -356,7 +352,6 @@ mod test {
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
         let send_socket = UdpSocket::bind("0.0.0.0:0").unwrap();
         let tpu_address = "127.0.0.1:0".parse().unwrap();
-        let leader_forward_count = 1;
 
         let root_bank = Arc::new(Bank::new_from_parent(
             &bank_forks.read().unwrap().working_bank(),
@@ -396,7 +391,6 @@ mod test {
             &tpu_address,
             &mut transactions,
             &None,
-            leader_forward_count,
         );
         assert!(transactions.is_empty());
         assert_eq!(
@@ -419,7 +413,6 @@ mod test {
             &tpu_address,
             &mut transactions,
             &None,
-            leader_forward_count,
         );
         assert!(transactions.is_empty());
         assert_eq!(
@@ -442,7 +435,6 @@ mod test {
             &tpu_address,
             &mut transactions,
             &None,
-            leader_forward_count,
         );
         assert!(transactions.is_empty());
         assert_eq!(
@@ -465,7 +457,6 @@ mod test {
             &tpu_address,
             &mut transactions,
             &None,
-            leader_forward_count,
         );
         assert_eq!(transactions.len(), 1);
         assert_eq!(
@@ -489,7 +480,6 @@ mod test {
             &tpu_address,
             &mut transactions,
             &None,
-            leader_forward_count,
         );
         assert_eq!(transactions.len(), 1);
         assert_eq!(
@@ -510,7 +500,6 @@ mod test {
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
         let send_socket = UdpSocket::bind("0.0.0.0:0").unwrap();
         let tpu_address = "127.0.0.1:0".parse().unwrap();
-        let leader_forward_count = 1;
 
         let root_bank = Arc::new(Bank::new_from_parent(
             &bank_forks.read().unwrap().working_bank(),
@@ -567,7 +556,6 @@ mod test {
             &tpu_address,
             &mut transactions,
             &None,
-            leader_forward_count,
         );
         assert!(transactions.is_empty());
         assert_eq!(
@@ -594,7 +582,6 @@ mod test {
             &tpu_address,
             &mut transactions,
             &None,
-            leader_forward_count,
         );
         assert!(transactions.is_empty());
         assert_eq!(
@@ -623,7 +610,6 @@ mod test {
             &tpu_address,
             &mut transactions,
             &None,
-            leader_forward_count,
         );
         assert!(transactions.is_empty());
         assert_eq!(
@@ -650,7 +636,6 @@ mod test {
             &tpu_address,
             &mut transactions,
             &None,
-            leader_forward_count,
         );
         assert!(transactions.is_empty());
         assert_eq!(
@@ -678,7 +663,6 @@ mod test {
             &tpu_address,
             &mut transactions,
             &None,
-            leader_forward_count,
         );
         assert!(transactions.is_empty());
         assert_eq!(
@@ -706,7 +690,6 @@ mod test {
             &tpu_address,
             &mut transactions,
             &None,
-            leader_forward_count,
         );
         assert_eq!(transactions.len(), 1);
         assert_eq!(
@@ -735,7 +718,6 @@ mod test {
             &tpu_address,
             &mut transactions,
             &None,
-            leader_forward_count,
         );
         assert_eq!(transactions.len(), 1);
         assert_eq!(
@@ -762,7 +744,6 @@ mod test {
             &tpu_address,
             &mut transactions,
             &None,
-            leader_forward_count,
         );
         assert_eq!(transactions.len(), 0);
         assert_eq!(

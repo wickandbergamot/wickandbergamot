@@ -24,7 +24,7 @@ pub const DEFAULT_LAMPORTS_PER_BYTE_YEAR: u64 = 1_000_000_000 / 100 * 365 / (102
 pub const DEFAULT_EXEMPTION_THRESHOLD: f64 = 2.0;
 
 /// default percentage of rent to burn (Valid values are 0 to 100)
-pub const DEFAULT_BURN_PERCENT: u8 = 50;
+pub const DEFAULT_BURN_PERCENT: u8 = 100;
 
 /// account storage overhead for calculation of base rent
 pub const ACCOUNT_STORAGE_OVERHEAD: u64 = 128;
@@ -109,11 +109,9 @@ mod tests {
             (0, true)
         );
 
-        let custom_rent = Rent {
-            lamports_per_byte_year: 5,
-            exemption_threshold: 2.5,
-            ..Rent::default()
-        };
+        let mut custom_rent = Rent::default();
+        custom_rent.lamports_per_byte_year = 5;
+        custom_rent.exemption_threshold = 2.5;
 
         assert_eq!(
             custom_rent.due(0, 2, 1.2),
@@ -142,7 +140,8 @@ mod tests {
         use crate::{clock::*, sysvar::Sysvar};
 
         const SECONDS_PER_YEAR: f64 = 365.242_199 * 24.0 * 60.0 * 60.0;
-        const SLOTS_PER_YEAR: f64 = SECONDS_PER_YEAR / DEFAULT_S_PER_SLOT;
+        const SLOTS_PER_YEAR: f64 =
+            SECONDS_PER_YEAR / (DEFAULT_TICKS_PER_SLOT as f64 / DEFAULT_TICKS_PER_SECOND as f64);
 
         let rent = Rent::default();
         panic!(

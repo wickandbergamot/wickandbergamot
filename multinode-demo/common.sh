@@ -25,7 +25,7 @@ if [[ -n $USE_INSTALL || ! -f "$SAFECOIN_ROOT"/Cargo.toml ]]; then
     if [[ -z $program ]]; then
       printf "safecoin"
     else
-      printf "safecoin-%s" "$program"
+      printf "solana-%s" "$program"
     fi
   }
 else

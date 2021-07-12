@@ -20,10 +20,7 @@ export function SearchBar() {
   const location = useLocation();
   const { cluster } = useCluster();
 
-  const onChange = (
-    { pathname }: ValueType<any, false>,
-    meta: ActionMeta<any>
-  ) => {
+  const onChange = ({ pathname }: ValueType<any>, meta: ActionMeta<any>) => {
     if (meta.action === "select-option") {
       history.push({ ...location, pathname });
       setSearch("");
@@ -43,7 +40,7 @@ export function SearchBar() {
             ref={(ref) => (selectRef.current = ref)}
             options={buildOptions(search, cluster)}
             noOptionsMessage={() => "No Results"}
-            placeholder="Search for blocks, accounts, transactions, programs, and tokens"
+            placeholder="Search for accounts, transactions, programs, and tokens"
             value={resetValue}
             inputValue={search}
             blurInputOnSelect
@@ -71,7 +68,6 @@ const SEARCHABLE_PROGRAMS: ProgramName[] = [
   "System Program",
   "Vote Program",
   "SPL Token Program",
-  "Memo Program",
 ];
 
 function buildProgramOptions(search: string) {
@@ -168,8 +164,7 @@ function buildTokenOptions(search: string, cluster: Cluster) {
   }
 }
 
-function buildOptions(rawSearch: string, cluster: Cluster) {
-  const search = rawSearch.trim();
+function buildOptions(search: string, cluster: Cluster) {
   if (search.length === 0) return [];
 
   const options = [];
@@ -194,19 +189,6 @@ function buildOptions(rawSearch: string, cluster: Cluster) {
     options.push(tokenOptions);
   }
 
-  if (!isNaN(Number(search))) {
-    options.push({
-      label: "Block",
-      options: [
-        {
-          label: `Slot #${search}`,
-          value: [search],
-          pathname: `/block/${search}`,
-        },
-      ],
-    });
-  }
-
   // Prefer nice suggestions over raw suggestions
   if (options.length > 0) return options;
 
@@ -218,7 +200,7 @@ function buildOptions(rawSearch: string, cluster: Cluster) {
         options: [
           {
             label: search,
-            value: [search],
+            value: search,
             pathname: "/address/" + search,
           },
         ],
@@ -229,7 +211,7 @@ function buildOptions(rawSearch: string, cluster: Cluster) {
         options: [
           {
             label: search,
-            value: [search],
+            value: search,
             pathname: "/tx/" + search,
           },
         ],

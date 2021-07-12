@@ -17,9 +17,7 @@ use solana_ledger::{
 };
 use solana_measure::measure::Measure;
 use solana_perf::packet::to_packets_chunked;
-use solana_runtime::{
-    accounts_background_service::ABSRequestSender, bank::Bank, bank_forks::BankForks,
-};
+use solana_runtime::{bank::Bank, bank_forks::BankForks};
 use solana_sdk::{
     hash::Hash,
     signature::Keypair,
@@ -325,7 +323,7 @@ fn main() {
                 poh_recorder.lock().unwrap().set_bank(&bank);
                 assert!(poh_recorder.lock().unwrap().bank().is_some());
                 if bank.slot() > 32 {
-                    bank_forks.set_root(root, &ABSRequestSender::default(), None);
+                    bank_forks.set_root(root, &None, None);
                     root += 1;
                 }
                 debug!(

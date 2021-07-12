@@ -1144,9 +1144,7 @@ mod tests {
     #[test]
     fn test_create_zero_lamport_with_clean() {
         with_create_zero_lamport(|bank| {
-            bank.freeze();
             bank.squash();
-            bank.force_flush_accounts_cache();
             // do clean and assert that it actually did its job
             assert_eq!(3, bank.get_snapshot_storages().len());
             bank.clean_accounts(false);

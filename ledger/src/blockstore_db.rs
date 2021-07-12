@@ -185,10 +185,9 @@ impl From<&str> for BlockstoreRecoveryMode {
         }
     }
 }
-
-impl From<BlockstoreRecoveryMode> for DBRecoveryMode {
-    fn from(brm: BlockstoreRecoveryMode) -> Self {
-        match brm {
+impl Into<DBRecoveryMode> for BlockstoreRecoveryMode {
+    fn into(self) -> DBRecoveryMode {
+        match self {
             BlockstoreRecoveryMode::TolerateCorruptedTailRecords => {
                 DBRecoveryMode::TolerateCorruptedTailRecords
             }
@@ -361,7 +360,11 @@ impl Rocks {
         Ok(())
     }
 
-    fn iterator_cf<C>(&self, cf: &ColumnFamily, iterator_mode: IteratorMode<C::Index>) -> DBIterator
+    fn iterator_cf<C>(
+        &self,
+        cf: &ColumnFamily,
+        iterator_mode: IteratorMode<C::Index>,
+    ) -> Result<DBIterator>
     where
         C: Column,
     {
@@ -374,15 +377,18 @@ impl Rocks {
             IteratorMode::Start => RocksIteratorMode::Start,
             IteratorMode::End => RocksIteratorMode::End,
         };
-        self.0.iterator_cf(cf, iterator_mode)
+        let iter = self.0.iterator_cf(cf, iterator_mode);
+        Ok(iter)
     }
 
-    fn raw_iterator_cf(&self, cf: &ColumnFamily) -> DBRawIterator {
-        self.0.raw_iterator_cf(cf)
+    fn raw_iterator_cf(&self, cf: &ColumnFamily) -> Result<DBRawIterator> {
+        let raw_iter = self.0.raw_iterator_cf(cf);
+
+        Ok(raw_iter)
     }
 
-    fn batch(&self) -> RWriteBatch {
-        RWriteBatch::default()
+    fn batch(&self) -> Result<RWriteBatch> {
+        Ok(RWriteBatch::default())
     }
 
     fn write(&self, batch: RWriteBatch) -> Result<()> {
@@ -405,7 +411,6 @@ pub trait Column {
     fn key(index: Self::Index) -> Vec<u8>;
     fn index(key: &[u8]) -> Self::Index;
     fn primary_index(index: Self::Index) -> Slot;
-    #[allow(clippy::wrong_self_convention)]
     fn as_index(slot: Slot) -> Self::Index;
 }
 
@@ -761,15 +766,15 @@ impl Database {
         }
     }
 
-    pub fn iter<C>(
-        &self,
+    pub fn iter<'a, C>(
+        &'a self,
         iterator_mode: IteratorMode<C::Index>,
-    ) -> Result<impl Iterator<Item = (C::Index, Box<[u8]>)> + '_>
+    ) -> Result<impl Iterator<Item = (C::Index, Box<[u8]>)> + 'a>
     where
         C: Column + ColumnName,
     {
         let cf = self.cf_handle::<C>();
-        let iter = self.backend.iterator_cf::<C>(cf, iterator_mode);
+        let iter = self.backend.iterator_cf::<C>(cf, iterator_mode)?;
         Ok(iter.map(|(key, value)| (C::index(&key), value)))
     }
 
@@ -793,11 +798,11 @@ impl Database {
 
     #[inline]
     pub fn raw_iterator_cf(&self, cf: &ColumnFamily) -> Result<DBRawIterator> {
-        Ok(self.backend.raw_iterator_cf(cf))
+        self.backend.raw_iterator_cf(cf)
     }
 
     pub fn batch(&self) -> Result<WriteBatch> {
-        let write_batch = self.backend.batch();
+        let write_batch = self.backend.batch()?;
         let map = self
             .backend
             .columns()
@@ -840,12 +845,12 @@ where
         self.backend.get_cf(self.handle(), &C::key(key))
     }
 
-    pub fn iter(
-        &self,
+    pub fn iter<'a>(
+        &'a self,
         iterator_mode: IteratorMode<C::Index>,
-    ) -> Result<impl Iterator<Item = (C::Index, Box<[u8]>)> + '_> {
+    ) -> Result<impl Iterator<Item = (C::Index, Box<[u8]>)> + 'a> {
         let cf = self.handle();
-        let iter = self.backend.iterator_cf::<C>(cf, iterator_mode);
+        let iter = self.backend.iterator_cf::<C>(cf, iterator_mode)?;
         Ok(iter.map(|(key, value)| (C::index(&key), value)))
     }
 
@@ -901,7 +906,7 @@ where
 
     #[cfg(test)]
     pub fn is_empty(&self) -> Result<bool> {
-        let mut iter = self.backend.raw_iterator_cf(self.handle());
+        let mut iter = self.backend.raw_iterator_cf(self.handle())?;
         iter.seek_to_first();
         Ok(!iter.valid())
     }
@@ -1034,15 +1039,6 @@ fn get_db_options(access_type: &AccessType) -> Options {
     options.create_missing_column_families(true);
     // A good value for this is the number of cores on the machine
     options.increase_parallelism(num_cpus::get() as i32);
-
-    let mut env = rocksdb::Env::default().unwrap();
-
-    // While a compaction is ongoing, all the background threads
-    // could be used by the compaction. This can stall writes which
-    // need to flush the memtable. Add some high-priority background threads
-    // which can service these writes.
-    env.set_high_priority_background_threads(4);
-    options.set_env(&env);
 
     // Set max total wal size to 4G.
     options.set_max_total_wal_size(4 * 1024 * 1024 * 1024);

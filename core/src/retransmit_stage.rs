@@ -1,5 +1,4 @@
 //! The `retransmit_stage` retransmits shreds between validators
-#![allow(clippy::rc_buffer)]
 
 use crate::{
     cluster_info::{compute_retransmit_peers, ClusterInfo, DATA_PLANE_FANOUT},
@@ -19,13 +18,18 @@ use solana_ledger::shred::{get_shred_slot_index_type, ShredFetchStats};
 use solana_ledger::{
     blockstore::{Blockstore, CompletedSlotsReceiver},
     leader_schedule_cache::LeaderScheduleCache,
+    staking_utils,
 };
 use solana_measure::measure::Measure;
 use solana_metrics::inc_new_counter_error;
 use solana_perf::packet::{Packet, Packets};
 use solana_runtime::{bank::Bank, bank_forks::BankForks};
 use solana_sdk::{
-    clock::Slot, epoch_schedule::EpochSchedule, feature_set, pubkey::Pubkey, timing::timestamp,
+    clock::{Epoch, Slot},
+    epoch_schedule::EpochSchedule,
+    feature_set,
+    pubkey::Pubkey,
+    timing::timestamp,
 };
 use solana_streamer::streamer::PacketReceiver;
 use std::{
@@ -117,10 +121,7 @@ fn update_retransmit_stats(
 
     let now = timestamp();
     let last = stats.last_ts.load(Ordering::Relaxed);
-    #[allow(deprecated)]
-    if now.saturating_sub(last) > 2000
-        && stats.last_ts.compare_and_swap(last, now, Ordering::Relaxed) == last
-    {
+    if now - last > 2000 && stats.last_ts.compare_and_swap(last, now, Ordering::Relaxed) == last {
         datapoint_info!("retransmit-num_nodes", ("count", peers_len, i64));
         datapoint_info!(
             "retransmit-stage",
@@ -175,29 +176,15 @@ fn update_retransmit_stats(
         packets_by_slot.clear();
         drop(packets_by_slot);
         let mut packets_by_source = stats.packets_by_source.lock().unwrap();
-        let mut top = BTreeMap::new();
-        let mut max = 0;
-        for (source, num) in packets_by_source.iter() {
-            if *num > max {
-                top.insert(*num, source.clone());
-                if top.len() > 5 {
-                    let last = *top.iter().next().unwrap().0;
-                    top.remove(&last);
-                }
-                max = *top.iter().next().unwrap().0;
-            }
-        }
-        info!(
-            "retransmit: top packets_by_source: {:?} len: {}",
-            top,
-            packets_by_source.len()
-        );
+        info!("retransmit: packets_by_source: {:?}", packets_by_source);
         packets_by_source.clear();
     }
 }
 
 #[derive(Default)]
 struct EpochStakesCache {
+    epoch: Epoch,
+    stakes: Option<Arc<HashMap<Pubkey, u64>>>,
     peers: Vec<ContactInfo>,
     stakes_and_index: Vec<(u64, usize)>,
 }
@@ -283,33 +270,44 @@ fn retransmit(
     let mut epoch_fetch = Measure::start("retransmit_epoch_fetch");
     let (r_bank, root_bank) = {
         let bank_forks = bank_forks.read().unwrap();
-        (bank_forks.working_bank(), bank_forks.root_bank())
+        (bank_forks.working_bank(), bank_forks.root_bank().clone())
     };
     let bank_epoch = r_bank.get_leader_schedule_epoch(r_bank.slot());
     epoch_fetch.stop();
 
     let mut epoch_cache_update = Measure::start("retransmit_epoch_cach_update");
+    let mut r_epoch_stakes_cache = epoch_stakes_cache.read().unwrap();
+    if r_epoch_stakes_cache.epoch != bank_epoch {
+        drop(r_epoch_stakes_cache);
+        let mut w_epoch_stakes_cache = epoch_stakes_cache.write().unwrap();
+        if w_epoch_stakes_cache.epoch != bank_epoch {
+            let stakes = staking_utils::staked_nodes_at_epoch(&r_bank, bank_epoch);
+            let stakes = stakes.map(Arc::new);
+            w_epoch_stakes_cache.stakes = stakes;
+            w_epoch_stakes_cache.epoch = bank_epoch;
+        }
+        drop(w_epoch_stakes_cache);
+        r_epoch_stakes_cache = epoch_stakes_cache.read().unwrap();
+    }
+
     let now = timestamp();
     let last = last_peer_update.load(Ordering::Relaxed);
-    #[allow(deprecated)]
-    if now.saturating_sub(last) > 1000
-        && last_peer_update.compare_and_swap(last, now, Ordering::Relaxed) == last
+    if now - last > 1000 && last_peer_update.compare_and_swap(last, now, Ordering::Relaxed) == last
     {
-        let epoch_staked_nodes = r_bank.epoch_staked_nodes(bank_epoch);
+        drop(r_epoch_stakes_cache);
+        let mut w_epoch_stakes_cache = epoch_stakes_cache.write().unwrap();
         let (peers, stakes_and_index) =
-            cluster_info.sorted_retransmit_peers_and_stakes(epoch_staked_nodes.as_ref());
-        {
-            let mut epoch_stakes_cache = epoch_stakes_cache.write().unwrap();
-            epoch_stakes_cache.peers = peers;
-            epoch_stakes_cache.stakes_and_index = stakes_and_index;
-        }
+            cluster_info.sorted_retransmit_peers_and_stakes(w_epoch_stakes_cache.stakes.clone());
+        w_epoch_stakes_cache.peers = peers;
+        w_epoch_stakes_cache.stakes_and_index = stakes_and_index;
+        drop(w_epoch_stakes_cache);
+        r_epoch_stakes_cache = epoch_stakes_cache.read().unwrap();
         {
             let mut sr = shreds_received.lock().unwrap();
             sr.0.clear();
             sr.1.reset();
         }
     }
-    let r_epoch_stakes_cache = epoch_stakes_cache.read().unwrap();
     let mut peers_len = 0;
     epoch_cache_update.stop();
 
@@ -350,13 +348,13 @@ fn retransmit(
                 shuffled_stakes_and_index.remove(my_index);
             }
             // split off the indexes, we don't need the stakes anymore
-            let indexes: Vec<_> = shuffled_stakes_and_index
+            let indexes = shuffled_stakes_and_index
                 .into_iter()
                 .map(|(_, index)| index)
                 .collect();
 
             let (neighbors, children) =
-                compute_retransmit_peers(DATA_PLANE_FANOUT, my_index, &indexes);
+                compute_retransmit_peers(DATA_PLANE_FANOUT, my_index, indexes);
             let neighbors: Vec<_> = neighbors
                 .into_iter()
                 .filter_map(|index| {

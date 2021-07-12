@@ -1,15 +1,12 @@
-use {
-    crate::cli_output::CliSignatureVerificationStatus,
-    chrono::{DateTime, NaiveDateTime, SecondsFormat, Utc},
-    console::style,
-    indicatif::{ProgressBar, ProgressStyle},
-    solana_sdk::{
-        clock::UnixTimestamp, hash::Hash, native_token::lamports_to_sol,
-        program_utils::limited_deserialize, transaction::Transaction,
-    },
-    solana_transaction_status::UiTransactionStatusMeta,
-    std::{collections::HashMap, fmt, io},
+use crate::cli_output::CliSignatureVerificationStatus;
+use console::style;
+use indicatif::{ProgressBar, ProgressStyle};
+use solana_sdk::{
+    hash::Hash, native_token::lamports_to_sol, program_utils::limited_deserialize,
+    transaction::Transaction,
 };
+use solana_transaction_status::UiTransactionStatusMeta;
+use std::{collections::HashMap, fmt, io};
 
 #[derive(Clone, Debug)]
 pub struct BuildBalanceMessageConfig {
@@ -72,7 +69,7 @@ pub fn build_balance_message(lamports: u64, use_lamports_unit: bool, show_unit: 
 
 // Pretty print a "name value"
 pub fn println_name_value(name: &str, value: &str) {
-    let styled_value = if value.is_empty() {
+    let styled_value = if value == "" {
         style("(not set)").italic()
     } else {
         style(value)
@@ -81,7 +78,7 @@ pub fn println_name_value(name: &str, value: &str) {
 }
 
 pub fn writeln_name_value(f: &mut dyn fmt::Write, name: &str, value: &str) -> fmt::Result {
-    let styled_value = if value.is_empty() {
+    let styled_value = if value == "" {
         style("(not set)").italic()
     } else {
         style(value)
@@ -301,13 +298,6 @@ pub fn new_spinner_progress_bar() -> ProgressBar {
         .set_style(ProgressStyle::default_spinner().template("{spinner:.green} {wide_msg}"));
     progress_bar.enable_steady_tick(100);
     progress_bar
-}
-
-pub fn unix_timestamp_to_string(unix_timestamp: UnixTimestamp) -> String {
-    match NaiveDateTime::from_timestamp_opt(unix_timestamp, 0) {
-        Some(ndt) => DateTime::<Utc>::from_utc(ndt, Utc).to_rfc3339_opts(SecondsFormat::Secs, true),
-        None => format!("UnixTimestamp {}", unix_timestamp),
-    }
 }
 
 #[cfg(test)]

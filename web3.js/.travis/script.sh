@@ -1,7 +1,6 @@
 # |source| this file
 
 set -ex
-safecoin --version
 
 ls -l lib
 test -r lib/index.iife.js
@@ -13,5 +12,8 @@ npm run flow
 npm run lint
 npm run codecov
 make -C examples/bpf-c-noop/
-cargo build-bpf --manifest-path examples/bpf-rust-noop/Cargo.toml
-npm run test:live-with-test-validator
+examples/bpf-rust-noop/do.sh build
+npm run localnet:update
+npm run localnet:up
+npm run test:live
+npm run localnet:down

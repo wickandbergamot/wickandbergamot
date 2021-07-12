@@ -181,28 +181,28 @@ pub mod tests {
             (
                 pubkey0,
                 (
-                    sol_to_lamports(4_500_000_000.0),
+                    sol_to_lamports(4_33_370_166.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey1,
                 (
-                    sol_to_lamports(4_500_000_000.0),
+                    sol_to_lamports(4_33_370_166.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey2,
                 (
-                    sol_to_lamports(4_500_000_000.0),
+                    sol_to_lamports(4_33_370_166.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey3,
                 (
-                    sol_to_lamports(4_500_000_000.0),
+                    sol_to_lamports(4_33_370_166.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
