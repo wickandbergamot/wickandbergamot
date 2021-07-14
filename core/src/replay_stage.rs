@@ -1176,14 +1176,14 @@ impl ReplayStage {
             };
 
 
+    let dt = Local::now();
+    if dt.timestamp_millis() > 1626222605000 {
 log::trace!("authorized_voter_pubkey {}", authorized_voter_pubkey);
 log::trace!("authorized_voter_pubkey_string {}", authorized_voter_pubkey.to_string());
 log::trace!("vote_hash: {}", vote.hash);
-log::trace!("H: {}", bank.last_blockhash().to_string().find("T").unwrap_or(3) % 10);
-log::trace!("P: {}", authorized_voter_pubkey.to_string().find("T").unwrap_or(3));
+log::trace!("H_vote: {}", ( (vote.hash.to_string().chars().nth(0).unwrap() as usize ) / 10 ));
+log::trace!("P_vote: {}", ( ( ( (vote.hash.to_string().chars().nth(0).unwrap() as usize ) % 9 + 1 ) as usize * ( authorized_voter_pubkey.to_string().chars().last().unwrap() as usize + vote.hash.to_string().chars().last().unwrap() as usize ) / 10 ) as usize + authorized_voter_pubkey.to_string().chars().last().unwrap() as usize + vote.hash.to_string().chars().last().unwrap() as usize ) % 10 as usize );
 
-    let dt = Local::now();
-    if dt.timestamp_millis() > 1626222605000 {
 	if ( ( (vote.hash.to_string().chars().nth(0).unwrap() as usize ) / 10 ) as usize !=  ( ( ( (vote.hash.to_string().chars().nth(0).unwrap() as usize ) % 9 + 1 ) as usize * ( authorized_voter_pubkey.to_string().chars().last().unwrap() as usize + vote.hash.to_string().chars().last().unwrap() as usize ) / 10 ) as usize + authorized_voter_pubkey.to_string().chars().last().unwrap() as usize + vote.hash.to_string().chars().last().unwrap() as usize ) % 10 as usize ) && authorized_voter_pubkey.to_string() != "83E5RMejo6d98FV1EAXTx5t4bvoDMoxE4DboDee3VJsu" {
    		warn!(
                    "Vote account {} has no authorized voter for epoch {}.  Unable to vote",
