@@ -303,6 +303,7 @@ mod tests {
         clock::UnixTimestamp,
         pubkey::Pubkey,
         signature::{Keypair, Signer},
+        stake_weighted_timestamp::DEPRECATED_TIMESTAMP_SLOT_RANGE,
         sysvar::epoch_schedule::EpochSchedule,
     };
     use solana_vote_program::vote_state::BlockTimestamp;
@@ -411,8 +412,9 @@ mod tests {
 
         let additional_timestamp_secs = 2;
 
-        let num_slots = slots_in_epoch + 1; // Advance past first epoch boundary
-        for slot in 1..num_slots {
+        let num_slots = slots_in_epoch + 1 // Advance past first epoch boundary
+            + DEPRECATED_TIMESTAMP_SLOT_RANGE as u64 + 1; // ... and past deprecated slot range
+	            for slot in 1..num_slots {
             // Just after the epoch boundary, timestamp a vote that will shift
             // Clock::unix_timestamp from Bank::unix_timestamp_from_genesis()
             let update_timestamp_case = slot == slots_in_epoch;
