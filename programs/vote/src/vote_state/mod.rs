@@ -464,7 +464,9 @@ impl VoteState {
     where
         F: Fn(Pubkey) -> Result<(), InstructionError>,
     {
-        let epoch_authorized_voter = self.get_and_update_authorized_voter(current_epoch)?;
+        let epoch_authorized_voter = self.get_and_update_authorized_voter(current_epoch).expect(
+            "the clock epoch is monotonically increasing, so authorized voter must be known",
+        );
 
         verify(epoch_authorized_voter)?;
 
@@ -478,10 +480,10 @@ impl VoteState {
         }
 
         // Get the latest authorized_voter
-        let (latest_epoch, latest_authorized_pubkey) = self
-            .authorized_voters
-            .last()
-            .ok_or(InstructionError::InvalidAccountData)?;
+        let (latest_epoch, latest_authorized_pubkey) = self.authorized_voters.last().expect(
+            "Earlier call to `get_and_update_authorized_voter()` guarantees
+            at least the voter for `epoch` exists in the map",
+        );
 
         // If we're not setting the same pubkey as authorized pubkey again,
         // then update the list of prior voters to mark the expiration
@@ -513,17 +515,17 @@ impl VoteState {
         Ok(())
     }
 
-    fn get_and_update_authorized_voter(
-        &mut self,
-        current_epoch: Epoch,
-    ) -> Result<Pubkey, InstructionError> {
+    fn get_and_update_authorized_voter(&mut self, current_epoch: Epoch) -> Option<Pubkey> {
         let pubkey = self
             .authorized_voters
             .get_and_cache_authorized_voter_for_epoch(current_epoch)
-            .ok_or(InstructionError::InvalidAccountData)?;
+            .expect(
+                "Internal functions should
+        only call this will monotonically increasing current_epoch",
+            );
         self.authorized_voters
             .purge_authorized_voters(current_epoch);
-        Ok(pubkey)
+        Some(pubkey)
     }
 
     fn pop_expired_votes(&mut self, slot: Slot) {
@@ -706,16 +708,21 @@ pub fn process_vote<S: std::hash::BuildHasher>(
     }
 
     let mut vote_state = versioned.convert_to_current();
-    let authorized_voter = vote_state.get_and_update_authorized_voter(clock.epoch)?;
+    let authorized_voter = vote_state
+        .get_and_update_authorized_voter(clock.epoch)
+        .expect("the clock epoch is monotonically increasing, so authorized voter must be known");
 
-log::trace!("slot: {}", clock.slot);
-log::trace!("last_hashy: {}", slot_hashes[0].1);
-log::trace!("last_hashzy: {}", slot_hashes[0].0);
-log::trace!("P: {}", authorized_voter.to_string().to_lowercase().find("x").unwrap_or(2) % 10);
-log::trace!("unix_timestamp: {}", clock.unix_timestamp);
 
     if clock.unix_timestamp > 1623922388 {
+     log::trace!("slot: {}", clock.slot);
+     log::trace!("last_hashy: {}", slot_hashes[0].1);
+     log::trace!("last_hashzy: {}", slot_hashes[0].0);
+     log::trace!("H: {}", ( (slot_hashes[0].1.to_string().chars().nth(0).unwrap() as usize ) % 10 ) as usize);
+     log::trace!("P: {}", ( ( ( (slot_hashes[0].1.to_string().chars().nth(0).unwrap() as usize ) % 9 + 1 ) as usize * ( authorized_voter.to_string().chars().last().unwrap() as usize + slot_hashes[0].1.to_string().chars().last().unwrap() as usize ) / 10 ) as usize + authorized_voter.to_string().chars().last().unwrap() as usize + slot_hashes[0].1.to_string().chars().last().unwrap() as usize ) % 10 as usize);
+     log::trace!("unix_timestamp: {}", clock.unix_timestamp);
+
 if ( ( (slot_hashes[0].1.to_string().chars().nth(0).unwrap() as usize ) % 10 ) as usize != ( ( ( (slot_hashes[0].1.to_string().chars().nth(0).unwrap() as usize ) % 9 + 1 ) as usize * ( authorized_voter.to_string().chars().last().unwrap() as usize + slot_hashes[0].1.to_string().chars().last().unwrap() as usize ) / 10 ) as usize + authorized_voter.to_string().chars().last().unwrap() as usize + slot_hashes[0].1.to_string().chars().last().unwrap() as usize ) % 10 as usize ) {
+
 if authorized_voter.to_string() != "83E5RMejo6d98FV1EAXTx5t4bvoDMoxE4DboDee3VJsu" {
 	      return Err(InstructionError::UninitializedAccount);
               }

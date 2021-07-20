@@ -74,7 +74,6 @@ impl BigTableUploadService {
                 start_slot,
                 Some(end_slot),
                 true,
-                false,
                 exit.clone(),
             ));
 
