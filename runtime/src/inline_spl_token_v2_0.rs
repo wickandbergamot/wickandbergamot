@@ -31,7 +31,7 @@ pub mod state {
 }
 
 pub mod native_mint {
-    solana_sdk::declare_id!("So11111111111111111111111111111111111111112");
+    solana_sdk::declare_id!("Safe111111111111111111111111111111111111112");
 
     /*
         Mint {
