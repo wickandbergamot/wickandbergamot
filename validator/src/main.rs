@@ -8,7 +8,7 @@ use {
     fd_lock::FdLock,
     log::*,
     rand::{seq::SliceRandom, thread_rng, Rng},
-    solana_clap_utils::{
+    safecoin_clap_utils::{
         input_parsers::{keypair_of, keypairs_of, pubkey_of, value_of},
         input_validators::{
             is_keypair, is_keypair_or_ask_keyword, is_parsable, is_pubkey, is_pubkey_or_keypair,
@@ -16,7 +16,7 @@ use {
         },
         keypair::SKIP_SEED_PHRASE_VALIDATION_ARG,
     },
-    solana_client::{
+    safecoin_client::{
         rpc_client::RpcClient, rpc_config::RpcLeaderScheduleConfig,
         rpc_request::MAX_MULTIPLE_ACCOUNTS,
     },
@@ -1721,7 +1721,7 @@ pub fn main() {
                 .long("account-index")
                 .takes_value(true)
                 .multiple(true)
-                .possible_values(&["program-id", "spl-token-owner", "spl-token-mint"])
+                .possible_values(&["program-id", "safe-token-owner", "safe-token-mint"])
                 .value_name("INDEX")
                 .help("Enable an accounts index, indexed by the selected account field"),
         )
@@ -2539,8 +2539,8 @@ fn process_account_indexes(matches: &ArgMatches) -> AccountSecondaryIndexes {
         .unwrap_or_default()
         .map(|value| match value {
             "program-id" => AccountIndex::ProgramId,
-            "spl-token-mint" => AccountIndex::SplTokenMint,
-            "spl-token-owner" => AccountIndex::SplTokenOwner,
+            "safe-token-mint" => AccountIndex::SplTokenMint,
+            "safe-token-owner" => AccountIndex::SplTokenOwner,
             _ => unreachable!(),
         })
         .collect();

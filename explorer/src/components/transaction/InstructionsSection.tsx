@@ -167,7 +167,7 @@ function renderInstructionCard({
     };
 
     switch (ix.program) {
-      case "spl-token":
+      case "safe-token":
         return <TokenDetailsCard {...props} />;
       case "bpf-loader":
         return <BpfLoaderDetailsCard {...props} />;
@@ -177,7 +177,7 @@ function renderInstructionCard({
         return <SystemDetailsCard {...props} />;
       case "stake":
         return <StakeDetailsCard {...props} />;
-      case "spl-memo":
+      case "safe-memo":
         return <MemoDetailsCard {...props} />;
       case "vote":
         return <VoteDetailsCard {...props} />;

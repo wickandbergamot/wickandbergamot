@@ -1,13 +1,13 @@
 use {
     crate::client_error,
-    solana_account_decoder::{parse_token::UiTokenAmount, UiAccount},
+    safecoin_account_decoder::{parse_token::UiTokenAmount, UiAccount},
     solana_sdk::{
         clock::{Epoch, Slot, UnixTimestamp},
         fee_calculator::{FeeCalculator, FeeRateGovernor},
         inflation::Inflation,
         transaction::{Result, TransactionError},
     },
-    solana_transaction_status::{
+    safecoin_transaction_status::{
         ConfirmedTransactionStatusWithSignature, TransactionConfirmationStatus,
     },
     std::{collections::HashMap, fmt, net::SocketAddr},
@@ -240,7 +240,7 @@ pub struct RpcBlockProduction {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct RpcVersionInfo {
-    /// The current version of solana-core
+    /// The current version of safecoin-core
     pub solana_core: String,
     /// first 4 bytes of the FeatureSet identifier
     pub feature_set: Option<u32>,

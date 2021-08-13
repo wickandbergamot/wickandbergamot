@@ -32,7 +32,7 @@ use byteorder::{ByteOrder, LittleEndian};
 use itertools::Itertools;
 use log::*;
 use rayon::ThreadPool;
-use solana_measure::measure::Measure;
+use safecoin_measure::measure::Measure;
 use solana_metrics::{datapoint_debug, inc_new_counter_debug, inc_new_counter_info};
 use solana_sdk::{
     account::{
@@ -5003,8 +5003,8 @@ impl Bank {
             });
 
             // As a workaround for
-            // https://github.com/solana-labs/solana-program-library/issues/374, ensure that the
-            // spl-token 2 native mint account is owned by the spl-token 2 program.
+            // https://github.com/solana-labs/safecoin-program-library/issues/374, ensure that the
+            // safe-token 2 native mint account is owned by the safe-token 2 program.
             let store = if let Some(existing_native_mint_account) =
                 self.get_account(&inline_spl_token_v2_0::native_mint::id())
             {

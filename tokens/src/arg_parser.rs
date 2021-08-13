@@ -4,13 +4,13 @@ use crate::args::{
 use clap::{
     crate_description, crate_name, value_t, value_t_or_exit, App, Arg, ArgMatches, SubCommand,
 };
-use solana_clap_utils::{
+use safecoin_clap_utils::{
     input_parsers::{pubkey_of_signer, value_of},
     input_validators::{is_amount, is_valid_pubkey, is_valid_signer},
     keypair::{pubkey_from_path, signer_from_path},
 };
-use solana_cli_config::CONFIG_FILE;
-use solana_remote_wallet::remote_wallet::maybe_wallet_manager;
+use safecoin_cli_config::CONFIG_FILE;
+use safecoin_remote_wallet::remote_wallet::maybe_wallet_manager;
 use solana_sdk::native_token::sol_to_lamports;
 use std::{error::Error, ffi::OsString, process::exit};
 
@@ -201,7 +201,7 @@ where
                 ),
         )
         .subcommand(
-            SubCommand::with_name("distribute-spl-tokens")
+            SubCommand::with_name("distribute-safe-tokens")
                 .about("Distribute SPL tokens")
                 .arg(
                     Arg::with_name("db_path")
@@ -285,7 +285,7 @@ where
                 ),
         )
         .subcommand(
-            SubCommand::with_name("spl-token-balances")
+            SubCommand::with_name("safe-token-balances")
                 .about("Balance of SPL token associated accounts")
                 .arg(
                     Arg::with_name("input_csv")
@@ -523,11 +523,11 @@ where
         ("distribute-stake", Some(matches)) => {
             Command::DistributeTokens(parse_distribute_stake_args(matches)?)
         }
-        ("distribute-spl-tokens", Some(matches)) => {
+        ("distribute-safe-tokens", Some(matches)) => {
             Command::DistributeTokens(parse_distribute_spl_tokens_args(matches)?)
         }
         ("balances", Some(matches)) => Command::Balances(parse_balances_args(matches)?),
-        ("spl-token-balances", Some(matches)) => Command::Balances(parse_balances_args(matches)?),
+        ("safe-token-balances", Some(matches)) => Command::Balances(parse_balances_args(matches)?),
         ("transaction-log", Some(matches)) => {
             Command::TransactionLog(parse_transaction_log_args(matches))
         }

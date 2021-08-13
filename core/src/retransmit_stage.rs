@@ -18,13 +18,13 @@ use crate::{
 };
 use crossbeam_channel::{Receiver, Sender};
 use lru::LruCache;
-use solana_client::rpc_response::SlotUpdate;
+use safecoin_client::rpc_response::SlotUpdate;
 use solana_ledger::shred::{get_shred_slot_index_type, ShredFetchStats};
 use solana_ledger::{
     blockstore::{Blockstore, CompletedSlotsReceiver},
     leader_schedule_cache::LeaderScheduleCache,
 };
-use solana_measure::measure::Measure;
+use safecoin_measure::measure::Measure;
 use solana_metrics::inc_new_counter_error;
 use solana_perf::packet::{Packet, Packets};
 use solana_runtime::{bank::Bank, bank_forks::BankForks};

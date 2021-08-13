@@ -40,7 +40,7 @@ test-stable-perf)
   _ "$cargo" build --manifest-path=keygen/Cargo.toml
   export PATH="$PWD/target/debug":$PATH
 
-  # BPF solana-sdk legacy compile test
+  # BPF safecoin-sdk legacy compile test
   ./cargo-build-bpf --manifest-path sdk/Cargo.toml
 
   # BPF Program unit tests
@@ -62,7 +62,7 @@ test-stable-perf)
     rm -rf target/perf-libs
     ./fetch-perf-libs.sh
 
-    # Force CUDA for solana-core unit tests
+    # Force CUDA for safecoin-core unit tests
     export TEST_PERF_LIBS_CUDA=1
 
     # Force CUDA in ci/localnet-sanity.sh
@@ -70,7 +70,7 @@ test-stable-perf)
   fi
 
   _ "$cargo" stable build --bins ${V:+--verbose}
-  _ "$cargo" stable test --package solana-perf --package solana-ledger --package solana-core --lib ${V:+--verbose} -- --nocapture
+  _ "$cargo" stable test --package safecoin-perf --package safecoin-ledger --package safecoin-core --lib ${V:+--verbose} -- --nocapture
   _ "$cargo" stable run --manifest-path poh-bench/Cargo.toml ${V:+--verbose} -- --hashes-per-tick 10
   ;;
 test-local-cluster)
