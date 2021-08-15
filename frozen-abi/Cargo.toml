@@ -1,6 +1,6 @@
 [package]
 name = "safecoin-frozen-abi"
-version = "1.6.18"
+version = "1.6.19"
 description = "Safecoin Frozen ABI"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 repository = "https://github.com/solana-labs/solana"

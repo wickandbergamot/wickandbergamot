@@ -7212,7 +7212,7 @@ pub mod tests {
         let owner = Pubkey::new_unique();
         assert_eq!(
             get_spl_token_owner_filter(
-                &Pubkey::from_str("HMGr16f8Ct1Zeb9TGPypt9rPgzCkmhCQB8Not8vwiPW1").unwrap(),
+                &Pubkey::from_str("7v5TwK92hUSqduoL3R8NtzTNfNzMA48nJL4mzPYMdDrD").unwrap(),
                 &[
                     RpcFilterType::Memcmp(Memcmp {
                         offset: 32,
@@ -7228,7 +7228,7 @@ pub mod tests {
 
         // Filtering on mint instead of owner
         assert!(get_spl_token_owner_filter(
-            &Pubkey::from_str("HMGr16f8Ct1Zeb9TGPypt9rPgzCkmhCQB8Not8vwiPW1").unwrap(),
+            &Pubkey::from_str("7v5TwK92hUSqduoL3R8NtzTNfNzMA48nJL4mzPYMdDrD").unwrap(),
             &[
                 RpcFilterType::Memcmp(Memcmp {
                     offset: 0,

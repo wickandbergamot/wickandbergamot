@@ -1,22 +1,24 @@
 [package]
-name = "safecoin-frozen-abi-macro"
-version = "1.6.19"
-description = "Safecoin Frozen ABI Macro"
+name = "solana-sdk-macro"
+version = "1.6.18"
+description = "Safecoin SDK Macro"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 repository = "https://github.com/solana-labs/solana"
 homepage = "https://solana.com/"
-documentation = "https://docs.rs/safecoin-frozen-abi-macro"
+documentation = "https://docs.rs/solana-sdk-macro"
 license = "Apache-2.0"
 edition = "2018"
 
 [lib]
+name = "solana_sdk_macro"
 proc-macro = true
 
 [dependencies]
-proc-macro2 = "1.0"
+bs58 = "0.3.0"
+proc-macro2 = "1.0.19"
 quote = "1.0"
 syn = { version = "1.0", features = ["full", "extra-traits"] }
-lazy_static = "1.4.0"
+rustversion = "1.0.3"
 
-[build-dependencies]
-rustc_version = "0.2"
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
