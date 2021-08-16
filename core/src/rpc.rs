@@ -1798,7 +1798,7 @@ impl JsonRpcRequestProcessor {
         if self
             .config
             .account_indexes
-            .contains(&AccountIndex::SplTokenOwner)
+            .contains(&AccountIndex::SafeTokenOwner)
         {
             if !self.config.account_indexes.include_key(owner_key) {
                 return Err(RpcCustomError::KeyExcludedFromSecondaryIndex {
@@ -1807,7 +1807,7 @@ impl JsonRpcRequestProcessor {
                 .into());
             }
             Ok(bank.get_filtered_indexed_accounts(
-                &IndexKey::SplTokenOwner(*owner_key),
+                &IndexKey::SafeTokenOwner(*owner_key),
                 |account| {
                     account.owner == spl_token_id_v2_0()
                         && filters.iter().all(|filter_type| match filter_type {
@@ -1846,7 +1846,7 @@ impl JsonRpcRequestProcessor {
         if self
             .config
             .account_indexes
-            .contains(&AccountIndex::SplTokenMint)
+            .contains(&AccountIndex::SafeTokenMint)
         {
             if !self.config.account_indexes.include_key(mint_key) {
                 return Err(RpcCustomError::KeyExcludedFromSecondaryIndex {
@@ -1855,7 +1855,7 @@ impl JsonRpcRequestProcessor {
                 .into());
             }
             Ok(
-                bank.get_filtered_indexed_accounts(&IndexKey::SplTokenMint(*mint_key), |account| {
+                bank.get_filtered_indexed_accounts(&IndexKey::SafeTokenMint(*mint_key), |account| {
                     account.owner == spl_token_id_v2_0()
                         && filters.iter().all(|filter_type| match filter_type {
                             RpcFilterType::DataSize(size) => account.data().len() as u64 == *size,
@@ -3763,7 +3763,7 @@ pub mod tests {
         vote_state::{BlockTimestamp, Vote, VoteInit, VoteStateVersions, MAX_LOCKOUT_HISTORY},
     };
     use spl_token_v2_0::{
-        solana_program::{program_option::COption, pubkey::Pubkey as SplTokenPubkey},
+        solana_program::{program_option::COption, pubkey::Pubkey as SafeTokenPubkey},
         state::AccountState as TokenAccountState,
         state::Mint,
     };
@@ -6694,9 +6694,9 @@ pub mod tests {
             start_rpc_handler_with_tx(&solana_sdk::pubkey::new_rand());
 
         let mut account_data = vec![0; TokenAccount::get_packed_len()];
-        let mint = SplTokenPubkey::new(&[2; 32]);
-        let owner = SplTokenPubkey::new(&[3; 32]);
-        let delegate = SplTokenPubkey::new(&[4; 32]);
+        let mint = SafeTokenPubkey::new(&[2; 32]);
+        let owner = SafeTokenPubkey::new(&[3; 32]);
+        let delegate = SafeTokenPubkey::new(&[4; 32]);
         let token_account = TokenAccount {
             mint,
             owner,
@@ -6792,7 +6792,7 @@ pub mod tests {
 
         // Add another token account with the same owner and delegate but different mint
         let mut account_data = vec![0; TokenAccount::get_packed_len()];
-        let new_mint = SplTokenPubkey::new(&[5; 32]);
+        let new_mint = SafeTokenPubkey::new(&[5; 32]);
         let token_account = TokenAccount {
             mint: new_mint,
             owner,
@@ -7095,9 +7095,9 @@ pub mod tests {
             start_rpc_handler_with_tx(&solana_sdk::pubkey::new_rand());
 
         let mut account_data = vec![0; TokenAccount::get_packed_len()];
-        let mint = SplTokenPubkey::new(&[2; 32]);
-        let owner = SplTokenPubkey::new(&[3; 32]);
-        let delegate = SplTokenPubkey::new(&[4; 32]);
+        let mint = SafeTokenPubkey::new(&[2; 32]);
+        let owner = SafeTokenPubkey::new(&[3; 32]);
+        let delegate = SafeTokenPubkey::new(&[4; 32]);
         let token_account = TokenAccount {
             mint,
             owner,
