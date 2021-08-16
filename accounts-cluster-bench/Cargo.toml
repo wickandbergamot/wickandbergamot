@@ -13,7 +13,7 @@ clap = "2.33.1"
 log = "0.4.11"
 rand = "0.7.0"
 rayon = "1.4.1"
-safecoin-account-decoder = { path = "../account-decoder", version = ">=1.6.19" }
+safecoin-account-decoder = { path = "../account-decoder", version = ">=1.6.20" }
 safecoin-clap-utils = { path = "../clap-utils", version = ">=1.6.19" }
 safecoin-client = { path = "../client", version = ">=1.6.19" }
 safecoin-core = { path = "../core", version = ">=1.6.18" }
