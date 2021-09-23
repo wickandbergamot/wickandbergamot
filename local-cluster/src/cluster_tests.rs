@@ -11,7 +11,7 @@ use solana_core::{
     cluster_info::VALIDATOR_PORT_RANGE, consensus::VOTE_THRESHOLD_DEPTH, contact_info::ContactInfo,
     gossip_service::discover_cluster,
 };
-use solana_ledger::{
+use safecoin_ledger::{
     blockstore::Blockstore,
     entry::{Entry, EntrySlice},
 };

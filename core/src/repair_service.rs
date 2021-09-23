@@ -6,11 +6,10 @@ use crate::{
     cluster_slots::ClusterSlots,
     repair_weight::RepairWeight,
     result::Result,
-    serve_repair::{RepairType, ServeRepair, DEFAULT_NONCE, REPAIR_PEERS_CACHE_CAPACITY},
+    serve_repair::{RepairType, ServeRepair, DEFAULT_NONCE},
 };
 use crossbeam_channel::{Receiver as CrossbeamReceiver, Sender as CrossbeamSender};
-use lru::LruCache;
-use solana_ledger::{
+use safecoin_ledger::{
     blockstore::{Blockstore, SlotMeta},
     shred::Nonce,
 };
@@ -182,7 +181,6 @@ impl RepairService {
         let mut last_stats = Instant::now();
         let duplicate_slot_repair_statuses: HashMap<Slot, DuplicateSlotRepairStatus> =
             HashMap::new();
-        let mut peers_cache = LruCache::new(REPAIR_PEERS_CACHE_CAPACITY);
 
         loop {
             if exit.load(Ordering::Relaxed) {
@@ -261,12 +259,13 @@ impl RepairService {
                 )
             };
 
+            let mut cache = HashMap::new();
             let mut send_repairs_elapsed = Measure::start("send_repairs_elapsed");
             repairs.into_iter().for_each(|repair_request| {
                 if let Ok((to, req)) = serve_repair.repair_request(
                     &cluster_slots,
                     repair_request,
-                    &mut peers_cache,
+                    &mut cache,
                     &mut repair_stats,
                     &repair_info.repair_validators,
                 ) {
@@ -659,11 +658,11 @@ mod test {
     use super::*;
     use crate::cluster_info::Node;
     use crossbeam_channel::unbounded;
-    use solana_ledger::blockstore::{
+    use safecoin_ledger::blockstore::{
         make_chaining_slot_entries, make_many_slot_entries, make_slot_entries,
     };
-    use solana_ledger::shred::max_ticks_per_n_shreds;
-    use solana_ledger::{blockstore::Blockstore, get_tmp_ledger_path};
+    use safecoin_ledger::shred::max_ticks_per_n_shreds;
+    use safecoin_ledger::{blockstore::Blockstore, get_tmp_ledger_path};
     use solana_runtime::genesis_utils::{self, GenesisConfigInfo, ValidatorVoteKeypairs};
     use solana_sdk::signature::Signer;
     use solana_vote_program::vote_transaction;

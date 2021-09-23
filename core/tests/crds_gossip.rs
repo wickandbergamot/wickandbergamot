@@ -483,7 +483,7 @@ fn network_run_pull(
                 .collect()
         };
         let transfered: Vec<_> = requests
-            .into_iter()
+            .into_par_iter()
             .map(|(to, filters, caller_info)| {
                 let mut bytes: usize = 0;
                 let mut msgs: usize = 0;
@@ -506,9 +506,8 @@ fn network_run_pull(
                             .lock()
                             .unwrap()
                             .generate_pull_responses(
-                                thread_pool,
                                 &filters,
-                                usize::MAX, // output_size_limit
+                                /*output_size_limit=*/ usize::MAX,
                                 now,
                             )
                             .into_iter()

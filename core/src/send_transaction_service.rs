@@ -35,8 +35,6 @@ pub struct TransactionInfo {
     pub wire_transaction: Vec<u8>,
     pub last_valid_slot: Slot,
     pub durable_nonce_info: Option<(Pubkey, Hash)>,
-    pub max_retries: Option<usize>,
-    retries: usize,
 }
 
 impl TransactionInfo {
@@ -45,15 +43,12 @@ impl TransactionInfo {
         wire_transaction: Vec<u8>,
         last_valid_slot: Slot,
         durable_nonce_info: Option<(Pubkey, Hash)>,
-        max_retries: Option<usize>,
     ) -> Self {
         Self {
             signature,
             wire_transaction,
             last_valid_slot,
             durable_nonce_info,
-            max_retries,
-            retries: 0,
         }
     }
 }
@@ -105,7 +100,6 @@ struct ProcessTransactionsResult {
     rooted: u64,
     expired: u64,
     retried: u64,
-    max_retries_elapsed: u64,
     failed: u64,
     retained: u64,
 }
@@ -228,7 +222,7 @@ impl SendTransactionService {
     ) -> ProcessTransactionsResult {
         let mut result = ProcessTransactionsResult::default();
 
-        transactions.retain(|signature, mut transaction_info| {
+        transactions.retain(|signature, transaction_info| {
             if transaction_info.durable_nonce_info.is_some() {
                 inc_new_counter_info!("send_transaction_service-nonced", 1);
             }
@@ -255,14 +249,6 @@ impl SendTransactionService {
                 inc_new_counter_info!("send_transaction_service-expired", 1);
                 return false;
             }
-            if let Some(max_retries) = transaction_info.max_retries {
-                if transaction_info.retries >= max_retries {
-                    info!("Dropping transaction due to max retries: {}", signature);
-                    result.max_retries_elapsed += 1;
-                    inc_new_counter_info!("send_transaction_service-max_retries", 1);
-                    return false;
-                }
-            }
 
             match working_bank.get_signature_status_slot(signature) {
                 None => {
@@ -270,7 +256,6 @@ impl SendTransactionService {
                     // dropped or landed in another fork.  Re-send it
                     info!("Retrying transaction: {}", signature);
                     result.retried += 1;
-                    transaction_info.retries += 1;
                     inc_new_counter_info!("send_transaction_service-retry", 1);
                     let addresses = leader_info
                         .as_ref()
@@ -329,7 +314,7 @@ impl SendTransactionService {
 mod test {
     use super::*;
     use crate::contact_info::ContactInfo;
-    use solana_ledger::{
+    use safecoin_ledger::{
         blockstore::Blockstore, get_tmp_ledger_path, leader_schedule_cache::LeaderScheduleCache,
     };
     use solana_runtime::genesis_utils::{
@@ -402,13 +387,7 @@ mod test {
         info!("Expired transactions are dropped...");
         transactions.insert(
             Signature::default(),
-            TransactionInfo::new(
-                Signature::default(),
-                vec![],
-                root_bank.slot() - 1,
-                None,
-                None,
-            ),
+            TransactionInfo::new(Signature::default(), vec![], root_bank.slot() - 1, None),
         );
         let result = SendTransactionService::process_transactions(
             &working_bank,
@@ -431,7 +410,7 @@ mod test {
         info!("Rooted transactions are dropped...");
         transactions.insert(
             rooted_signature,
-            TransactionInfo::new(rooted_signature, vec![], working_bank.slot(), None, None),
+            TransactionInfo::new(rooted_signature, vec![], working_bank.slot(), None),
         );
         let result = SendTransactionService::process_transactions(
             &working_bank,
@@ -454,7 +433,7 @@ mod test {
         info!("Failed transactions are dropped...");
         transactions.insert(
             failed_signature,
-            TransactionInfo::new(failed_signature, vec![], working_bank.slot(), None, None),
+            TransactionInfo::new(failed_signature, vec![], working_bank.slot(), None),
         );
         let result = SendTransactionService::process_transactions(
             &working_bank,
@@ -477,13 +456,7 @@ mod test {
         info!("Non-rooted transactions are kept...");
         transactions.insert(
             non_rooted_signature,
-            TransactionInfo::new(
-                non_rooted_signature,
-                vec![],
-                working_bank.slot(),
-                None,
-                None,
-            ),
+            TransactionInfo::new(non_rooted_signature, vec![], working_bank.slot(), None),
         );
         let result = SendTransactionService::process_transactions(
             &working_bank,
@@ -507,13 +480,7 @@ mod test {
         info!("Unknown transactions are retried...");
         transactions.insert(
             Signature::default(),
-            TransactionInfo::new(
-                Signature::default(),
-                vec![],
-                working_bank.slot(),
-                None,
-                None,
-            ),
+            TransactionInfo::new(Signature::default(), vec![], working_bank.slot(), None),
         );
         let result = SendTransactionService::process_transactions(
             &working_bank,
@@ -529,64 +496,6 @@ mod test {
             result,
             ProcessTransactionsResult {
                 retried: 1,
-                ..ProcessTransactionsResult::default()
-            }
-        );
-        transactions.clear();
-
-        info!("Transactions are only retried until max_retries");
-        transactions.insert(
-            Signature::new(&[1; 64]),
-            TransactionInfo::new(
-                Signature::default(),
-                vec![],
-                working_bank.slot(),
-                None,
-                Some(0),
-            ),
-        );
-        transactions.insert(
-            Signature::new(&[2; 64]),
-            TransactionInfo::new(
-                Signature::default(),
-                vec![],
-                working_bank.slot(),
-                None,
-                Some(1),
-            ),
-        );
-        let result = SendTransactionService::process_transactions(
-            &working_bank,
-            &root_bank,
-            &send_socket,
-            &tpu_address,
-            &mut transactions,
-            &None,
-            leader_forward_count,
-        );
-        assert_eq!(transactions.len(), 1);
-        assert_eq!(
-            result,
-            ProcessTransactionsResult {
-                retried: 1,
-                max_retries_elapsed: 1,
-                ..ProcessTransactionsResult::default()
-            }
-        );
-        let result = SendTransactionService::process_transactions(
-            &working_bank,
-            &root_bank,
-            &send_socket,
-            &tpu_address,
-            &mut transactions,
-            &None,
-            leader_forward_count,
-        );
-        assert!(transactions.is_empty());
-        assert_eq!(
-            result,
-            ProcessTransactionsResult {
-                max_retries_elapsed: 1,
                 ..ProcessTransactionsResult::default()
             }
         );
@@ -650,7 +559,6 @@ mod test {
                 vec![],
                 last_valid_slot,
                 Some((nonce_address, durable_nonce)),
-                None,
             ),
         );
         let result = SendTransactionService::process_transactions(
@@ -678,7 +586,6 @@ mod test {
                 vec![],
                 last_valid_slot,
                 Some((nonce_address, Hash::new_unique())),
-                None,
             ),
         );
         let result = SendTransactionService::process_transactions(
@@ -708,7 +615,6 @@ mod test {
                 vec![],
                 last_valid_slot,
                 Some((nonce_address, Hash::new_unique())),
-                None,
             ),
         );
         let result = SendTransactionService::process_transactions(
@@ -736,7 +642,6 @@ mod test {
                 vec![],
                 root_bank.slot() - 1,
                 Some((nonce_address, durable_nonce)),
-                None,
             ),
         );
         let result = SendTransactionService::process_transactions(
@@ -765,7 +670,6 @@ mod test {
                 vec![],
                 last_valid_slot,
                 Some((nonce_address, Hash::new_unique())), // runtime should advance nonce on failed transactions
-                None,
             ),
         );
         let result = SendTransactionService::process_transactions(
@@ -794,7 +698,6 @@ mod test {
                 vec![],
                 last_valid_slot,
                 Some((nonce_address, Hash::new_unique())), // runtime advances nonce when transaction lands
-                None,
             ),
         );
         let result = SendTransactionService::process_transactions(
@@ -824,7 +727,6 @@ mod test {
                 vec![],
                 last_valid_slot,
                 Some((nonce_address, durable_nonce)),
-                None,
             ),
         );
         let result = SendTransactionService::process_transactions(
@@ -946,13 +848,13 @@ mod test {
 
             let slot = bank.slot();
             let first_leader =
-                solana_ledger::leader_schedule_utils::slot_leader_at(slot, &bank).unwrap();
+                safecoin_ledger::leader_schedule_utils::slot_leader_at(slot, &bank).unwrap();
             assert_eq!(
                 leader_info.get_leader_tpus(1),
                 vec![recent_peers.get(&first_leader).unwrap()]
             );
 
-            let second_leader = solana_ledger::leader_schedule_utils::slot_leader_at(
+            let second_leader = safecoin_ledger::leader_schedule_utils::slot_leader_at(
                 slot + NUM_CONSECUTIVE_LEADER_SLOTS,
                 &bank,
             )
@@ -964,7 +866,7 @@ mod test {
             expected_leader_sockets.dedup();
             assert_eq!(leader_info.get_leader_tpus(2), expected_leader_sockets);
 
-            let third_leader = solana_ledger::leader_schedule_utils::slot_leader_at(
+            let third_leader = safecoin_ledger::leader_schedule_utils::slot_leader_at(
                 slot + (2 * NUM_CONSECUTIVE_LEADER_SLOTS),
                 &bank,
             )

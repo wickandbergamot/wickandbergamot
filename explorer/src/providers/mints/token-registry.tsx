@@ -4,7 +4,7 @@ import {
   TokenInfoMap,
   TokenInfo,
   TokenListContainer,
-} from "@safecoin/safe-token-registry";
+} from "@solana/safe-token-registry";
 import { clusterSlug, useCluster } from "providers/cluster";
 
 const TokenRegistryContext = React.createContext<TokenInfoMap>(new Map());

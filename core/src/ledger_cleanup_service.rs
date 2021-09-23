@@ -1,8 +1,8 @@
 //! The `ledger_cleanup_service` drops older ledger data to limit disk space usage
 
 use rand::{thread_rng, Rng};
-use solana_ledger::blockstore::{Blockstore, PurgeType};
-use solana_ledger::blockstore_db::Result as BlockstoreResult;
+use safecoin_ledger::blockstore::{Blockstore, PurgeType};
+use safecoin_ledger::blockstore_db::Result as BlockstoreResult;
 use safecoin_measure::measure::Measure;
 use solana_sdk::clock::{Slot, DEFAULT_TICKS_PER_SLOT, TICKS_PER_DAY};
 use std::string::ToString;
@@ -21,10 +21,10 @@ use std::time::Duration;
 // - A validator to download a snapshot from a peer and boot from it
 // - To make sure that if a validator needs to reboot from its own snapshot, it has enough slots locally
 //   to catch back up to where it was when it stopped
-pub const DEFAULT_MAX_LEDGER_SHREDS: u64 = 50_000_000;
+pub const DEFAULT_MAX_LEDGER_SHREDS: u64 = 5_000_000;
 
 // Allow down to 50m, or 3.5 days at idle, 1hr at 50k load, around ~100GB
-pub const DEFAULT_MIN_MAX_LEDGER_SHREDS: u64 = 20_000_000;
+pub const DEFAULT_MIN_MAX_LEDGER_SHREDS: u64 = 2_000_000;
 
 // Check for removing slots at this interval so we don't purge too often
 // and starve other blockstore users.
@@ -307,8 +307,8 @@ impl LedgerCleanupService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_ledger::blockstore::make_many_slot_entries;
-    use solana_ledger::get_tmp_ledger_path;
+    use safecoin_ledger::blockstore::make_many_slot_entries;
+    use safecoin_ledger::get_tmp_ledger_path;
     use std::sync::mpsc::channel;
 
     #[test]

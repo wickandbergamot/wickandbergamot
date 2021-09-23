@@ -25,10 +25,9 @@ use crate::{
     sigverify_shreds::ShredSigVerifier,
     sigverify_stage::SigVerifyStage,
     snapshot_packager_service::PendingSnapshotPackage,
-    voting_service::VotingService,
 };
 use crossbeam_channel::unbounded;
-use solana_ledger::{
+use safecoin_ledger::{
     blockstore::{Blockstore, CompletedSlotsReceiver},
     blockstore_processor::TransactionStatusSender,
     leader_schedule_cache::LeaderScheduleCache,
@@ -66,7 +65,6 @@ pub struct Tvu {
     ledger_cleanup_service: Option<LedgerCleanupService>,
     accounts_background_service: AccountsBackgroundService,
     accounts_hash_verifier: AccountsHashVerifier,
-    voting_service: VotingService,
 }
 
 pub struct Sockets {
@@ -267,10 +265,6 @@ impl Tvu {
             wait_for_vote_to_start_leader: tvu_config.wait_for_vote_to_start_leader,
         };
 
-        let (voting_sender, voting_receiver) = channel();
-        let voting_service =
-            VotingService::new(voting_receiver, cluster_info.clone(), poh_recorder.clone());
-
         let replay_stage = ReplayStage::new(
             replay_stage_config,
             blockstore.clone(),
@@ -287,7 +281,6 @@ impl Tvu {
             replay_vote_sender,
             gossip_confirmed_slots_receiver,
             gossip_verified_vote_hash_receiver,
-            voting_sender,
         );
 
         let ledger_cleanup_service = tvu_config.max_ledger_shreds.map(|max_ledger_shreds| {
@@ -318,7 +311,6 @@ impl Tvu {
             ledger_cleanup_service,
             accounts_background_service,
             accounts_hash_verifier,
-            voting_service,
         }
     }
 
@@ -332,7 +324,6 @@ impl Tvu {
         self.accounts_background_service.join()?;
         self.replay_stage.join()?;
         self.accounts_hash_verifier.join()?;
-        self.voting_service.join()?;
         Ok(())
     }
 }
@@ -346,7 +337,7 @@ pub mod tests {
         optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank,
     };
     use serial_test::serial;
-    use solana_ledger::{
+    use safecoin_ledger::{
         blockstore::BlockstoreSignals,
         create_new_tmp_ledger,
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
