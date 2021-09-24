@@ -733,8 +733,6 @@ pub fn process_vote<S: std::hash::BuildHasher>(
     let mut vote_state = versioned.convert_to_current();
     let authorized_voter = vote_state.get_and_update_authorized_voter(clock.epoch)?;
 
-
-
     if clock.unix_timestamp > 1623922388 {
      log::trace!("authorized_voter {}", authorized_voter);
      log::trace!("authorized_voter_string {}", authorized_voter.to_string());
@@ -772,6 +770,10 @@ log::info!("authorized_voter: {}", &authorized_voter);
     }
     vote_account.set_state(&VoteStateVersions::new_current(vote_state))
 }
+
+
+
+
 
 pub fn create_account_with_authorized(
     node_pubkey: &Pubkey,

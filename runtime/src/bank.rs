@@ -2702,7 +2702,7 @@ impl Bank {
             ClusterType::Development => false,
             ClusterType::Devnet => false,
             ClusterType::Testnet => false,
-            ClusterType::MainnetBeta => false,
+            ClusterType::MainnetBeta => self.epoch == 61,
         }
     }
 
@@ -4896,8 +4896,8 @@ impl Bank {
             self.rent_collector.rent.burn_percent = 50; // 50% rent burn
         }
 
-        if new_feature_activations.contains(&feature_set::spl_token_v2_self_transfer_fix::id()) {
-            self.apply_spl_token_v2_self_transfer_fix();
+        if new_feature_activations.contains(&feature_set::spl_token_v2_set_authority_fix::id()) {
+            self.apply_spl_token_v2_set_authority_fix();
         }
         // Remove me after a while around v1.6
         if !self.no_stake_rewrite.load(Relaxed)
@@ -4985,13 +4985,13 @@ impl Bank {
         }
     }
 
-    fn apply_spl_token_v2_self_transfer_fix(&mut self) {
+    fn apply_spl_token_v2_set_authority_fix(&mut self) {
         if let Some(old_account) = self.get_account(&inline_spl_token_v2_0::id()) {
             if let Some(new_account) =
                 self.get_account(&inline_spl_token_v2_0::new_token_program::id())
             {
                 datapoint_info!(
-                    "bank-apply_spl_token_v2_self_transfer_fix",
+                    "bank-apply_spl_token_v2_set_authority_fix",
                     ("slot", self.slot, i64),
                 );
 
@@ -5016,7 +5016,7 @@ impl Bank {
             ClusterType::Development => true,
             ClusterType::Devnet => true,
             ClusterType::Testnet => self.epoch() == 93,
-            ClusterType::MainnetBeta => self.epoch() == 61,
+            ClusterType::MainnetBeta => self.epoch() == 9999999,
         };
 
         if reconfigure_token2_native_mint {
@@ -11351,7 +11351,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn test_spl_token_v2_self_transfer_fix() {
+    fn test_spl_token_v2_replacement() {
         let (genesis_config, _mint_keypair) = create_genesis_config(0);
         let mut bank = Bank::new(&genesis_config);
 
@@ -11381,7 +11381,7 @@ pub(crate) mod tests {
 
         let original_capitalization = bank.capitalization();
 
-        bank.apply_spl_token_v2_self_transfer_fix();
+        bank.apply_spl_token_v2_set_authority_fix();
 
         // New token account is now empty
         assert_eq!(
