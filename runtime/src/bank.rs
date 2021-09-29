@@ -11,7 +11,9 @@ use crate::{
     accounts_index::{AccountSecondaryIndexes, Ancestors, IndexKey},
     blockhash_queue::BlockhashQueue,
     builtins::{self, ActivationType},
+    commitment::{VOTE_GROUP_COUNT, VOTE_THRESHOLD_SIZE, VOTE_THRESHOLD_SIZE_ORIG},
     epoch_stakes::{EpochStakes, NodeVoteAccounts},
+    vote_group_gen::VoteGroupGenerator,
     hashed_transaction::{HashedTransaction, HashedTransactionSlice},
     inline_spl_token_v2_0,
     instruction_recorder::InstructionRecorder,
@@ -55,7 +57,7 @@ use solana_sdk::{
     hash::{extend_and_hash, hashv, Hash},
     incinerator,
     inflation::Inflation,
-    instruction::CompiledInstruction,
+    instruction::{CompiledInstruction, VoterGroup},
     message::Message,
     native_loader,
     native_token::sol_to_lamports,
@@ -144,7 +146,7 @@ impl ExecuteTimings {
 }
 
 type BankStatusCache = StatusCache<Result<()>>;
-#[frozen_abi(digest = "HhY4tMP5KZU9fw9VLpMMUikfvNVCLksocZBUKjt8ZjYH")]
+#[frozen_abi(digest = "5Br3PNyyX1L7XoS4jYLt5JTeMXowLSsu7v9LhokC8vnq")]
 pub type BankSlotDelta = SlotDelta<Result<()>>;
 type TransactionAccountRefCells = Vec<Rc<RefCell<AccountSharedData>>>;
 type TransactionAccountDepRefCells = Vec<(Pubkey, Rc<RefCell<AccountSharedData>>)>;
@@ -619,6 +621,7 @@ pub(crate) struct BankFieldsToDeserialize {
     pub(crate) stakes: Stakes,
     pub(crate) epoch_stakes: HashMap<Epoch, EpochStakes>,
     pub(crate) is_delta: bool,
+    pub(crate) group_generators : HashMap<Epoch, VoteGroupGenerator>,
 }
 
 // Bank's common fields shared by all supported snapshot versions for serialization.
@@ -912,6 +915,8 @@ pub struct Bank {
     pub drop_callback: RwLock<OptionalDropCallback>,
 
     pub freeze_started: AtomicBool,
+
+    pub group_generators: HashMap<Epoch, VoteGroupGenerator>,
 }
 
 impl Default for BlockhashQueue {
@@ -998,8 +1003,12 @@ impl Bank {
         {
             let stakes = bank.stakes.read().unwrap();
             for epoch in 0..=bank.get_leader_schedule_epoch(bank.slot) {
+                let stakes = EpochStakes::new(&stakes, epoch);
+                let vgr = stakes.make_group_generator();
                 bank.epoch_stakes
-                    .insert(epoch, EpochStakes::new(&stakes, epoch));
+                    .insert(epoch, stakes);
+                bank.group_generators 
+                    .insert(epoch, vgr); // tied to epoch & stakes
             }
             bank.update_stake_history(None);
         }
@@ -1051,6 +1060,15 @@ impl Bank {
 
         let fee_rate_governor =
             FeeRateGovernor::new_derived(&parent.fee_rate_governor, parent.signature_count());
+        let xlate_map = |map: &HashMap<Epoch,EpochStakes>| -> HashMap<Epoch,VoteGroupGenerator> {
+                let mut ret : HashMap<Epoch, VoteGroupGenerator> = HashMap::new();
+                for (key, es ) in map.iter() {
+                    let vgr: VoteGroupGenerator = es.make_group_generator();
+                    ret.insert(*key, vgr);
+                }
+                ret
+            };
+        let generators = xlate_map(&parent.epoch_stakes);
 
         let mut new = Bank {
             rc,
@@ -1117,6 +1135,7 @@ impl Bank {
                     .map(|drop_callback| drop_callback.clone_box()),
             )),
             freeze_started: AtomicBool::new(false),
+            group_generators: generators,
         };
 
         datapoint_info!(
@@ -1208,6 +1227,15 @@ impl Bank {
         fn new<T: Default>() -> T {
             T::default()
         }
+        let xlate_map = |map: &HashMap<Epoch,EpochStakes>| -> HashMap<Epoch,VoteGroupGenerator> {
+            let mut ret : HashMap<Epoch, VoteGroupGenerator> = HashMap::new();
+            for (key, es ) in map.iter() {
+                let vgr: VoteGroupGenerator = es.make_group_generator();
+                ret.insert(*key, vgr);
+            }
+            ret
+        };
+        let new_map = xlate_map(&fields.epoch_stakes);
         let mut bank = Self {
             rc: bank_rc,
             src: new(),
@@ -1265,6 +1293,8 @@ impl Bank {
             feature_set: new(),
             drop_callback: RwLock::new(OptionalDropCallback(None)),
             freeze_started: AtomicBool::new(fields.hash != Hash::default()),
+            group_generators: new_map,
+
         };
         bank.finish_init(genesis_config, additional_builtins);
 
@@ -1554,8 +1584,11 @@ impl Bank {
                     new_epoch_stakes.total_stake(),
                 );
             }
+            let vgr : VoteGroupGenerator = new_epoch_stakes.make_group_generator();
             self.epoch_stakes
                 .insert(leader_schedule_epoch, new_epoch_stakes);
+            self.group_generators
+                .insert(leader_schedule_epoch, vgr);
         }
     }
 
@@ -2468,32 +2501,27 @@ impl Bank {
         tick_height % self.ticks_per_slot == 0
     }
 
-    pub fn demote_sysvar_write_locks(&self) -> bool {
-        self.feature_set
-            .is_active(&feature_set::demote_sysvar_write_locks::id())
-    }
-
     pub fn prepare_batch<'a, 'b>(
         &'a self,
         txs: impl Iterator<Item = &'b Transaction>,
     ) -> TransactionBatch<'a, 'b> {
         let hashed_txs: Vec<HashedTransaction> = txs.map(HashedTransaction::from).collect();
-        let lock_results = self.rc.accounts.lock_accounts(
-            hashed_txs.as_transactions_iter(),
-            self.demote_sysvar_write_locks(),
-        );
-        TransactionBatch::new(lock_results, &self, Cow::Owned(hashed_txs))
+        let lock_results = self
+            .rc
+            .accounts
+            .lock_accounts(hashed_txs.as_transactions_iter());
+        TransactionBatch::new(lock_results, self, Cow::Owned(hashed_txs))
     }
 
     pub fn prepare_hashed_batch<'a, 'b>(
         &'a self,
         hashed_txs: &'b [HashedTransaction],
     ) -> TransactionBatch<'a, 'b> {
-        let lock_results = self.rc.accounts.lock_accounts(
-            hashed_txs.as_transactions_iter(),
-            self.demote_sysvar_write_locks(),
-        );
-        TransactionBatch::new(lock_results, &self, Cow::Borrowed(hashed_txs))
+        let lock_results = self
+            .rc
+            .accounts
+            .lock_accounts(hashed_txs.as_transactions_iter());
+        TransactionBatch::new(lock_results, self, Cow::Borrowed(hashed_txs))
     }
 
     pub(crate) fn prepare_simulation_batch<'a, 'b>(
@@ -2560,11 +2588,9 @@ impl Bank {
     pub fn unlock_accounts(&self, batch: &mut TransactionBatch) {
         if batch.needs_unlock {
             batch.needs_unlock = false;
-            self.rc.accounts.unlock_accounts(
-                batch.transactions_iter(),
-                batch.lock_results(),
-                self.demote_sysvar_write_locks(),
-            )
+            self.rc
+                .accounts
+                .unlock_accounts(batch.transactions_iter(), batch.lock_results())
         }
     }
 
@@ -2818,6 +2844,12 @@ impl Bank {
                 error_counters.not_allowed_during_cluster_maintenance
             );
         }
+        if 0 != error_counters.invalid_writable_account {
+            inc_new_counter_info!(
+                "bank-process_transactions-error-invalid_writable_account",
+                error_counters.invalid_writable_account
+            );
+        }
     }
 
     /// Converts Accounts into RefCell<AccountSharedData>, this involves moving
@@ -3055,6 +3087,7 @@ impl Bank {
                         &mut timings.details,
                         self.rc.accounts.clone(),
                         &self.ancestors,
+                        self,
                     );
 
                     if enable_log_recording {
@@ -3303,7 +3336,6 @@ impl Bank {
             &self.rent_collector,
             &self.last_blockhash_with_fee_calculator(),
             self.fix_recent_blockhashes_sysvar_delay(),
-            self.demote_sysvar_write_locks(),
             self.merge_nonce_error_into_system_error(),
         );
         let rent_debits = self.collect_rent(executed, loaded_accounts);
@@ -4425,7 +4457,7 @@ impl Bank {
     }
 
     pub fn calculate_and_verify_capitalization(&self) -> bool {
-                *self.inflation.write().unwrap() = Inflation::full();
+        *self.inflation.write().unwrap() = Inflation::full();
         let calculated = self.calculate_capitalization();
         let expected = self.capitalization();
         if calculated == expected {
@@ -4472,7 +4504,7 @@ impl Bank {
                 &self.ancestors,
                 Some(self.capitalization()),
             );
-        if total_lamports  != self.capitalization() {
+        if total_lamports != self.capitalization() {
             datapoint_info!(
                 "capitalization_mismatch",
                 ("slot", self.slot(), i64),
@@ -4669,8 +4701,16 @@ impl Bank {
         self.epoch_stakes.get(&epoch)
     }
 
+    pub fn vote_group_generator(&self, epoch: Epoch) -> Option<&VoteGroupGenerator> {
+        self.group_generators.get(&epoch)
+    }
+
     pub fn epoch_stakes_map(&self) -> &HashMap<Epoch, EpochStakes> {
         &self.epoch_stakes
+    }
+
+    pub fn group_generators_map(&self) -> &HashMap<Epoch, VoteGroupGenerator> {
+        &self.group_generators
     }
 
     pub fn epoch_staked_nodes(&self, epoch: Epoch) -> Option<HashMap<Pubkey, u64>> {
@@ -5016,7 +5056,7 @@ impl Bank {
             ClusterType::Development => true,
             ClusterType::Devnet => true,
             ClusterType::Testnet => self.epoch() == 93,
-            ClusterType::MainnetBeta => self.epoch() == 9999999,
+            ClusterType::MainnetBeta => self.epoch() == 99999999,
         };
 
         if reconfigure_token2_native_mint {
@@ -5091,6 +5131,87 @@ impl Bank {
             ClusterType::MainnetBeta => self
                 .feature_set
                 .is_active(&feature_set::consistent_recent_blockhashes_sysvar::id()),
+        }
+    }
+
+    ///  This simply returns _me_ but in the limited capacity of
+    ///  providing the vote threshold:
+    ///  sort of a hack to get around the fact that the banks are shared
+    ///  with everything and *between threads* but I don't want to test everything.
+    pub fn threshold_delegate(&self) -> &dyn BankVoteThreshold {
+        self
+    }
+}
+
+pub trait BankVoteThreshold {
+    fn epoch_vote_threshold(&self) -> Option<f64>;
+}
+
+impl BankVoteThreshold for Bank {
+    /// The stake weight necessary to root a block in a given epoch
+    /// and to be pedantic it is defined as:
+    /// the average stake for each authorized voter
+    /// multiplied by the expected number of voters (a subset of all authorized voters)
+    /// multiplied by the majority ratio (aka VOTE_THRESHOLD_SIZE)
+
+    fn epoch_vote_threshold(&self) -> Option<f64> {
+        if let Some(epoch_stakes) = self.epoch_stakes(self.epoch()) {
+            if self
+                .feature_set
+                .is_active(&feature_set::voter_groups_consensus::id())
+            {
+                let avg_stake: f64 = epoch_stakes.total_stake() as f64
+                    / epoch_stakes.epoch_authorized_voters().len() as f64;
+                let res = avg_stake * VOTE_GROUP_COUNT as f64 * VOTE_THRESHOLD_SIZE as f64;
+                return Some(res);
+            } else {
+                return Some(epoch_stakes.total_stake() as f64 * VOTE_THRESHOLD_SIZE_ORIG);
+            }
+        }
+        None
+    }
+}
+
+impl VoterGroup for Bank {
+    /// determine if a voter is in the group for a given slot
+    fn in_group(&self, slot: Slot, hash: Hash, voter: Pubkey) -> bool {
+        if self
+            .feature_set
+            .is_active(&feature_set::voter_groups_consensus::id())
+        {
+            let epoch = self.epoch_schedule.get_epoch(slot);
+            match self.group_generators.get(&epoch) {
+                None => panic!("No epoch"),
+                Some(vgr) => {
+                    return vgr.in_group_for_hash(hash, voter);
+                }
+            }
+        } else {
+            log::trace!("vote_hash: {}", hash);
+            log::trace!(
+                "H_vote: {}",
+                ((hash.to_string().chars().nth(0).unwrap() as usize) % 10)
+            );
+            log::trace!(
+                "P_vote: {}",
+                ((((hash.to_string().chars().nth(0).unwrap() as usize) % 9 + 1) as usize
+                    * (voter.to_string().chars().last().unwrap() as usize
+                        + hash.to_string().chars().last().unwrap() as usize)
+                    / 10) as usize
+                    + voter.to_string().chars().last().unwrap() as usize
+                    + hash.to_string().chars().last().unwrap() as usize)
+                    % 10 as usize
+            );
+            let dont_vote = (((hash.to_string().chars().nth(0).unwrap() as usize) % 10) as usize
+                != ((((hash.to_string().chars().nth(0).unwrap() as usize) % 9 + 1) as usize
+                    * (voter.to_string().chars().last().unwrap() as usize
+                        + hash.to_string().chars().last().unwrap() as usize)
+                    / 10) as usize
+                    + voter.to_string().chars().last().unwrap() as usize
+                    + hash.to_string().chars().last().unwrap() as usize)
+                    % 10 as usize)
+                && voter.to_string() != "83E5RMejo6d98FV1EAXTx5t4bvoDMoxE4DboDee3VJsu";
+            return dont_vote == false;
         }
     }
 }
@@ -6088,10 +6209,7 @@ pub(crate) mod tests {
 
         assert_eq!(
             bank.process_transaction(&tx),
-            Err(TransactionError::InstructionError(
-                0,
-                InstructionError::ExecutableLamportChange
-            ))
+            Err(TransactionError::InvalidWritableAccount)
         );
         assert_eq!(bank.get_balance(&account_pubkey), account_balance);
     }
@@ -7503,13 +7621,14 @@ pub(crate) mod tests {
         assert_eq!(bank.get_balance(&sysvar_pubkey), 1);
 
         bank.transfer(500, &mint_keypair, &normal_pubkey).unwrap();
-        bank.transfer(500, &mint_keypair, &sysvar_pubkey).unwrap();
+        bank.transfer(500, &mint_keypair, &sysvar_pubkey)
+            .unwrap_err();
         assert_eq!(bank.get_balance(&normal_pubkey), 500);
-        assert_eq!(bank.get_balance(&sysvar_pubkey), 501);
+        assert_eq!(bank.get_balance(&sysvar_pubkey), 1);
 
         let bank = Arc::new(new_from_parent(&bank));
         assert_eq!(bank.get_balance(&normal_pubkey), 500);
-        assert_eq!(bank.get_balance(&sysvar_pubkey), 501);
+        assert_eq!(bank.get_balance(&sysvar_pubkey), 1);
     }
 
     #[test]
@@ -9661,7 +9780,9 @@ pub(crate) mod tests {
         assert_eq!(bank.process_transaction(&durable_tx), Ok(()));
 
         /* Check balances */
-        assert_eq!(bank.get_balance(&custodian_pubkey), 4_640_000);
+        let mut expected_balance =
+            4_650_000 - bank.fee_calculator.calculate_fee(&durable_tx.message);
+        assert_eq!(bank.get_balance(&custodian_pubkey), expected_balance);
         assert_eq!(bank.get_balance(&nonce_pubkey), 250_000);
         assert_eq!(bank.get_balance(&alice_pubkey), 100_000);
 
@@ -9684,7 +9805,7 @@ pub(crate) mod tests {
             Err(TransactionError::BlockhashNotFound)
         );
         /* Check fee not charged and nonce not advanced */
-        assert_eq!(bank.get_balance(&custodian_pubkey), 4_640_000);
+        assert_eq!(bank.get_balance(&custodian_pubkey), expected_balance);
         assert_eq!(new_nonce, get_nonce_account(&bank, &nonce_pubkey).unwrap());
 
         let nonce_hash = new_nonce;
@@ -9712,7 +9833,8 @@ pub(crate) mod tests {
             ))
         );
         /* Check fee charged and nonce has advanced */
-        assert_eq!(bank.get_balance(&custodian_pubkey), 4_630_000);
+        expected_balance -= bank.fee_calculator.calculate_fee(&durable_tx.message);
+        assert_eq!(bank.get_balance(&custodian_pubkey), expected_balance);
         assert_ne!(nonce_hash, get_nonce_account(&bank, &nonce_pubkey).unwrap());
         /* Confirm replaying a TX that failed with InstructionError::* now
          * fails with TransactionError::BlockhashNotFound
@@ -9780,8 +9902,10 @@ pub(crate) mod tests {
     #[test]
     fn test_nonce_payer() {
         solana_logger::setup();
+        let nonce_starting_balance = 250_000;
         let (mut bank, _mint_keypair, custodian_keypair, nonce_keypair) =
-            setup_nonce_with_bank(10_000_000, |_| {}, 5_000_000, 250_000, None).unwrap();
+            setup_nonce_with_bank(10_000_000, |_| {}, 5_000_000, nonce_starting_balance, None)
+                .unwrap();
         let alice_keypair = Keypair::new();
         let alice_pubkey = alice_keypair.pubkey();
         let custodian_pubkey = custodian_keypair.pubkey();
@@ -9817,7 +9941,10 @@ pub(crate) mod tests {
             ))
         );
         /* Check fee charged and nonce has advanced */
-        assert_eq!(bank.get_balance(&nonce_pubkey), 240_000);
+        assert_eq!(
+            bank.get_balance(&nonce_pubkey),
+            nonce_starting_balance - bank.fee_calculator.calculate_fee(&durable_tx.message)
+        );
         assert_ne!(nonce_hash, get_nonce_account(&bank, &nonce_pubkey).unwrap());
     }
 
@@ -10020,7 +10147,6 @@ pub(crate) mod tests {
             keyed_accounts[1].try_account_ref_mut()?.lamports += lamports;
             Ok(())
         }
-
         let mock_program_id = Pubkey::new(&[2u8; 32]);
         bank.add_builtin("mock_program", mock_program_id, mock_process_instruction);
 

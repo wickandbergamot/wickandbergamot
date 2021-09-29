@@ -57,9 +57,9 @@ dependencies = [
 
 [[package]]
 name = "aho-corasick"
-version = "0.7.15"
+version = "0.7.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7404febffaa47dac81aa44dba71523c9d069b1bdc50a77db41195149e17f68e5"
+checksum = "1e37cfd5e7657ada45f742d6e99ca5788580b5c529dc78faf11ece6dc702656f"
 dependencies = [
  "memchr",
 ]
@@ -117,9 +117,9 @@ checksum = "eab1c04a571841102f5345a8fc0f6bb3d31c315dec879b5c6e42e40ce7ffa34e"
 
 [[package]]
 name = "assert_cmd"
-version = "1.0.8"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c98233c6673d8601ab23e77eb38f999c51100d46c5703b17288c57fddf3a1ffe"
+checksum = "b800c4403e8105d959595e1f88119e78bc12bc874c4336973658b648a746ba93"
 dependencies = [
  "bstr",
  "doc-comment",
@@ -201,7 +201,7 @@ dependencies = [
  "instant",
  "pin-project",
  "rand 0.8.4",
- "tokio 1.11.0",
+ "tokio",
 ]
 
 [[package]]
@@ -419,9 +419,9 @@ checksum = "476e9cd489f9e121e02ffa6014a8ef220ecb15c05ed23fc34cca13925dc283fb"
 
 [[package]]
 name = "bstr"
-version = "0.2.15"
+version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a40b47ad93e1a5404e6c18dec46b628214fee441c70f4ab5d6942142cc268a3d"
+checksum = "90682c8d613ad3373e66de8c6411e0ae2ab2571e879d2efbf73558cc66f21279"
 dependencies = [
  "lazy_static",
  "memchr",
@@ -806,39 +806,13 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-deque"
-version = "0.7.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c20ff29ded3204c5106278a81a38f4b482636ed4fa1e6cfbeef193291beb29ed"
-dependencies = [
- "crossbeam-epoch 0.8.2",
- "crossbeam-utils 0.7.2",
- "maybe-uninit",
-]
-
-[[package]]
-name = "crossbeam-deque"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6455c0ca19f0d2fbf751b908d5c55c1f5cbc65e03c4225427254b46890bdde1e"
 dependencies = [
  "cfg-if 1.0.0",
- "crossbeam-epoch 0.9.5",
+ "crossbeam-epoch",
  "crossbeam-utils 0.8.5",
-]
-
-[[package]]
-name = "crossbeam-epoch"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "058ed274caafc1f60c4997b5fc07bf7dc7cca454af7c6e81edffe5f33f70dace"
-dependencies = [
- "autocfg 1.0.1",
- "cfg-if 0.1.10",
- "crossbeam-utils 0.7.2",
- "lazy_static",
- "maybe-uninit",
- "memoffset 0.5.6",
- "scopeguard",
 ]
 
 [[package]]
@@ -850,19 +824,8 @@ dependencies = [
  "cfg-if 1.0.0",
  "crossbeam-utils 0.8.5",
  "lazy_static",
- "memoffset 0.6.4",
+ "memoffset",
  "scopeguard",
-]
-
-[[package]]
-name = "crossbeam-queue"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "774ba60a54c213d409d5353bda12d49cd68d14e45036a285234c8d6f91f92570"
-dependencies = [
- "cfg-if 0.1.10",
- "crossbeam-utils 0.7.2",
- "maybe-uninit",
 ]
 
 [[package]]
@@ -1500,7 +1463,7 @@ dependencies = [
  "futures-sink",
  "futures-task",
  "memchr",
- "pin-project-lite 0.2.7",
+ "pin-project-lite",
  "pin-utils",
  "proc-macro-hack",
  "proc-macro-nested",
@@ -1610,7 +1573,7 @@ dependencies = [
  "simpl",
  "smpl_jwt",
  "time 0.2.27",
- "tokio 1.11.0",
+ "tokio",
 ]
 
 [[package]]
@@ -1622,26 +1585,6 @@ dependencies = [
  "log 0.4.14",
  "plain",
  "scroll",
-]
-
-[[package]]
-name = "h2"
-version = "0.2.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e4728fd124914ad25e99e3d15a9361a879f6620f63cb56bbb08f95abb97a535"
-dependencies = [
- "bytes 0.5.6",
- "fnv",
- "futures-core",
- "futures-sink",
- "futures-util",
- "http",
- "indexmap",
- "slab",
- "tokio 0.2.25",
- "tokio-util 0.3.1",
- "tracing",
- "tracing-futures",
 ]
 
 [[package]]
@@ -1658,8 +1601,8 @@ dependencies = [
  "http",
  "indexmap",
  "slab",
- "tokio 1.11.0",
- "tokio-util 0.6.8",
+ "tokio",
+ "tokio-util",
  "tracing",
 ]
 
@@ -1801,23 +1744,13 @@ dependencies = [
 
 [[package]]
 name = "http-body"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13d5ff830006f7646652e057693569bfe0d51760c0085a071769d142a205111b"
-dependencies = [
- "bytes 0.5.6",
- "http",
-]
-
-[[package]]
-name = "http-body"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "399c583b2979440c60be0821a6199eca73bc3c8dcd9d070d75ac726e2c6186e5"
 dependencies = [
  "bytes 1.1.0",
  "http",
- "pin-project-lite 0.2.7",
+ "pin-project-lite",
 ]
 
 [[package]]
@@ -1825,12 +1758,6 @@ name = "httparse"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acd94fdbe1d4ff688b67b04eee2e17bd50995534a61539e45adfefb45e5e5503"
-
-[[package]]
-name = "httpdate"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "494b4d60369511e7dea41cf646832512a94e542f68bb9c49e54518e0f468eb47"
 
 [[package]]
 name = "httpdate"
@@ -1865,30 +1792,6 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "0.13.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a6f157065790a3ed2f88679250419b5cdd96e714a0d65f7797fd337186e96bb"
-dependencies = [
- "bytes 0.5.6",
- "futures-channel",
- "futures-core",
- "futures-util",
- "h2 0.2.7",
- "http",
- "http-body 0.3.1",
- "httparse",
- "httpdate 0.3.2",
- "itoa",
- "pin-project",
- "socket2 0.3.19",
- "tokio 0.2.25",
- "tower-service",
- "tracing",
- "want",
-]
-
-[[package]]
-name = "hyper"
 version = "0.14.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "15d1cfb9e4f68655fa04c01f59edb405b6074a0f7118ea881e5026e4a1cd8593"
@@ -1897,15 +1800,15 @@ dependencies = [
  "futures-channel",
  "futures-core",
  "futures-util",
- "h2 0.3.4",
+ "h2",
  "http",
- "http-body 0.4.3",
+ "http-body",
  "httparse",
- "httpdate 1.0.1",
+ "httpdate",
  "itoa",
- "pin-project-lite 0.2.7",
+ "pin-project-lite",
  "socket2 0.4.2",
- "tokio 1.11.0",
+ "tokio",
  "tower-service",
  "tracing",
  "want",
@@ -1921,7 +1824,7 @@ dependencies = [
  "hyper 0.14.13",
  "log 0.4.14",
  "rustls",
- "tokio 1.11.0",
+ "tokio",
  "tokio-rustls",
  "webpki",
 ]
@@ -1933,8 +1836,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbb958482e8c7be4bc3cf272a766a2b0bf1a6755e7a6ae777f017a31d11b13b1"
 dependencies = [
  "hyper 0.14.13",
- "pin-project-lite 0.2.7",
- "tokio 1.11.0",
+ "pin-project-lite",
+ "tokio",
  "tokio-io-timeout",
 ]
 
@@ -1947,7 +1850,7 @@ dependencies = [
  "bytes 1.1.0",
  "hyper 0.14.13",
  "native-tls",
- "tokio 1.11.0",
+ "tokio",
  "tokio-native-tls",
 ]
 
@@ -2117,9 +2020,9 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-client-transports"
-version = "17.1.0"
+version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2f81014e2706fde057e9dcb1036cf6bbf9418d972c597be5c7158c984656722"
+checksum = "d2b99d4207e2a04fb4581746903c2bb7eb376f88de9c699d0f3e10feeac0cd3a"
 dependencies = [
  "derive_more",
  "futures 0.3.17",
@@ -2130,16 +2033,16 @@ dependencies = [
  "parity-tokio-ipc",
  "serde",
  "serde_json",
- "tokio 0.2.25",
+ "tokio",
  "url 1.7.2",
  "websocket",
 ]
 
 [[package]]
 name = "jsonrpc-core"
-version = "17.1.0"
+version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4467ab6dfa369b69e52bd0692e480c4d117410538526a57a304a0f2250fd95e"
+checksum = "14f7f76aef2d054868398427f6c54943cf3d1caa9a7ec7d0c38d69df97a965eb"
 dependencies = [
  "futures 0.3.17",
  "futures-executor",
@@ -2152,9 +2055,9 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-core-client"
-version = "17.1.0"
+version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c366c092d6bccc6e7ab44dd635a0f22ab2f201215339915fb7ff9508404f431"
+checksum = "b51da17abecbdab3e3d4f26b01c5ec075e88d3abe3ab3b05dc9aa69392764ec0"
 dependencies = [
  "futures 0.3.17",
  "jsonrpc-client-transports",
@@ -2162,9 +2065,9 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-derive"
-version = "17.1.0"
+version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34f6326966ebac440db89eba788f5a0e5ac2614b4b4bfbdc049a971e71040f32"
+checksum = "5b939a78fa820cdfcb7ee7484466746a7377760970f6f9c6fe19f9edcc8a38d2"
 dependencies = [
  "proc-macro-crate 0.1.5",
  "proc-macro2 1.0.29",
@@ -2174,12 +2077,12 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-http-server"
-version = "17.1.0"
+version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "522a047cac0958097ee71d047dd71cb84979fd2fa21c7a68fbe12736bef870a2"
+checksum = "e1dea6e07251d9ce6a552abfb5d7ad6bc290a4596c8dcc3d795fae2bbdc1f3ff"
 dependencies = [
  "futures 0.3.17",
- "hyper 0.13.10",
+ "hyper 0.14.13",
  "jsonrpc-core",
  "jsonrpc-server-utils",
  "log 0.4.14",
@@ -2190,9 +2093,9 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-ipc-server"
-version = "17.1.0"
+version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b1d782052ef17051d12681bcc2fa2e9e1aabf3f634588125493d63ddcca6fe1"
+checksum = "382bb0206323ca7cda3dcd7e245cea86d37d02457a02a975e3378fb149a48845"
 dependencies = [
  "futures 0.3.17",
  "jsonrpc-core",
@@ -2205,9 +2108,9 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-pubsub"
-version = "17.1.0"
+version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14739e5523a40739882cc34a44ab2dd9356bce5ce102513f5984a9efbe342f3d"
+checksum = "240f87695e6c6f62fb37f05c02c04953cf68d6408b8c1c89de85c7a0125b1011"
 dependencies = [
  "futures 0.3.17",
  "jsonrpc-core",
@@ -2220,26 +2123,27 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-server-utils"
-version = "17.1.0"
+version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bce68fa279a2822b3619369cd024f8a4f8e5ce485468834f8679a3c7919aae2d"
+checksum = "fa4fdea130485b572c39a460d50888beb00afb3e35de23ccd7fad8ff19f0e0d4"
 dependencies = [
- "bytes 0.5.6",
+ "bytes 1.1.0",
  "futures 0.3.17",
  "globset",
  "jsonrpc-core",
  "lazy_static",
  "log 0.4.14",
- "tokio 0.2.25",
- "tokio-util 0.3.1",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
  "unicase 2.6.0",
 ]
 
 [[package]]
 name = "jsonrpc-ws-server"
-version = "17.1.0"
+version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1d267a8649ec37e4452dd7b3f48827c9cdf36de3a3539cf73242c222ba2eb50"
+checksum = "f892c7d766369475ab7b0669f417906302d7c0fb521285c0a0c92e52e7c8e946"
 dependencies = [
  "futures 0.3.17",
  "jsonrpc-core",
@@ -2450,9 +2354,9 @@ checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
 
 [[package]]
 name = "memchr"
-version = "2.3.4"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ee1c47aaa256ecabcaea351eae4a9b01ef39ed810004e298d2511ed284b1525"
+checksum = "308cc39be01b73d0d18f82a0e7b2a3df85245f84af96fdddc5d202d27e47b86a"
 
 [[package]]
 name = "memmap2"
@@ -2461,15 +2365,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9b70ca2a6103ac8b665dc150b142ef0e4e89df640c9e6cf295d189c3caebe5a"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "memoffset"
-version = "0.5.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "043175f069eda7b85febe4a74abbaeff828d9f8b448515d3151a14a3542811aa"
-dependencies = [
- "autocfg 1.0.1",
 ]
 
 [[package]]
@@ -2551,29 +2446,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mio-named-pipes"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0840c1c50fd55e521b247f949c241c9997709f23bd7f023b9762cd561e935656"
-dependencies = [
- "log 0.4.14",
- "mio 0.6.23",
- "miow 0.3.7",
- "winapi 0.3.9",
-]
-
-[[package]]
-name = "mio-uds"
-version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "afcb699eb26d4332647cc848492bbc15eafb26f08d0304550d5aa1f612e066f0"
-dependencies = [
- "iovec",
- "libc",
- "mio 0.6.23",
-]
-
-[[package]]
 name = "miow"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2651,14 +2523,14 @@ dependencies = [
  "cc",
  "cfg-if 1.0.0",
  "libc",
- "memoffset 0.6.4",
+ "memoffset",
 ]
 
 [[package]]
 name = "nom"
-version = "6.2.1"
+version = "6.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c5c51b9083a3c620fa67a2a635d1ce7d95b897e957d6b28ff9a5da960a103a6"
+checksum = "e7413f999671bd4745a7b624bd370a569fb6bc574b23c83a3c5ed2e453f3d5e2"
 dependencies = [
  "bitvec",
  "funty",
@@ -2841,25 +2713,23 @@ dependencies = [
 
 [[package]]
 name = "parity-tokio-ipc"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd7f6c69d7687501b2205fe51ade1d7b8797bb3aa141fe5bf13dd78c0483bc89"
+checksum = "9981e32fb75e004cc148f5fb70342f393830e0a4aa62e3cc93b50976218d42b6"
 dependencies = [
  "futures 0.3.17",
  "libc",
  "log 0.4.14",
- "mio-named-pipes",
- "miow 0.3.7",
  "rand 0.7.3",
- "tokio 0.2.25",
+ "tokio",
  "winapi 0.3.9",
 ]
 
 [[package]]
 name = "parity-ws"
-version = "0.10.1"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "322d72dfe461b8b9e367d057ceace105379d64d5b03907d23c481ccf3fbf8aa4"
+checksum = "d0ab8a461779bd022964cae2b4989fa9c99deb270bec162da2125ec03c09fcaa"
 dependencies = [
  "byteorder",
  "bytes 0.4.12",
@@ -3064,12 +2934,6 @@ dependencies = [
  "quote 1.0.9",
  "syn 1.0.76",
 ]
-
-[[package]]
-name = "pin-project-lite"
-version = "0.1.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "257b64915a082f7811703966789728173279bdebb956b143dbcd23f6f970a777"
 
 [[package]]
 name = "pin-project-lite"
@@ -3514,7 +3378,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c06aca804d41dbc8ba42dfd964f0d01334eceb64314b9ecf7c5fad5188a06d90"
 dependencies = [
  "autocfg 1.0.1",
- "crossbeam-deque 0.8.1",
+ "crossbeam-deque",
  "either",
  "rayon-core",
 ]
@@ -3526,7 +3390,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d78120e2c850279833f1dd3582f730c4ab53ed95aeaaaa862a2a5c71b1656d8e"
 dependencies = [
  "crossbeam-channel 0.5.1",
- "crossbeam-deque 0.8.1",
+ "crossbeam-deque",
  "crossbeam-utils 0.8.5",
  "lazy_static",
  "num_cpus",
@@ -3579,9 +3443,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.4.6"
+version = "1.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a26af418b574bd56588335b3a3659a65725d4e636eb1016c2f9e3b38c7cc759"
+checksum = "d07a8629359eb56f1e2fb1652bb04212c072a87ba68546a04065d525673ac461"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -3621,7 +3485,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "http",
- "http-body 0.4.3",
+ "http-body",
  "hyper 0.14.13",
  "hyper-rustls",
  "hyper-tls",
@@ -3632,12 +3496,12 @@ dependencies = [
  "mime 0.3.16",
  "native-tls",
  "percent-encoding 2.1.0",
- "pin-project-lite 0.2.7",
+ "pin-project-lite",
  "rustls",
  "serde",
  "serde_json",
  "serde_urlencoded",
- "tokio 1.11.0",
+ "tokio",
  "tokio-native-tls",
  "tokio-rustls",
  "url 2.2.2",
@@ -3787,7 +3651,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-account-decoder"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "Inflector",
  "base64 0.12.3",
@@ -3809,14 +3673,14 @@ dependencies = [
 
 [[package]]
 name = "safecoin-accounts-bench"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "clap",
  "crossbeam-channel 0.4.4",
  "log 0.4.14",
  "rand 0.7.3",
  "rayon",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-measure",
  "safecoin-runtime",
  "safecoin-sdk",
@@ -3825,7 +3689,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-banking-bench"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "clap",
  "crossbeam-channel 0.4.4",
@@ -3835,7 +3699,7 @@ dependencies = [
  "safecoin-clap-utils",
  "safecoin-core",
  "safecoin-ledger",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-measure",
  "safecoin-perf",
  "safecoin-runtime",
@@ -3846,7 +3710,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-banks-client"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "borsh",
@@ -3855,28 +3719,28 @@ dependencies = [
  "mio 0.7.13",
  "safecoin-banks-interface",
  "safecoin-banks-server",
- "safecoin-program 1.6.20",
+ "safecoin-program 1.6.25",
  "safecoin-runtime",
  "safecoin-sdk",
  "tarpc",
- "tokio 1.11.0",
+ "tokio",
  "tokio-serde",
 ]
 
 [[package]]
 name = "safecoin-banks-interface"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "mio 0.7.13",
  "safecoin-sdk",
  "serde",
  "tarpc",
- "tokio 1.11.0",
+ "tokio",
 ]
 
 [[package]]
 name = "safecoin-banks-server"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "futures 0.3.17",
@@ -3887,14 +3751,14 @@ dependencies = [
  "safecoin-runtime",
  "safecoin-sdk",
  "tarpc",
- "tokio 1.11.0",
+ "tokio",
  "tokio-serde",
  "tokio-stream",
 ]
 
 [[package]]
 name = "safecoin-bench-exchange"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "clap",
  "itertools 0.9.0",
@@ -3909,7 +3773,7 @@ dependencies = [
  "safecoin-exchange-program",
  "safecoin-faucet",
  "safecoin-genesis",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-metrics",
  "safecoin-net-utils",
  "safecoin-runtime",
@@ -3922,11 +3786,11 @@ dependencies = [
 
 [[package]]
 name = "safecoin-bench-streamer"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "clap",
  "safecoin-clap-utils",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-net-utils",
  "safecoin-streamer",
  "safecoin-version",
@@ -3934,7 +3798,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-bench-tps"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "clap",
@@ -3945,7 +3809,7 @@ dependencies = [
  "safecoin-core",
  "safecoin-faucet",
  "safecoin-genesis",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-measure",
  "safecoin-metrics",
  "safecoin-net-utils",
@@ -3960,7 +3824,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-bpf-loader-program"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "byteorder",
@@ -3980,7 +3844,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-budget-program"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "chrono",
@@ -3996,7 +3860,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-cargo-build-bpf"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bzip2",
  "cargo_metadata",
@@ -4008,7 +3872,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-clap-utils"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "chrono",
  "clap",
@@ -4024,7 +3888,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-cli-config"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "dirs-next",
  "lazy_static",
@@ -4036,7 +3900,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-cli-output"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "Inflector",
  "base64 0.13.0",
@@ -4059,7 +3923,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-client"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "assert_matches",
  "base64 0.13.0",
@@ -4076,7 +3940,7 @@ dependencies = [
  "safecoin-account-decoder",
  "safecoin-clap-utils",
  "safecoin-faucet",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-net-utils",
  "safecoin-sdk",
  "safecoin-transaction-status",
@@ -4087,20 +3951,20 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "thiserror",
- "tokio 1.11.0",
+ "tokio",
  "tungstenite",
  "url 2.2.2",
 ]
 
 [[package]]
 name = "safecoin-config-program"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "chrono",
  "log 0.4.14",
  "rand_core 0.6.3",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-sdk",
  "serde",
  "serde_derive",
@@ -4108,7 +3972,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-core"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "ahash 0.6.3",
  "base64 0.12.3",
@@ -4154,10 +4018,10 @@ dependencies = [
  "safecoin-clap-utils",
  "safecoin-client",
  "safecoin-faucet",
- "safecoin-frozen-abi 1.6.20",
- "safecoin-frozen-abi-macro 1.6.20",
+ "safecoin-frozen-abi 1.6.25",
+ "safecoin-frozen-abi-macro 1.6.25",
  "safecoin-ledger",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-measure",
  "safecoin-merkle-tree",
  "safecoin-metrics",
@@ -4183,15 +4047,14 @@ dependencies = [
  "systemstat",
  "tempfile",
  "thiserror",
- "tokio 0.2.25",
- "tokio 1.11.0",
- "tokio-util 0.3.1",
+ "tokio",
+ "tokio-util",
  "trees",
 ]
 
 [[package]]
 name = "safecoin-crate-features"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "backtrace",
  "bytes 0.4.12",
@@ -4207,13 +4070,12 @@ dependencies = [
  "serde",
  "syn 0.15.44",
  "syn 1.0.76",
- "tokio 0.1.22",
  "winapi 0.3.9",
 ]
 
 [[package]]
 name = "safecoin-dos"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "clap",
@@ -4224,7 +4086,7 @@ dependencies = [
  "safecoin-client",
  "safecoin-core",
  "safecoin-ledger",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-net-utils",
  "safecoin-runtime",
  "safecoin-sdk",
@@ -4233,7 +4095,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-download-utils"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bzip2",
  "console 0.11.3",
@@ -4247,13 +4109,13 @@ dependencies = [
 
 [[package]]
 name = "safecoin-exchange-program"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "log 0.4.14",
  "num-derive",
  "num-traits",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-metrics",
  "safecoin-runtime",
  "safecoin-sdk",
@@ -4264,7 +4126,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-failure-program"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "safecoin-runtime",
  "safecoin-sdk",
@@ -4272,7 +4134,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-faucet"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "byteorder",
@@ -4281,14 +4143,14 @@ dependencies = [
  "safe-memo",
  "safecoin-clap-utils",
  "safecoin-cli-config",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-metrics",
  "safecoin-sdk",
  "safecoin-version",
  "serde",
  "serde_derive",
  "thiserror",
- "tokio 1.11.0",
+ "tokio",
 ]
 
 [[package]]
@@ -4313,7 +4175,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-frozen-abi"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bs58",
  "bv",
@@ -4321,8 +4183,8 @@ dependencies = [
  "log 0.4.14",
  "memmap2",
  "rustc_version 0.2.3",
- "safecoin-frozen-abi-macro 1.6.20",
- "safecoin-logger 1.6.20",
+ "safecoin-frozen-abi-macro 1.6.25",
+ "safecoin-logger 1.6.25",
  "serde",
  "serde_derive",
  "sha2 0.9.8",
@@ -4344,7 +4206,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-frozen-abi-macro"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "lazy_static",
  "proc-macro2 1.0.29",
@@ -4355,7 +4217,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-genesis"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "base64 0.12.3",
  "chrono",
@@ -4365,7 +4227,7 @@ dependencies = [
  "safecoin-cli-config",
  "safecoin-exchange-program",
  "safecoin-ledger",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-runtime",
  "safecoin-sdk",
  "safecoin-stake-program",
@@ -4380,12 +4242,12 @@ dependencies = [
 
 [[package]]
 name = "safecoin-gossip"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "clap",
  "safecoin-clap-utils",
  "safecoin-core",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-net-utils",
  "safecoin-sdk",
  "safecoin-version",
@@ -4393,7 +4255,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-install"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "atty",
  "bincode",
@@ -4410,7 +4272,7 @@ dependencies = [
  "safecoin-clap-utils",
  "safecoin-client",
  "safecoin-config-program",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-sdk",
  "safecoin-version",
  "semver 0.9.0",
@@ -4426,7 +4288,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-keygen"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bs58",
  "clap",
@@ -4442,7 +4304,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-ledger"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "assert_matches",
  "bincode",
@@ -4472,9 +4334,9 @@ dependencies = [
  "safecoin-account-decoder",
  "safecoin-bpf-loader-program",
  "safecoin-budget-program",
- "safecoin-frozen-abi 1.6.20",
- "safecoin-frozen-abi-macro 1.6.20",
- "safecoin-logger 1.6.20",
+ "safecoin-frozen-abi 1.6.25",
+ "safecoin-frozen-abi-macro 1.6.25",
+ "safecoin-logger 1.6.25",
  "safecoin-measure",
  "safecoin-merkle-tree",
  "safecoin-metrics",
@@ -4492,14 +4354,14 @@ dependencies = [
  "sha2 0.9.8",
  "tempfile",
  "thiserror",
- "tokio 1.11.0",
+ "tokio",
  "tokio-stream",
  "trees",
 ]
 
 [[package]]
 name = "safecoin-ledger-tool"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "assert_cmd",
  "bs58",
@@ -4515,7 +4377,7 @@ dependencies = [
  "safecoin-clap-utils",
  "safecoin-cli-output",
  "safecoin-ledger",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-measure",
  "safecoin-runtime",
  "safecoin-sdk",
@@ -4529,17 +4391,17 @@ dependencies = [
  "serde_yaml",
  "signal-hook",
  "tempfile",
- "tokio 1.11.0",
+ "tokio",
 ]
 
 [[package]]
 name = "safecoin-log-analyzer"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "byte-unit",
  "clap",
  "safecoin-clap-utils",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-version",
  "serde",
  "serde_json",
@@ -4558,7 +4420,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-logger"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "env_logger",
  "lazy_static",
@@ -4567,7 +4429,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-measure"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "jemalloc-ctl",
  "jemallocator",
@@ -4578,11 +4440,11 @@ dependencies = [
 
 [[package]]
 name = "safecoin-merkle-root-bench"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "clap",
  "log 0.4.14",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-measure",
  "safecoin-runtime",
  "safecoin-sdk",
@@ -4591,17 +4453,17 @@ dependencies = [
 
 [[package]]
 name = "safecoin-merkle-tree"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "fast-math",
  "hex",
  "matches",
- "safecoin-program 1.6.20",
+ "safecoin-program 1.6.25",
 ]
 
 [[package]]
 name = "safecoin-metrics"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "env_logger",
  "gethostname",
@@ -4615,19 +4477,19 @@ dependencies = [
 
 [[package]]
 name = "safecoin-net-shaper"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "clap",
  "rand 0.7.3",
  "safecoin-clap-utils",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "serde",
  "serde_json",
 ]
 
 [[package]]
 name = "safecoin-net-utils"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "clap",
@@ -4635,27 +4497,27 @@ dependencies = [
  "nix 0.19.1",
  "rand 0.7.3",
  "safecoin-clap-utils",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-version",
  "serde",
  "serde_derive",
  "socket2 0.3.19",
- "tokio 1.11.0",
+ "tokio",
  "url 2.2.2",
 ]
 
 [[package]]
 name = "safecoin-noop-program"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "log 0.4.14",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-sdk",
 ]
 
 [[package]]
 name = "safecoin-notifier"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "log 0.4.14",
  "reqwest",
@@ -4664,7 +4526,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-ownable"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "num-derive",
@@ -4676,7 +4538,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-perf"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "curve25519-dalek 2.1.3",
@@ -4688,7 +4550,7 @@ dependencies = [
  "rand 0.7.3",
  "rayon",
  "safecoin-budget-program",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-measure",
  "safecoin-metrics",
  "safecoin-rayon-threadlimit",
@@ -4698,7 +4560,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-poh-bench"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "clap",
  "log 0.4.14",
@@ -4706,7 +4568,7 @@ dependencies = [
  "rayon",
  "safecoin-clap-utils",
  "safecoin-ledger",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-measure",
  "safecoin-perf",
  "safecoin-sdk",
@@ -4749,7 +4611,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-program"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "assert_matches",
  "bincode",
@@ -4768,10 +4630,10 @@ dependencies = [
  "rand 0.7.3",
  "rustc_version 0.2.3",
  "rustversion",
- "safecoin-frozen-abi 1.6.20",
- "safecoin-frozen-abi-macro 1.6.20",
- "safecoin-logger 1.6.20",
- "safecoin-sdk-macro 1.6.20",
+ "safecoin-frozen-abi 1.6.25",
+ "safecoin-frozen-abi-macro 1.6.25",
+ "safecoin-logger 1.6.25",
+ "safecoin-sdk-macro 1.6.25",
  "serde",
  "serde_bytes",
  "serde_derive",
@@ -4783,7 +4645,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-program-test"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "assert_matches",
  "async-trait",
@@ -4796,7 +4658,7 @@ dependencies = [
  "safecoin-banks-client",
  "safecoin-banks-server",
  "safecoin-bpf-loader-program",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-runtime",
  "safecoin-sdk",
  "safecoin-stake-program",
@@ -4804,12 +4666,12 @@ dependencies = [
  "serde",
  "serde_derive",
  "thiserror",
- "tokio 1.11.0",
+ "tokio",
 ]
 
 [[package]]
 name = "safecoin-ramp-tps"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bzip2",
  "clap",
@@ -4817,7 +4679,7 @@ dependencies = [
  "reqwest",
  "safecoin-client",
  "safecoin-core",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-metrics",
  "safecoin-net-utils",
  "safecoin-notifier",
@@ -4831,7 +4693,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-rayon-threadlimit"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "lazy_static",
  "num_cpus",
@@ -4839,7 +4701,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-remote-wallet"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "base32",
  "console 0.11.3",
@@ -4858,7 +4720,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-runtime"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "arrayref",
  "assert_matches",
@@ -4887,9 +4749,9 @@ dependencies = [
  "regex",
  "rustc_version 0.2.3",
  "safecoin-config-program",
- "safecoin-frozen-abi 1.6.20",
- "safecoin-frozen-abi-macro 1.6.20",
- "safecoin-logger 1.6.20",
+ "safecoin-frozen-abi 1.6.25",
+ "safecoin-frozen-abi-macro 1.6.25",
+ "safecoin-logger 1.6.25",
  "safecoin-measure",
  "safecoin-metrics",
  "safecoin-noop-program",
@@ -4909,7 +4771,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-scripts"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "csv",
  "serde",
@@ -4917,7 +4779,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-sdk"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "assert_matches",
  "bincode",
@@ -4948,11 +4810,11 @@ dependencies = [
  "rustc_version 0.2.3",
  "rustversion",
  "safecoin-crate-features",
- "safecoin-frozen-abi 1.6.20",
- "safecoin-frozen-abi-macro 1.6.20",
- "safecoin-logger 1.6.20",
- "safecoin-program 1.6.20",
- "safecoin-sdk-macro 1.6.20",
+ "safecoin-frozen-abi 1.6.25",
+ "safecoin-frozen-abi-macro 1.6.25",
+ "safecoin-logger 1.6.25",
+ "safecoin-program 1.6.25",
+ "safecoin-sdk-macro 1.6.25",
  "serde",
  "serde_bytes",
  "serde_derive",
@@ -4979,7 +4841,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-sdk-macro"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bs58",
  "proc-macro2 1.0.29",
@@ -4990,20 +4852,20 @@ dependencies = [
 
 [[package]]
 name = "safecoin-secp256k1-program"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "digest 0.9.0",
  "libsecp256k1",
  "rand 0.7.3",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-sdk",
  "sha3",
 ]
 
 [[package]]
 name = "safecoin-stake-accounts"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "clap",
  "safecoin-clap-utils",
@@ -5017,7 +4879,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-stake-o-matic"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "clap",
  "log 0.4.14",
@@ -5026,7 +4888,7 @@ dependencies = [
  "safecoin-cli-config",
  "safecoin-cli-output",
  "safecoin-client",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-metrics",
  "safecoin-notifier",
  "safecoin-sdk",
@@ -5041,7 +4903,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-stake-program"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "log 0.4.14",
@@ -5049,9 +4911,9 @@ dependencies = [
  "num-traits",
  "rustc_version 0.2.3",
  "safecoin-config-program",
- "safecoin-frozen-abi 1.6.20",
- "safecoin-frozen-abi-macro 1.6.20",
- "safecoin-logger 1.6.20",
+ "safecoin-frozen-abi 1.6.25",
+ "safecoin-frozen-abi-macro 1.6.25",
+ "safecoin-logger 1.6.25",
  "safecoin-metrics",
  "safecoin-sdk",
  "safecoin-vote-program",
@@ -5062,7 +4924,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-storage-bigtable"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "arc-swap 0.4.8",
  "backoff",
@@ -5089,7 +4951,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-storage-proto"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "bs58",
@@ -5104,11 +4966,11 @@ dependencies = [
 
 [[package]]
 name = "safecoin-store-tool"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "clap",
  "log 0.4.14",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-measure",
  "safecoin-runtime",
  "safecoin-sdk",
@@ -5117,12 +4979,12 @@ dependencies = [
 
 [[package]]
 name = "safecoin-streamer"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "libc",
  "log 0.4.14",
  "nix 0.19.1",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-measure",
  "safecoin-metrics",
  "safecoin-perf",
@@ -5132,14 +4994,14 @@ dependencies = [
 
 [[package]]
 name = "safecoin-sys-tuner"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "clap",
  "libc",
  "log 0.4.14",
  "nix 0.19.1",
  "safecoin-clap-utils",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-version",
  "sysctl",
  "unix_socket2",
@@ -5148,7 +5010,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-tokens"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "chrono",
@@ -5167,7 +5029,7 @@ dependencies = [
  "safecoin-cli-config",
  "safecoin-client",
  "safecoin-core",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-program-test",
  "safecoin-remote-wallet",
  "safecoin-runtime",
@@ -5182,7 +5044,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-transaction-status"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "Inflector",
  "base64 0.12.3",
@@ -5205,7 +5067,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-upload-perf"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "safecoin-metrics",
  "serde_json",
@@ -5213,7 +5075,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-validator"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "base64 0.12.3",
  "bincode",
@@ -5239,7 +5101,7 @@ dependencies = [
  "safecoin-download-utils",
  "safecoin-faucet",
  "safecoin-ledger",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-metrics",
  "safecoin-net-utils",
  "safecoin-perf",
@@ -5254,13 +5116,13 @@ dependencies = [
 
 [[package]]
 name = "safecoin-version"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "log 0.4.14",
  "rustc_version 0.2.3",
- "safecoin-frozen-abi 1.6.20",
- "safecoin-frozen-abi-macro 1.6.20",
- "safecoin-logger 1.6.20",
+ "safecoin-frozen-abi 1.6.25",
+ "safecoin-frozen-abi-macro 1.6.25",
+ "safecoin-logger 1.6.25",
  "safecoin-sdk",
  "serde",
  "serde_derive",
@@ -5268,7 +5130,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-vest-program"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "chrono",
@@ -5284,7 +5146,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-vote-program"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "bincode",
  "chrono",
@@ -5292,9 +5154,9 @@ dependencies = [
  "num-derive",
  "num-traits",
  "rustc_version 0.2.3",
- "safecoin-frozen-abi 1.6.20",
- "safecoin-frozen-abi-macro 1.6.20",
- "safecoin-logger 1.6.20",
+ "safecoin-frozen-abi 1.6.25",
+ "safecoin-frozen-abi-macro 1.6.25",
+ "safecoin-logger 1.6.25",
  "safecoin-metrics",
  "safecoin-sdk",
  "serde",
@@ -5304,7 +5166,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-watchtower"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "clap",
  "humantime",
@@ -5313,7 +5175,7 @@ dependencies = [
  "safecoin-cli-config",
  "safecoin-cli-output",
  "safecoin-client",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-metrics",
  "safecoin-notifier",
  "safecoin-sdk",
@@ -5692,7 +5554,7 @@ dependencies = [
 
 [[package]]
 name = "solana-accounts-cluster-bench"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "clap",
  "log 0.4.14",
@@ -5704,7 +5566,7 @@ dependencies = [
  "safecoin-client",
  "safecoin-core",
  "safecoin-faucet",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-measure",
  "safecoin-net-utils",
  "safecoin-runtime",
@@ -5716,7 +5578,7 @@ dependencies = [
 
 [[package]]
 name = "solana-cargo-test-bpf"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "cargo_metadata",
  "clap",
@@ -5724,7 +5586,7 @@ dependencies = [
 
 [[package]]
 name = "solana-cli"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "Inflector",
  "bincode",
@@ -5752,7 +5614,7 @@ dependencies = [
  "safecoin-config-program",
  "safecoin-core",
  "safecoin-faucet",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-net-utils",
  "safecoin-remote-wallet",
  "safecoin-sdk",
@@ -5772,7 +5634,7 @@ dependencies = [
 
 [[package]]
 name = "solana-local-cluster"
-version = "1.6.20"
+version = "1.6.25"
 dependencies = [
  "assert_matches",
  "crossbeam-channel 0.4.4",
@@ -5789,7 +5651,7 @@ dependencies = [
  "safecoin-exchange-program",
  "safecoin-faucet",
  "safecoin-ledger",
- "safecoin-logger 1.6.20",
+ "safecoin-logger 1.6.25",
  "safecoin-rayon-threadlimit",
  "safecoin-runtime",
  "safecoin-sdk",
@@ -6013,9 +5875,9 @@ dependencies = [
  "serde",
  "static_assertions",
  "tarpc-plugins",
- "tokio 1.11.0",
+ "tokio",
  "tokio-serde",
- "tokio-util 0.6.8",
+ "tokio-util",
 ]
 
 [[package]]
@@ -6206,54 +6068,6 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "0.1.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a09c0b5bb588872ab2f09afa13ee6e9dac11e10a0ec9e8e3ba39a5a5d530af6"
-dependencies = [
- "bytes 0.4.12",
- "futures 0.1.31",
- "mio 0.6.23",
- "num_cpus",
- "tokio-codec",
- "tokio-current-thread",
- "tokio-executor",
- "tokio-fs",
- "tokio-io",
- "tokio-reactor",
- "tokio-sync",
- "tokio-tcp",
- "tokio-threadpool",
- "tokio-timer",
- "tokio-udp",
- "tokio-uds",
-]
-
-[[package]]
-name = "tokio"
-version = "0.2.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6703a273949a90131b290be1fe7b039d0fc884aa1935860dfcbe056f28cd8092"
-dependencies = [
- "bytes 0.5.6",
- "fnv",
- "futures-core",
- "iovec",
- "lazy_static",
- "libc",
- "memchr",
- "mio 0.6.23",
- "mio-named-pipes",
- "mio-uds",
- "num_cpus",
- "pin-project-lite 0.1.12",
- "signal-hook-registry",
- "slab",
- "tokio-macros 0.2.6",
- "winapi 0.3.9",
-]
-
-[[package]]
-name = "tokio"
 version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4efe6fc2395938c8155973d7be49fe8d03a843726e285e100a8a383cc0154ce"
@@ -6266,9 +6080,9 @@ dependencies = [
  "num_cpus",
  "once_cell",
  "parking_lot 0.11.2",
- "pin-project-lite 0.2.7",
+ "pin-project-lite",
  "signal-hook-registry",
- "tokio-macros 1.3.0",
+ "tokio-macros",
  "winapi 0.3.9",
 ]
 
@@ -6284,16 +6098,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tokio-current-thread"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1de0e32a83f131e002238d7ccde18211c0a5397f60cbfffcb112868c2e0e20e"
-dependencies = [
- "futures 0.1.31",
- "tokio-executor",
-]
-
-[[package]]
 name = "tokio-executor"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6301,17 +6105,6 @@ checksum = "fb2d1b8f4548dbf5e1f7818512e9c406860678f29c300cdf0ebac72d1a3a1671"
 dependencies = [
  "crossbeam-utils 0.7.2",
  "futures 0.1.31",
-]
-
-[[package]]
-name = "tokio-fs"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "297a1206e0ca6302a0eed35b700d292b275256f596e2f3fea7729d5e629b6ff4"
-dependencies = [
- "futures 0.1.31",
- "tokio-io",
- "tokio-threadpool",
 ]
 
 [[package]]
@@ -6331,19 +6124,8 @@ version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90c49f106be240de154571dd31fbe48acb10ba6c6dd6f6517ad603abffa42de9"
 dependencies = [
- "pin-project-lite 0.2.7",
- "tokio 1.11.0",
-]
-
-[[package]]
-name = "tokio-macros"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e44da00bfc73a25f814cd8d7e57a68a5c31b74b3152a0a1d1f590c97ed06265a"
-dependencies = [
- "proc-macro2 1.0.29",
- "quote 1.0.9",
- "syn 1.0.76",
+ "pin-project-lite",
+ "tokio",
 ]
 
 [[package]]
@@ -6364,7 +6146,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7d995660bd2b7f8c1568414c1126076c13fbb725c40112dc0120b78eb9b717b"
 dependencies = [
  "native-tls",
- "tokio 1.11.0",
+ "tokio",
 ]
 
 [[package]]
@@ -6393,7 +6175,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc6844de72e57df1980054b38be3a9f4702aba4858be64dd700181a8a6d0e1b6"
 dependencies = [
  "rustls",
- "tokio 1.11.0",
+ "tokio",
  "webpki",
 ]
 
@@ -6420,8 +6202,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b2f3f698253f03119ac0102beaa64f67a67e08074d03a22d18784104543727f"
 dependencies = [
  "futures-core",
- "pin-project-lite 0.2.7",
- "tokio 1.11.0",
+ "pin-project-lite",
+ "tokio",
 ]
 
 [[package]]
@@ -6449,35 +6231,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tokio-threadpool"
-version = "0.1.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df720b6581784c118f0eb4310796b12b1d242a7eb95f716a8367855325c25f89"
-dependencies = [
- "crossbeam-deque 0.7.4",
- "crossbeam-queue",
- "crossbeam-utils 0.7.2",
- "futures 0.1.31",
- "lazy_static",
- "log 0.4.14",
- "num_cpus",
- "slab",
- "tokio-executor",
-]
-
-[[package]]
-name = "tokio-timer"
-version = "0.2.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93044f2d313c95ff1cb7809ce9a7a05735b012288a888b62d4434fd58c94f296"
-dependencies = [
- "crossbeam-utils 0.7.2",
- "futures 0.1.31",
- "slab",
- "tokio-executor",
-]
-
-[[package]]
 name = "tokio-tls"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6486,53 +6239,6 @@ dependencies = [
  "futures 0.1.31",
  "native-tls",
  "tokio-io",
-]
-
-[[package]]
-name = "tokio-udp"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2a0b10e610b39c38b031a2fcab08e4b82f16ece36504988dcbd81dbba650d82"
-dependencies = [
- "bytes 0.4.12",
- "futures 0.1.31",
- "log 0.4.14",
- "mio 0.6.23",
- "tokio-codec",
- "tokio-io",
- "tokio-reactor",
-]
-
-[[package]]
-name = "tokio-uds"
-version = "0.2.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab57a4ac4111c8c9dbcf70779f6fc8bc35ae4b2454809febac840ad19bd7e4e0"
-dependencies = [
- "bytes 0.4.12",
- "futures 0.1.31",
- "iovec",
- "libc",
- "log 0.4.14",
- "mio 0.6.23",
- "mio-uds",
- "tokio-codec",
- "tokio-io",
- "tokio-reactor",
-]
-
-[[package]]
-name = "tokio-util"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be8242891f2b6cbef26a2d7e8605133c2c554cd35b3e4948ea892d6d68436499"
-dependencies = [
- "bytes 0.5.6",
- "futures-core",
- "futures-sink",
- "log 0.4.14",
- "pin-project-lite 0.1.12",
- "tokio 0.2.25",
 ]
 
 [[package]]
@@ -6545,8 +6251,8 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "log 0.4.14",
- "pin-project-lite 0.2.7",
- "tokio 1.11.0",
+ "pin-project-lite",
+ "tokio",
 ]
 
 [[package]]
@@ -6570,19 +6276,19 @@ dependencies = [
  "bytes 1.1.0",
  "futures-core",
  "futures-util",
- "h2 0.3.4",
+ "h2",
  "http",
- "http-body 0.4.3",
+ "http-body",
  "hyper 0.14.13",
  "hyper-timeout",
  "percent-encoding 2.1.0",
  "pin-project",
  "prost",
  "prost-derive",
- "tokio 1.11.0",
+ "tokio",
  "tokio-rustls",
  "tokio-stream",
- "tokio-util 0.6.8",
+ "tokio-util",
  "tower",
  "tower-layer",
  "tower-service",
@@ -6614,9 +6320,9 @@ dependencies = [
  "pin-project",
  "rand 0.8.4",
  "slab",
- "tokio 1.11.0",
+ "tokio",
  "tokio-stream",
- "tokio-util 0.6.8",
+ "tokio-util",
  "tower-layer",
  "tower-service",
  "tracing",
@@ -6636,13 +6342,13 @@ checksum = "360dfd1d6d30e05fda32ace2c8c70e9c0a9da713275777f5a4dbb8a1893930c6"
 
 [[package]]
 name = "tracing"
-version = "0.1.28"
+version = "0.1.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84f96e095c0c82419687c20ddf5cb3eadb61f4e1405923c9dc8e53a1adacbda8"
+checksum = "c2ba9ab62b7d6497a8638dfda5e5c4fb3b2d5a7fca4118f2b96151c8ef1a437e"
 dependencies = [
  "cfg-if 1.0.0",
  "log 0.4.14",
- "pin-project-lite 0.2.7",
+ "pin-project-lite",
  "tracing-attributes",
  "tracing-core",
 ]

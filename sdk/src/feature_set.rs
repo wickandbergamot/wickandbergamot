@@ -107,10 +107,6 @@ pub mod upgradeable_close_instruction {
     solana_sdk::declare_id!("EzdQuAfpfg1pDTLyj52PLMPJDDCo4aqzncsSprFvMvU5");
 }
 
-pub mod demote_sysvar_write_locks {
-    solana_sdk::declare_id!("2BLLVga5LkTyuq79fQqFpnsLHhQyjzvd9MoEBFshF419");
-}
-
 pub mod sysvar_via_syscall {
     solana_sdk::declare_id!("92ep2YChAdo4XiDPmNkRcAfJZuRv46n5ko9z6S512awn");
 }
@@ -170,6 +166,10 @@ pub mod spl_token_v2_set_authority_fix {
     solana_sdk::declare_id!("Cb3jN13cfCNDV9dp36djNpcZXF7r82UAE4U1tZjXnFx5");
 }
 
+pub mod voter_groups_consensus {
+    solana_sdk::declare_id!("5jvJyof7JXy7JEwGag4qdEuCA2DuEhkQSKMaEsELJxQU");
+}
+
 lazy_static! {
     /// Map of feature identifiers to user-visible description
     pub static ref FEATURE_NAMES: HashMap<Pubkey, &'static str> = [
@@ -195,7 +195,6 @@ lazy_static! {
         (require_stake_for_gossip::id(), "require stakes for propagating crds values through gossip #15561"),
         (cpi_data_cost::id(), "charge the compute budget for data passed via CPI"),
         (upgradeable_close_instruction::id(), "close upgradeable buffer accounts"),
-        (demote_sysvar_write_locks::id(), "demote builtins and sysvar write locks to readonly #15497"),
         (sysvar_via_syscall::id(), "provide sysvars via syscalls"),
         (check_duplicates_by_hash::id(), "use transaction message hash for duplicate check"),
         (enforce_aligned_host_addrs::id(), "enforce aligned host addresses"),
@@ -211,6 +210,7 @@ lazy_static! {
         (libsecp256k1_0_5_upgrade_enabled::id(), "upgrade libsecp256k1 to v0.5.0"),
         (merge_nonce_error_into_system_error::id(), "merge NonceError into SystemError"),
         (spl_token_v2_set_authority_fix::id(), "safe-token set_authority fix"),
+        (voter_groups_consensus::id(), "use a random subset of voters for block consensus"),
         /*************** ADD NEW FEATURES HERE ***************/
     ]
     .iter()

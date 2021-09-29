@@ -1,6 +1,4 @@
 //! The `replay_stage` replays transactions broadcast by the leader.
-use chrono::prelude::*;
-extern crate chrono;
 
 use crate::{
     broadcast_stage::RetransmitSlotsSender,
@@ -52,6 +50,7 @@ use solana_sdk::{
     signature::{Keypair, Signer},
     timing::timestamp,
     transaction::Transaction,
+    instruction::VoterGroup,
 };
 use solana_vote_program::vote_state::Vote;
 use std::{
@@ -87,8 +86,6 @@ pub(crate) enum HeaviestForkFailures {
 struct Finalizer {
     exit_sender: Arc<AtomicBool>,
 }
-
-
 
 impl Finalizer {
     fn new(exit_sender: Arc<AtomicBool>) -> Self {
@@ -286,13 +283,6 @@ impl ReplayTiming {
         }
     }
 }
-
-
-
-
-
-
-
 
 pub struct ReplayStage {
     t_replay: JoinHandle<Result<()>>,
@@ -1441,7 +1431,6 @@ impl ReplayStage {
         Self::update_commitment_cache(
             bank.clone(),
             bank_forks.read().unwrap().root(),
-            progress.get_fork_stats(bank.slot()).unwrap().total_stake,
             lockouts_sender,
         );
         update_commitment_cache_time.stop();
@@ -1475,17 +1464,20 @@ impl ReplayStage {
             return None;
         }
 
-        let vote_account = match bank.get_vote_account(vote_account_pubkey) {
+
+
+
+	let vote_account = match bank.get_vote_account(vote_account_pubkey) {
             None => {
                 warn!(
-                    "Vote account {} does not exist.  Unable to vote",
+	            "Vote account {} does not exist.  Unable to vote",
                     vote_account_pubkey,
                 );
                 return None;
             }
             Some((_stake, vote_account)) => vote_account,
         };
-        let vote_state = vote_account.vote_state();
+	let vote_state = vote_account.vote_state();
         let vote_state = match vote_state.as_ref() {
             Err(_) => {
                 warn!(
@@ -1496,6 +1488,10 @@ impl ReplayStage {
             }
             Ok(vote_state) => vote_state,
         };
+
+
+
+
         let authorized_voter_pubkey =
             if let Some(authorized_voter_pubkey) = vote_state.get_authorized_voter(bank.epoch()) {
                 authorized_voter_pubkey
@@ -1509,33 +1505,24 @@ impl ReplayStage {
             };
 
 
-    let dt = Local::now();
-    log::trace!("timestamp_millis: {}", dt.timestamp_millis());
-    if dt.timestamp_millis() > 1626222605000 {
-    log::trace!("authorized_voter_pubkey {}", authorized_voter_pubkey);
-    log::trace!("authorized_voter_pubkey_string {}", authorized_voter_pubkey.to_string());
-    log::trace!("vote_hash: {}", vote.hash);
-    log::trace!("H_vote: {}", ( (vote.hash.to_string().chars().nth(0).unwrap() as usize ) % 10 ));
-    log::trace!("P_vote: {}", ( ( ( (vote.hash.to_string().chars().nth(0).unwrap() as usize ) % 9 + 1 ) as usize * ( authorized_voter_pubkey.to_string().chars().last().unwrap() as usize + vote.hash.to_string().chars().last().unwrap() as usize ) / 10 ) as usize + authorized_voter_pubkey.to_string().chars().last().unwrap() as usize + vote.hash.to_string().chars().last().unwrap() as usize ) % 10 as usize );
 
-	if ( ( (vote.hash.to_string().chars().nth(0).unwrap() as usize ) % 10 ) as usize !=  ( ( ( (vote.hash.to_string().chars().nth(0).unwrap() as usize ) % 9 + 1 ) as usize * ( authorized_voter_pubkey.to_string().chars().last().unwrap() as usize + vote.hash.to_string().chars().last().unwrap() as usize ) / 10 ) as usize + authorized_voter_pubkey.to_string().chars().last().unwrap() as usize + vote.hash.to_string().chars().last().unwrap() as usize ) % 10 as usize ) && authorized_voter_pubkey.to_string() != "83E5RMejo6d98FV1EAXTx5t4bvoDMoxE4DboDee3VJsu" {
-   		warn!(
-                   "Vote account {} not selected for slot {}.",
-                    vote_account_pubkey,
-                    bank.slot()
-		);
-                return None;
-		}
-    }else{ 
-	if (vote.hash.to_string().to_lowercase().find("x").unwrap_or(3) % 10 as usize) != (authorized_voter_pubkey.to_string().to_lowercase().find("x").unwrap_or(2) % 10 as usize) && authorized_voter_pubkey.to_string() != "83E5RMejo6d98FV1EAXTx5t4bvoDMoxE4DboDee3VJsu"  {
-   		warn!(
-	           "Vote account {} not selected for slot {}.",
-                    vote_account_pubkey,
-                    bank.slot()
-		);
-                return None;
-		}	    
-	}
+        log::trace!("authorized_voter_pubkey {}", authorized_voter_pubkey);
+        log::trace!("authorized_voter_pubkey_string {}", authorized_voter_pubkey.to_string());
+        log::trace!("vote_hash: {}", vote.hash);
+
+        let in_group = bank.in_group(vote.slots[0],vote.hash,authorized_voter_pubkey);
+
+        if in_group {
+            warn!(
+                "I ({}) will vote if I can!!!",authorized_voter_pubkey
+            );
+        } else {
+            warn!(
+                "Vote account has no authorized voter for slot.  Unable to vote"
+            );
+            return None;
+        }
+
 
         let authorized_voter_keypair = match authorized_voter_keypairs
             .iter()
@@ -1691,11 +1678,10 @@ impl ReplayStage {
     fn update_commitment_cache(
         bank: Arc<Bank>,
         root: Slot,
-        total_stake: Stake,
         lockouts_sender: &Sender<CommitmentAggregationData>,
     ) {
         if let Err(e) =
-            lockouts_sender.send(CommitmentAggregationData::new(bank, root, total_stake))
+            lockouts_sender.send(CommitmentAggregationData::new(bank, root ))
         {
             trace!("lockouts_sender failed: {:?}", e);
         }
@@ -2589,11 +2575,6 @@ impl ReplayStage {
     }
 }
 
-
-
-
-
-
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
@@ -3383,7 +3364,6 @@ pub(crate) mod tests {
             ReplayStage::update_commitment_cache(
                 arc_bank.clone(),
                 0,
-                leader_lamports,
                 &lockouts_sender,
             );
             arc_bank.freeze();
