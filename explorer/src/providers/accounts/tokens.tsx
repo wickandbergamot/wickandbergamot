@@ -41,7 +41,7 @@ export function TokensProvider({ children }: ProviderProps) {
 }
 
 export const TOKEN_PROGRAM_ID = new PublicKey(
-  "7v5TwK92hUSqduoL3R8NtzTNfNzMA48nJL4mzPYMdDrD"
+  "ToKLx75MGim1d1jRusuVX8xvdvvbSDESVaNXpRA9PHN"
 );
 
 async function fetchAccountTokens(
@@ -63,7 +63,7 @@ async function fetchAccountTokens(
   try {
     const { value } = await new Connection(
       url,
-      "recent"
+      "processed"
     ).getParsedTokenAccountsByOwner(pubkey, { programId: TOKEN_PROGRAM_ID });
     data = {
       tokens: value.map((accountInfo) => {

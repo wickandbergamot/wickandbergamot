@@ -3,14 +3,14 @@ use clap::{crate_description, crate_name, value_t, values_t_or_exit, App, Arg};
 use log::*;
 use rand::{thread_rng, Rng};
 use rayon::prelude::*;
-use safecoin_account_decoder::parse_token::spl_token_v2_0_pubkey;
+use safecoin_account_decoder::parse_token::safe_token_v2_0_pubkey;
 use safecoin_clap_utils::input_parsers::pubkey_of;
 use safecoin_client::rpc_client::RpcClient;
-use solana_core::gossip_service::discover;
 use safecoin_faucet::faucet::{request_airdrop_transaction, FAUCET_PORT};
+use safecoin_gossip::gossip_service::discover;
 use safecoin_measure::measure::Measure;
-use solana_runtime::inline_spl_token_v2_0;
-use solana_sdk::{
+use solana_runtime::inline_safe_token_v2_0;
+use safecoin_sdk::{
     commitment_config::CommitmentConfig,
     message::Message,
     pubkey::Pubkey,
@@ -20,7 +20,8 @@ use solana_sdk::{
     timing::timestamp,
     transaction::Transaction,
 };
-use safecoin_transaction_status::parse_token::spl_token_v2_0_instruction;
+use solana_streamer::socket::SocketAddrSpace;
+use safecoin_transaction_status::parse_token::safe_token_v2_0_instruction;
 use std::{
     net::SocketAddr,
     process::exit,
@@ -55,7 +56,7 @@ pub fn airdrop_lamports(
         );
 
         let (blockhash, _fee_calculator) = client.get_recent_blockhash().unwrap();
-        match request_airdrop_transaction(&faucet_addr, &id.pubkey(), airdrop_amount, blockhash) {
+        match request_airdrop_transaction(faucet_addr, &id.pubkey(), airdrop_amount, blockhash) {
             Ok(transaction) => {
                 let mut tries = 0;
                 loop {
@@ -273,7 +274,7 @@ fn make_create_message(
         .into_iter()
         .map(|_| {
             let program_id = if mint.is_some() {
-                inline_spl_token_v2_0::id()
+                inline_safe_token_v2_0::id()
             } else {
                 system_program::id()
             };
@@ -290,12 +291,12 @@ fn make_create_message(
                 &program_id,
             )];
             if let Some(mint_address) = mint {
-                instructions.push(spl_token_v2_0_instruction(
-                    spl_token_v2_0::instruction::initialize_account(
-                        &spl_token_v2_0::id(),
-                        &spl_token_v2_0_pubkey(&to_pubkey),
-                        &spl_token_v2_0_pubkey(&mint_address),
-                        &spl_token_v2_0_pubkey(&base_keypair.pubkey()),
+                instructions.push(safe_token_v2_0_instruction(
+                    safe_token_v2_0::instruction::initialize_account(
+                        &safe_token_v2_0::id(),
+                        &safe_token_v2_0_pubkey(&to_pubkey),
+                        &safe_token_v2_0_pubkey(&mint_address),
+                        &safe_token_v2_0_pubkey(&base_keypair.pubkey()),
                     )
                     .unwrap(),
                 ));
@@ -315,26 +316,26 @@ fn make_close_message(
     max_closed_seed: Arc<AtomicU64>,
     num_instructions: usize,
     balance: u64,
-    spl_token: bool,
+    safe_token: bool,
 ) -> Message {
     let instructions: Vec<_> = (0..num_instructions)
         .into_iter()
         .map(|_| {
-            let program_id = if spl_token {
-                inline_spl_token_v2_0::id()
+            let program_id = if safe_token {
+                inline_safe_token_v2_0::id()
             } else {
                 system_program::id()
             };
             let seed = max_closed_seed.fetch_add(1, Ordering::Relaxed).to_string();
             let address =
                 Pubkey::create_with_seed(&base_keypair.pubkey(), &seed, &program_id).unwrap();
-            if spl_token {
-                spl_token_v2_0_instruction(
-                    spl_token_v2_0::instruction::close_account(
-                        &spl_token_v2_0::id(),
-                        &spl_token_v2_0_pubkey(&address),
-                        &spl_token_v2_0_pubkey(&keypair.pubkey()),
-                        &spl_token_v2_0_pubkey(&base_keypair.pubkey()),
+            if safe_token {
+                safe_token_v2_0_instruction(
+                    safe_token_v2_0::instruction::close_account(
+                        &safe_token_v2_0::id(),
+                        &safe_token_v2_0_pubkey(&address),
+                        &safe_token_v2_0_pubkey(&keypair.pubkey()),
+                        &safe_token_v2_0_pubkey(&base_keypair.pubkey()),
                         &[],
                     )
                     .unwrap(),
@@ -363,7 +364,7 @@ fn run_accounts_bench(
     iterations: usize,
     maybe_space: Option<u64>,
     batch_size: usize,
-    close_nth: u64,
+    close_nth_batch: u64,
     maybe_lamports: Option<u64>,
     num_instructions: usize,
     mint: Option<Pubkey>,
@@ -431,7 +432,7 @@ fn run_accounts_bench(
                     if !airdrop_lamports(
                         &client,
                         &faucet_addr,
-                        &payer_keypairs[i],
+                        payer_keypairs[i],
                         lamports * 100_000,
                     ) {
                         warn!("failed airdrop, exiting");
@@ -441,6 +442,7 @@ fn run_accounts_bench(
             }
         }
 
+        // Create accounts
         let sigs_len = executor.num_outstanding();
         if sigs_len < batch_size {
             let num_to_create = batch_size - sigs_len;
@@ -475,21 +477,25 @@ fn run_accounts_bench(
                 }
             }
 
-            if close_nth > 0 {
-                let expected_closed = total_accounts_created as u64 / close_nth;
-                if expected_closed > total_accounts_closed {
-                    let txs: Vec<_> = (0..expected_closed - total_accounts_closed)
+            if close_nth_batch > 0 {
+                let num_batches_to_close =
+                    total_accounts_created as u64 / (close_nth_batch * batch_size as u64);
+                let expected_closed = num_batches_to_close * batch_size as u64;
+                let max_closed_seed = seed_tracker.max_closed.load(Ordering::Relaxed);
+                // Close every account we've created with seed between max_closed_seed..expected_closed
+                if max_closed_seed < expected_closed {
+                    let txs: Vec<_> = (0..expected_closed - max_closed_seed)
                         .into_par_iter()
                         .map(|_| {
                             let message = make_close_message(
-                                &payer_keypairs[0],
+                                payer_keypairs[0],
                                 &base_keypair,
                                 seed_tracker.max_closed.clone(),
                                 1,
                                 min_balance,
                                 mint.is_some(),
                             );
-                            let signers: Vec<&Keypair> = vec![&payer_keypairs[0], &base_keypair];
+                            let signers: Vec<&Keypair> = vec![payer_keypairs[0], &base_keypair];
                             Transaction::new(&signers, message, recent_blockhash.0)
                         })
                         .collect();
@@ -572,14 +578,14 @@ fn main() {
                 .help("Number of transactions to send per batch"),
         )
         .arg(
-            Arg::with_name("close_nth")
+            Arg::with_name("close_nth_batch")
                 .long("close-frequency")
                 .takes_value(true)
                 .value_name("BYTES")
                 .help(
-                    "Send close transactions after this many accounts created. \
-                    Note: a `close-frequency` value near or below `batch-size` \
-                    may result in transaction-simulation errors, as the close \
+                    "Every `n` batches, create a batch of close transactions for
+                    the earliest remaining batch of accounts created.
+                    Note: Should be > 1 to avoid situations where the close \
                     transactions will be submitted before the corresponding \
                     create transactions have been confirmed",
                 ),
@@ -632,7 +638,7 @@ fn main() {
     let space = value_t!(matches, "space", u64).ok();
     let lamports = value_t!(matches, "lamports", u64).ok();
     let batch_size = value_t!(matches, "batch_size", usize).unwrap_or(4);
-    let close_nth = value_t!(matches, "close_nth", u64).unwrap_or(0);
+    let close_nth_batch = value_t!(matches, "close_nth_batch", u64).unwrap_or(0);
     let iterations = value_t!(matches, "iterations", usize).unwrap_or(10);
     let num_instructions = value_t!(matches, "num_instructions", usize).unwrap_or(1);
     if num_instructions == 0 || num_instructions > 500 {
@@ -665,6 +671,7 @@ fn main() {
             Some(&entrypoint_addr),  // find_node_by_gossip_addr
             None,                    // my_gossip_addr
             0,                       // my_shred_version
+            SocketAddrSpace::Unspecified,
         )
         .unwrap_or_else(|err| {
             eprintln!("Failed to discover {} node: {:?}", entrypoint_addr, err);
@@ -685,7 +692,7 @@ fn main() {
         iterations,
         space,
         batch_size,
-        close_nth,
+        close_nth_batch,
         lamports,
         num_instructions,
         mint,
@@ -700,7 +707,7 @@ pub mod test {
         local_cluster::{ClusterConfig, LocalCluster},
         validator_configs::make_identical_validator_configs,
     };
-    use solana_sdk::poh_config::PohConfig;
+    use safecoin_sdk::poh_config::PohConfig;
 
     #[test]
     fn test_accounts_cluster_bench() {
@@ -716,11 +723,11 @@ pub mod test {
         };
 
         let faucet_addr = SocketAddr::from(([127, 0, 0, 1], 9900));
-        let cluster = LocalCluster::new(&mut config);
+        let cluster = LocalCluster::new(&mut config, SocketAddrSpace::Unspecified);
         let iterations = 10;
         let maybe_space = None;
         let batch_size = 100;
-        let close_nth = 100;
+        let close_nth_batch = 100;
         let maybe_lamports = None;
         let num_instructions = 2;
         let mut start = Measure::start("total accounts run");
@@ -731,7 +738,7 @@ pub mod test {
             iterations,
             maybe_space,
             batch_size,
-            close_nth,
+            close_nth_batch,
             maybe_lamports,
             num_instructions,
             None,

@@ -15,7 +15,7 @@ use solana_core::{
     ping_pong::PingCache,
 };
 use safecoin_rayon_threadlimit::get_thread_count;
-use solana_sdk::{
+use safecoin_sdk::{
     hash::hash,
     pubkey::Pubkey,
     signature::{Keypair, Signer},

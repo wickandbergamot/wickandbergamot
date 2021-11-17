@@ -1,7 +1,7 @@
 import { TransactionInstruction } from "@safecoin/web3.js";
 
 export const PROGRAM_IDS: string[] = [
-  "LendZqTs7gn5CTSJU1jWKhKuVpjJGom45nnwPb2AMTi", // mainnet / testnet / devnet
+  "LENeX3L4CE1euBZp4zUNuicLP2SUZCbgXYZgBpZ9hWZ", // mainnet / testnet / devnet
 ];
 
 const INSTRUCTION_LOOKUP: { [key: number]: string } = {
@@ -28,7 +28,7 @@ export function parseTokenLendingInstructionTitle(
   const code = instruction.data[0];
 
   if (!(code in INSTRUCTION_LOOKUP)) {
-    throw new Error(`Unrecognized Token Swap instruction code: ${code}`);
+    throw new Error(`Unrecognized Token Lending instruction code: ${code}`);
   }
 
   return INSTRUCTION_LOOKUP[code];

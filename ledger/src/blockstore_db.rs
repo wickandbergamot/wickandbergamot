@@ -15,7 +15,7 @@ use rocksdb::{
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use solana_runtime::hardened_unpack::UnpackError;
-use solana_sdk::{
+use safecoin_sdk::{
     clock::{Slot, UnixTimestamp},
     pubkey::Pubkey,
     signature::Signature,
@@ -528,7 +528,7 @@ impl Rocks {
     }
 
     fn get_cf(&self, cf: &ColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        let opt = self.0.get_cf(cf, key)?.map(|db_vec| db_vec.to_vec());
+        let opt = self.0.get_cf(cf, key)?;
         Ok(opt)
     }
 
@@ -1352,7 +1352,7 @@ fn get_cf_options<C: 'static + Column + ColumnName>(
 ) -> Options {
     let mut options = Options::default();
     // 256 * 8 = 2GB. 6 of these columns should take at most 12GB of RAM
-    options.set_max_write_buffer_number(8);
+    options.set_max_write_buffer_number(30);
     options.set_write_buffer_size(MAX_WRITE_BUFFER_SIZE as usize);
     let file_num_compaction_trigger = 4;
     // Recommend that this be around the size of level 0. Level 0 estimated size in stable state is

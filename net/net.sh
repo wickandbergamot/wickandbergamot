@@ -2,7 +2,7 @@
 set -e
 
 here=$(dirname "$0")
-SAFEANA_ROOT="$(cd "$here"/..; pwd)"
+SAFECOIN_ROOT="$(cd "$here"/..; pwd)"
 
 # shellcheck source=net/common.sh
 source "$here"/common.sh
@@ -102,7 +102,12 @@ Operate a configured testnet
    --cluster-type development|devnet|testnet|mainnet-beta
                                       - Specify whether or not to launch the cluster in "development" mode with all features enabled at epoch 0,
                                         or various other live clusters' feature set (default: development)
-   --warp-slot WARP_SLOT              - Boot from a snapshot that has warped ahead to WARP_SLOT rather than a slot 0 genesis.
+   --slots-per-epoch SLOTS
+                                      - Override the number of slots in an epoch
+   --warp-slot WARP_SLOT
+                                      - Boot from a snapshot that has warped ahead to WARP_SLOT rather than a slot 0 genesis.
+   --full-rpc
+                                      - Support full RPC services on all nodes
  sanity/start-specific options:
    -F                   - Discard validator nodes that didn't bootup successfully
    -o noInstallCheck    - Skip safecoin-install sanity
@@ -173,12 +178,12 @@ build() {
   declare MAYBE_DOCKER=
   if [[ $(uname) != Linux || ! " ${supported[*]} " =~ $(lsb_release -sr) ]]; then
     # shellcheck source=ci/rust-version.sh
-    source "$SAFEANA_ROOT"/ci/rust-version.sh
+    source "$SAFECOIN_ROOT"/ci/rust-version.sh
     MAYBE_DOCKER="ci/docker-run.sh $rust_stable_docker_image"
   fi
   SECONDS=0
   (
-    cd "$SAFEANA_ROOT"
+    cd "$SAFECOIN_ROOT"
     echo "--- Build started at $(date)"
 
     set -x
@@ -208,33 +213,33 @@ build() {
     (
       echo "channel: devbuild $NOTE"
       echo "commit: $COMMIT"
-    ) > "$SAFEANA_ROOT"/farf/version.yml
+    ) > "$SAFECOIN_ROOT"/farf/version.yml
   )
   echo "Build took $SECONDS seconds"
 }
 
-SAFEANA_HOME="\$HOME/solana"
+SAFECOIN_HOME="\$HOME/solana"
 CARGO_BIN="\$HOME/.cargo/bin"
 
 startCommon() {
   declare ipAddress=$1
-  test -d "$SAFEANA_ROOT"
+  test -d "$SAFECOIN_ROOT"
   if $skipSetup; then
     # shellcheck disable=SC2029
     ssh "${sshOptions[@]}" "$ipAddress" "
       set -x;
-      mkdir -p $SAFEANA_HOME/config;
+      mkdir -p $SAFECOIN_HOME/config;
       rm -rf ~/config;
-      mv $SAFEANA_HOME/config ~;
-      rm -rf $SAFEANA_HOME;
-      mkdir -p $SAFEANA_HOME $CARGO_BIN;
-      mv ~/config $SAFEANA_HOME/
+      mv $SAFECOIN_HOME/config ~;
+      rm -rf $SAFECOIN_HOME;
+      mkdir -p $SAFECOIN_HOME $CARGO_BIN;
+      mv ~/config $SAFECOIN_HOME/
     "
   else
     # shellcheck disable=SC2029
     ssh "${sshOptions[@]}" "$ipAddress" "
       set -x;
-      rm -rf $SAFEANA_HOME;
+      rm -rf $SAFECOIN_HOME;
       mkdir -p $CARGO_BIN
     "
   fi
@@ -247,8 +252,8 @@ syncScripts() {
   declare ipAddress=$1
   rsync -vPrc -e "ssh ${sshOptions[*]}" \
     --exclude 'net/log*' \
-    "$SAFEANA_ROOT"/{fetch-perf-libs.sh,fetch-spl.sh,scripts,net,multinode-demo} \
-    "$ipAddress":"$SAFEANA_HOME"/ > /dev/null
+    "$SAFECOIN_ROOT"/{fetch-perf-libs.sh,fetch-spl.sh,scripts,net,multinode-demo} \
+    "$ipAddress":"$SAFECOIN_HOME"/ > /dev/null
 }
 
 # Deploy local binaries to bootstrap validator.  Other validators and clients later fetch the
@@ -259,12 +264,12 @@ deployBootstrapValidator() {
   echo "Deploying software to bootstrap validator ($ipAddress)"
   case $deployMethod in
   tar)
-    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFEANA_ROOT"/solana-release/bin/* "$ipAddress:$CARGO_BIN/"
-    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFEANA_ROOT"/solana-release/version.yml "$ipAddress:~/"
+    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFECOIN_ROOT"/solana-release/bin/* "$ipAddress:$CARGO_BIN/"
+    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFECOIN_ROOT"/solana-release/version.yml "$ipAddress:~/"
     ;;
   local)
-    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFEANA_ROOT"/farf/bin/* "$ipAddress:$CARGO_BIN/"
-    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFEANA_ROOT"/farf/version.yml "$ipAddress:~/"
+    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFECOIN_ROOT"/farf/bin/* "$ipAddress:$CARGO_BIN/"
+    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFECOIN_ROOT"/farf/version.yml "$ipAddress:~/"
     ;;
   skip)
     ;;
@@ -306,9 +311,10 @@ startBootstrapLeader() {
          ${#clientIpList[@]} \"$benchTpsExtraArgs\" \
          ${#clientIpList[@]} \"$benchExchangeExtraArgs\" \
          \"$genesisOptions\" \
-         \"$maybeNoSnapshot $maybeSkipLedgerVerify $maybeLimitLedgerSize $maybeWaitForSupermajority\" \
+         \"$maybeNoSnapshot $maybeSkipLedgerVerify $maybeLimitLedgerSize $maybeWaitForSupermajority $maybeAllowPrivateAddr $maybeAccountsDbSkipShrink $maybeSkipRequireTower\" \
          \"$gpuMode\" \
          \"$maybeWarpSlot\" \
+         \"$maybeFullRpc\" \
          \"$waitForNodeInit\" \
          \"$extraPrimordialStakes\" \
          \"$TMPFS_ACCOUNTS\" \
@@ -378,9 +384,10 @@ startNode() {
          ${#clientIpList[@]} \"$benchTpsExtraArgs\" \
          ${#clientIpList[@]} \"$benchExchangeExtraArgs\" \
          \"$genesisOptions\" \
-         \"$maybeNoSnapshot $maybeSkipLedgerVerify $maybeLimitLedgerSize $maybeWaitForSupermajority\" \
+         \"$maybeNoSnapshot $maybeSkipLedgerVerify $maybeLimitLedgerSize $maybeWaitForSupermajority $maybeAllowPrivateAddr $maybeAccountsDbSkipShrink $maybeSkipRequireTower\" \
          \"$gpuMode\" \
          \"$maybeWarpSlot\" \
+         \"$maybeFullRpc\" \
          \"$waitForNodeInit\" \
          \"$extraPrimordialStakes\" \
          \"$TMPFS_ACCOUNTS\" \
@@ -523,21 +530,21 @@ prepareDeploy() {
   tar)
     if [[ -n $releaseChannel ]]; then
       echo "Downloading release from channel: $releaseChannel"
-      rm -f "$SAFEANA_ROOT"/solana-release.tar.bz2
+      rm -f "$SAFECOIN_ROOT"/solana-release.tar.bz2
       declare updateDownloadUrl=https://release.solana.com/"$releaseChannel"/solana-release-x86_64-unknown-linux-gnu.tar.bz2
       (
         set -x
         curl -L -I "$updateDownloadUrl"
         curl -L --retry 5 --retry-delay 2 --retry-connrefused \
-          -o "$SAFEANA_ROOT"/solana-release.tar.bz2 "$updateDownloadUrl"
+          -o "$SAFECOIN_ROOT"/solana-release.tar.bz2 "$updateDownloadUrl"
       )
-      tarballFilename="$SAFEANA_ROOT"/solana-release.tar.bz2
+      tarballFilename="$SAFECOIN_ROOT"/solana-release.tar.bz2
     fi
     (
       set -x
-      rm -rf "$SAFEANA_ROOT"/solana-release
-      cd "$SAFEANA_ROOT"; tar jfxv "$tarballFilename"
-      cat "$SAFEANA_ROOT"/solana-release/version.yml
+      rm -rf "$SAFECOIN_ROOT"/solana-release
+      cd "$SAFECOIN_ROOT"; tar jfxv "$tarballFilename"
+      cat "$SAFECOIN_ROOT"/solana-release/version.yml
     )
     ;;
   local)
@@ -566,7 +573,7 @@ prepareDeploy() {
       rsync -vPrc -e "ssh ${sshOptions[*]}" "${validatorIpList[0]}":~/version.yml current-version.yml
     )
     cat current-version.yml
-    if ! diff -q current-version.yml "$SAFEANA_ROOT"/solana-release/version.yml; then
+    if ! diff -q current-version.yml "$SAFECOIN_ROOT"/solana-release/version.yml; then
       echo "Cluster software version is old.  Update required"
     else
       echo "Cluster software version is current.  No update required"
@@ -657,7 +664,7 @@ deploy() {
     networkVersion="$(
       (
         set -o pipefail
-        grep "^commit: " "$SAFEANA_ROOT"/solana-release/version.yml | head -n1 | cut -d\  -f2
+        grep "^commit: " "$SAFECOIN_ROOT"/solana-release/version.yml | head -n1 | cut -d\  -f2
       ) || echo "tar-unknown"
     )"
     ;;
@@ -779,6 +786,9 @@ maybeLimitLedgerSize=""
 maybeSkipLedgerVerify=""
 maybeDisableAirdrops=""
 maybeWaitForSupermajority=""
+maybeAllowPrivateAddr=""
+maybeAccountsDbSkipShrink=""
+maybeSkipRequireTower=""
 debugBuild=false
 doBuild=true
 gpuMode=auto
@@ -789,6 +799,7 @@ netemCommand="add"
 clientDelayStart=0
 netLogDir=
 maybeWarpSlot=
+maybeFullRpc=false
 waitForNodeInit=true
 extraPrimordialStakes=0
 
@@ -820,6 +831,9 @@ while [[ -n $1 ]]; do
           exit 1
           ;;
       esac
+      genesisOptions="$genesisOptions $1 $2"
+      shift 2
+    elif [[ $1 = --slots-per-epoch ]]; then
       genesisOptions="$genesisOptions $1 $2"
       shift 2
     elif [[ $1 = --no-snapshot-fetch ]]; then
@@ -894,12 +908,26 @@ while [[ -n $1 ]]; do
     elif [[ $1 == --warp-slot ]]; then
       maybeWarpSlot="$1 $2"
       shift 2
+    elif [[ $1 == --full-rpc ]]; then
+      maybeFullRpc=true
+      shift 1
     elif [[ $1 == --async-node-init ]]; then
       waitForNodeInit=false
       shift 1
     elif [[ $1 == --extra-primordial-stakes ]]; then
       extraPrimordialStakes=$2
       shift 2
+    elif [[ $1 = --allow-private-addr ]]; then
+      # May also be added by loadConfigFile if 'gce.sh create' was invoked
+      # without -P.
+      maybeAllowPrivateAddr="$1"
+      shift 1
+    elif [[ $1 = --accounts-db-skip-shrink ]]; then
+      maybeAccountsDbSkipShrink="$1"
+      shift 1
+    elif [[ $1 = --skip-require-tower ]]; then
+      maybeSkipRequireTower="$1"
+      shift 1
     else
       usage "Unknown long option: $1"
     fi
@@ -1122,7 +1150,7 @@ netem)
     remoteNetemConfigFile="$(basename "$netemConfigFile")"
     if [[ $netemCommand = "add" ]]; then
       for ipAddress in "${validatorIpList[@]}"; do
-        "$here"/scp.sh "$netemConfigFile" solana@"$ipAddress":"$SAFEANA_HOME"
+        "$here"/scp.sh "$netemConfigFile" solana@"$ipAddress":"$SAFECOIN_HOME"
       done
     fi
     for i in "${!validatorIpList[@]}"; do

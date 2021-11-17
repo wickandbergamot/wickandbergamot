@@ -2,6 +2,7 @@ use super::common::UnusedAccounts;
 #[cfg(all(test, RUSTC_WITH_SPECIALIZATION))]
 use safecoin_frozen_abi::abi_example::IgnoreAsHelper;
 use {super::*, safecoin_measure::measure::Measure, std::cell::RefCell};
+use crate::ancestors::AncestorsForSerialization;
 use crate::vote_group_gen::VoteGroupGenerator;
 type AccountsDbFields = super::AccountsDbFields<SerializableAccountStorageEntry>;
 
@@ -45,7 +46,7 @@ use std::sync::RwLock;
 #[derive(Clone, Deserialize)]
 pub(crate) struct DeserializableVersionedBank {
     pub(crate) blockhash_queue: BlockhashQueue,
-    pub(crate) ancestors: Ancestors,
+    pub(crate) ancestors: AncestorsForSerialization,
     pub(crate) hash: Hash,
     pub(crate) parent_hash: Hash,
     pub(crate) parent_slot: Slot,
@@ -134,7 +135,7 @@ impl From<DeserializableVersionedBank> for BankFieldsToDeserialize {
 #[derive(Serialize)]
 pub(crate) struct SerializableVersionedBank<'a> {
     pub(crate) blockhash_queue: &'a RwLock<BlockhashQueue>,
-    pub(crate) ancestors: &'a Ancestors,
+    pub(crate) ancestors: &'a AncestorsForSerialization,
     pub(crate) hash: Hash,
     pub(crate) parent_hash: Hash,
     pub(crate) parent_slot: Slot,
@@ -225,8 +226,10 @@ impl<'a> TypeContext<'a> for Context {
     where
         Self: std::marker::Sized,
     {
+        let ancestors = HashMap::from(&serializable_bank.bank.ancestors);
+        let fields = serializable_bank.bank.get_fields_to_serialize(&ancestors);
         (
-            SerializableVersionedBank::from(serializable_bank.bank.get_fields_to_serialize()),
+            SerializableVersionedBank::from(fields),
             SerializableAccountsDb::<'a, Self> {
                 accounts_db: &*serializable_bank.bank.rc.accounts.accounts_db,
                 slot: serializable_bank.bank.rc.slot,

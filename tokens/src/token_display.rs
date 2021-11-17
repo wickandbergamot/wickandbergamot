@@ -1,5 +1,5 @@
 use safecoin_account_decoder::parse_token::real_number_string_trimmed;
-use solana_sdk::native_token::lamports_to_sol;
+use safecoin_sdk::native_token::lamports_to_sol;
 use std::{
     fmt::{Debug, Display, Formatter, Result},
     ops::Add,
@@ -41,7 +41,7 @@ impl Token {
         }
     }
 
-    pub fn spl_token(amount: u64, decimals: u8) -> Self {
+    pub fn safe_token(amount: u64, decimals: u8) -> Self {
         Self {
             amount,
             decimals,

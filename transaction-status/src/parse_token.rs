@@ -1,15 +1,19 @@
-use crate::parse_instruction::{
-    check_num_accounts, ParsableProgram, ParseInstructionError, ParsedInstructionEnum,
-};
-use serde_json::{json, Map, Value};
-use safecoin_account_decoder::parse_token::{pubkey_from_spl_token_v2_0, token_amount_to_ui_amount};
-use solana_sdk::{
-    instruction::{AccountMeta, CompiledInstruction, Instruction},
-    pubkey::Pubkey,
-};
-use spl_token_v2_0::{
-    instruction::{AuthorityType, TokenInstruction},
-    solana_program::{instruction::Instruction as SafeTokenInstruction, program_option::COption},
+use {
+    crate::parse_instruction::{
+        check_num_accounts, ParsableProgram, ParseInstructionError, ParsedInstructionEnum,
+    },
+    serde_json::{json, Map, Value},
+    safecoin_account_decoder::parse_token::{pubkey_from_safe_token_v2_0, token_amount_to_ui_amount},
+    safecoin_sdk::{
+        instruction::{AccountMeta, CompiledInstruction, Instruction},
+        pubkey::Pubkey,
+    },
+    safe_token_v2_0::{
+        instruction::{AuthorityType, TokenInstruction},
+        safecoin_program::{
+            instruction::Instruction as SafeTokenInstruction, program_option::COption,
+        },
+    },
 };
 
 pub fn parse_token(
@@ -372,6 +376,15 @@ pub fn parse_token(
                 info: value,
             })
         }
+        TokenInstruction::SyncNative => {
+            check_num_token_accounts(&instruction.accounts, 1)?;
+            Ok(ParsedInstructionEnum {
+                instruction_type: "syncNative".to_string(),
+                info: json!({
+                    "account": account_keys[instruction.accounts[0] as usize].to_string(),
+                }),
+            })
+        }
     }
 }
 
@@ -425,14 +438,14 @@ fn check_num_token_accounts(accounts: &[u8], num: usize) -> Result<(), ParseInst
     check_num_accounts(accounts, num, ParsableProgram::SafeToken)
 }
 
-pub fn spl_token_v2_0_instruction(instruction: SafeTokenInstruction) -> Instruction {
+pub fn safe_token_v2_0_instruction(instruction: SafeTokenInstruction) -> Instruction {
     Instruction {
-        program_id: pubkey_from_spl_token_v2_0(&instruction.program_id),
+        program_id: pubkey_from_safe_token_v2_0(&instruction.program_id),
         accounts: instruction
             .accounts
             .iter()
             .map(|meta| AccountMeta {
-                pubkey: pubkey_from_spl_token_v2_0(&meta.pubkey),
+                pubkey: pubkey_from_safe_token_v2_0(&meta.pubkey),
                 is_signer: meta.is_signer,
                 is_writable: meta.is_writable,
             })
@@ -443,16 +456,18 @@ pub fn spl_token_v2_0_instruction(instruction: SafeTokenInstruction) -> Instruct
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use solana_sdk::instruction::CompiledInstruction;
-    use spl_token_v2_0::{
-        instruction::*,
-        solana_program::{
-            instruction::CompiledInstruction as SafeTokenCompiledInstruction, message::Message,
-            pubkey::Pubkey as SafeTokenPubkey,
+    use {
+        super::*,
+        safecoin_sdk::instruction::CompiledInstruction,
+        safe_token_v2_0::{
+            instruction::*,
+            safecoin_program::{
+                instruction::CompiledInstruction as SafeTokenCompiledInstruction, message::Message,
+                pubkey::Pubkey as SafeTokenPubkey,
+            },
         },
+        std::str::FromStr,
     };
-    use std::str::FromStr;
 
     fn convert_pubkey(pubkey: Pubkey) -> SafeTokenPubkey {
         SafeTokenPubkey::from_str(&pubkey.to_string()).unwrap()
@@ -473,12 +488,12 @@ mod test {
     fn test_parse_token() {
         let mut keys: Vec<Pubkey> = vec![];
         for _ in 0..10 {
-            keys.push(solana_sdk::pubkey::new_rand());
+            keys.push(safecoin_sdk::pubkey::new_rand());
         }
 
         // Test InitializeMint variations
         let initialize_mint_ix = initialize_mint(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[0]),
             &convert_pubkey(keys[2]),
             Some(&convert_pubkey(keys[3])),
@@ -502,7 +517,7 @@ mod test {
         );
 
         let initialize_mint_ix = initialize_mint(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[0]),
             &convert_pubkey(keys[2]),
             None,
@@ -526,7 +541,7 @@ mod test {
 
         // Test InitializeAccount
         let initialize_account_ix = initialize_account(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[0]),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
@@ -549,7 +564,7 @@ mod test {
 
         // Test InitializeMultisig
         let initialize_multisig_ix = initialize_multisig(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[0]),
             &[
                 &convert_pubkey(keys[2]),
@@ -576,7 +591,7 @@ mod test {
 
         // Test Transfer, incl multisig
         let transfer_ix = transfer(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -600,7 +615,7 @@ mod test {
         );
 
         let transfer_ix = transfer(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[3]),
             &convert_pubkey(keys[4]),
@@ -626,7 +641,7 @@ mod test {
 
         // Test Approve, incl multisig
         let approve_ix = approve(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -650,7 +665,7 @@ mod test {
         );
 
         let approve_ix = approve(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[3]),
             &convert_pubkey(keys[4]),
@@ -676,7 +691,7 @@ mod test {
 
         // Test Revoke
         let revoke_ix = revoke(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[0]),
             &[],
@@ -697,7 +712,7 @@ mod test {
 
         // Test SetOwner
         let set_authority_ix = set_authority(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[0]),
             Some(&convert_pubkey(keys[2])),
             AuthorityType::FreezeAccount,
@@ -721,7 +736,7 @@ mod test {
         );
 
         let set_authority_ix = set_authority(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             None,
             AuthorityType::CloseAccount,
@@ -747,7 +762,7 @@ mod test {
 
         // Test MintTo
         let mint_to_ix = mint_to(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -772,7 +787,7 @@ mod test {
 
         // Test Burn
         let burn_ix = burn(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -797,7 +812,7 @@ mod test {
 
         // Test CloseAccount
         let close_account_ix = close_account(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -820,7 +835,7 @@ mod test {
 
         // Test FreezeAccount
         let freeze_account_ix = freeze_account(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -843,7 +858,7 @@ mod test {
 
         // Test ThawAccount
         let thaw_account_ix = thaw_account(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -866,7 +881,7 @@ mod test {
 
         // Test TransferChecked, incl multisig
         let transfer_ix = transfer_checked(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[0]),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
@@ -898,7 +913,7 @@ mod test {
         );
 
         let transfer_ix = transfer_checked(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[3]),
             &convert_pubkey(keys[4]),
@@ -930,9 +945,9 @@ mod test {
             }
         );
 
-        // Test Approve2, incl multisig
+        // Test ApproveChecked, incl multisig
         let approve_ix = approve_checked(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[3]),
@@ -964,7 +979,7 @@ mod test {
         );
 
         let approve_ix = approve_checked(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[3]),
             &convert_pubkey(keys[4]),
@@ -996,9 +1011,9 @@ mod test {
             }
         );
 
-        // Test MintTo2
+        // Test MintToChecked
         let mint_to_ix = mint_to_checked(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -1027,9 +1042,9 @@ mod test {
             }
         );
 
-        // Test Burn2
+        // Test BurnChecked
         let burn_ix = burn_checked(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -1057,6 +1072,20 @@ mod test {
                 })
             }
         );
+
+        // Test SyncNative
+        let sync_native_ix = sync_native(&safe_token_v2_0::id(), &convert_pubkey(keys[0])).unwrap();
+        let message = Message::new(&[sync_native_ix], None);
+        let compiled_instruction = convert_compiled_instruction(&message.instructions[0]);
+        assert_eq!(
+            parse_token(&compiled_instruction, &keys).unwrap(),
+            ParsedInstructionEnum {
+                instruction_type: "syncNative".to_string(),
+                info: json!({
+                   "account": keys[0].to_string(),
+                })
+            }
+        );
     }
 
     #[test]
@@ -1064,12 +1093,12 @@ mod test {
     fn test_token_ix_not_enough_keys() {
         let mut keys: Vec<Pubkey> = vec![];
         for _ in 0..10 {
-            keys.push(solana_sdk::pubkey::new_rand());
+            keys.push(safecoin_sdk::pubkey::new_rand());
         }
 
         // Test InitializeMint variations
         let initialize_mint_ix = initialize_mint(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[0]),
             &convert_pubkey(keys[1]),
             Some(&convert_pubkey(keys[2])),
@@ -1084,7 +1113,7 @@ mod test {
         assert!(parse_token(&compiled_instruction, &keys).is_err());
 
         let initialize_mint_ix = initialize_mint(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[0]),
             &convert_pubkey(keys[1]),
             None,
@@ -1100,7 +1129,7 @@ mod test {
 
         // Test InitializeAccount
         let initialize_account_ix = initialize_account(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[0]),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
@@ -1115,7 +1144,7 @@ mod test {
 
         // Test InitializeMultisig
         let initialize_multisig_ix = initialize_multisig(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[0]),
             &[
                 &convert_pubkey(keys[1]),
@@ -1134,7 +1163,7 @@ mod test {
 
         // Test Transfer, incl multisig
         let transfer_ix = transfer(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -1150,7 +1179,7 @@ mod test {
         assert!(parse_token(&compiled_instruction, &keys).is_err());
 
         let transfer_ix = transfer(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[3]),
             &convert_pubkey(keys[4]),
@@ -1167,7 +1196,7 @@ mod test {
 
         // Test Approve, incl multisig
         let approve_ix = approve(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -1183,7 +1212,7 @@ mod test {
         assert!(parse_token(&compiled_instruction, &keys).is_err());
 
         let approve_ix = approve(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[3]),
             &convert_pubkey(keys[4]),
@@ -1200,7 +1229,7 @@ mod test {
 
         // Test Revoke
         let revoke_ix = revoke(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[0]),
             &[],
@@ -1215,7 +1244,7 @@ mod test {
 
         // Test SetAuthority
         let set_authority_ix = set_authority(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             Some(&convert_pubkey(keys[2])),
             AuthorityType::FreezeAccount,
@@ -1232,7 +1261,7 @@ mod test {
 
         // Test MintTo
         let mint_to_ix = mint_to(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -1249,7 +1278,7 @@ mod test {
 
         // Test Burn
         let burn_ix = burn(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -1266,7 +1295,7 @@ mod test {
 
         // Test CloseAccount
         let close_account_ix = close_account(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -1282,7 +1311,7 @@ mod test {
 
         // Test FreezeAccount
         let freeze_account_ix = freeze_account(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -1298,7 +1327,7 @@ mod test {
 
         // Test ThawAccount
         let thaw_account_ix = thaw_account(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -1314,7 +1343,7 @@ mod test {
 
         // Test TransferChecked, incl multisig
         let transfer_ix = transfer_checked(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[3]),
@@ -1332,7 +1361,7 @@ mod test {
         assert!(parse_token(&compiled_instruction, &keys).is_err());
 
         let transfer_ix = transfer_checked(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[3]),
             &convert_pubkey(keys[4]),
@@ -1351,7 +1380,7 @@ mod test {
 
         // Test ApproveChecked, incl multisig
         let approve_ix = approve_checked(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[3]),
@@ -1369,7 +1398,7 @@ mod test {
         assert!(parse_token(&compiled_instruction, &keys).is_err());
 
         let approve_ix = approve_checked(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[3]),
             &convert_pubkey(keys[4]),
@@ -1388,7 +1417,7 @@ mod test {
 
         // Test MintToChecked
         let mint_to_ix = mint_to_checked(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -1406,7 +1435,7 @@ mod test {
 
         // Test BurnChecked
         let burn_ix = burn_checked(
-            &spl_token_v2_0::id(),
+            &safe_token_v2_0::id(),
             &convert_pubkey(keys[1]),
             &convert_pubkey(keys[2]),
             &convert_pubkey(keys[0]),
@@ -1418,6 +1447,15 @@ mod test {
         let message = Message::new(&[burn_ix], None);
         let mut compiled_instruction = convert_compiled_instruction(&message.instructions[0]);
         assert!(parse_token(&compiled_instruction, &keys[0..2]).is_err());
+        compiled_instruction.accounts =
+            compiled_instruction.accounts[0..compiled_instruction.accounts.len() - 1].to_vec();
+        assert!(parse_token(&compiled_instruction, &keys).is_err());
+
+        // Test SyncNative
+        let sync_native_ix = sync_native(&safe_token_v2_0::id(), &convert_pubkey(keys[0])).unwrap();
+        let message = Message::new(&[sync_native_ix], None);
+        let mut compiled_instruction = convert_compiled_instruction(&message.instructions[0]);
+        assert!(parse_token(&compiled_instruction, &[]).is_err());
         compiled_instruction.accounts =
             compiled_instruction.accounts[0..compiled_instruction.accounts.len() - 1].to_vec();
         assert!(parse_token(&compiled_instruction, &keys).is_err());

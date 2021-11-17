@@ -18,17 +18,17 @@ fi
 if [[ $(uname) != Linux ]]; then
   # Protect against unsupported configurations to prevent non-obvious errors
   # later. Arguably these should be fatal errors but for now prefer tolerance.
-  if [[ -n $SAFEANA_CUDA ]]; then
+  if [[ -n $SAFECOIN_CUDA ]]; then
     echo "Warning: CUDA is not supported on $(uname)"
-    SAFEANA_CUDA=
+    SAFECOIN_CUDA=
   fi
 fi
 
 if [[ -n $USE_INSTALL || ! -f "$SAFECOIN_ROOT"/Cargo.toml ]]; then
-  solana_program() {
+  safecoin_program() {
     declare program="$1"
     if [[ -z $program ]]; then
-      printf "safecoin"
+      printf "solana"
     else
       printf "solana-%s" "$program"
     fi
@@ -39,9 +39,9 @@ else
     declare crate="$program"
     if [[ -z $program ]]; then
       crate="cli"
-      program="safecoin"
+      program="solana"
     else
-      program="safecoin-$program"
+      program="solana-$program"
     fi
 
     if [[ -n $NDEBUG ]]; then
@@ -67,9 +67,9 @@ safecoin_validator=$(safecoin_program validator)
 safecoin_validator_cuda="$safecoin_validator --cuda"
 safecoin_genesis=$(safecoin_program genesis)
 safecoin_gossip=$(safecoin_program gossip)
-safecoin_keygen=$(safecoin_program keygen)
+solana_keygen=$(safecoin_program keygen)
 safecoin_ledger_tool=$(safecoin_program ledger-tool)
-safecoin_cli=$(safecoin_program)
+solana_cli=$(safecoin_program)
 
 export RUST_BACKTRACE=1
 

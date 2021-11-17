@@ -8,7 +8,7 @@ use solana_core::{
     crds_shards::CrdsShards,
     crds_value::CrdsValue,
 };
-use solana_sdk::timing::timestamp;
+use safecoin_sdk::timing::timestamp;
 use std::iter::repeat_with;
 use test::Bencher;
 

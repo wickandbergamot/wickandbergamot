@@ -131,6 +131,11 @@ function launch_testnet() {
     maybeAsyncNodeInit="--async-node-init"
   fi
 
+  declare maybeAllowPrivateAddr
+  if [[ "$ALLOW_PRIVATE_ADDR" = "true" ]]; then
+    maybeAllowPrivateAddr="--allow-private-addr"
+  fi
+
   declare maybeExtraPrimordialStakes
   if [[ -n "$EXTRA_PRIMORDIAL_STAKES" ]]; then
     maybeExtraPrimordialStakes="--extra-primordial-stakes $EXTRA_PRIMORDIAL_STAKES"
@@ -140,7 +145,8 @@ function launch_testnet() {
   # shellcheck disable=SC2086
   "${REPO_ROOT}"/net/net.sh start $version_args \
     -c idle=$NUMBER_OF_CLIENT_NODES $maybeStartAllowBootFailures \
-    --gpu-mode $startGpuMode $maybeWarpSlot $maybeAsyncNodeInit $maybeExtraPrimordialStakes
+    --gpu-mode $startGpuMode $maybeWarpSlot $maybeAsyncNodeInit \
+    $maybeExtraPrimordialStakes $maybeAllowPrivateAddr
 
   execution_step "Waiting for bootstrap validator's stake to fall below ${BOOTSTRAP_VALIDATOR_MAX_STAKE_THRESHOLD}%"
   wait_for_bootstrap_validator_stake_drop "$BOOTSTRAP_VALIDATOR_MAX_STAKE_THRESHOLD"
@@ -241,14 +247,14 @@ if [[ -z $NUMBER_OF_CLIENT_NODES ]]; then
   exit 1
 fi
 
-if [[ -z $SAFEANA_METRICS_CONFIG ]]; then
-  if [[ -z $SAFEANA_METRICS_PARTIAL_CONFIG ]]; then
-    echo SAFEANA_METRICS_PARTIAL_CONFIG not defined
+if [[ -z $SAFECOIN_METRICS_CONFIG ]]; then
+  if [[ -z $SAFECOIN_METRICS_PARTIAL_CONFIG ]]; then
+    echo SAFECOIN_METRICS_PARTIAL_CONFIG not defined
     exit 1
   fi
-  export SAFEANA_METRICS_CONFIG="db=$TESTNET_TAG,host=$INFLUX_HOST,$SAFEANA_METRICS_PARTIAL_CONFIG"
+  export SAFECOIN_METRICS_CONFIG="db=$TESTNET_TAG,host=$INFLUX_HOST,$SAFECOIN_METRICS_PARTIAL_CONFIG"
 fi
-echo "SAFEANA_METRICS_CONFIG: $SAFEANA_METRICS_CONFIG"
+echo "SAFECOIN_METRICS_CONFIG: $SAFECOIN_METRICS_CONFIG"
 
 if [[ -z $ALLOW_BOOT_FAILURES ]]; then
   ALLOW_BOOT_FAILURES=false

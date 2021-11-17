@@ -7,7 +7,7 @@ use rayon::ThreadPoolBuilder;
 use solana_core::crds::Crds;
 use solana_core::crds_gossip_pull::CRDS_GOSSIP_PULL_CRDS_TIMEOUT_MS;
 use solana_core::crds_value::CrdsValue;
-use solana_sdk::pubkey::Pubkey;
+use safecoin_sdk::pubkey::Pubkey;
 use std::collections::HashMap;
 use test::Bencher;
 

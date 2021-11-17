@@ -14,9 +14,9 @@ netDir=$(
 netConfigDir="$netDir"/config
 mkdir -p "$netConfigDir"
 
-SAFEANA_ROOT="$netDir"/..
+SAFECOIN_ROOT="$netDir"/..
 # shellcheck source=scripts/configure-metrics.sh
-source "$SAFEANA_ROOT"/scripts/configure-metrics.sh
+source "$SAFECOIN_ROOT"/scripts/configure-metrics.sh
 
 configFile="$netConfigDir/config"
 geoipConfigFile="$netConfigDir/geoip.yml"
@@ -69,6 +69,7 @@ loadConfigFile() {
     entrypointIp=${validatorIpList[0]}
   else
     entrypointIp=${validatorIpListPrivate[0]}
+    maybeAllowPrivateAddr='--allow-private-addr'
   fi
 
   buildSshOptions
@@ -92,7 +93,7 @@ urlencode() {
   done
 }
 
-SAFEANA_CONFIG_DIR=$SAFEANA_ROOT/config
+SAFECOIN_CONFIG_DIR=$SAFECOIN_ROOT/config
 # Clear the current cluster configuration
 clear_config_dir() {
   declare config_dir="$1"
@@ -117,8 +118,8 @@ _setup_secondary_mount() {
     if [[ -d $SECONDARY_DISK_MOUNT_POINT ]] && \
       [[ -w $SECONDARY_DISK_MOUNT_POINT ]]; then
       mkdir -p $SECONDARY_DISK_MOUNT_POINT/config
-      rm -rf "$SAFEANA_CONFIG_DIR"
-      ln -sfT $SECONDARY_DISK_MOUNT_POINT/config "$SAFEANA_CONFIG_DIR"
+      rm -rf "$SAFECOIN_CONFIG_DIR"
+      ln -sfT $SECONDARY_DISK_MOUNT_POINT/config "$SAFECOIN_CONFIG_DIR"
     fi
   )
 }

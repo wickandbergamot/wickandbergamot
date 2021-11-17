@@ -1,3 +1,4 @@
+#[cfg(not(target_family = "windows"))]
 use clap::{crate_description, crate_name, value_t_or_exit, App, Arg};
 use log::*;
 
@@ -93,7 +94,7 @@ fn tune_kernel_udp_buffers_and_vmmap() {
     sysctl_write("net.core.wmem_default", "134217728");
 
     // increase mmap counts for many append_vecs
-    sysctl_write("vm.max_map_count", "700000");
+    sysctl_write("vm.max_map_count", "1000000");
 }
 
 #[cfg(unix)]
@@ -120,13 +121,13 @@ fn main() {
     info!("Tune will service requests only from user {}", user);
 
     unsafe { libc::umask(0o077) };
-    if let Err(e) = std::fs::remove_file(solana_sys_tuner::SAFEANA_SYS_TUNER_PATH) {
+    if let Err(e) = std::fs::remove_file(solana_sys_tuner::SAFECOIN_SYS_TUNER_PATH) {
         if e.kind() != std::io::ErrorKind::NotFound {
             panic!("Failed to remove stale socket file: {:?}", e)
         }
     }
 
-    let listener = unix_socket::UnixListener::bind(solana_sys_tuner::SAFEANA_SYS_TUNER_PATH)
+    let listener = unix_socket::UnixListener::bind(solana_sys_tuner::SAFECOIN_SYS_TUNER_PATH)
         .expect("Failed to bind to the socket file");
 
     let peer_uid;
@@ -136,7 +137,7 @@ fn main() {
         peer_uid = user.uid();
         info!("UID for safecoin is {}", peer_uid);
         nix::unistd::chown(
-            solana_sys_tuner::SAFEANA_SYS_TUNER_PATH,
+            solana_sys_tuner::SAFECOIN_SYS_TUNER_PATH,
             Some(nix::unistd::Uid::from_raw(peer_uid)),
             None,
         )

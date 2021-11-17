@@ -24,7 +24,7 @@ Safecoin维护着几个不同用途的集群。
 - Devnet的八卦入口点：`entrypoint.devnet.safecoin.org：8001`
 - Devnet的指标环境变量：
 ```bash
-export SAFEANA_METRICS_CONFIG="host=https://metrics.safecoin.org:10016,db=devnet,u=scratch_writer,p=topsecret"
+export SAFECOIN_METRICS_CONFIG="host=https://metrics.safecoin.org:10016,db=devnet,u=scratch_writer,p=topsecret"
 ```
 - Devnet RPC URL：`https://api.devnet.safecoin.org`
 
@@ -56,7 +56,6 @@ $ safecoin-validator \
 ## Testnet（测试网）
 
 - Testnet是我们在实时群集上重点测试最新发布功能的地方，尤其侧重于网络性能，稳定性和验证程序行为。
-- 集群[Tour de SAFE](tour-de-sol.md)计划在Testnet上运行，在该计划中，我们接受恶意行为和对网络的攻击，以帮助我们发现和消除错误或网络漏洞。
 - Testnet代币**不是真实的**
 - Testnet可能会重置账本。
 - Testnet包括用于空投的代币水龙头，用于应用程序测试
@@ -64,7 +63,7 @@ $ safecoin-validator \
 - 测试网 Gossip 入口： `entrypoint.testnet.safecoin.org:10015`
 - Testnet的指标环境变量：
 ```bash
-export SAFEANA_METRICS_CONFIG="host=https://metrics.safecoin.org:10016,db=tds,u=testnet_write,p=c4fa841aa918bf8274e3e2a44d77568d9861b3ea"
+export SAFECOIN_METRICS_CONFIG="host=https://metrics.safecoin.org:10016,db=tds,u=testnet_write,p=c4fa841aa918bf8274e3e2a44d77568d9861b3ea"
 ```
 - Testnet 的 RPC URL: `https://api.testnet.safecoin.org`
 
@@ -111,7 +110,7 @@ $ safecoin-validator \
 - Mainnet Beta 的 Gossip 入口： `entrypoint.mainnet-beta.safecoin.org:10015`
 - Mainnet Beta的指标环境变量：
 ```bash
-export SAFEANA_METRICS_CONFIG="host=https://metrics.safecoin.org:10016,db=mainnet-beta,u=mainnet-beta_write,p=password"
+export SAFECOIN_METRICS_CONFIG="host=https://metrics.safecoin.org:10016,db=mainnet-beta,u=mainnet-beta_write,p=password"
 ```
 - Mainnet Beta 的 RPC URL： `https://api.mainnet-beta.safecoin.org`
 

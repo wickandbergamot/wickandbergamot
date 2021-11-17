@@ -18,6 +18,7 @@ vote_account=
 no_restart=0
 gossip_entrypoint=
 ledger_dir=
+maybe_allow_private_addr=
 
 usage() {
   if [[ -n $1 ]]; then
@@ -44,6 +45,8 @@ OPTIONS:
 EOF
   exit 1
 }
+
+maybeRequireTower=true
 
 positional_args=()
 while [[ -n $1 ]]; do
@@ -74,6 +77,9 @@ while [[ -n $1 ]]; do
       shift 2
     elif [[ $1 = --authorized-voter ]]; then
       args+=("$1" "$2")
+      shift 2
+    elif [[ $1 = --authorized-withdrawer ]]; then
+      authorized_withdrawer=$2
       shift 2
     elif [[ $1 = --vote-account ]]; then
       vote_account=$2
@@ -119,6 +125,9 @@ while [[ -n $1 ]]; do
     elif [[ $1 = --snapshot-interval-slots ]]; then
       args+=("$1" "$2")
       shift 2
+    elif [[ $1 = --maximum-snapshots-to-retain ]]; then
+      args+=("$1" "$2")
+      shift 2
     elif [[ $1 = --limit-ledger-size ]]; then
       args+=("$1" "$2")
       shift 2
@@ -137,10 +146,10 @@ while [[ -n $1 ]]; do
     elif [[ $1 = --log ]]; then
       args+=("$1" "$2")
       shift 2
-    elif [[ $1 = --trusted-validator ]]; then
+    elif [[ $1 = --known-validator ]]; then
       args+=("$1" "$2")
       shift 2
-    elif [[ $1 = --halt-on-trusted-validators-accounts-hash-mismatch ]]; then
+    elif [[ $1 = --halt-on-known-validators-accounts-hash-mismatch ]]; then
       args+=("$1")
       shift
     elif [[ $1 = --max-genesis-archive-unpacked-size ]]; then
@@ -152,6 +161,16 @@ while [[ -n $1 ]]; do
     elif [[ $1 == --expected-bank-hash ]]; then
       args+=("$1" "$2")
       shift 2
+    elif [[ $1 == --allow-private-addr ]]; then
+      args+=("$1")
+      maybe_allow_private_addr=$1
+      shift
+    elif [[ $1 == --accounts-db-skip-shrink ]]; then
+      args+=("$1")
+      shift
+    elif [[ $1 == --skip-require-tower ]]; then
+      maybeRequireTower=false
+      shift
     elif [[ $1 = -h ]]; then
       usage "$@"
     else
@@ -164,7 +183,7 @@ while [[ -n $1 ]]; do
   fi
 done
 
-if [[ "$SAFEANA_GPU_MISSING" -eq 1 ]]; then
+if [[ "$SAFECOIN_GPU_MISSING" -eq 1 ]]; then
   echo "Testnet requires GPUs, but none were found!  Aborting..."
   exit 1
 fi
@@ -177,7 +196,7 @@ if [[ -n $REQUIRE_LEDGER_DIR ]]; then
   if [[ -z $ledger_dir ]]; then
     usage "Error: --ledger not specified"
   fi
-  SAFEANA_CONFIG_DIR="$ledger_dir"
+  SAFECOIN_CONFIG_DIR="$ledger_dir"
 fi
 
 if [[ -n $REQUIRE_KEYPAIRS ]]; then
@@ -187,10 +206,13 @@ if [[ -n $REQUIRE_KEYPAIRS ]]; then
   if [[ -z $vote_account ]]; then
     usage "Error: --vote-account not specified"
   fi
+  if [[ -z $authorized_withdrawer ]]; then
+    usage "Error: --authorized_withdrawer not specified"
+  fi
 fi
 
 if [[ -z "$ledger_dir" ]]; then
-  ledger_dir="$SAFEANA_CONFIG_DIR/validator$label"
+  ledger_dir="$SAFECOIN_CONFIG_DIR/validator$label"
 fi
 mkdir -p "$ledger_dir"
 
@@ -214,6 +236,7 @@ faucet_address="${gossip_entrypoint%:*}":9900
 
 : "${identity:=$ledger_dir/identity.json}"
 : "${vote_account:=$ledger_dir/vote-account.json}"
+: "${authorized_withdrawer:=$ledger_dir/authorized-withdrawer.json}"
 
 default_arg --entrypoint "$gossip_entrypoint"
 if ((airdrops_enabled)); then
@@ -224,9 +247,12 @@ default_arg --identity "$identity"
 default_arg --vote-account "$vote_account"
 default_arg --ledger "$ledger_dir"
 default_arg --log -
-default_arg --require-tower
 
-if [[ -n $SAFEANA_CUDA ]]; then
+if [[ $maybeRequireTower = true ]]; then
+  default_arg --require-tower
+fi
+
+if [[ -n $SAFECOIN_CUDA ]]; then
   program=$safecoin_validator_cuda
 else
   program=$safecoin_validator
@@ -275,13 +301,13 @@ setup_validator_accounts() {
       (
         set -x
         $solana_cli \
-          --keypair "$SAFEANA_CONFIG_DIR/faucet.json" --url "$rpc_url" \
+          --keypair "$SAFECOIN_CONFIG_DIR/faucet.json" --url "$rpc_url" \
           transfer --allow-unfunded-recipient "$identity" "$node_sol"
       ) || return $?
     fi
 
     echo "Creating validator vote account"
-    wallet create-vote-account "$vote_account" "$identity" || return $?
+    wallet create-vote-account "$vote_account" "$identity" "$authorized_withdrawer" || return $?
   fi
   echo "Validator vote account configured"
 
@@ -291,10 +317,12 @@ setup_validator_accounts() {
   return 0
 }
 
-rpc_url=$($safecoin_gossip rpc-url --timeout 180 --entrypoint "$gossip_entrypoint")
+# shellcheck disable=SC2086 # Don't want to double quote "$maybe_allow_private_addr"
+rpc_url=$($safecoin_gossip $maybe_allow_private_addr rpc-url --timeout 180 --entrypoint "$gossip_entrypoint")
 
-[[ -r "$identity" ]] || $safecoin_keygen new --no-passphrase -so "$identity"
-[[ -r "$vote_account" ]] || $safecoin_keygen new --no-passphrase -so "$vote_account"
+[[ -r "$identity" ]] || $solana_keygen new --no-passphrase -so "$identity"
+[[ -r "$vote_account" ]] || $solana_keygen new --no-passphrase -so "$vote_account"
+[[ -r "$authorized_withdrawer" ]] || $solana_keygen new --no-passphrase -so "$authorized_withdrawer"
 
 setup_validator_accounts "$node_sol"
 

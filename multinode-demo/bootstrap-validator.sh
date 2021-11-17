@@ -8,18 +8,19 @@ here=$(dirname "$0")
 # shellcheck source=multinode-demo/common.sh
 source "$here"/common.sh
 
-if [[ "$SAFEANA_GPU_MISSING" -eq 1 ]]; then
+if [[ "$SAFECOIN_GPU_MISSING" -eq 1 ]]; then
   echo "Testnet requires GPUs, but none were found!  Aborting..."
   exit 1
 fi
 
-if [[ -n $SAFEANA_CUDA ]]; then
+if [[ -n $SAFECOIN_CUDA ]]; then
   program=$safecoin_validator_cuda
 else
   program=$safecoin_validator
 fi
 
 no_restart=0
+maybeRequireTower=true
 
 args=()
 while [[ -n $1 ]]; do
@@ -72,6 +73,18 @@ while [[ -n $1 ]]; do
     elif [[ $1 == --accounts ]]; then
       args+=("$1" "$2")
       shift 2
+    elif [[ $1 == --maximum-snapshots-to-retain ]]; then
+      args+=("$1" "$2")
+      shift 2
+    elif [[ $1 == --accounts-db-skip-shrink ]]; then
+      args+=("$1")
+      shift
+    elif [[ $1 == --allow-private-addr ]]; then
+      args+=("$1")
+      shift
+    elif [[ $1 == --skip-require-tower ]]; then
+      maybeRequireTower=false
+      shift
     else
       echo "Unknown argument: $1"
       $program --help
@@ -85,10 +98,10 @@ while [[ -n $1 ]]; do
 done
 
 # These keypairs are created by ./setup.sh and included in the genesis config
-identity=$SAFEANA_CONFIG_DIR/bootstrap-validator/identity.json
-vote_account="$SAFEANA_CONFIG_DIR"/bootstrap-validator/vote-account.json
+identity=$SAFECOIN_CONFIG_DIR/bootstrap-validator/identity.json
+vote_account="$SAFECOIN_CONFIG_DIR"/bootstrap-validator/vote-account.json
 
-ledger_dir="$SAFEANA_CONFIG_DIR"/bootstrap-validator
+ledger_dir="$SAFECOIN_CONFIG_DIR"/bootstrap-validator
 [[ -d "$ledger_dir" ]] || {
   echo "$ledger_dir does not exist"
   echo
@@ -96,8 +109,11 @@ ledger_dir="$SAFEANA_CONFIG_DIR"/bootstrap-validator
   exit 1
 }
 
+if [[ $maybeRequireTower = true ]]; then
+  args+=(--require-tower)
+fi
+
 args+=(
-  --require-tower
   --ledger "$ledger_dir"
   --rpc-port 8328
   --snapshot-interval-slots 200
