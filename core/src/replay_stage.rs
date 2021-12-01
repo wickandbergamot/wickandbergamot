@@ -1469,17 +1469,20 @@ impl ReplayStage {
             };
 
 
-        log::trace!("authorized_voter_pubkey {}", authorized_voter_pubkey);
-        log::trace!("authorized_voter_pubkey_string {}", authorized_voter_pubkey.to_string());
-        log::trace!("vote_hash: {}", vote.hash);
+        log::trace!("authorized_voter_pubkey.replay_stage {}", authorized_voter_pubkey);
+        log::trace!("authorized_voter_pubkey_string.replay_stage {}", authorized_voter_pubkey.to_string());
+        log::trace!("vote_hash.replay_stage: {}", vote.hash);
+	log::trace!("vote_slots.replay_stage: {}", vote.slots[0]);
         let vote_ok = bank.vote_allowed(vote.slots[0],vote.hash,authorized_voter_pubkey);
         if vote_ok  {
             warn!(
-                "I ({}) will vote if I can!!!",*vote_account_pubkey
+                "I ({}) will vote if I can!!!",authorized_voter_pubkey.to_string()
             );
         } else {
             warn!(
-                "Vote account has no authorized voter for slot.  Unable to vote"
+                "Vote account {} not selected voter for slot {}.  Better luck next time",
+		  authorized_voter_pubkey.to_string(),
+                    vote.slots[0]
             );
             return None;
         }

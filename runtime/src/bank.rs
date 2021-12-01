@@ -5934,13 +5934,13 @@ impl Bank {
     // supports VoteModerator trait 
     // has a 10% chance of allowing a vote 
     fn is_rando_voter(&self, hash: Hash, voter: Pubkey) -> bool {
-        log::trace!("vote_hash: {}", hash);
+        log::trace!("vote_hash.bank.rs: {}", hash);
         log::trace!(
-            "H_vote: {}",
+            "H_vote.bank.rs: {}",
             ((hash.to_string().chars().nth(0).unwrap() as usize) % 10)
         );
         log::trace!(
-            "P_vote: {}",
+            "P_vote.bank.rs: {}",
             ((((hash.to_string().chars().nth(0).unwrap() as usize) % 9 + 1) as usize
                 * (voter.to_string().chars().last().unwrap() as usize
                     + hash.to_string().chars().last().unwrap() as usize)
@@ -6014,9 +6014,11 @@ impl VoteModerator for Bank {
     /// determine if a voter is in the group for a given slot
     fn vote_allowed (&self, slot: Slot, hash: Hash, voter: Pubkey) -> bool {
         if self.epoch_authorized_voter(&voter) == None{
+	    log::warn!("VoteModerator: is_rando_voter for slot {}, hash {}, voter {}", slot, hash, voter);
             return self.is_rando_voter(hash,voter);
         }
         else {
+	    log::warn!("VoteModerator: in_group_voter for slot {}, hash {}, voter {}", slot, hash, voter);
             return self.in_group(slot,hash,voter);
         }
     }
