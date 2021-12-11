@@ -57,6 +57,7 @@ impl VoteGroupGenerator {
                 initial.push(*val);
             }
         }
+	  log::trace!("possible voters: {:#?}",temp);
         Self {
             possible_voters: temp,
             all_distance: initial.to_owned(),
