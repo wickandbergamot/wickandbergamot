@@ -3657,9 +3657,9 @@ checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
 
 [[package]]
 name = "safe-associated-token-account"
-version = "1.0.8"
+version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1d6bce3f87530fd09bae0491b07fdf86f542c842bca11c21e214c6f3667bff9"
+checksum = "e3324ac07a80c8c52e443701a9c695abc77e1264c23e49090f3dd6a7e153b2d7"
 dependencies = [
  "safe-token",
  "safecoin-program 1.7.17 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3676,9 +3676,9 @@ dependencies = [
 
 [[package]]
 name = "safe-token"
-version = "3.2.0"
+version = "3.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8a021cb80236e7a71e61dcbbfe0f550c048083273492117ed5b3cf3227bc277"
+checksum = "30ae485160d30713ab9115d0ecf23ab56919a2d21300437b76efdc9f8ecb5b88"
 dependencies = [
  "arrayref",
  "num-derive",
