@@ -6014,11 +6014,11 @@ impl VoteModerator for Bank {
     /// determine if a voter is in the group for a given slot
     fn vote_allowed (&self, slot: Slot, hash: Hash, voter: Pubkey) -> bool {
         if self.epoch_authorized_voter(&voter) == None{
-	    log::warn!("VoteModerator: is_rando_voter for slot {}, hash {}, voter {}", slot, hash, voter);
+	    log::trace!("VoteModerator: is_rando_voter for slot {}, hash {}, voter {}", slot, hash, voter);
             return self.is_rando_voter(hash,voter);
         }
         else {
-	    log::warn!("VoteModerator: in_group_voter for slot {}, hash {}, voter {}", slot, hash, voter);
+	    log::trace!("VoteModerator: in_group_voter for slot {}, hash {}, voter {}", slot, hash, voter);
             return self.in_group(slot,hash,voter);
         }
     }
