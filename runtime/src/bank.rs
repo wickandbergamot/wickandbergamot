@@ -5852,18 +5852,10 @@ impl Bank {
         return dont_vote == false;
     }
 
-    fn use_voter_groups_for_real(&self) -> bool {
-        self
-            .feature_set
-            .is_active(&feature_set::voter_groups_consensus::id()) &&
-            self
-            .feature_set
-            .is_active(&feature_set::really_use_voter_groups::id())
-    }
-    
     fn can_group(&self, slot: Slot, voter: Pubkey) -> bool {
         if self
-            .use_voter_groups_for_real()
+            .feature_set
+            .is_active(&feature_set::voter_groups_consensus::id())
         {
             let epoch = self.epoch_schedule.get_epoch(slot);
             match self.group_generators.get(&epoch) {
