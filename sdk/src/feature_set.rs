@@ -297,7 +297,6 @@ pub mod really_use_voter_groups {
     safecoin_sdk::declare_id!("Djzfdsycnzzyzi6JtYmST24Kx1eoHnJTXN68hroEFMc5");
 }
 
-
 lazy_static! {
     /// Map of feature identifiers to user-visible description
     pub static ref FEATURE_NAMES: HashMap<Pubkey, &'static str> = [
