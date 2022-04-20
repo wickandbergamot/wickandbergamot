@@ -289,6 +289,13 @@ pub mod evict_invalid_stakes_cache_entries {
 pub mod voter_groups_consensus {
     safecoin_sdk::declare_id!("5jvJyof7JXy7JEwGag4qdEuCA2DuEhkQSKMaEsELJxQU");
 }
+pub mod use_new_hash {
+    safecoin_sdk::declare_id!("2vHdYQCHVpRBsH3btepEFkW1NTa8Ccr21c8bhwFnL1sV");
+}
+
+pub mod really_use_voter_groups {
+    safecoin_sdk::declare_id!("Djzfdsycnzzyzi6JtYmST24Kx1eoHnJTXN68hroEFMc5");
+}
 
 lazy_static! {
     /// Map of feature identifiers to user-visible description
@@ -362,6 +369,8 @@ lazy_static! {
         (reject_non_rent_exempt_vote_withdraws::id(), "fail vote withdraw instructions which leave the account non-rent-exempt"),
         (evict_invalid_stakes_cache_entries::id(), "evict invalid stakes cache entries on epoch boundaries"),
         (voter_groups_consensus::id(), "use a random subset of voters for block consensus"),
+        (use_new_hash::id(), "use better hash for rando voters"),
+        (really_use_voter_groups::id(), "fix voter_groups"),
         /*************** ADD NEW FEATURES HERE ***************/
     ]
     .iter()
