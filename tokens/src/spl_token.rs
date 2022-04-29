@@ -8,7 +8,7 @@ use safecoin_account_decoder::parse_token::{
     spl_token_v2_0_pubkey,
 };
 use safecoin_client::rpc_client::RpcClient;
-use solana_sdk::{instruction::Instruction, native_token::lamports_to_sol};
+use safecoin_sdk::{instruction::Instruction, native_token::lamports_to_sol};
 use safecoin_transaction_status::parse_token::spl_token_v2_0_instruction;
 use safe_associated_token_account_v1_0::{
     create_associated_token_account, get_associated_token_address,

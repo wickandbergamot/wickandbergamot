@@ -1,8 +1,8 @@
 // Partial SPL Token v2.0.x declarations inlined to avoid an external dependency on the safe-token crate
-solana_sdk::declare_id!("ToKLx75MGim1d1jRusuVX8xvdvvbSDESVaNXpRA9PHN");
+safecoin_sdk::declare_id!("ToKLx75MGim1d1jRusuVX8xvdvvbSDESVaNXpRA9PHN");
 
 pub(crate) mod new_token_program {
-    solana_sdk::declare_id!("nTokHfnBtpt4V6xiEbBSduiGCrQ6wSF3rxC8WeWAQ9F");
+    safecoin_sdk::declare_id!("nTokHfnBtpt4V6xiEbBSduiGCrQ6wSF3rxC8WeWAQ9F");
 }
 
 /*
@@ -17,8 +17,8 @@ pub(crate) mod new_token_program {
         close_authority: COption<Pubkey>,
     }
 */
-pub const SPL_TOKEN_ACCOUNT_MINT_OFFSET: usize = 0;
-pub const SPL_TOKEN_ACCOUNT_OWNER_OFFSET: usize = 32;
+pub const SAFE_TOKEN_ACCOUNT_MINT_OFFSET: usize = 0;
+pub const SAFE_TOKEN_ACCOUNT_OWNER_OFFSET: usize = 32;
 
 pub mod state {
     const LEN: usize = 165;
@@ -31,7 +31,7 @@ pub mod state {
 }
 
 pub mod native_mint {
-    solana_sdk::declare_id!("Safe111111111111111111111111111111111111111");
+    safecoin_sdk::declare_id!("Safe111111111111111111111111111111111111111");
 
     /*
         Mint {
