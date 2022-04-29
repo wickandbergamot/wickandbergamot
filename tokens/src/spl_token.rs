@@ -14,7 +14,7 @@ use safe_associated_token_account_v1_0::{
     create_associated_token_account, get_associated_token_address,
 };
 use safe_token_v2_0::{
-    solana_program::program_pack::Pack,
+    safecoin_program::program_pack::Pack,
     state::{Account as SafeTokenAccount, Mint},
 };
 
