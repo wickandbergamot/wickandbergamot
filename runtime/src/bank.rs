@@ -5734,14 +5734,14 @@ impl Bank {
             ClusterType::Development => true,
             ClusterType::Devnet => true,
             ClusterType::Testnet => self.epoch() == 93,
-            ClusterType::MainnetBeta => self.epoch() == 9999999,
+            ClusterType::MainnetBeta => self.epoch() == 173,
         };
 
         if reconfigure_token2_native_mint {
             let mut native_mint_account = safecoin_sdk::account::AccountSharedData::from(Account {
                 owner: inline_safe_token::id(),
                 data: inline_safe_token::native_mint::ACCOUNT_DATA.to_vec(),
-                lamports: sol_to_lamports(1.),
+                lamports: sol_to_lamports(0.0),
                 executable: false,
                 rent_epoch: self.epoch() + 1,
             });
