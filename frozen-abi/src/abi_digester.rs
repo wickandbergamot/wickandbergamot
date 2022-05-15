@@ -53,6 +53,17 @@ impl DigestError {
 
 const INDENT_WIDTH: usize = 4;
 
+pub(crate) fn shorten_serialize_with(type_name: &str) -> &str {
+    // Fully qualified type names for the generated `__SerializeWith` types are very
+    // long and do not add extra value to the digest. They also cause the digest
+    // to change when a struct is moved to an inner module.
+    if type_name.ends_with("__SerializeWith") {
+        "__SerializeWith"
+    } else {
+        type_name
+    }
+}
+
 impl AbiDigester {
     pub fn create() -> Self {
         AbiDigester {
@@ -168,7 +179,8 @@ impl AbiDigester {
         key: Sstr,
         v: &T,
     ) -> Result<(), DigestError> {
-        self.update_with_string(format!("field {}: {}", key, type_name::<T>()));
+        let field_type_name = shorten_serialize_with(type_name::<T>());
+        self.update_with_string(format!("field {}: {}", key, field_type_name));
         self.create_child()?
             .digest_data(v)
             .map(|_| ())
@@ -186,9 +198,7 @@ impl AbiDigester {
         label: &'static str,
         variant: &'static str,
     ) -> Result<(), DigestError> {
-        if !self.for_enum {
-            panic!("derive AbiEnumVisitor or implement it for the enum, which contains a variant ({}) named {}", label, variant);
-        }
+        assert!(self.for_enum, "derive AbiEnumVisitor or implement it for the enum, which contains a variant ({}) named {}", label, variant);
         Ok(())
     }
 
@@ -201,13 +211,13 @@ impl AbiDigester {
 
         let hash = hasher.result();
 
-        if let Ok(dir) = std::env::var("SAFECOIN_ABI_DUMP_DIR") {
+        if let Ok(dir) = std::env::var("SOLANA_ABI_DUMP_DIR") {
             let thread_name = std::thread::current()
                 .name()
                 .unwrap_or("unknown-test-thread")
                 .replace(':', "_");
             if thread_name == "main" {
-                error!("Bad thread name detected for dumping; Maybe, --test-threads=1? Sorry, SAFECOIN_ABI_DUMP_DIR doesn't work under 1; increase it");
+                error!("Bad thread name detected for dumping; Maybe, --test-threads=1? Sorry, SOLANA_ABI_DUMP_DIR doesn't work under 1; increase it");
             }
 
             let path = format!("{}/{}_{}", dir, thread_name, hash,);

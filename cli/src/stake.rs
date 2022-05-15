@@ -10,7 +10,7 @@ use {
         spend_utils::{resolve_spend_tx_and_check_account_balances, SpendAmount},
     },
     clap::{value_t, App, Arg, ArgGroup, ArgMatches, SubCommand},
-    safecoin_clap_utils::{
+    solana_clap_utils::{
         fee_payer::{fee_payer_arg, FEE_PAYER_ARG},
         input_parsers::*,
         input_validators::*,
@@ -20,16 +20,16 @@ use {
         offline::*,
         ArgConstant,
     },
-    safecoin_cli_output::{
+    solana_cli_output::{
         return_signers_with_config, CliEpochReward, CliStakeHistory, CliStakeHistoryEntry,
         CliStakeState, CliStakeType, OutputFormat, ReturnSignersConfig,
     },
-    safecoin_client::{
+    solana_client::{
         blockhash_query::BlockhashQuery, nonce_utils, rpc_client::RpcClient,
         rpc_request::DELINQUENT_VALIDATOR_SLOT_DISTANCE, rpc_response::RpcInflationReward,
     },
-    safecoin_remote_wallet::remote_wallet::RemoteWalletManager,
-    safecoin_sdk::{
+    solana_remote_wallet::remote_wallet::RemoteWalletManager,
+    solana_sdk::{
         account::from_account,
         account_utils::StateMut,
         clock::{Clock, UnixTimestamp, SECONDS_PER_DAY},
@@ -135,7 +135,7 @@ impl StakeSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .validator(is_amount_or_all)
                         .required(true)
-                        .help("The amount to send to the stake account, in SAFE; accepts keyword ALL")
+                        .help("The amount to send to the stake account, in SOL; accepts keyword ALL")
                 )
                 .arg(
                     pubkey!(Arg::with_name("custodian")
@@ -214,7 +214,7 @@ impl StakeSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .validator(is_amount_or_all)
                         .required(true)
-                        .help("The amount to send to the stake account, in SAFE; accepts keyword ALL")
+                        .help("The amount to send to the stake account, in SOL; accepts keyword ALL")
                 )
                 .arg(
                     Arg::with_name("seed")
@@ -411,7 +411,7 @@ impl StakeSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .validator(is_amount)
                         .required(true)
-                        .help("The amount to move into the new stake account, in SAFE")
+                        .help("The amount to move into the new stake account, in SOL")
                 )
                 .arg(
                     Arg::with_name("seed")
@@ -453,7 +453,7 @@ impl StakeSubCommands for App<'_, '_> {
         )
         .subcommand(
             SubCommand::with_name("withdraw-stake")
-                .about("Withdraw the unstaked SAFE from the stake account")
+                .about("Withdraw the unstaked SOL from the stake account")
                 .arg(
                     pubkey!(Arg::with_name("stake_account_pubkey")
                         .index(1)
@@ -466,7 +466,7 @@ impl StakeSubCommands for App<'_, '_> {
                         .index(2)
                         .value_name("RECIPIENT_ADDRESS")
                         .required(true),
-                        "Recipient of withdrawn SAFE")
+                        "Recipient of withdrawn SOL")
                 )
                 .arg(
                     Arg::with_name("amount")
@@ -475,7 +475,7 @@ impl StakeSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .validator(is_amount_or_all)
                         .required(true)
-                        .help("The amount to withdraw from the stake account, in SAFE; accepts keyword ALL")
+                        .help("The amount to withdraw from the stake account, in SOL; accepts keyword ALL")
                 )
                 .arg(
                     Arg::with_name("seed")
@@ -605,7 +605,7 @@ impl StakeSubCommands for App<'_, '_> {
                     Arg::with_name("lamports")
                         .long("lamports")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SAFE")
+                        .help("Display balance in lamports instead of SOL")
                 )
                 .arg(
                     Arg::with_name("with_rewards")
@@ -632,7 +632,7 @@ impl StakeSubCommands for App<'_, '_> {
                     Arg::with_name("lamports")
                         .long("lamports")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SAFE")
+                        .help("Display balance in lamports instead of SOL")
                 )
                 .arg(
                     Arg::with_name("limit")
@@ -1272,14 +1272,13 @@ pub fn process_create_stake_account(
         }
     };
 
-    let (recent_blockhash, fee_calculator) =
-        blockhash_query.get_blockhash_and_fee_calculator(rpc_client, config.commitment)?;
+    let recent_blockhash = blockhash_query.get_blockhash(rpc_client, config.commitment)?;
 
     let (message, lamports) = resolve_spend_tx_and_check_account_balances(
         rpc_client,
         sign_only,
         amount,
-        &fee_calculator,
+        &recent_blockhash,
         &from.pubkey(),
         &fee_payer.pubkey(),
         build_message,
@@ -1385,7 +1384,13 @@ pub fn process_stake_authorize(
             if let Some(authorized) = authorized {
                 match authorization_type {
                     StakeAuthorize::Staker => {
-                        check_current_authority(&authorized.staker, &authority.pubkey())?;
+                        // first check authorized withdrawer
+                        check_current_authority(&authorized.withdrawer, &authority.pubkey())
+                            .or_else(|_| {
+                                // ...then check authorized staker. If neither matches, error will
+                                // print the stake key as `expected`
+                                check_current_authority(&authorized.staker, &authority.pubkey())
+                            })?;
                     }
                     StakeAuthorize::Withdrawer => {
                         check_current_authority(&authorized.withdrawer, &authority.pubkey())?;
@@ -1419,8 +1424,7 @@ pub fn process_stake_authorize(
     }
     ixs = ixs.with_memo(memo);
 
-    let (recent_blockhash, fee_calculator) =
-        blockhash_query.get_blockhash_and_fee_calculator(rpc_client, config.commitment)?;
+    let recent_blockhash = blockhash_query.get_blockhash(rpc_client, config.commitment)?;
 
     let nonce_authority = config.signers[nonce_authority];
     let fee_payer = config.signers[fee_payer];
@@ -1459,7 +1463,6 @@ pub fn process_stake_authorize(
         check_account_for_fee_with_commitment(
             rpc_client,
             &tx.message.account_keys[0],
-            &fee_calculator,
             &tx.message,
             config.commitment,
         )?;
@@ -1487,8 +1490,7 @@ pub fn process_deactivate_stake_account(
     seed: Option<&String>,
     fee_payer: SignerIndex,
 ) -> ProcessResult {
-    let (recent_blockhash, fee_calculator) =
-        blockhash_query.get_blockhash_and_fee_calculator(rpc_client, config.commitment)?;
+    let recent_blockhash = blockhash_query.get_blockhash(rpc_client, config.commitment)?;
     let stake_authority = config.signers[stake_authority];
 
     let stake_account_address = if let Some(seed) = seed {
@@ -1539,7 +1541,6 @@ pub fn process_deactivate_stake_account(
         check_account_for_fee_with_commitment(
             rpc_client,
             &tx.message.account_keys[0],
-            &fee_calculator,
             &tx.message,
             config.commitment,
         )?;
@@ -1575,8 +1576,7 @@ pub fn process_withdraw_stake(
         *stake_account_pubkey
     };
 
-    let (recent_blockhash, fee_calculator) =
-        blockhash_query.get_blockhash_and_fee_calculator(rpc_client, config.commitment)?;
+    let recent_blockhash = blockhash_query.get_blockhash(rpc_client, config.commitment)?;
 
     let fee_payer = config.signers[fee_payer];
     let nonce_authority = config.signers[nonce_authority];
@@ -1607,7 +1607,7 @@ pub fn process_withdraw_stake(
         rpc_client,
         sign_only,
         amount,
-        &fee_calculator,
+        &recent_blockhash,
         &stake_account_address,
         &fee_payer.pubkey(),
         build_message,
@@ -1638,7 +1638,6 @@ pub fn process_withdraw_stake(
         check_account_for_fee_with_commitment(
             rpc_client,
             &tx.message.account_keys[0],
-            &fee_calculator,
             &tx.message,
             config.commitment,
         )?;
@@ -1724,8 +1723,7 @@ pub fn process_split_stake(
         }
     }
 
-    let (recent_blockhash, fee_calculator) =
-        blockhash_query.get_blockhash_and_fee_calculator(rpc_client, config.commitment)?;
+    let recent_blockhash = blockhash_query.get_blockhash(rpc_client, config.commitment)?;
 
     let ixs = if let Some(seed) = split_stake_account_seed {
         stake_instruction::split_with_seed(
@@ -1783,7 +1781,6 @@ pub fn process_split_stake(
         check_account_for_fee_with_commitment(
             rpc_client,
             &tx.message.account_keys[0],
-            &fee_calculator,
             &tx.message,
             config.commitment,
         )?;
@@ -1844,8 +1841,7 @@ pub fn process_merge_stake(
         }
     }
 
-    let (recent_blockhash, fee_calculator) =
-        blockhash_query.get_blockhash_and_fee_calculator(rpc_client, config.commitment)?;
+    let recent_blockhash = blockhash_query.get_blockhash(rpc_client, config.commitment)?;
 
     let ixs = stake_instruction::merge(
         stake_account_pubkey,
@@ -1890,7 +1886,6 @@ pub fn process_merge_stake(
         check_account_for_fee_with_commitment(
             rpc_client,
             &tx.message.account_keys[0],
-            &fee_calculator,
             &tx.message,
             config.commitment,
         )?;
@@ -1919,8 +1914,7 @@ pub fn process_stake_set_lockup(
     memo: Option<&String>,
     fee_payer: SignerIndex,
 ) -> ProcessResult {
-    let (recent_blockhash, fee_calculator) =
-        blockhash_query.get_blockhash_and_fee_calculator(rpc_client, config.commitment)?;
+    let recent_blockhash = blockhash_query.get_blockhash(rpc_client, config.commitment)?;
     let custodian = config.signers[custodian];
 
     let ixs = vec![if new_custodian_signer.is_some() {
@@ -1986,7 +1980,6 @@ pub fn process_stake_set_lockup(
         check_account_for_fee_with_commitment(
             rpc_client,
             &tx.message.account_keys[0],
-            &fee_calculator,
             &tx.message,
             config.commitment,
         )?;
@@ -2383,8 +2376,7 @@ pub fn process_delegate_stake(
         }
     }
 
-    let (recent_blockhash, fee_calculator) =
-        blockhash_query.get_blockhash_and_fee_calculator(rpc_client, config.commitment)?;
+    let recent_blockhash = blockhash_query.get_blockhash(rpc_client, config.commitment)?;
 
     let ixs = vec![stake_instruction::delegate_stake(
         stake_account_pubkey,
@@ -2429,7 +2421,6 @@ pub fn process_delegate_stake(
         check_account_for_fee_with_commitment(
             rpc_client,
             &tx.message.account_keys[0],
-            &fee_calculator,
             &tx.message,
             config.commitment,
         )?;
@@ -2443,8 +2434,8 @@ mod tests {
     use {
         super::*,
         crate::{clap_app::get_clap_app, cli::parse_command},
-        safecoin_client::blockhash_query,
-        safecoin_sdk::{
+        solana_client::blockhash_query,
+        solana_sdk::{
             hash::Hash,
             signature::{
                 keypair_from_seed, read_keypair_file, write_keypair, Keypair, Presigner, Signer,
@@ -3537,9 +3528,9 @@ mod tests {
         );
 
         // Test CreateStakeAccount SubCommand
-        let custodian = safecoin_sdk::pubkey::new_rand();
+        let custodian = solana_sdk::pubkey::new_rand();
         let custodian_string = format!("{}", custodian);
-        let authorized = safecoin_sdk::pubkey::new_rand();
+        let authorized = solana_sdk::pubkey::new_rand();
         let authorized_string = format!("{}", authorized);
         let test_create_stake_account = test_commands.clone().get_matches_from(vec![
             "test",
@@ -3738,7 +3729,7 @@ mod tests {
         );
 
         // Test DelegateStake Subcommand
-        let vote_account_pubkey = safecoin_sdk::pubkey::new_rand();
+        let vote_account_pubkey = solana_sdk::pubkey::new_rand();
         let vote_account_string = vote_account_pubkey.to_string();
         let test_delegate_stake = test_commands.clone().get_matches_from(vec![
             "test",
@@ -3767,7 +3758,7 @@ mod tests {
         );
 
         // Test DelegateStake Subcommand w/ authority
-        let vote_account_pubkey = safecoin_sdk::pubkey::new_rand();
+        let vote_account_pubkey = solana_sdk::pubkey::new_rand();
         let vote_account_string = vote_account_pubkey.to_string();
         let test_delegate_stake = test_commands.clone().get_matches_from(vec![
             "test",
@@ -3894,7 +3885,7 @@ mod tests {
         );
 
         // Test Delegate Subcommand w/ absent fee payer
-        let key1 = safecoin_sdk::pubkey::new_rand();
+        let key1 = solana_sdk::pubkey::new_rand();
         let sig1 = Keypair::new().sign_message(&[0u8]);
         let signer1 = format!("{}={}", key1, sig1);
         let test_delegate_stake = test_commands.clone().get_matches_from(vec![
@@ -3936,7 +3927,7 @@ mod tests {
         );
 
         // Test Delegate Subcommand w/ absent fee payer and absent nonce authority
-        let key2 = safecoin_sdk::pubkey::new_rand();
+        let key2 = solana_sdk::pubkey::new_rand();
         let sig2 = Keypair::new().sign_message(&[0u8]);
         let signer2 = format!("{}={}", key2, sig2);
         let test_delegate_stake = test_commands.clone().get_matches_from(vec![
@@ -4292,7 +4283,7 @@ mod tests {
         );
 
         // Test Deactivate Subcommand w/ absent fee payer
-        let key1 = safecoin_sdk::pubkey::new_rand();
+        let key1 = solana_sdk::pubkey::new_rand();
         let sig1 = Keypair::new().sign_message(&[0u8]);
         let signer1 = format!("{}={}", key1, sig1);
         let test_deactivate_stake = test_commands.clone().get_matches_from(vec![
@@ -4332,7 +4323,7 @@ mod tests {
         );
 
         // Test Deactivate Subcommand w/ absent fee payer and nonce authority
-        let key2 = safecoin_sdk::pubkey::new_rand();
+        let key2 = solana_sdk::pubkey::new_rand();
         let sig2 = Keypair::new().sign_message(&[0u8]);
         let signer2 = format!("{}={}", key2, sig2);
         let test_deactivate_stake = test_commands.clone().get_matches_from(vec![
@@ -4521,7 +4512,7 @@ mod tests {
         let stake_account_keypair = Keypair::new();
         write_keypair(&stake_account_keypair, tmp_file.as_file_mut()).unwrap();
 
-        let source_stake_account_pubkey = safecoin_sdk::pubkey::new_rand();
+        let source_stake_account_pubkey = solana_sdk::pubkey::new_rand();
         let test_merge_stake_account = test_commands.clone().get_matches_from(vec![
             "test",
             "merge-stake",

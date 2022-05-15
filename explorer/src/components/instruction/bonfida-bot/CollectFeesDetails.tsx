@@ -1,5 +1,5 @@
 import React from "react";
-import { SignatureResult, TransactionInstruction } from "@safecoin/web3.js";
+import { SignatureResult, TransactionInstruction } from "@solana/web3.js";
 import { InstructionCard } from "../InstructionCard";
 import { Address } from "components/common/Address";
 import { CollectFees } from "./types";
@@ -25,35 +25,35 @@ export function CollectFeesDetailsCard(props: {
     >
       <tr>
         <td>Program</td>
-        <td className="text-lg-right">
+        <td className="text-lg-end">
           <Address pubkey={info.programId} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Signal Provider</td>
-        <td className="text-lg-right">
+        <td className="text-lg-end">
           <Address pubkey={info.signalProviderPoolTokenKey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Insurance Fund</td>
-        <td className="text-lg-right">
+        <td className="text-lg-end">
           <Address pubkey={info.bonfidaFeePoolTokenKey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Buy and Burn</td>
-        <td className="text-lg-right">
+        <td className="text-lg-end">
           <Address pubkey={info.bonfidaBnBPTKey} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Pool Seed</td>
-        <td className="text-lg-right">{info.poolSeed}</td>
+        <td className="text-lg-end">{info.poolSeed}</td>
       </tr>
     </InstructionCard>
   );

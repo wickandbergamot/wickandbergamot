@@ -9,7 +9,7 @@ use {
         serde::ts_seconds,
     },
     serde_derive::{Deserialize, Serialize},
-    safecoin_sdk::{instruction::Instruction, pubkey::Pubkey},
+    solana_sdk::{instruction::Instruction, pubkey::Pubkey},
 };
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]

@@ -1,12 +1,12 @@
-import React, { ReactNode } from "react";
 import BN from "bn.js";
 import {
   HumanizeDuration,
   HumanizeDurationLanguage,
 } from "humanize-duration-ts";
+import { PublicKey } from "@solana/web3.js";
 
 // Switch to web3 constant when web3 updates superstruct
-export const LAMPORTS_PER_SAFE = 1000000000;
+export const LAMPORTS_PER_SOL = 1000000000;
 
 export const NUM_TICKS_PER_SECOND = 160;
 export const DEFAULT_TICKS_PER_SLOT = 64;
@@ -28,9 +28,9 @@ export function normalizeTokenAmount(
   return rawTokens / Math.pow(10, decimals);
 }
 
-export function lamportsToSafe(lamports: number | BN): number {
+export function lamportsToSol(lamports: number | BN): number {
   if (typeof lamports === "number") {
-    return Math.abs(lamports) / LAMPORTS_PER_SAFE;
+    return Math.abs(lamports) / LAMPORTS_PER_SOL;
   }
 
   let signMultiplier = 1;
@@ -48,18 +48,28 @@ export function lamportsToSafe(lamports: number | BN): number {
   return signMultiplier * parseFloat(solString);
 }
 
-export function lamportsToSafeString(
+export function lamportsToSolString(
   lamports: number | BN,
   maximumFractionDigits: number = 9
-): ReactNode {
-  const sol = lamportsToSafe(lamports);
+): string {
+  const sol = lamportsToSol(lamports);
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits }).format(sol);
+}
+
+export function SolBalance({
+  lamports,
+  maximumFractionDigits = 9,
+}: {
+  lamports: number | BN;
+  maximumFractionDigits?: number;
+}) {
   return (
-    <>
+    <span>
       ◎
-      <span className="text-monospace">
-        {new Intl.NumberFormat("en-US", { maximumFractionDigits }).format(sol)}
+      <span className="font-monospace">
+        {lamportsToSolString(lamports, maximumFractionDigits)}
       </span>
-    </>
+    </span>
   );
 }
 
@@ -115,3 +125,23 @@ export function camelToTitleCase(str: string): string {
   const result = str.replace(/([A-Z])/g, " $1");
   return result.charAt(0).toUpperCase() + result.slice(1);
 }
+
+export function abbreviatedNumber(value: number, fixed = 1) {
+  if (value < 1e3) return value;
+  if (value >= 1e3 && value < 1e6) return +(value / 1e3).toFixed(fixed) + "K";
+  if (value >= 1e6 && value < 1e9) return +(value / 1e6).toFixed(fixed) + "M";
+  if (value >= 1e9 && value < 1e12) return +(value / 1e9).toFixed(fixed) + "B";
+  if (value >= 1e12) return +(value / 1e12).toFixed(fixed) + "T";
+}
+
+export const pubkeyToString = (key: PublicKey | string = "") => {
+  return typeof key === "string" ? key : key?.toBase58() || "";
+};
+
+export const getLast = (arr: string[]) => {
+  if (arr.length <= 0) {
+    return undefined;
+  }
+
+  return arr[arr.length - 1];
+};

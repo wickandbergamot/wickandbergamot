@@ -1,17 +1,18 @@
 use {
     crate::client_error,
-    safecoin_account_decoder::{parse_token::UiTokenAmount, UiAccount},
-    safecoin_sdk::{
+    solana_account_decoder::{parse_token::UiTokenAmount, UiAccount},
+    solana_sdk::{
         clock::{Epoch, Slot, UnixTimestamp},
         fee_calculator::{FeeCalculator, FeeRateGovernor},
         hash::Hash,
         inflation::Inflation,
         transaction::{Result, TransactionError},
     },
-    safecoin_transaction_status::{
-        ConfirmedTransactionStatusWithSignature, TransactionConfirmationStatus,
+    solana_transaction_status::{
+        ConfirmedTransactionStatusWithSignature, TransactionConfirmationStatus, UiConfirmedBlock,
     },
     std::{collections::HashMap, fmt, net::SocketAddr},
+    thiserror::Error,
 };
 
 pub type RpcResult<T> = client_error::Result<Response<T>>;
@@ -39,6 +40,13 @@ pub struct RpcBlockCommitment<T> {
 pub struct RpcBlockhashFeeCalculator {
     pub blockhash: String,
     pub fee_calculator: FeeCalculator,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct RpcBlockhash {
+    pub blockhash: String,
+    pub last_valid_block_height: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -249,7 +257,7 @@ pub struct RpcBlockProduction {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct RpcVersionInfo {
-    /// The current version of safecoin-core
+    /// The current version of solana-core
     pub solana_core: String,
     /// first 4 bytes of the FeatureSet identifier
     pub feature_set: Option<u32>,
@@ -282,6 +290,8 @@ pub struct RpcIdentity {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct RpcVote {
+    /// Vote account address, as base-58 encoded string
+    pub vote_pubkey: String,
     pub slots: Vec<Slot>,
     pub hash: String,
     pub timestamp: Option<UnixTimestamp>,
@@ -336,6 +346,7 @@ pub struct RpcSimulateTransactionResult {
     pub err: Option<TransactionError>,
     pub logs: Option<Vec<String>>,
     pub accounts: Option<Vec<Option<UiAccount>>>,
+    pub units_consumed: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -416,6 +427,20 @@ pub struct RpcInflationReward {
     pub commission: Option<u8>, // Vote account commission when the reward was credited
 }
 
+#[derive(Clone, Deserialize, Serialize, Debug, Error, Eq, PartialEq)]
+pub enum RpcBlockUpdateError {
+    #[error("block store error")]
+    BlockStoreError,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct RpcBlockUpdate {
+    pub slot: Slot,
+    pub block: Option<UiConfirmedBlock>,
+    pub err: Option<RpcBlockUpdateError>,
+}
+
 impl From<ConfirmedTransactionStatusWithSignature> for RpcConfirmedTransactionStatusWithSignature {
     fn from(value: ConfirmedTransactionStatusWithSignature) -> Self {
         let ConfirmedTransactionStatusWithSignature {
@@ -434,4 +459,10 @@ impl From<ConfirmedTransactionStatusWithSignature> for RpcConfirmedTransactionSt
             confirmation_status: None,
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq)]
+pub struct RpcSnapshotSlotInfo {
+    pub full: Slot,
+    pub incremental: Option<Slot>,
 }

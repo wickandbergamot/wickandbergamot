@@ -1,5 +1,5 @@
 import React from "react";
-import { ParsedInstruction } from "@safecoin/web3.js";
+import { ParsedInstruction } from "@solana/web3.js";
 
 export function RawParsedDetails({
   ix,
@@ -16,8 +16,8 @@ export function RawParsedDetails({
         <td>
           Instruction Data <span className="text-muted">(JSON)</span>
         </td>
-        <td className="text-lg-right">
-          <pre className="d-inline-block text-left json-wrap">
+        <td className="text-lg-end">
+          <pre className="d-inline-block text-start json-wrap">
             {JSON.stringify(ix.parsed, null, 2)}
           </pre>
         </td>

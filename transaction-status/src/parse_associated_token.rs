@@ -3,13 +3,13 @@ use {
         check_num_accounts, ParsableProgram, ParseInstructionError, ParsedInstructionEnum,
     },
     serde_json::json,
-    safecoin_sdk::{instruction::CompiledInstruction, pubkey::Pubkey},
+    solana_sdk::{instruction::CompiledInstruction, pubkey::Pubkey},
 };
 
-// A helper function to convert safe_associated_token_account::id() as spl_sdk::pubkey::Pubkey
-// to safecoin_sdk::pubkey::Pubkey
+// A helper function to convert spl_associated_token_account::id() as spl_sdk::pubkey::Pubkey
+// to solana_sdk::pubkey::Pubkey
 pub fn spl_associated_token_id() -> Pubkey {
-    Pubkey::new_from_array(safe_associated_token_account::id().to_bytes())
+    Pubkey::new_from_array(spl_associated_token_account::id().to_bytes())
 }
 
 pub fn parse_associated_token(
@@ -21,7 +21,7 @@ pub fn parse_associated_token(
         _ => {
             // Runtime should prevent this from ever happening
             return Err(ParseInstructionError::InstructionKeyMismatch(
-                ParsableProgram::SafeAssociatedTokenAccount,
+                ParsableProgram::SplAssociatedTokenAccount,
             ));
         }
     }
@@ -44,16 +44,16 @@ fn check_num_associated_token_accounts(
     accounts: &[u8],
     num: usize,
 ) -> Result<(), ParseInstructionError> {
-    check_num_accounts(accounts, num, ParsableProgram::SafeAssociatedTokenAccount)
+    check_num_accounts(accounts, num, ParsableProgram::SplAssociatedTokenAccount)
 }
 
 #[cfg(test)]
 mod test {
     use {
         super::*,
-        safe_associated_token_account::{
+        spl_associated_token_account::{
             create_associated_token_account,
-            safecoin_program::{
+            solana_program::{
                 instruction::CompiledInstruction as SplAssociatedTokenCompiledInstruction,
                 message::Message, pubkey::Pubkey as SplAssociatedTokenPubkey,
             },
@@ -78,7 +78,7 @@ mod test {
     fn test_parse_associated_token() {
         let mut keys: Vec<Pubkey> = vec![];
         for _ in 0..7 {
-            keys.push(safecoin_sdk::pubkey::new_rand());
+            keys.push(solana_sdk::pubkey::new_rand());
         }
 
         let create_ix = create_associated_token_account(

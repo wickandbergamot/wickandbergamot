@@ -1,4 +1,4 @@
-import * as BufferLayout from 'buffer-layout';
+import * as BufferLayout from '@solana/buffer-layout';
 
 import {encodeData, decodeData, InstructionType} from './instruction';
 import * as Layout from './layout';
@@ -167,6 +167,15 @@ export type DeactivateStakeParams = {
 };
 
 /**
+ * Merge stake instruction params
+ */
+export type MergeStakeParams = {
+  stakePubkey: PublicKey;
+  sourceStakePubKey: PublicKey;
+  authorizedPubkey: PublicKey;
+};
+
+/**
  * Stake Instruction class
  */
 export class StakeInstruction {
@@ -328,6 +337,21 @@ export class StakeInstruction {
   }
 
   /**
+   * Decode a merge stake instruction and retrieve the instruction params.
+   */
+  static decodeMerge(instruction: TransactionInstruction): MergeStakeParams {
+    this.checkProgramId(instruction.programId);
+    this.checkKeyLength(instruction.keys, 3);
+    decodeData(STAKE_INSTRUCTION_LAYOUTS.Merge, instruction.data);
+
+    return {
+      stakePubkey: instruction.keys[0].pubkey,
+      sourceStakePubKey: instruction.keys[1].pubkey,
+      authorizedPubkey: instruction.keys[4].pubkey,
+    };
+  }
+
+  /**
    * Decode a withdraw stake instruction and retrieve the instruction params.
    */
   static decodeWithdraw(
@@ -399,7 +423,8 @@ export type StakeInstructionType =
   | 'Delegate'
   | 'Initialize'
   | 'Split'
-  | 'Withdraw';
+  | 'Withdraw'
+  | 'Merge';
 
 /**
  * An enumeration of valid stake InstructionType's
@@ -446,6 +471,10 @@ export const STAKE_INSTRUCTION_LAYOUTS: {
     index: 5,
     layout: BufferLayout.struct([BufferLayout.u32('instruction')]),
   },
+  Merge: {
+    index: 7,
+    layout: BufferLayout.struct([BufferLayout.u32('instruction')]),
+  },
   AuthorizeWithSeed: {
     index: 8,
     layout: BufferLayout.struct([
@@ -462,7 +491,7 @@ export const STAKE_INSTRUCTION_LAYOUTS: {
  * Stake authorization type
  */
 export type StakeAuthorizationType = {
-  /** The Stake Authorization index (from safecoin-stake-program) */
+  /** The Stake Authorization index (from solana-stake-program) */
   index: number;
 };
 
@@ -497,9 +526,9 @@ export class StakeProgram {
   /**
    * Max space of a Stake account
    *
-   * This is generated from the safecoin-stake-program StakeState struct as
+   * This is generated from the solana-stake-program StakeState struct as
    * `std::mem::size_of::<StakeState>()`:
-   * https://docs.rs/safecoin-stake-program/1.4.4/solana_stake_program/stake_state/enum.StakeState.html
+   * https://docs.rs/solana-stake-program/1.4.4/solana_stake_program/stake_state/enum.StakeState.html
    */
   static space: number = 200;
 
@@ -699,6 +728,31 @@ export class StakeProgram {
       keys: [
         {pubkey: stakePubkey, isSigner: false, isWritable: true},
         {pubkey: splitStakePubkey, isSigner: false, isWritable: true},
+        {pubkey: authorizedPubkey, isSigner: true, isWritable: false},
+      ],
+      programId: this.programId,
+      data,
+    });
+  }
+
+  /**
+   * Generate a Transaction that merges Stake accounts.
+   */
+  static merge(params: MergeStakeParams): Transaction {
+    const {stakePubkey, sourceStakePubKey, authorizedPubkey} = params;
+    const type = STAKE_INSTRUCTION_LAYOUTS.Merge;
+    const data = encodeData(type);
+
+    return new Transaction().add({
+      keys: [
+        {pubkey: stakePubkey, isSigner: false, isWritable: true},
+        {pubkey: sourceStakePubKey, isSigner: false, isWritable: true},
+        {pubkey: SYSVAR_CLOCK_PUBKEY, isSigner: false, isWritable: false},
+        {
+          pubkey: SYSVAR_STAKE_HISTORY_PUBKEY,
+          isSigner: false,
+          isWritable: false,
+        },
         {pubkey: authorizedPubkey, isSigner: true, isWritable: false},
       ],
       programId: this.programId,

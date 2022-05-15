@@ -1,7 +1,7 @@
 //! The `result` module exposes a Result type that propagates one of many different Error types.
 
 use {
-    safecoin_gossip::{cluster_info, gossip_error::GossipError},
+    solana_gossip::{cluster_info, gossip_error::GossipError},
     solana_ledger::blockstore,
 };
 
@@ -26,7 +26,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "safecoin error")
+        write!(f, "solana error")
     }
 }
 

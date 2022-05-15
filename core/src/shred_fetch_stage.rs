@@ -6,12 +6,14 @@ use {
     solana_ledger::shred::{get_shred_slot_index_type, ShredFetchStats},
     solana_perf::{
         cuda_runtime::PinnedVec,
-        packet::{Packet, PacketBatchRecycler},
+        packet::{Packet, PacketBatchRecycler, PacketFlags},
         recycler::Recycler,
     },
     solana_runtime::bank_forks::BankForks,
-    safecoin_sdk::clock::{Slot, DEFAULT_MS_PER_SLOT},
-    solana_streamer::streamer::{self, PacketBatchReceiver, PacketBatchSender},
+    solana_sdk::clock::{Slot, DEFAULT_MS_PER_SLOT},
+    solana_streamer::streamer::{
+        self, PacketBatchReceiver, PacketBatchSender, StreamerReceiveStats,
+    },
     std::{
         net::UdpSocket,
         sync::{atomic::AtomicBool, mpsc::channel, Arc, RwLock},
@@ -40,7 +42,7 @@ impl ShredFetchStage {
     ) where
         F: Fn(&mut Packet),
     {
-        p.meta.discard = true;
+        p.meta.set_discard(true);
         if let Some((slot, _index, _shred_type)) = get_shred_slot_index_type(p, stats) {
             // Seems reasonable to limit shreds to 2 epochs away
             if slot > last_root && slot < (last_slot + 2 * slots_per_epoch) {
@@ -50,7 +52,7 @@ impl ShredFetchStage {
 
                 if shreds_received.get(&hash).is_none() {
                     shreds_received.put(hash, ());
-                    p.meta.discard = false;
+                    p.meta.set_discard(false);
                     modify(p);
                 } else {
                     stats.duplicate_shred += 1;
@@ -98,9 +100,9 @@ impl ShredFetchStage {
                 }
             }
             stats.shred_count += packet_batch.packets.len();
-            packet_batch.packets.iter_mut().for_each(|mut packet| {
+            packet_batch.packets.iter_mut().for_each(|packet| {
                 Self::process_packet(
-                    &mut packet,
+                    packet,
                     &mut shreds_received,
                     &mut stats,
                     last_root,
@@ -148,10 +150,10 @@ impl ShredFetchStage {
             .map(|s| {
                 streamer::receiver(
                     s,
-                    exit,
+                    exit.clone(),
                     packet_sender.clone(),
                     recycler.clone(),
-                    "packet_modifier",
+                    Arc::new(StreamerReceiveStats::new("packet_modifier")),
                     1,
                     true,
                 )
@@ -192,7 +194,7 @@ impl ShredFetchStage {
             recycler.clone(),
             bank_forks.clone(),
             "shred_fetch_tvu_forwards",
-            |p| p.meta.forward = true,
+            |p| p.meta.flags.insert(PacketFlags::FORWARDED),
         );
 
         let (repair_receiver, repair_handler) = Self::packet_modifier(
@@ -202,7 +204,7 @@ impl ShredFetchStage {
             recycler,
             bank_forks,
             "shred_fetch_repair",
-            |p| p.meta.repair = true,
+            |p| p.meta.flags.insert(PacketFlags::REPAIR),
         );
 
         tvu_threads.extend(tvu_forwards_threads.into_iter());
@@ -266,10 +268,11 @@ mod tests {
             &|_p| {},
             &hasher,
         );
-        assert!(!packet.meta.discard);
+        assert!(!packet.meta.discard());
         let coding = solana_ledger::shred::Shredder::generate_coding_shreds(
             &[shred],
             false, // is_last_in_slot
+            3,     // next_code_index
         );
         coding[0].copy_to_packet(&mut packet);
         ShredFetchStage::process_packet(
@@ -282,7 +285,7 @@ mod tests {
             &|_p| {},
             &hasher,
         );
-        assert!(!packet.meta.discard);
+        assert!(!packet.meta.discard());
     }
 
     #[test]
@@ -309,7 +312,7 @@ mod tests {
             &hasher,
         );
         assert_eq!(stats.index_overrun, 1);
-        assert!(packet.meta.discard);
+        assert!(packet.meta.discard());
         let shred = Shred::new_from_data(1, 3, 0, None, true, true, 0, 0, 0);
         shred.copy_to_packet(&mut packet);
 
@@ -324,7 +327,7 @@ mod tests {
             &|_p| {},
             &hasher,
         );
-        assert!(packet.meta.discard);
+        assert!(packet.meta.discard());
 
         // Accepted for 1,3
         ShredFetchStage::process_packet(
@@ -337,7 +340,7 @@ mod tests {
             &|_p| {},
             &hasher,
         );
-        assert!(!packet.meta.discard);
+        assert!(!packet.meta.discard());
 
         // shreds_received should filter duplicate
         ShredFetchStage::process_packet(
@@ -350,7 +353,7 @@ mod tests {
             &|_p| {},
             &hasher,
         );
-        assert!(packet.meta.discard);
+        assert!(packet.meta.discard());
 
         let shred = Shred::new_from_data(1_000_000, 3, 0, None, true, true, 0, 0, 0);
         shred.copy_to_packet(&mut packet);
@@ -366,7 +369,7 @@ mod tests {
             &|_p| {},
             &hasher,
         );
-        assert!(packet.meta.discard);
+        assert!(packet.meta.discard());
 
         let index = MAX_DATA_SHREDS_PER_SLOT as u32;
         let shred = Shred::new_from_data(5, index, 0, None, true, true, 0, 0, 0);
@@ -381,6 +384,6 @@ mod tests {
             &|_p| {},
             &hasher,
         );
-        assert!(packet.meta.discard);
+        assert!(packet.meta.discard());
     }
 }

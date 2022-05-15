@@ -1,12 +1,13 @@
 use {
     itertools::Itertools,
-    safecoin_gossip::{
+    solana_gossip::{
         cluster_info::ClusterInfo, contact_info::ContactInfo, crds::Cursor, epoch_slots::EpochSlots,
     },
     solana_runtime::{bank::Bank, epoch_stakes::NodeIdToVoteAccounts},
-    safecoin_sdk::{
+    solana_sdk::{
         clock::{Slot, DEFAULT_SLOTS_PER_EPOCH},
         pubkey::Pubkey,
+        timing::AtomicInterval,
     },
     std::{
         collections::{BTreeMap, HashMap},
@@ -26,6 +27,7 @@ pub struct ClusterSlots {
     validator_stakes: RwLock<Arc<NodeIdToVoteAccounts>>,
     epoch: RwLock<Option<u64>>,
     cursor: Mutex<Cursor>,
+    last_report: AtomicInterval,
 }
 
 impl ClusterSlots {
@@ -99,6 +101,36 @@ impl ClusterSlots {
                 cluster_slots.split_off(&key);
             }
         }
+        self.report_cluster_slots_size();
+    }
+
+    fn report_cluster_slots_size(&self) {
+        if self.last_report.should_update(10_000) {
+            let (cluster_slots_cap, pubkeys_capacity) = {
+                let cluster_slots = self.cluster_slots.read().unwrap();
+                let cluster_slots_cap = cluster_slots.len();
+                let pubkeys_capacity = cluster_slots
+                    .iter()
+                    .map(|(_slot, slot_pubkeys)| slot_pubkeys.read().unwrap().capacity())
+                    .sum::<usize>();
+                (cluster_slots_cap, pubkeys_capacity)
+            };
+            let (validator_stakes_cap, validator_pubkeys_len) = {
+                let validator_stakes = self.validator_stakes.read().unwrap();
+                let validator_len = validator_stakes
+                    .iter()
+                    .map(|(_pubkey, vote_accounts)| vote_accounts.vote_accounts.capacity())
+                    .sum::<usize>();
+                (validator_stakes.capacity(), validator_len)
+            };
+            datapoint_info!(
+                "cluster-slots-size",
+                ("cluster_slots_capacity", cluster_slots_cap, i64),
+                ("pubkeys_capacity", pubkeys_capacity, i64),
+                ("validator_stakes_capacity", validator_stakes_cap, i64),
+                ("validator_pubkeys_len", validator_pubkeys_len, i64),
+            );
+        }
     }
 
     #[cfg(test)]
@@ -166,7 +198,7 @@ impl ClusterSlots {
             .collect()
     }
 
-    pub(crate) fn compute_weights_exclude_noncomplete(
+    pub(crate) fn compute_weights_exclude_nonfrozen(
         &self,
         slot: Slot,
         repair_peers: &[ContactInfo],
@@ -250,8 +282,8 @@ mod tests {
         let mut c1 = ContactInfo::default();
         let mut c2 = ContactInfo::default();
         let mut map = HashMap::new();
-        let k1 = safecoin_sdk::pubkey::new_rand();
-        let k2 = safecoin_sdk::pubkey::new_rand();
+        let k1 = solana_sdk::pubkey::new_rand();
+        let k2 = solana_sdk::pubkey::new_rand();
         map.insert(k1, std::u64::MAX / 2);
         map.insert(k2, 0);
         cs.cluster_slots
@@ -272,8 +304,8 @@ mod tests {
         let mut c1 = ContactInfo::default();
         let mut c2 = ContactInfo::default();
         let mut map = HashMap::new();
-        let k1 = safecoin_sdk::pubkey::new_rand();
-        let k2 = safecoin_sdk::pubkey::new_rand();
+        let k1 = solana_sdk::pubkey::new_rand();
+        let k2 = solana_sdk::pubkey::new_rand();
         map.insert(k2, 0);
         cs.cluster_slots
             .write()
@@ -303,14 +335,14 @@ mod tests {
         let cs = ClusterSlots::default();
         let mut contact_infos = vec![ContactInfo::default(); 2];
         for ci in contact_infos.iter_mut() {
-            ci.id = safecoin_sdk::pubkey::new_rand();
+            ci.id = solana_sdk::pubkey::new_rand();
         }
         let slot = 9;
 
         // None of these validators have completed slot 9, so should
         // return nothing
         assert!(cs
-            .compute_weights_exclude_noncomplete(slot, &contact_infos)
+            .compute_weights_exclude_nonfrozen(slot, &contact_infos)
             .is_empty());
 
         // Give second validator max stake
@@ -330,7 +362,7 @@ mod tests {
         // max stake
         cs.insert_node_id(slot, contact_infos[0].id);
         assert_eq!(
-            cs.compute_weights_exclude_noncomplete(slot, &contact_infos),
+            cs.compute_weights_exclude_nonfrozen(slot, &contact_infos),
             vec![(1, 0)]
         );
     }

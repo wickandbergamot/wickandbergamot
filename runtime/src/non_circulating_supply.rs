@@ -1,10 +1,10 @@
 use {
     crate::{
-        accounts_index::{AccountIndex, IndexKey, ScanResult},
+        accounts_index::{AccountIndex, IndexKey, ScanConfig, ScanResult},
         bank::Bank,
     },
     log::*,
-    safecoin_sdk::{
+    solana_sdk::{
         account::ReadableAccount,
         pubkey::Pubkey,
         stake::{self, state::StakeState},
@@ -28,6 +28,7 @@ pub fn calculate_non_circulating_supply(bank: &Arc<Bank>) -> ScanResult<NonCircu
     let withdraw_authority_list = withdraw_authority();
 
     let clock = bank.clock();
+    let config = &ScanConfig::default();
     let stake_accounts = if bank
         .rc
         .accounts
@@ -42,9 +43,11 @@ pub fn calculate_non_circulating_supply(bank: &Arc<Bank>) -> ScanResult<NonCircu
             // zero-lamport Account::Default() after being wiped and reinitialized in later
             // updates. We include the redundant filter here to avoid returning these accounts.
             |account| account.owner() == &stake::program::id(),
+            config,
+            None,
         )?
     } else {
-        bank.get_program_accounts(&stake::program::id())?
+        bank.get_program_accounts(&stake::program::id(), config)?
     };
 
     for (pubkey, account) in stake_accounts.iter() {
@@ -80,7 +83,7 @@ pub fn calculate_non_circulating_supply(bank: &Arc<Bank>) -> ScanResult<NonCircu
 }
 
 // Mainnet-beta accounts that should be considered non-circulating
-safecoin_sdk::pubkeys!(
+solana_sdk::pubkeys!(
     non_circulating_accounts,
     [
         "9huDUZfxoJ7wGMTffUE7vh1xePqef7gyrLJu9NApncqA",
@@ -95,7 +98,7 @@ safecoin_sdk::pubkeys!(
         "CakcnaRDHka2gXyfbEd2d3xsvkJkqsLw2akB3zsN1D2S",
         "7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2",
         "GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ",
-        "4jAMsnkjcRapWdVaXMvJc1QMcD53t1tbqnwXQmdRWGRe",
+        "Mc5XB47H3DKJHym5RLa9mPzWv5snERsF3KNv5AauXK8",
         "7cvkjYAkUYs4W8XcXsca7cBrEGFeSUjeZmKoNBvEwyri",
         "AG3m2bAibcY8raMt4oXEGqRHwX4FWKPPJVjZxn1LySDX",
         "5XdtyEDREHJXXW1CTtCsVjJRjBapAwK78ZquzvnNVRrV",
@@ -106,7 +109,7 @@ safecoin_sdk::pubkeys!(
         "3o6xgkJ9sTmDeQWyfj3sxwon18fXJB9PV5LDc8sfgR4a",
         "GumSE5HsMV5HCwBTv2D2D81yy9x17aDkvobkqAfTRgmo",
         "AzVV9ZZDxTgW4wWfJmsG6ytaHpQGSe1yz76Nyy84VbQF",
-        "ETb9UBuunEPA1RrwwZ9WrkJ4BJ1836ZUcE9UfRYnDQRK",
+        "8CUUMKYNGxdgYio5CLHRHyzMEhhVRMcqefgE6dLqnVRK",
         "CQDYc4ET2mbFhVpgj41gXahL6Exn5ZoPcGAzSHuYxwmE",
         "5PLJZLJiRR9vf7d1JCCg7UuWjtyN9nkab9uok6TqSyuP",
         "7xJ9CLtEAcEShw9kW2gSoZkRWL566Dg12cvgzANJwbTr",
@@ -173,16 +176,36 @@ safecoin_sdk::pubkeys!(
         "AVYpwVou2BhdLivAwLxKPALZQsY7aZNkNmGbP2fZw7RU",
         "DrKzW5koKSZp4mg4BdHLwr72MMXscd2kTiWgckCvvPXz",
         "9hknftBZAQL4f48tWfk3bUEV5YSLcYYtDRqNmpNnhCWG",
+        "GLUmCeJpXB8veNcchPwibkRYwCwvQbKodex5mEjrgToi",
+        "9S2M3UYPpnPZTBtbcUvehYmiWFK3kBhwfzV2iWuwvaVy",
+        "HUAkU5psJXZuw54Lrg1ksbXzHv2fzczQ9sNbmisVMeJU",
+        "GK8R4uUmrawcREZ5xJy5dAzVV5V7aFvYg77id37pVTK",
+        "4vuWt1oHRqLMhf8Nv1zyEXZsYaeK7dipwrfKLoYU9Riq",
+        "EMhn1U3TMimW3bvWYbPUvN2eZnCfsuBN4LGWhzzYhiWR",
+        "BsKsunvENxAraBrL77UfAn1Gi7unVEmQAdCbhsjUN6tU",
+        "CTvhdUVf8KNyMbyEdnvRrBCHJjBKtQwkbj6zwoqcEssG",
+        "3fV2GaDKa3pZxyDcpMh5Vrh2FVAMUiWUKbYmnBFv8As3",
+        "4pV47TiPzZ7SSBPHmgUvSLmH9mMSe8tjyPhQZGbi1zPC",
+        "P8aKfWQPeRnsZtpBrwWTYzyAoRk74KMz56xc6NEpC4J",
+        "HuqDWJodFhAEWh6aWdsDVUqsjRket5DYXMYyDYtD8hdN",
+        "Ab1UcdsFXZVnkSt1Z3vcYU65GQk5MvCbs54SviaiaqHb",
+        "Dc2oHxFXQaC2QfLStuU7txtD3U5HZ82MrCSGDooWjbsv",
+        "3iPvAS4xdhYr6SkhVDHCLr7tJjMAFK4wvvHWJxFQVg15",
+        "GmyW1nqYcrw7P7JqrcyP9ivU9hYNbrgZ1r5SYJJH41Fs",
+        "E8jcgWvrvV7rwYHJThwfiBeQ8VAH4FgNEEMG9aAuCMAq",
+        "CY7X5o3Wi2eQhTocLmUS6JSWyx1NinBfW7AXRrkRCpi8",
+        "HQJtLqvEGGxgNYfRXUurfxV8E1swvCnsbC3456ik27HY",
+        "9xbcBZoGYFnfJZe81EDuDYKUm8xGkjzW8z4EgnVhNvsv",
     ]
 );
 
 // Withdraw authority for autostaked accounts on mainnet-beta
-safecoin_sdk::pubkeys!(
+solana_sdk::pubkeys!(
     withdraw_authority,
     [
-        "ETb9UBuunEPA1RrwwZ9WrkJ4BJ1836ZUcE9UfRYnDQRK",
-        "3DSuNXv7qzvcB6TKAxzaREvW85vit7xw4m2NBWf75585",
-        "6DB5E4mEyFzr9n6jt2aew73cjfysiHegLbmHmC4xME3u",
+        "8CUUMKYNGxdgYio5CLHRHyzMEhhVRMcqefgE6dLqnVRK",
+        "3FFaheyqtyAXZSYxDzsr5CVKvJuvZD1WE1VEsBtDbRqB",
+        "FdGYQdiRky8NZzN9wZtczTBcWLYYRXrJ3LMDhqDPn5rM",
         "4e6KwQpyzGQPfgVr5Jn3g5jLjbXB4pKPa2jRLohEb1QA",
         "FjiEiVKyMGzSLpqoB27QypukUfyWHrwzPcGNtopzZVdh",
         "DwbVjia1mYeSGoJipzhaf4L5hfer2DJ1Ys681VzQm5YY",
@@ -197,7 +220,7 @@ safecoin_sdk::pubkeys!(
 mod tests {
     use {
         super::*,
-        safecoin_sdk::{
+        solana_sdk::{
             account::{Account, AccountSharedData},
             epoch_schedule::EpochSchedule,
             genesis_config::{ClusterType, GenesisConfig},
@@ -217,7 +240,7 @@ mod tests {
         let num_genesis_accounts = 10;
         for _ in 0..num_genesis_accounts {
             accounts.insert(
-                safecoin_sdk::pubkey::new_rand(),
+                solana_sdk::pubkey::new_rand(),
                 Account::new(balance, 0, &Pubkey::default()),
             );
         }
@@ -229,7 +252,7 @@ mod tests {
 
         let num_stake_accounts = 3;
         for _ in 0..num_stake_accounts {
-            let pubkey = safecoin_sdk::pubkey::new_rand();
+            let pubkey = solana_sdk::pubkey::new_rand();
             let meta = Meta {
                 authorized: Authorized::auto(&pubkey),
                 lockup: Lockup {
@@ -255,8 +278,8 @@ mod tests {
             cluster_type: ClusterType::MainnetBeta,
             ..GenesisConfig::default()
         };
-        let mut bank = Arc::new(Bank::new(&genesis_config));
-        let sysvar_and_native_program_delta = 11;
+        let mut bank = Arc::new(Bank::new_for_tests(&genesis_config));
+        let sysvar_and_native_program_delta = 10;
         assert_eq!(
             bank.capitalization(),
             (num_genesis_accounts + num_non_circulating_accounts + num_stake_accounts) * balance

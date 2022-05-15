@@ -2,15 +2,18 @@
 #![cfg_attr(RUSTC_WITH_SPECIALIZATION, feature(specialization))]
 #![cfg_attr(RUSTC_NEEDS_PROC_MACRO_HYGIENE, feature(proc_macro_hygiene))]
 
-// Allows macro expansion of `use ::safecoin_program::*` to work within this crate
-extern crate self as safecoin_program;
+// Allows macro expansion of `use ::solana_program::*` to work within this crate
+extern crate self as solana_program;
 
 pub mod account_info;
+pub(crate) mod atomic_u64;
+pub mod blake3;
 pub mod borsh;
 pub mod bpf_loader;
 pub mod bpf_loader_deprecated;
 pub mod bpf_loader_upgradeable;
 pub mod clock;
+pub mod debug_account_data;
 pub mod decode_error;
 pub mod ed25519_program;
 pub mod entrypoint;
@@ -35,6 +38,7 @@ pub mod program_memory;
 pub mod program_option;
 pub mod program_pack;
 pub mod program_stubs;
+pub mod program_utils;
 pub mod pubkey;
 pub mod rent;
 pub mod sanitize;
@@ -49,6 +53,12 @@ pub mod stake_history;
 pub mod system_instruction;
 pub mod system_program;
 pub mod sysvar;
+pub mod wasm;
+
+#[cfg(target_arch = "bpf")]
+pub use solana_sdk_macro::wasm_bindgen_stub as wasm_bindgen;
+#[cfg(not(target_arch = "bpf"))]
+pub use wasm_bindgen::prelude::wasm_bindgen;
 
 pub mod config {
     pub mod program {
@@ -62,6 +72,8 @@ pub mod vote {
     }
 }
 
+/// Same as `declare_id` except report that this id has been deprecated
+pub use solana_sdk_macro::program_declare_deprecated_id as declare_deprecated_id;
 /// Convenience macro to declare a static public key and functions to interact with it
 ///
 /// Input: a single literal base58 string representation of a program's id
@@ -72,10 +84,10 @@ pub mod vote {
 /// # // wrapper is used so that the macro invocation occurs in the item position
 /// # // rather than in the statement position which isn't allowed.
 /// use std::str::FromStr;
-/// use safecoin_program::{declare_id, pubkey::Pubkey};
+/// use solana_program::{declare_id, pubkey::Pubkey};
 ///
 /// # mod item_wrapper {
-/// #   use safecoin_program::declare_id;
+/// #   use solana_program::declare_id;
 /// declare_id!("My11111111111111111111111111111111111111111");
 /// # }
 /// # use item_wrapper::id;
@@ -83,7 +95,7 @@ pub mod vote {
 /// let my_id = Pubkey::from_str("My11111111111111111111111111111111111111111").unwrap();
 /// assert_eq!(id(), my_id);
 /// ```
-pub use safecoin_sdk_macro::program_declare_id as declare_id;
+pub use solana_sdk_macro::program_declare_id as declare_id;
 /// Convenience macro to define a static public key
 ///
 /// Input: a single literal base58 string representation of a Pubkey
@@ -92,20 +104,20 @@ pub use safecoin_sdk_macro::program_declare_id as declare_id;
 ///
 /// ```
 /// use std::str::FromStr;
-/// use safecoin_program::{pubkey, pubkey::Pubkey};
+/// use solana_program::{pubkey, pubkey::Pubkey};
 ///
 /// static ID: Pubkey = pubkey!("My11111111111111111111111111111111111111111");
 ///
 /// let my_id = Pubkey::from_str("My11111111111111111111111111111111111111111").unwrap();
 /// assert_eq!(ID, my_id);
 /// ```
-pub use safecoin_sdk_macro::program_pubkey as pubkey;
+pub use solana_sdk_macro::program_pubkey as pubkey;
 
 #[macro_use]
 extern crate serde_derive;
 
 #[macro_use]
-extern crate safecoin_frozen_abi_macro;
+extern crate solana_frozen_abi_macro;
 
 /// Convenience macro for doing integer division where the opersation's safety
 /// can be checked at compile-time
@@ -114,7 +126,7 @@ extern crate safecoin_frozen_abi_macro;
 /// doctests to cover failure modes
 /// Literal denominator div-by-zero fails
 /// ```compile_fail
-/// # use safecoin_program::unchecked_div_by_const;
+/// # use solana_program::unchecked_div_by_const;
 /// # fn main() {
 /// # let _ = unchecked_div_by_const!(10, 0);
 /// # }
@@ -122,7 +134,7 @@ extern crate safecoin_frozen_abi_macro;
 /// #
 /// # Const denominator div-by-zero fails
 /// ```compile_fail
-/// # use safecoin_program::unchecked_div_by_const;
+/// # use solana_program::unchecked_div_by_const;
 /// # fn main() {
 /// # const D: u64 = 0;
 /// # let _ = unchecked_div_by_const!(10, D);
@@ -131,7 +143,7 @@ extern crate safecoin_frozen_abi_macro;
 /// #
 /// # Non-const denominator fails
 /// ```compile_fail
-/// # use safecoin_program::unchecked_div_by_const;
+/// # use solana_program::unchecked_div_by_const;
 /// # fn main() {
 /// # let d = 0;
 /// # let _ = unchecked_div_by_const!(10, d);
@@ -140,7 +152,7 @@ extern crate safecoin_frozen_abi_macro;
 /// #
 /// Literal denominator div-by-zero fails
 /// ```compile_fail
-/// # use safecoin_program::unchecked_div_by_const;
+/// # use solana_program::unchecked_div_by_const;
 /// # fn main() {
 /// # const N: u64 = 10;
 /// # let _ = unchecked_div_by_const!(N, 0);
@@ -149,7 +161,7 @@ extern crate safecoin_frozen_abi_macro;
 /// #
 /// # Const denominator div-by-zero fails
 /// ```compile_fail
-/// # use safecoin_program::unchecked_div_by_const;
+/// # use solana_program::unchecked_div_by_const;
 /// # fn main() {
 /// # const N: u64 = 10;
 /// # const D: u64 = 0;
@@ -159,7 +171,7 @@ extern crate safecoin_frozen_abi_macro;
 /// #
 /// # Non-const denominator fails
 /// ```compile_fail
-/// # use safecoin_program::unchecked_div_by_const;
+/// # use solana_program::unchecked_div_by_const;
 /// # fn main() {
 /// # const N: u64 = 10;
 /// # let d = 0;
@@ -169,7 +181,7 @@ extern crate safecoin_frozen_abi_macro;
 /// #
 /// Literal denominator div-by-zero fails
 /// ```compile_fail
-/// # use safecoin_program::unchecked_div_by_const;
+/// # use solana_program::unchecked_div_by_const;
 /// # fn main() {
 /// # let n = 10;
 /// # let _ = unchecked_div_by_const!(n, 0);
@@ -178,7 +190,7 @@ extern crate safecoin_frozen_abi_macro;
 /// #
 /// # Const denominator div-by-zero fails
 /// ```compile_fail
-/// # use safecoin_program::unchecked_div_by_const;
+/// # use solana_program::unchecked_div_by_const;
 /// # fn main() {
 /// # let n = 10;
 /// # const D: u64 = 0;
@@ -188,7 +200,7 @@ extern crate safecoin_frozen_abi_macro;
 /// #
 /// # Non-const denominator fails
 /// ```compile_fail
-/// # use safecoin_program::unchecked_div_by_const;
+/// # use solana_program::unchecked_div_by_const;
 /// # fn main() {
 /// # let n = 10;
 /// # let d = 0;
@@ -212,6 +224,34 @@ macro_rules! unchecked_div_by_const {
         quotient
     }};
 }
+
+use std::{mem::MaybeUninit, ptr::write_bytes};
+
+#[macro_export]
+macro_rules! copy_field {
+    ($ptr:expr, $self:ident, $field:ident) => {
+        std::ptr::addr_of_mut!((*$ptr).$field).write($self.$field)
+    };
+}
+
+pub fn clone_zeroed<T, F>(clone: F) -> T
+where
+    F: Fn(&mut MaybeUninit<T>),
+{
+    let mut value = MaybeUninit::<T>::uninit();
+    unsafe { write_bytes(&mut value, 0, 1) }
+    clone(&mut value);
+    unsafe { value.assume_init() }
+}
+
+// This module is purposefully listed after all other exports: because of an
+// interaction within rustdoc between the reexports inside this module of
+// `solana_program`'s top-level modules, and `solana_sdk`'s glob re-export of
+// `solana_program`'s top-level modules, if this module is not lexically last
+// rustdoc fails to generate documentation for the re-exports within
+// `solana_sdk`.
+#[cfg(not(target_arch = "bpf"))]
+pub mod example_mocks;
 
 #[cfg(test)]
 mod tests {

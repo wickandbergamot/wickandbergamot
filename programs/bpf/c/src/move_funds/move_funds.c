@@ -2,19 +2,19 @@
  * @brief Example C-based BPF program that moves funds from one account to
  * another
  */
-#include <safecoin_sdk.h>
+#include <solana_sdk.h>
 
 /**
- * Number of SafeKeyedAccount expected. The program should bail if an
+ * Number of SolKeyedAccount expected. The program should bail if an
  * unexpected number of accounts are passed to the program's entrypoint
  */
 #define NUM_KA 3
 
 extern uint64_t entrypoint(const uint8_t *input) {
-  SafeAccountInfo ka[NUM_KA];
-  SafeParameters params = (SafeParameters) { .ka = ka };
+  SolAccountInfo ka[NUM_KA];
+  SolParameters params = (SolParameters) { .ka = ka };
 
-  if (!sol_deserialize(input, &params, SAFE_ARRAY_SIZE(ka))) {
+  if (!sol_deserialize(input, &params, SOL_ARRAY_SIZE(ka))) {
     return ERROR_INVALID_ARGUMENT;
   }
 

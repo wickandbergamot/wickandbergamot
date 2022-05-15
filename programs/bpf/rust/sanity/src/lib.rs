@@ -2,8 +2,8 @@
 
 #![allow(unreachable_code)]
 
-extern crate safecoin_program;
-use safecoin_program::{
+extern crate solana_program;
+use solana_program::{
     account_info::AccountInfo, bpf_loader, entrypoint, entrypoint::ProgramResult, log::*, msg,
     pubkey::Pubkey,
 };
@@ -22,7 +22,7 @@ fn return_sstruct() -> SStruct {
 
 entrypoint!(process_instruction);
 #[allow(clippy::unnecessary_wraps)]
-fn process_instruction(
+pub fn process_instruction(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
     instruction_data: &[u8],
@@ -60,6 +60,15 @@ fn process_instruction(
         // Test - arch config
         #[cfg(not(target_arch = "bpf"))]
         panic!();
+    }
+
+    {
+        // Test - float math functions
+        let zero = accounts[0].try_borrow_mut_data()?.len() as f64;
+        let num = zero + 8.0f64;
+        let num = num.powf(0.333f64);
+        // check that the result is in a correct interval close to 1.998614185980905
+        assert!(1.9986f64 < num && num < 2.0f64);
     }
 
     sol_log_compute_units();

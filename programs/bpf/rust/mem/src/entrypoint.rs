@@ -1,7 +1,7 @@
 //! Test mem functions
 
 use crate::{run_mem_tests, MemOps};
-use safecoin_program::{
+use solana_program::{
     account_info::AccountInfo,
     entrypoint,
     entrypoint::ProgramResult,

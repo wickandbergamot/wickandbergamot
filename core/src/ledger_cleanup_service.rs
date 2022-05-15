@@ -6,8 +6,8 @@ use {
         blockstore::{Blockstore, PurgeType},
         blockstore_db::Result as BlockstoreResult,
     },
-    safecoin_measure::measure::Measure,
-    safecoin_sdk::clock::{Slot, DEFAULT_TICKS_PER_SLOT, TICKS_PER_DAY},
+    solana_measure::measure::Measure,
+    solana_sdk::clock::{Slot, DEFAULT_TICKS_PER_SLOT, TICKS_PER_DAY},
     std::{
         string::ToString,
         sync::{
@@ -28,10 +28,10 @@ use {
 // - A validator to download a snapshot from a peer and boot from it
 // - To make sure that if a validator needs to reboot from its own snapshot, it has enough slots locally
 //   to catch back up to where it was when it stopped
-pub const DEFAULT_MAX_LEDGER_SHREDS: u64 = 50_000_000;
+pub const DEFAULT_MAX_LEDGER_SHREDS: u64 = 200_000_000;
 
 // Allow down to 50m, or 3.5 days at idle, 1hr at 50k load, around ~100GB
-pub const DEFAULT_MIN_MAX_LEDGER_SHREDS: u64 = 20_000_000;
+pub const DEFAULT_MIN_MAX_LEDGER_SHREDS: u64 = 50_000_000;
 
 // Check for removing slots at this interval so we don't purge too often
 // and starve other blockstore users.
@@ -164,12 +164,9 @@ impl LedgerCleanupService {
     }
 
     fn receive_new_roots(new_root_receiver: &Receiver<Slot>) -> Result<Slot, RecvTimeoutError> {
-        let mut root = new_root_receiver.recv_timeout(Duration::from_secs(1))?;
+        let root = new_root_receiver.recv_timeout(Duration::from_secs(1))?;
         // Get the newest root
-        while let Ok(new_root) = new_root_receiver.try_recv() {
-            root = new_root;
-        }
-        Ok(root)
+        Ok(new_root_receiver.try_iter().last().unwrap_or(root))
     }
 
     pub fn cleanup_ledger(
@@ -202,7 +199,7 @@ impl LedgerCleanupService {
             let purge_complete1 = purge_complete.clone();
             let last_compact_slot1 = last_compact_slot.clone();
             let _t_purge = Builder::new()
-                .name("safecoin-ledger-purge".to_string())
+                .name("solana-ledger-purge".to_string())
                 .spawn(move || {
                     let mut slot_update_time = Measure::start("slot_update");
                     *blockstore.lowest_cleanup_slot.write().unwrap() = lowest_cleanup_slot;

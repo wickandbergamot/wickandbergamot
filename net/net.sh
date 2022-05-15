@@ -2,7 +2,7 @@
 set -e
 
 here=$(dirname "$0")
-SAFECOIN_ROOT="$(cd "$here"/..; pwd)"
+SOLANA_ROOT="$(cd "$here"/..; pwd)"
 
 # shellcheck source=net/common.sh
 source "$here"/common.sh
@@ -20,7 +20,6 @@ usage() {
                                      Valid client types are:
                                          idle
                                          bench-tps
-                                         bench-exchange
                                      User can optionally provide extraArgs that are transparently
                                      supplied to the client program as command line parameters.
                                      For example,
@@ -110,7 +109,7 @@ Operate a configured testnet
                                       - Support full RPC services on all nodes
  sanity/start-specific options:
    -F                   - Discard validator nodes that didn't bootup successfully
-   -o noInstallCheck    - Skip safecoin-install sanity
+   -o noInstallCheck    - Skip solana-install sanity
    -o rejectExtraNodes  - Require the exact number of nodes
 
  stop-specific options:
@@ -126,7 +125,7 @@ Operate a configured testnet
    --netem-cmd         - Optional command argument to netem. Default is "add". Use "cleanup" to remove rules.
 
  update-specific options:
-   --platform linux|osx|windows       - Deploy the tarball using 'safecoin-install deploy ...' for the
+   --platform linux|osx|windows       - Deploy the tarball using 'solana-install deploy ...' for the
                                         given platform (multiple platforms may be specified)
                                         (-t option must be supplied as well)
 
@@ -178,12 +177,12 @@ build() {
   declare MAYBE_DOCKER=
   if [[ $(uname) != Linux || ! " ${supported[*]} " =~ $(lsb_release -sr) ]]; then
     # shellcheck source=ci/rust-version.sh
-    source "$SAFECOIN_ROOT"/ci/rust-version.sh
+    source "$SOLANA_ROOT"/ci/rust-version.sh
     MAYBE_DOCKER="ci/docker-run.sh $rust_stable_docker_image"
   fi
   SECONDS=0
   (
-    cd "$SAFECOIN_ROOT"
+    cd "$SOLANA_ROOT"
     echo "--- Build started at $(date)"
 
     set -x
@@ -213,33 +212,33 @@ build() {
     (
       echo "channel: devbuild $NOTE"
       echo "commit: $COMMIT"
-    ) > "$SAFECOIN_ROOT"/farf/version.yml
+    ) > "$SOLANA_ROOT"/farf/version.yml
   )
   echo "Build took $SECONDS seconds"
 }
 
-SAFECOIN_HOME="\$HOME/solana"
+SOLANA_HOME="\$HOME/solana"
 CARGO_BIN="\$HOME/.cargo/bin"
 
 startCommon() {
   declare ipAddress=$1
-  test -d "$SAFECOIN_ROOT"
+  test -d "$SOLANA_ROOT"
   if $skipSetup; then
     # shellcheck disable=SC2029
     ssh "${sshOptions[@]}" "$ipAddress" "
       set -x;
-      mkdir -p $SAFECOIN_HOME/config;
+      mkdir -p $SOLANA_HOME/config;
       rm -rf ~/config;
-      mv $SAFECOIN_HOME/config ~;
-      rm -rf $SAFECOIN_HOME;
-      mkdir -p $SAFECOIN_HOME $CARGO_BIN;
-      mv ~/config $SAFECOIN_HOME/
+      mv $SOLANA_HOME/config ~;
+      rm -rf $SOLANA_HOME;
+      mkdir -p $SOLANA_HOME $CARGO_BIN;
+      mv ~/config $SOLANA_HOME/
     "
   else
     # shellcheck disable=SC2029
     ssh "${sshOptions[@]}" "$ipAddress" "
       set -x;
-      rm -rf $SAFECOIN_HOME;
+      rm -rf $SOLANA_HOME;
       mkdir -p $CARGO_BIN
     "
   fi
@@ -252,8 +251,8 @@ syncScripts() {
   declare ipAddress=$1
   rsync -vPrc -e "ssh ${sshOptions[*]}" \
     --exclude 'net/log*' \
-    "$SAFECOIN_ROOT"/{fetch-perf-libs.sh,fetch-spl.sh,scripts,net,multinode-demo} \
-    "$ipAddress":"$SAFECOIN_HOME"/ > /dev/null
+    "$SOLANA_ROOT"/{fetch-perf-libs.sh,fetch-spl.sh,scripts,net,multinode-demo} \
+    "$ipAddress":"$SOLANA_HOME"/ > /dev/null
 }
 
 # Deploy local binaries to bootstrap validator.  Other validators and clients later fetch the
@@ -264,12 +263,12 @@ deployBootstrapValidator() {
   echo "Deploying software to bootstrap validator ($ipAddress)"
   case $deployMethod in
   tar)
-    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFECOIN_ROOT"/solana-release/bin/* "$ipAddress:$CARGO_BIN/"
-    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFECOIN_ROOT"/solana-release/version.yml "$ipAddress:~/"
+    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SOLANA_ROOT"/solana-release/bin/* "$ipAddress:$CARGO_BIN/"
+    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SOLANA_ROOT"/solana-release/version.yml "$ipAddress:~/"
     ;;
   local)
-    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFECOIN_ROOT"/farf/bin/* "$ipAddress:$CARGO_BIN/"
-    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SAFECOIN_ROOT"/farf/version.yml "$ipAddress:~/"
+    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SOLANA_ROOT"/farf/bin/* "$ipAddress:$CARGO_BIN/"
+    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SOLANA_ROOT"/farf/version.yml "$ipAddress:~/"
     ;;
   skip)
     ;;
@@ -309,7 +308,6 @@ startBootstrapLeader() {
          \"$internalNodesLamports\" \
          $nodeIndex \
          ${#clientIpList[@]} \"$benchTpsExtraArgs\" \
-         ${#clientIpList[@]} \"$benchExchangeExtraArgs\" \
          \"$genesisOptions\" \
          \"$maybeNoSnapshot $maybeSkipLedgerVerify $maybeLimitLedgerSize $maybeWaitForSupermajority $maybeAllowPrivateAddr $maybeAccountsDbSkipShrink $maybeSkipRequireTower\" \
          \"$gpuMode\" \
@@ -382,7 +380,6 @@ startNode() {
          \"$internalNodesLamports\" \
          $nodeIndex \
          ${#clientIpList[@]} \"$benchTpsExtraArgs\" \
-         ${#clientIpList[@]} \"$benchExchangeExtraArgs\" \
          \"$genesisOptions\" \
          \"$maybeNoSnapshot $maybeSkipLedgerVerify $maybeLimitLedgerSize $maybeWaitForSupermajority $maybeAllowPrivateAddr $maybeAccountsDbSkipShrink $maybeSkipRequireTower\" \
          \"$gpuMode\" \
@@ -413,7 +410,7 @@ startClient() {
     startCommon "$ipAddress"
     ssh "${sshOptions[@]}" -f "$ipAddress" \
       "./solana/net/remote/remote-client.sh $deployMethod $entrypointIp \
-      $clientToRun \"$RUST_LOG\" \"$benchTpsExtraArgs\" \"$benchExchangeExtraArgs\" $clientIndex"
+      $clientToRun \"$RUST_LOG\" \"$benchTpsExtraArgs\" $clientIndex"
   ) >> "$logFile" 2>&1 || {
     cat "$logFile"
     echo "^^^ +++"
@@ -424,9 +421,7 @@ startClient() {
 startClients() {
   for ((i=0; i < "$numClients" && i < "$numClientsRequested"; i++)) do
     if [[ $i -lt "$numBenchTpsClients" ]]; then
-      startClient "${clientIpList[$i]}" "safecoin-bench-tps" "$i"
-    elif [[ $i -lt $((numBenchTpsClients + numBenchExchangeClients)) ]]; then
-      startClient "${clientIpList[$i]}" "safecoin-bench-exchange" $((i-numBenchTpsClients))
+      startClient "${clientIpList[$i]}" "solana-bench-tps" "$i"
     else
       startClient "${clientIpList[$i]}" "idle"
     fi
@@ -482,11 +477,11 @@ deployUpdate() {
   declare bootstrapLeader=${validatorIpList[0]}
 
   for updatePlatform in $updatePlatforms; do
-    echo "--- Deploying safecoin-install update: $updatePlatform"
+    echo "--- Deploying solana-install update: $updatePlatform"
     (
       set -x
 
-      scripts/safecoin-install-update-manifest-keypair.sh "$updatePlatform"
+      scripts/solana-install-update-manifest-keypair.sh "$updatePlatform"
 
       timeout 30s scp "${sshOptions[@]}" \
         update_manifest_keypair.json "$bootstrapLeader:solana/update_manifest_keypair.json"
@@ -530,21 +525,21 @@ prepareDeploy() {
   tar)
     if [[ -n $releaseChannel ]]; then
       echo "Downloading release from channel: $releaseChannel"
-      rm -f "$SAFECOIN_ROOT"/solana-release.tar.bz2
+      rm -f "$SOLANA_ROOT"/solana-release.tar.bz2
       declare updateDownloadUrl=https://release.solana.com/"$releaseChannel"/solana-release-x86_64-unknown-linux-gnu.tar.bz2
       (
         set -x
         curl -L -I "$updateDownloadUrl"
         curl -L --retry 5 --retry-delay 2 --retry-connrefused \
-          -o "$SAFECOIN_ROOT"/solana-release.tar.bz2 "$updateDownloadUrl"
+          -o "$SOLANA_ROOT"/solana-release.tar.bz2 "$updateDownloadUrl"
       )
-      tarballFilename="$SAFECOIN_ROOT"/solana-release.tar.bz2
+      tarballFilename="$SOLANA_ROOT"/solana-release.tar.bz2
     fi
     (
       set -x
-      rm -rf "$SAFECOIN_ROOT"/solana-release
-      cd "$SAFECOIN_ROOT"; tar jfxv "$tarballFilename"
-      cat "$SAFECOIN_ROOT"/solana-release/version.yml
+      rm -rf "$SOLANA_ROOT"/solana-release
+      cd "$SOLANA_ROOT"; tar jfxv "$tarballFilename"
+      cat "$SOLANA_ROOT"/solana-release/version.yml
     )
     ;;
   local)
@@ -573,7 +568,7 @@ prepareDeploy() {
       rsync -vPrc -e "ssh ${sshOptions[*]}" "${validatorIpList[0]}":~/version.yml current-version.yml
     )
     cat current-version.yml
-    if ! diff -q current-version.yml "$SAFECOIN_ROOT"/solana-release/version.yml; then
+    if ! diff -q current-version.yml "$SOLANA_ROOT"/solana-release/version.yml; then
       echo "Cluster software version is old.  Update required"
     else
       echo "Cluster software version is current.  No update required"
@@ -664,7 +659,7 @@ deploy() {
     networkVersion="$(
       (
         set -o pipefail
-        grep "^commit: " "$SAFECOIN_ROOT"/solana-release/version.yml | head -n1 | cut -d\  -f2
+        grep "^commit: " "$SOLANA_ROOT"/solana-release/version.yml | head -n1 | cut -d\  -f2
       ) || echo "tar-unknown"
     )"
     ;;
@@ -709,7 +704,7 @@ stopNode() {
   declare pid=$!
   ln -sf "stop-validator-$ipAddress.log" "$netLogDir/stop-validator-$pid.log"
   if $block; then
-    wait $pid
+    wait $pid || true
   else
     pids+=("$pid")
   fi
@@ -771,9 +766,7 @@ updatePlatforms=
 nodeAddress=
 numIdleClients=0
 numBenchTpsClients=0
-numBenchExchangeClients=0
 benchTpsExtraArgs=
-benchExchangeExtraArgs=
 failOnValidatorBootupFailure=true
 genesisOptions=
 numValidatorsRequested=
@@ -999,10 +992,6 @@ while getopts "h?T:t:o:f:rc:Fn:i:d" opt "${shortArgs[@]}"; do
           numBenchTpsClients=$numClients
           benchTpsExtraArgs=$extraArgs
         ;;
-        bench-exchange)
-          numBenchExchangeClients=$numClients
-          benchExchangeExtraArgs=$extraArgs
-        ;;
         *)
           echo "Unknown client type: $clientType"
           exit 1
@@ -1035,7 +1024,7 @@ if [[ -n $numValidatorsRequested ]]; then
 fi
 
 numClients=${#clientIpList[@]}
-numClientsRequested=$((numBenchTpsClients + numBenchExchangeClients + numIdleClients))
+numClientsRequested=$((numBenchTpsClients + numIdleClients))
 if [[ "$numClientsRequested" -eq 0 ]]; then
   numBenchTpsClients=$numClients
   numClientsRequested=$numClients
@@ -1150,7 +1139,7 @@ netem)
     remoteNetemConfigFile="$(basename "$netemConfigFile")"
     if [[ $netemCommand = "add" ]]; then
       for ipAddress in "${validatorIpList[@]}"; do
-        "$here"/scp.sh "$netemConfigFile" solana@"$ipAddress":"$SAFECOIN_HOME"
+        "$here"/scp.sh "$netemConfigFile" solana@"$ipAddress":"$SOLANA_HOME"
       done
     fi
     for i in "${!validatorIpList[@]}"; do

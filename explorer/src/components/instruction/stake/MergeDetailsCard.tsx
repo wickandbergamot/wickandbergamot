@@ -3,7 +3,7 @@ import {
   SignatureResult,
   StakeProgram,
   ParsedInstruction,
-} from "@safecoin/web3.js";
+} from "@solana/web3.js";
 import { InstructionCard } from "../InstructionCard";
 import { Address } from "components/common/Address";
 import { MergeInfo } from "./types";
@@ -23,48 +23,48 @@ export function MergeDetailsCard(props: {
       ix={ix}
       index={index}
       result={result}
-      title="Stake Merge"
+      title="Stake Program: Merge Stake"
       innerCards={innerCards}
       childIndex={childIndex}
     >
       <tr>
         <td>Program</td>
-        <td className="text-lg-right">
+        <td className="text-lg-end">
           <Address pubkey={StakeProgram.programId} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Stake Source</td>
-        <td className="text-lg-right">
+        <td className="text-lg-end">
           <Address pubkey={info.source} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Stake Destination</td>
-        <td className="text-lg-right">
+        <td className="text-lg-end">
           <Address pubkey={info.destination} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Authority Address</td>
-        <td className="text-lg-right">
+        <td className="text-lg-end">
           <Address pubkey={info.stakeAuthority} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Clock Sysvar</td>
-        <td className="text-lg-right">
+        <td className="text-lg-end">
           <Address pubkey={info.clockSysvar} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Stake History Sysvar</td>
-        <td className="text-lg-right">
+        <td className="text-lg-end">
           <Address pubkey={info.stakeHistorySysvar} alignRight link />
         </td>
       </tr>

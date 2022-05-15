@@ -4,7 +4,7 @@ import {
   ParsedInstruction,
   PartiallyDecodedInstruction,
   PublicKey,
-} from "@safecoin/web3.js";
+} from "@solana/web3.js";
 import { useAccountHistory } from "providers/accounts";
 import { Signature } from "components/common/Signature";
 import {
@@ -109,7 +109,7 @@ export function TokenInstructionsCard({ pubkey }: { pubkey: PublicKey }) {
                 </td>
 
                 <td>
-                  <span className={`badge badge-soft-${statusClass}`}>
+                  <span className={`badge bg-${statusClass}-soft`}>
                     {statusText}
                   </span>
                 </td>

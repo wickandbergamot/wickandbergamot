@@ -1,6 +1,6 @@
 //! Example Rust-based BPF program tests loop iteration
 
-extern crate safecoin_program;
+extern crate solana_program;
 
 #[derive(Debug)]
 pub struct Data<'a> {

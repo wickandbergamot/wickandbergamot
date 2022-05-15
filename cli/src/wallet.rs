@@ -9,8 +9,8 @@ use {
         spend_utils::{resolve_spend_tx_and_check_account_balances, SpendAmount},
     },
     clap::{value_t_or_exit, App, Arg, ArgMatches, SubCommand},
-    safecoin_account_decoder::{UiAccount, UiAccountEncoding},
-    safecoin_clap_utils::{
+    solana_account_decoder::{UiAccount, UiAccountEncoding},
+    solana_clap_utils::{
         fee_payer::*,
         input_parsers::*,
         input_validators::*,
@@ -19,17 +19,17 @@ use {
         nonce::*,
         offline::*,
     },
-    safecoin_cli_output::{
+    solana_cli_output::{
         display::build_balance_message, return_signers_with_config, CliAccount,
         CliSignatureVerificationStatus, CliTransaction, CliTransactionConfirmation, OutputFormat,
         ReturnSignersConfig,
     },
-    safecoin_client::{
+    solana_client::{
         blockhash_query::BlockhashQuery, nonce_utils, rpc_client::RpcClient,
         rpc_config::RpcTransactionConfig, rpc_response::RpcKeyedAccount,
     },
-    safecoin_remote_wallet::remote_wallet::RemoteWalletManager,
-    safecoin_sdk::{
+    solana_remote_wallet::remote_wallet::RemoteWalletManager,
+    solana_sdk::{
         commitment_config::CommitmentConfig,
         message::Message,
         pubkey::Pubkey,
@@ -39,7 +39,7 @@ use {
         system_program,
         transaction::Transaction,
     },
-    safecoin_transaction_status::{EncodedTransaction, UiTransactionEncoding},
+    solana_transaction_status::{EncodedTransaction, UiTransactionEncoding},
     std::{fmt::Write as FmtWrite, fs::File, io::Write, sync::Arc},
 };
 
@@ -72,7 +72,7 @@ impl WalletSubCommands for App<'_, '_> {
                     Arg::with_name("lamports")
                         .long("lamports")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SAFE"),
+                        .help("Display balance in lamports instead of SOL"),
                 ),
         )
         .subcommand(
@@ -87,7 +87,7 @@ impl WalletSubCommands for App<'_, '_> {
         )
         .subcommand(
             SubCommand::with_name("airdrop")
-                .about("Request SAFE from a faucet")
+                .about("Request SOL from a faucet")
                 .arg(
                     Arg::with_name("amount")
                         .index(1)
@@ -95,7 +95,7 @@ impl WalletSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .validator(is_amount)
                         .required(true)
-                        .help("The airdrop amount to request, in SAFE"),
+                        .help("The airdrop amount to request, in SOL"),
                 )
                 .arg(
                     pubkey!(Arg::with_name("to")
@@ -117,7 +117,7 @@ impl WalletSubCommands for App<'_, '_> {
                     Arg::with_name("lamports")
                         .long("lamports")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SAFE"),
+                        .help("Display balance in lamports instead of SOL"),
                 ),
         )
         .subcommand(
@@ -227,7 +227,7 @@ impl WalletSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .validator(is_amount_or_all)
                         .required(true)
-                        .help("The amount to send, in SAFE; accepts keyword ALL"),
+                        .help("The amount to send, in SOL; accepts keyword ALL"),
                 )
                 .arg(
                     pubkey!(Arg::with_name("from")
@@ -462,18 +462,27 @@ pub fn process_show_account(
 
     let mut account_string = config.output_format.formatted_string(&cli_account);
 
-    if config.output_format == OutputFormat::Display
-        || config.output_format == OutputFormat::DisplayVerbose
-    {
-        if let Some(output_file) = output_file {
-            let mut f = File::create(output_file)?;
-            f.write_all(&data)?;
-            writeln!(&mut account_string)?;
-            writeln!(&mut account_string, "Wrote account data to {}", output_file)?;
-        } else if !data.is_empty() {
-            use pretty_hex::*;
-            writeln!(&mut account_string, "{:?}", data.hex_dump())?;
+    match config.output_format {
+        OutputFormat::Json | OutputFormat::JsonCompact => {
+            if let Some(output_file) = output_file {
+                let mut f = File::create(output_file)?;
+                f.write_all(account_string.as_bytes())?;
+                writeln!(&mut account_string)?;
+                writeln!(&mut account_string, "Wrote account to {}", output_file)?;
+            }
         }
+        OutputFormat::Display | OutputFormat::DisplayVerbose => {
+            if let Some(output_file) = output_file {
+                let mut f = File::create(output_file)?;
+                f.write_all(&data)?;
+                writeln!(&mut account_string)?;
+                writeln!(&mut account_string, "Wrote account data to {}", output_file)?;
+            } else if !data.is_empty() {
+                use pretty_hex::*;
+                writeln!(&mut account_string, "{:?}", data.hex_dump())?;
+            }
+        }
+        OutputFormat::DisplayQuiet => (),
     }
 
     Ok(account_string)
@@ -506,7 +515,7 @@ pub fn process_airdrop(
 
         if current_balance < pre_balance.saturating_add(lamports) {
             println!("Balance unchanged");
-            println!("Run `safecoin confirm -v {:?}` for more info", signature);
+            println!("Run `solana confirm -v {:?}` for more info", signature);
             Ok("".to_string())
         } else {
             Ok(build_balance_message(current_balance, false, true))
@@ -647,8 +656,7 @@ pub fn process_transfer(
     let from = config.signers[from];
     let mut from_pubkey = from.pubkey();
 
-    let (recent_blockhash, fee_calculator) =
-        blockhash_query.get_blockhash_and_fee_calculator(rpc_client, config.commitment)?;
+    let recent_blockhash = blockhash_query.get_blockhash(rpc_client, config.commitment)?;
 
     if !sign_only && !allow_unfunded_recipient {
         let recipient_balance = rpc_client
@@ -708,7 +716,7 @@ pub fn process_transfer(
         rpc_client,
         sign_only,
         amount,
-        &fee_calculator,
+        &recent_blockhash,
         &from_pubkey,
         &fee_payer.pubkey(),
         build_message,

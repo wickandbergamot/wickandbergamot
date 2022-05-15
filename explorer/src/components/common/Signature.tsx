@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { TransactionSignature } from "@safecoin/web3.js";
+import { TransactionSignature } from "@solana/web3.js";
 import { clusterPath } from "utils/url";
 import { Copyable } from "./Copyable";
 
@@ -32,7 +32,7 @@ export function Signature({
       }`}
     >
       <Copyable text={signature} replaceText={!alignRight}>
-        <span className="text-monospace">
+        <span className="font-monospace">
           {link ? (
             <Link
               className={truncate ? "text-truncate signature-truncate" : ""}

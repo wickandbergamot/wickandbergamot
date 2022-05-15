@@ -1,14 +1,14 @@
 //! config for staking
 //!  carries variables that the stake program cares about
 #[deprecated(
-    since = "1.7.2",
-    note = "Please use `safecoin_sdk::stake::config` or `safecoin_program::stake::config` instead"
+    since = "1.8.0",
+    note = "Please use `solana_sdk::stake::config` or `solana_program::stake::config` instead"
 )]
-pub use safecoin_sdk::stake::config::*;
+pub use solana_sdk::stake::config::*;
 use {
     bincode::deserialize,
     solana_config_program::{create_config_account, get_config_data},
-    safecoin_sdk::{
+    solana_sdk::{
         account::{AccountSharedData, ReadableAccount, WritableAccount},
         genesis_config::GenesisConfig,
         instruction::InstructionError,
@@ -47,7 +47,7 @@ pub fn add_genesis_account(genesis_config: &mut GenesisConfig) -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, safecoin_sdk::pubkey::Pubkey, std::cell::RefCell};
+    use {super::*, solana_sdk::pubkey::Pubkey, std::cell::RefCell};
 
     #[test]
     fn test() {

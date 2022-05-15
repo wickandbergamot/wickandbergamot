@@ -1,6 +1,6 @@
-//! The `faucet` module provides an object for launching a Safecoin Faucet,
+//! The `faucet` module provides an object for launching a Solana Faucet,
 //! which is the custodian of any remaining lamports in a mint.
-//! The Safecoin Faucet builds and sends airdrop transactions,
+//! The Solana Faucet builds and sends airdrop transactions,
 //! checking requests against a single-request cap and a per-IP limit
 //! for a given time time_slice.
 
@@ -10,7 +10,7 @@ use {
     log::*,
     serde_derive::{Deserialize, Serialize},
     solana_metrics::datapoint_info,
-    safecoin_sdk::{
+    solana_sdk::{
         hash::Hash,
         instruction::Instruction,
         message::Message,
@@ -84,16 +84,6 @@ pub enum FaucetRequest {
     },
 }
 
-impl Default for FaucetRequest {
-    fn default() -> Self {
-        Self::GetAirdrop {
-            lamports: u64::default(),
-            to: Pubkey::default(),
-            blockhash: Hash::default(),
-        }
-    }
-}
-
 pub enum FaucetTransaction {
     Airdrop(Transaction),
     Memo((Transaction, String)),
@@ -136,7 +126,7 @@ impl Faucet {
         if let Some((per_request_cap, per_time_cap)) = per_request_cap.zip(per_time_cap) {
             if per_time_cap < per_request_cap {
                 warn!(
-                    "per_time_cap {} SAFE < per_request_cap {} SAFE; \
+                    "per_time_cap {} SOL < per_request_cap {} SOL; \
                     maximum single requests will fail",
                     lamports_to_sol(per_time_cap),
                     lamports_to_sol(per_request_cap),
@@ -182,7 +172,7 @@ impl Faucet {
     /// Checks per-request and per-time-ip limits; if both pass, this method returns a signed
     /// SystemProgram::Transfer transaction from the faucet keypair to the requested recipient. If
     /// the request exceeds this per-request limit, this method returns a signed SPL Memo
-    /// transaction with the memo: "request too large; req: <REQUEST> SAFE cap: <CAP> SAFE"
+    /// transaction with the memo: "request too large; req: <REQUEST> SOL cap: <CAP> SOL"
     pub fn build_airdrop_transaction(
         &mut self,
         req: FaucetRequest,
@@ -197,7 +187,7 @@ impl Faucet {
             } => {
                 let mint_pubkey = self.faucet_keypair.pubkey();
                 info!(
-                    "Requesting airdrop of {} SAFE to {:?}",
+                    "Requesting airdrop of {} SOL to {:?}",
                     lamports_to_sol(lamports),
                     to
                 );
@@ -212,7 +202,7 @@ impl Faucet {
                             )
                         );
                         let memo_instruction = Instruction {
-                            program_id: Pubkey::new(&safe_memo::id().to_bytes()),
+                            program_id: Pubkey::new(&spl_memo::id().to_bytes()),
                             accounts: vec![],
                             data: memo.as_bytes().to_vec(),
                         };
@@ -416,7 +406,15 @@ async fn process(
     mut stream: TokioTcpStream,
     faucet: Arc<Mutex<Faucet>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut request = vec![0u8; serialized_size(&FaucetRequest::default()).unwrap() as usize];
+    let mut request = vec![
+        0u8;
+        serialized_size(&FaucetRequest::GetAirdrop {
+            lamports: u64::default(),
+            to: Pubkey::default(),
+            blockhash: Hash::default(),
+        })
+        .unwrap() as usize
+    ];
     while stream.read_exact(&mut request).await.is_ok() {
         trace!("{:?}", request);
 
@@ -494,7 +492,7 @@ impl LimitByTime for Pubkey {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, safecoin_sdk::system_instruction::SystemInstruction, std::time::Duration};
+    use {super::*, solana_sdk::system_instruction::SystemInstruction, std::time::Duration};
 
     #[test]
     fn test_check_time_request_limit() {
@@ -635,7 +633,7 @@ mod tests {
             assert_eq!(tx.signatures.len(), 1);
             assert_eq!(
                 message.account_keys,
-                vec![mint_pubkey, Pubkey::new(&safe_memo::id().to_bytes())]
+                vec![mint_pubkey, Pubkey::new(&spl_memo::id().to_bytes())]
             );
             assert_eq!(message.recent_blockhash, blockhash);
 
@@ -651,7 +649,7 @@ mod tests {
 
     #[test]
     fn test_process_faucet_request() {
-        let to = safecoin_sdk::pubkey::new_rand();
+        let to = solana_sdk::pubkey::new_rand();
         let blockhash = Hash::new(to.as_ref());
         let lamports = 50;
         let req = FaucetRequest::GetAirdrop {

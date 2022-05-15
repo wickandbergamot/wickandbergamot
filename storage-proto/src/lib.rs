@@ -1,11 +1,11 @@
 use {
     serde::{Deserialize, Serialize},
-    safecoin_account_decoder::{
+    solana_account_decoder::{
         parse_token::{real_number_string_trimmed, UiTokenAmount},
         StringAmount,
     },
-    safecoin_sdk::{deserialize_utils::default_on_eof, transaction::Result},
-    safecoin_transaction_status::{
+    solana_sdk::{deserialize_utils::default_on_eof, transaction::Result},
+    solana_transaction_status::{
         InnerInstructions, Reward, RewardType, TransactionStatusMeta, TransactionTokenBalance,
     },
     std::str::FromStr,

@@ -3,10 +3,10 @@ use {
     clap::{crate_description, crate_name, value_t, value_t_or_exit, App, Arg},
     log::*,
     rand::{thread_rng, Rng},
-    safecoin_client::rpc_client::RpcClient,
+    solana_client::rpc_client::RpcClient,
     solana_core::serve_repair::RepairProtocol,
-    safecoin_gossip::{contact_info::ContactInfo, gossip_service::discover},
-    safecoin_sdk::pubkey::Pubkey,
+    solana_gossip::{contact_info::ContactInfo, gossip_service::discover},
+    solana_sdk::pubkey::Pubkey,
     solana_streamer::socket::SocketAddrSpace,
     std::{
         net::{SocketAddr, UdpSocket},
@@ -19,7 +19,7 @@ use {
 fn get_repair_contact(nodes: &[ContactInfo]) -> ContactInfo {
     let source = thread_rng().gen_range(0, nodes.len());
     let mut contact = nodes[source].clone();
-    contact.id = safecoin_sdk::pubkey::new_rand();
+    contact.id = solana_sdk::pubkey::new_rand();
     contact
 }
 
@@ -157,7 +157,7 @@ fn main() {
                 .long("entrypoint")
                 .takes_value(true)
                 .value_name("HOST:PORT")
-                .help("Gossip entrypoint address. Usually <ip>:10015"),
+                .help("Gossip entrypoint address. Usually <ip>:8001"),
         )
         .arg(
             Arg::with_name("mode")
@@ -220,7 +220,7 @@ fn main() {
         )
         .get_matches();
 
-    let mut entrypoint_addr = SocketAddr::from(([127, 0, 0, 1], 10015));
+    let mut entrypoint_addr = SocketAddr::from(([127, 0, 0, 1], 8001));
     if let Some(addr) = matches.value_of("entrypoint") {
         entrypoint_addr = solana_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
             eprintln!("failed to parse entrypoint address: {}", e);
@@ -271,12 +271,12 @@ fn main() {
 
 #[cfg(test)]
 pub mod test {
-    use {super::*, safecoin_sdk::timing::timestamp};
+    use {super::*, solana_sdk::timing::timestamp};
 
     #[test]
     fn test_dos() {
         let nodes = [ContactInfo::new_localhost(
-            &safecoin_sdk::pubkey::new_rand(),
+            &solana_sdk::pubkey::new_rand(),
             timestamp(),
         )];
         let entrypoint_addr = nodes[0].gossip;

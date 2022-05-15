@@ -1,6 +1,6 @@
 use {
-    safecoin_gossip::cluster_info::ClusterInfo,
-    safecoin_sdk::{clock::Slot, pubkey::Pubkey},
+    solana_gossip::cluster_info::ClusterInfo,
+    solana_sdk::{clock::Slot, pubkey::Pubkey},
     std::{
         collections::HashSet,
         sync::{
@@ -122,7 +122,7 @@ impl RpcHealth {
     #[cfg(test)]
     pub(crate) fn stub() -> Arc<Self> {
         use {
-            safecoin_gossip::contact_info::ContactInfo, safecoin_sdk::signer::keypair::Keypair,
+            solana_gossip::contact_info::ContactInfo, solana_sdk::signer::keypair::Keypair,
             solana_streamer::socket::SocketAddrSpace,
         };
         Arc::new(Self::new(

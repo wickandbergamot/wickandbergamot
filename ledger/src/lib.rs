@@ -15,14 +15,12 @@ pub mod blockstore_db;
 pub mod blockstore_meta;
 pub mod blockstore_processor;
 pub mod builtins;
-pub mod entry;
 pub mod erasure;
 pub mod genesis_utils;
 pub mod leader_schedule;
 pub mod leader_schedule_cache;
 pub mod leader_schedule_utils;
 pub mod next_slots_iterator;
-pub mod poh;
 pub mod rooted_slot_iterator;
 pub mod shred;
 pub mod sigverify_shreds;
@@ -38,4 +36,4 @@ extern crate log;
 extern crate lazy_static;
 
 #[macro_use]
-extern crate safecoin_frozen_abi_macro;
+extern crate solana_frozen_abi_macro;

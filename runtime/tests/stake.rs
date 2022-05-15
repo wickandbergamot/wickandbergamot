@@ -5,7 +5,7 @@ use {
         bank_client::BankClient,
         genesis_utils::{create_genesis_config_with_leader, GenesisConfigInfo},
     },
-    safecoin_sdk::{
+    solana_sdk::{
         account::from_account,
         account_utils::StateMut,
         client::SyncClient,
@@ -110,13 +110,13 @@ fn test_stake_create_and_split_single_signature() {
         ..
     } = create_genesis_config_with_leader(
         100_000_000_000,
-        &safecoin_sdk::pubkey::new_rand(),
+        &solana_sdk::pubkey::new_rand(),
         1_000_000,
     );
 
     let staker_pubkey = staker_keypair.pubkey();
 
-    let bank_client = BankClient::new_shared(&Arc::new(Bank::new(&genesis_config)));
+    let bank_client = BankClient::new_shared(&Arc::new(Bank::new_for_tests(&genesis_config)));
 
     let stake_address =
         Pubkey::create_with_seed(&staker_pubkey, "stake", &stake::program::id()).unwrap();
@@ -180,13 +180,13 @@ fn test_stake_create_and_split_to_existing_system_account() {
         ..
     } = create_genesis_config_with_leader(
         100_000_000_000,
-        &safecoin_sdk::pubkey::new_rand(),
+        &solana_sdk::pubkey::new_rand(),
         1_000_000,
     );
 
     let staker_pubkey = staker_keypair.pubkey();
 
-    let bank_client = BankClient::new_shared(&Arc::new(Bank::new(&genesis_config)));
+    let bank_client = BankClient::new_shared(&Arc::new(Bank::new_for_tests(&genesis_config)));
 
     let stake_address =
         Pubkey::create_with_seed(&staker_pubkey, "stake", &stake::program::id()).unwrap();
@@ -262,10 +262,10 @@ fn test_stake_account_lifetime() {
         ..
     } = create_genesis_config_with_leader(
         100_000_000_000,
-        &safecoin_sdk::pubkey::new_rand(),
+        &solana_sdk::pubkey::new_rand(),
         1_000_000,
     );
-    let bank = Bank::new(&genesis_config);
+    let bank = Bank::new_for_tests(&genesis_config);
     let mint_pubkey = mint_keypair.pubkey();
     let mut bank = Arc::new(bank);
     let bank_client = BankClient::new_shared(&bank);
@@ -320,7 +320,7 @@ fn test_stake_account_lifetime() {
         &[stake_instruction::withdraw(
             &stake_pubkey,
             &stake_pubkey,
-            &safecoin_sdk::pubkey::new_rand(),
+            &solana_sdk::pubkey::new_rand(),
             1,
             None,
         )],
@@ -415,7 +415,7 @@ fn test_stake_account_lifetime() {
         &[stake_instruction::withdraw(
             &split_stake_pubkey,
             &stake_pubkey,
-            &safecoin_sdk::pubkey::new_rand(),
+            &solana_sdk::pubkey::new_rand(),
             lamports / 2 - split_staked + 1,
             None,
         )],
@@ -437,7 +437,7 @@ fn test_stake_account_lifetime() {
         &[stake_instruction::withdraw(
             &split_stake_pubkey,
             &stake_pubkey,
-            &safecoin_sdk::pubkey::new_rand(),
+            &solana_sdk::pubkey::new_rand(),
             lamports / 2,
             None,
         )],
@@ -453,7 +453,7 @@ fn test_stake_account_lifetime() {
         &[stake_instruction::withdraw(
             &split_stake_pubkey,
             &stake_pubkey,
-            &safecoin_sdk::pubkey::new_rand(),
+            &solana_sdk::pubkey::new_rand(),
             lamports / 2 - split_staked,
             None,
         )],
@@ -478,7 +478,7 @@ fn test_stake_account_lifetime() {
         &[stake_instruction::withdraw(
             &split_stake_pubkey,
             &stake_pubkey,
-            &safecoin_sdk::pubkey::new_rand(),
+            &solana_sdk::pubkey::new_rand(),
             split_staked,
             None,
         )],
@@ -506,10 +506,10 @@ fn test_create_stake_account_from_seed() {
         ..
     } = create_genesis_config_with_leader(
         100_000_000_000,
-        &safecoin_sdk::pubkey::new_rand(),
+        &solana_sdk::pubkey::new_rand(),
         1_000_000,
     );
-    let bank = Bank::new(&genesis_config);
+    let bank = Bank::new_for_tests(&genesis_config);
     let mint_pubkey = mint_keypair.pubkey();
     let bank = Arc::new(bank);
     let bank_client = BankClient::new_shared(&bank);

@@ -3,10 +3,11 @@ use {
         account::{from_account, AccountSharedData, ReadableAccount},
         account_utils::{State, StateMut},
     },
-    safecoin_program::{clock::Epoch, instruction::InstructionError, pubkey::Pubkey, sysvar::Sysvar},
+    solana_program::{clock::Epoch, instruction::InstructionError, pubkey::Pubkey, sysvar::Sysvar},
     std::{
         cell::{Ref, RefCell, RefMut},
         iter::FromIterator,
+        ops::Deref,
         rc::Rc,
     },
 };
@@ -219,6 +220,8 @@ pub fn next_keyed_account<'a, 'b, I: Iterator<Item = &'a KeyedAccount<'b>>>(
 }
 
 /// Return the KeyedAccount at the specified index or a NotEnoughAccountKeys error
+///
+/// Index zero starts at the chain of program accounts, followed by the instruction accounts.
 pub fn keyed_account_at_index<'a>(
     keyed_accounts: &'a [KeyedAccount],
     index: usize,
@@ -246,14 +249,20 @@ where
     }
 }
 
-pub fn from_keyed_account<S: Sysvar>(
-    keyed_account: &crate::keyed_account::KeyedAccount,
-) -> Result<S, InstructionError> {
+pub fn check_sysvar_keyed_account<'a, S: Sysvar>(
+    keyed_account: &'a crate::keyed_account::KeyedAccount<'_>,
+) -> Result<impl Deref<Target = AccountSharedData> + 'a, InstructionError> {
     if !S::check_id(keyed_account.unsigned_key()) {
         return Err(InstructionError::InvalidArgument);
     }
-    from_account::<S, AccountSharedData>(&*keyed_account.try_account_ref()?)
-        .ok_or(InstructionError::InvalidArgument)
+    keyed_account.try_account_ref()
+}
+
+pub fn from_keyed_account<S: Sysvar>(
+    keyed_account: &crate::keyed_account::KeyedAccount,
+) -> Result<S, InstructionError> {
+    let sysvar_account = check_sysvar_keyed_account::<S>(keyed_account)?;
+    from_account::<S, AccountSharedData>(&*sysvar_account).ok_or(InstructionError::InvalidArgument)
 }
 
 #[cfg(test)]
@@ -273,7 +282,7 @@ mod tests {
         something: Pubkey,
     }
     crate::declare_id!("TestSysvar111111111111111111111111111111111");
-    impl safecoin_program::sysvar::SysvarId for TestSysvar {
+    impl solana_program::sysvar::SysvarId for TestSysvar {
         fn id() -> crate::pubkey::Pubkey {
             id()
         }

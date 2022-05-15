@@ -3,35 +3,50 @@ use {
         parse_account_data::{ParsableAccount, ParseAccountError},
         StringAmount, StringDecimals,
     },
-    safecoin_sdk::pubkey::Pubkey,
-    safe_token::{
-        safecoin_program::{
-            program_option::COption, program_pack::Pack, pubkey::Pubkey as SafeTokenPubkey,
+    solana_sdk::pubkey::Pubkey,
+    spl_token::{
+        solana_program::{
+            program_option::COption, program_pack::Pack, pubkey::Pubkey as SplTokenPubkey,
         },
         state::{Account, AccountState, Mint, Multisig},
     },
     std::str::FromStr,
 };
 
-// A helper function to convert safe_token::id() as spl_sdk::pubkey::Pubkey to
-// safecoin_sdk::pubkey::Pubkey
-pub fn safe_token_id() -> Pubkey {
-    Pubkey::new_from_array(safe_token::id().to_bytes())
+// A helper function to convert spl_token::id() as spl_sdk::pubkey::Pubkey to
+// solana_sdk::pubkey::Pubkey
+fn spl_token_id() -> Pubkey {
+    Pubkey::new_from_array(spl_token::id().to_bytes())
 }
 
-// A helper function to convert safe_token::native_mint::id() as spl_sdk::pubkey::Pubkey to
-// safecoin_sdk::pubkey::Pubkey
-pub fn safe_token_native_mint() -> Pubkey {
-    Pubkey::new_from_array(safe_token::native_mint::id().to_bytes())
+// Returns all known SPL Token program ids
+pub fn spl_token_ids() -> Vec<Pubkey> {
+    vec![spl_token_id()]
 }
 
-// A helper function to convert a safecoin_sdk::pubkey::Pubkey to spl_sdk::pubkey::Pubkey
-pub fn safe_token_pubkey(pubkey: &Pubkey) -> SafeTokenPubkey {
-    SafeTokenPubkey::new_from_array(pubkey.to_bytes())
+// Check if the provided program id as a known SPL Token program id
+pub fn is_known_spl_token_id(program_id: &Pubkey) -> bool {
+    *program_id == spl_token_id()
 }
 
-// A helper function to convert a spl_sdk::pubkey::Pubkey to safecoin_sdk::pubkey::Pubkey
-pub fn pubkey_from_safe_token(pubkey: &SafeTokenPubkey) -> Pubkey {
+// A helper function to convert spl_token::native_mint::id() as spl_sdk::pubkey::Pubkey to
+// solana_sdk::pubkey::Pubkey
+pub fn spl_token_native_mint() -> Pubkey {
+    Pubkey::new_from_array(spl_token::native_mint::id().to_bytes())
+}
+
+// The program id of the `spl_token_native_mint` account
+pub fn spl_token_native_mint_program_id() -> Pubkey {
+    spl_token_id()
+}
+
+// A helper function to convert a solana_sdk::pubkey::Pubkey to spl_sdk::pubkey::Pubkey
+pub fn spl_token_pubkey(pubkey: &Pubkey) -> SplTokenPubkey {
+    SplTokenPubkey::new_from_array(pubkey.to_bytes())
+}
+
+// A helper function to convert a spl_sdk::pubkey::Pubkey to solana_sdk::pubkey::Pubkey
+pub fn pubkey_from_spl_token(pubkey: &SplTokenPubkey) -> Pubkey {
     Pubkey::new_from_array(pubkey.to_bytes())
 }
 
@@ -41,10 +56,10 @@ pub fn parse_token(
 ) -> Result<TokenAccountType, ParseAccountError> {
     if data.len() == Account::get_packed_len() {
         let account = Account::unpack(data)
-            .map_err(|_| ParseAccountError::AccountNotParsable(ParsableAccount::SafeToken))?;
+            .map_err(|_| ParseAccountError::AccountNotParsable(ParsableAccount::SplToken))?;
         let decimals = mint_decimals.ok_or_else(|| {
             ParseAccountError::AdditionalDataMissing(
-                "no mint_decimals provided to parse safe-token account".to_string(),
+                "no mint_decimals provided to parse spl-token account".to_string(),
             )
         })?;
         Ok(TokenAccountType::Account(UiTokenAccount {
@@ -76,7 +91,7 @@ pub fn parse_token(
         }))
     } else if data.len() == Mint::get_packed_len() {
         let mint = Mint::unpack(data)
-            .map_err(|_| ParseAccountError::AccountNotParsable(ParsableAccount::SafeToken))?;
+            .map_err(|_| ParseAccountError::AccountNotParsable(ParsableAccount::SplToken))?;
         Ok(TokenAccountType::Mint(UiMint {
             mint_authority: match mint.mint_authority {
                 COption::Some(pubkey) => Some(pubkey.to_string()),
@@ -92,7 +107,7 @@ pub fn parse_token(
         }))
     } else if data.len() == Multisig::get_packed_len() {
         let multisig = Multisig::unpack(data)
-            .map_err(|_| ParseAccountError::AccountNotParsable(ParsableAccount::SafeToken))?;
+            .map_err(|_| ParseAccountError::AccountNotParsable(ParsableAccount::SplToken))?;
         Ok(TokenAccountType::Multisig(UiMultisig {
             num_required_signers: multisig.m,
             num_valid_signers: multisig.n,
@@ -101,7 +116,7 @@ pub fn parse_token(
                 .signers
                 .iter()
                 .filter_map(|pubkey| {
-                    if pubkey != &SafeTokenPubkey::default() {
+                    if pubkey != &SplTokenPubkey::default() {
                         Some(pubkey.to_string())
                     } else {
                         None
@@ -111,13 +126,14 @@ pub fn parse_token(
         }))
     } else {
         Err(ParseAccountError::AccountNotParsable(
-            ParsableAccount::SafeToken,
+            ParsableAccount::SplToken,
         ))
     }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", tag = "type", content = "info")]
+#[allow(clippy::large_enum_variant)]
 pub enum TokenAccountType {
     Account(UiTokenAccount),
     Mint(UiMint),
@@ -256,8 +272,8 @@ mod test {
 
     #[test]
     fn test_parse_token() {
-        let mint_pubkey = SafeTokenPubkey::new(&[2; 32]);
-        let owner_pubkey = SafeTokenPubkey::new(&[3; 32]);
+        let mint_pubkey = SplTokenPubkey::new(&[2; 32]);
+        let owner_pubkey = SplTokenPubkey::new(&[3; 32]);
         let mut account_data = vec![0; Account::get_packed_len()];
         let mut account = Account::unpack_unchecked(&account_data).unwrap();
         account.mint = mint_pubkey;
@@ -309,11 +325,11 @@ mod test {
             }),
         );
 
-        let signer1 = SafeTokenPubkey::new(&[1; 32]);
-        let signer2 = SafeTokenPubkey::new(&[2; 32]);
-        let signer3 = SafeTokenPubkey::new(&[3; 32]);
+        let signer1 = SplTokenPubkey::new(&[1; 32]);
+        let signer2 = SplTokenPubkey::new(&[2; 32]);
+        let signer3 = SplTokenPubkey::new(&[3; 32]);
         let mut multisig_data = vec![0; Multisig::get_packed_len()];
-        let mut signers = [SafeTokenPubkey::default(); 11];
+        let mut signers = [SplTokenPubkey::default(); 11];
         signers[0] = signer1;
         signers[1] = signer2;
         signers[2] = signer3;
@@ -344,7 +360,7 @@ mod test {
 
     #[test]
     fn test_get_token_account_mint() {
-        let mint_pubkey = SafeTokenPubkey::new(&[2; 32]);
+        let mint_pubkey = SplTokenPubkey::new(&[2; 32]);
         let mut account_data = vec![0; Account::get_packed_len()];
         let mut account = Account::unpack_unchecked(&account_data).unwrap();
         account.mint = mint_pubkey;

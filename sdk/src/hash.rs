@@ -1,4 +1,4 @@
-pub use safecoin_program::hash::*;
+pub use solana_program::hash::*;
 
 /// random hash value for tests and benchmarks.
 #[cfg(feature = "full")]

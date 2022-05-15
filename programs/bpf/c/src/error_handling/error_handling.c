@@ -2,17 +2,17 @@
  * @brief Example C-based BPF program that exercises duplicate keyed ka
  * passed to it
  */
-#include <safecoin_sdk.h>
+#include <solana_sdk.h>
 
 /**
  * Custom error for when input serialization fails
  */
 
 extern uint64_t entrypoint(const uint8_t *input) {
-  SafeAccountInfo ka[1];
-  SafeParameters params = (SafeParameters) { .ka = ka };
+  SolAccountInfo ka[1];
+  SolParameters params = (SolParameters) { .ka = ka };
 
-  if (!sol_deserialize(input, &params, SAFE_ARRAY_SIZE(ka))) {
+  if (!sol_deserialize(input, &params, SOL_ARRAY_SIZE(ka))) {
     return ERROR_INVALID_ARGUMENT;
   }
 

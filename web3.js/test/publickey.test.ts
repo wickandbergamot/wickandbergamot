@@ -171,7 +171,7 @@ describe('PublicKey', function () {
       ),
     ).to.be.rejectedWith('Max seed length exceeded');
 
-    // https://github.com/fair-exchange/safecoin/issues/11950
+    // https://github.com/solana-labs/solana/issues/11950
     {
       let seeds = [
         new PublicKey(
@@ -226,6 +226,13 @@ describe('PublicKey', function () {
     const publicKey = Keypair.generate().publicKey;
     const encoded = publicKey.encode();
     const decoded = PublicKey.decode(encoded);
+    expect(decoded.equals(publicKey)).to.be.true;
+  });
+
+  it('canBeDeserializedUncheckedWithBorsh', () => {
+    const publicKey = Keypair.generate().publicKey;
+    const encoded = Buffer.concat([publicKey.encode(), new Uint8Array(10)]);
+    const decoded = PublicKey.decodeUnchecked(encoded);
     expect(decoded.equals(publicKey)).to.be.true;
   });
 });

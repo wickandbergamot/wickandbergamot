@@ -1,19 +1,19 @@
 #![allow(clippy::integer_arithmetic)]
 use {
     serial_test::serial,
-    safecoin_bench_tps::{
+    solana_bench_tps::{
         bench::{do_bench_tps, generate_and_fund_keypairs},
         cli::Config,
     },
-    safecoin_client::thin_client::create_client,
+    solana_client::thin_client::create_client,
     solana_core::validator::ValidatorConfig,
-    safecoin_faucet::faucet::run_local_faucet_with_port,
-    safecoin_gossip::cluster_info::VALIDATOR_PORT_RANGE,
+    solana_faucet::faucet::run_local_faucet_with_port,
+    solana_gossip::cluster_info::VALIDATOR_PORT_RANGE,
     solana_local_cluster::{
         local_cluster::{ClusterConfig, LocalCluster},
         validator_configs::make_identical_validator_configs,
     },
-    safecoin_sdk::signature::{Keypair, Signer},
+    solana_sdk::signature::{Keypair, Signer},
     solana_streamer::socket::SocketAddrSpace,
     std::{
         sync::{mpsc::channel, Arc},
@@ -29,9 +29,9 @@ fn test_bench_tps_local_cluster(config: Config) {
     let cluster = LocalCluster::new(
         &mut ClusterConfig {
             node_stakes: vec![999_990; NUM_NODES],
-            cluster_lamports: 1_000,
+            cluster_lamports: 200_000_000,
             validator_configs: make_identical_validator_configs(
-                &ValidatorConfig::default(),
+                &ValidatorConfig::default_for_test(),
                 NUM_NODES,
             ),
             native_instruction_processors,

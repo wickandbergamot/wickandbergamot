@@ -11,7 +11,7 @@ import {
   Transaction,
   TransactionInstruction,
   sendAndConfirmTransaction,
-  LAMPORTS_PER_SAFE,
+  LAMPORTS_PER_SOL,
 } from '../src';
 import {NONCE_ACCOUNT_LENGTH} from '../src/nonce-account';
 import {sleep} from '../src/util/sleep';
@@ -294,7 +294,7 @@ describe('SystemProgram', () => {
       await helpers.airdrop({
         connection,
         address: from.publicKey,
-        amount: 2 * LAMPORTS_PER_SAFE,
+        amount: 2 * LAMPORTS_PER_SOL,
       });
 
       const to = Keypair.generate();
@@ -302,7 +302,7 @@ describe('SystemProgram', () => {
       await helpers.airdrop({
         connection,
         address: newAuthority.publicKey,
-        amount: LAMPORTS_PER_SAFE,
+        amount: LAMPORTS_PER_SOL,
       });
 
       const minimumAmount = await connection.getMinimumBalanceForRentExemption(
@@ -433,7 +433,7 @@ describe('SystemProgram', () => {
       await helpers.airdrop({
         connection,
         address: baseAccount.publicKey,
-        amount: 2 * LAMPORTS_PER_SAFE,
+        amount: 2 * LAMPORTS_PER_SOL,
       });
       const basePubkey = baseAccount.publicKey;
       const seed = 'hi there';
@@ -484,7 +484,7 @@ describe('SystemProgram', () => {
       await helpers.airdrop({
         connection,
         address: uniqueFromAccount.publicKey,
-        amount: 2 * LAMPORTS_PER_SAFE,
+        amount: 2 * LAMPORTS_PER_SOL,
       });
       const createAccountWithSeedParams2 = {
         fromPubkey: uniqueFromAccount.publicKey,

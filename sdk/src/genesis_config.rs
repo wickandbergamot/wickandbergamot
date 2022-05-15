@@ -67,7 +67,7 @@ impl FromStr for ClusterType {
     }
 }
 
-#[frozen_abi(digest = "Bj6E2ZCpEUuNFM7HREcL5Dg3CPsbndNuCR1aVmBBFFU4")]
+#[frozen_abi(digest = "3V3ZVRyzNhRfe8RJwDeGpeTP8xBWGGFBEbwTkvKKVjEa")]
 #[derive(Serialize, Deserialize, Debug, Clone, AbiExample)]
 pub struct GenesisConfig {
     /// when the network (bootstrap validator) was started relative to the UNIX Epoch
@@ -83,7 +83,7 @@ pub struct GenesisConfig {
     /// network speed configuration
     pub poh_config: PohConfig,
     /// this field exists only to ensure that the binary layout of GenesisConfig remains compatible
-    /// with the Safecoin v0.23 release line
+    /// with the Solana v0.23 release line
     pub __backwards_compat_with_v0_23: u64,
     /// transaction fee config
     pub fee_rate_governor: FeeRateGovernor,
@@ -253,7 +253,7 @@ impl fmt::Display for GenesisConfig {
              {:?}\n\
              {:?}\n\
              {:?}\n\
-             Capitalization: {} SAFE in {} accounts\n\
+             Capitalization: {} SOL in {} accounts\n\
              Native instruction processors: {:#?}\n\
              Rewards pool: {:#?}\n\
              ",
@@ -278,9 +278,7 @@ impl fmt::Display for GenesisConfig {
                 self.accounts
                     .iter()
                     .map(|(pubkey, account)| {
-                        if account.lamports == 0 {
-                            panic!("{:?}", (pubkey, account));
-                        }
+                        assert!(account.lamports > 0, "{:?}", (pubkey, account));
                         account.lamports
                     })
                     .sum::<u64>()
@@ -329,10 +327,10 @@ mod tests {
             AccountSharedData::new(10_000, 0, &Pubkey::default()),
         );
         config.add_account(
-            safecoin_sdk::pubkey::new_rand(),
+            solana_sdk::pubkey::new_rand(),
             AccountSharedData::new(1, 0, &Pubkey::default()),
         );
-        config.add_native_instruction_processor("hi".to_string(), safecoin_sdk::pubkey::new_rand());
+        config.add_native_instruction_processor("hi".to_string(), solana_sdk::pubkey::new_rand());
 
         assert_eq!(config.accounts.len(), 2);
         assert!(config

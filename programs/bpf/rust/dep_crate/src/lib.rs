@@ -1,8 +1,8 @@
 //! Example Rust-based BPF program tests dependent crates
 
-extern crate safecoin_program;
+extern crate solana_program;
 use byteorder::{ByteOrder, LittleEndian};
-use safecoin_program::entrypoint::SUCCESS;
+use solana_program::entrypoint::SUCCESS;
 
 #[no_mangle]
 pub extern "C" fn entrypoint(_input: *mut u8) -> u64 {

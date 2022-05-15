@@ -7,7 +7,7 @@ use {
         test_utils::{create_test_account, get_append_vec_path},
         AppendVec,
     },
-    safecoin_sdk::{account::ReadableAccount, hash::Hash},
+    solana_sdk::{account::ReadableAccount, hash::Hash},
     std::{
         sync::{Arc, Mutex},
         thread::{sleep, spawn},

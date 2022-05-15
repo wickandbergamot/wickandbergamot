@@ -8,16 +8,22 @@ use {
     solana_metrics::{inc_new_counter_debug, inc_new_counter_info},
     solana_perf::{packet::PacketBatchRecycler, recycler::Recycler},
     solana_poh::poh_recorder::PohRecorder,
-    safecoin_sdk::clock::DEFAULT_TICKS_PER_SLOT,
-    solana_streamer::streamer::{self, PacketBatchReceiver, PacketBatchSender},
+    solana_sdk::{
+        clock::DEFAULT_TICKS_PER_SLOT,
+        packet::{Packet, PacketFlags},
+    },
+    solana_streamer::streamer::{
+        self, PacketBatchReceiver, PacketBatchSender, StreamerReceiveStats,
+    },
     std::{
         net::UdpSocket,
         sync::{
-            atomic::AtomicBool,
+            atomic::{AtomicBool, Ordering},
             mpsc::{channel, RecvTimeoutError},
             Arc, Mutex,
         },
-        thread::{self, Builder, JoinHandle},
+        thread::{self, sleep, Builder, JoinHandle},
+        time::Duration,
     },
 };
 
@@ -45,7 +51,7 @@ impl FetchStage {
                 exit,
                 &sender,
                 &vote_sender,
-                &poh_recorder,
+                poh_recorder,
                 coalesce_ms,
             ),
             receiver,
@@ -83,10 +89,16 @@ impl FetchStage {
         sendr: &PacketBatchSender,
         poh_recorder: &Arc<Mutex<PohRecorder>>,
     ) -> Result<()> {
-        let packet_batch = recvr.recv()?;
+        let mark_forwarded = |packet: &mut Packet| {
+            packet.meta.flags |= PacketFlags::FORWARDED;
+        };
+
+        let mut packet_batch = recvr.recv()?;
         let mut num_packets = packet_batch.packets.len();
+        packet_batch.packets.iter_mut().for_each(mark_forwarded);
         let mut packet_batches = vec![packet_batch];
-        while let Ok(packet_batch) = recvr.try_recv() {
+        while let Ok(mut packet_batch) = recvr.try_recv() {
+            packet_batch.packets.iter_mut().for_each(mark_forwarded);
             num_packets += packet_batch.packets.len();
             packet_batches.push(packet_batch);
             // Read at most 1K transactions in a loop
@@ -102,6 +114,7 @@ impl FetchStage {
         {
             inc_new_counter_debug!("fetch_stage-honor_forwards", num_packets);
             for packet_batch in packet_batches {
+                #[allow(clippy::question_mark)]
                 if sendr.send(packet_batch).is_err() {
                     return Err(Error::Send);
                 }
@@ -114,7 +127,7 @@ impl FetchStage {
     }
 
     fn new_multi_socket(
-        sockets: Vec<Arc<UdpSocket>>,
+        tpu_sockets: Vec<Arc<UdpSocket>>,
         tpu_forwards_sockets: Vec<Arc<UdpSocket>>,
         tpu_vote_sockets: Vec<Arc<UdpSocket>>,
         exit: &Arc<AtomicBool>,
@@ -125,42 +138,54 @@ impl FetchStage {
     ) -> Self {
         let recycler: PacketBatchRecycler = Recycler::warmed(1000, 1024);
 
-        let tpu_threads = sockets.into_iter().map(|socket| {
-            streamer::receiver(
-                socket,
-                exit,
-                sender.clone(),
-                recycler.clone(),
-                "fetch_stage",
-                coalesce_ms,
-                true,
-            )
-        });
+        let tpu_stats = Arc::new(StreamerReceiveStats::new("tpu_receiver"));
+        let tpu_threads: Vec<_> = tpu_sockets
+            .into_iter()
+            .map(|socket| {
+                streamer::receiver(
+                    socket,
+                    exit.clone(),
+                    sender.clone(),
+                    recycler.clone(),
+                    tpu_stats.clone(),
+                    coalesce_ms,
+                    true,
+                )
+            })
+            .collect();
 
+        let tpu_forward_stats = Arc::new(StreamerReceiveStats::new("tpu_forwards_receiver"));
         let (forward_sender, forward_receiver) = channel();
-        let tpu_forwards_threads = tpu_forwards_sockets.into_iter().map(|socket| {
-            streamer::receiver(
-                socket,
-                exit,
-                forward_sender.clone(),
-                recycler.clone(),
-                "fetch_forward_stage",
-                coalesce_ms,
-                true,
-            )
-        });
+        let tpu_forwards_threads = tpu_forwards_sockets
+            .into_iter()
+            .map(|socket| {
+                streamer::receiver(
+                    socket,
+                    exit.clone(),
+                    forward_sender.clone(),
+                    recycler.clone(),
+                    tpu_forward_stats.clone(),
+                    coalesce_ms,
+                    true,
+                )
+            })
+            .collect();
 
-        let tpu_vote_threads = tpu_vote_sockets.into_iter().map(|socket| {
-            streamer::receiver(
-                socket,
-                &exit,
-                vote_sender.clone(),
-                recycler.clone(),
-                "fetch_vote_stage",
-                coalesce_ms,
-                true,
-            )
-        });
+        let tpu_vote_stats = Arc::new(StreamerReceiveStats::new("tpu_vote_receiver"));
+        let tpu_vote_threads: Vec<_> = tpu_vote_sockets
+            .into_iter()
+            .map(|socket| {
+                streamer::receiver(
+                    socket,
+                    exit.clone(),
+                    vote_sender.clone(),
+                    recycler.clone(),
+                    tpu_vote_stats.clone(),
+                    coalesce_ms,
+                    true,
+                )
+            })
+            .collect();
 
         let sender = sender.clone();
         let poh_recorder = poh_recorder.clone();
@@ -182,12 +207,33 @@ impl FetchStage {
             })
             .unwrap();
 
-        let mut thread_hdls: Vec<_> = tpu_threads
-            .chain(tpu_forwards_threads)
-            .chain(tpu_vote_threads)
-            .collect();
-        thread_hdls.push(fwd_thread_hdl);
-        Self { thread_hdls }
+        let exit = exit.clone();
+        let metrics_thread_hdl = Builder::new()
+            .name("solana-fetch-stage-metrics".to_string())
+            .spawn(move || loop {
+                sleep(Duration::from_secs(1));
+
+                tpu_stats.report();
+                tpu_vote_stats.report();
+                tpu_forward_stats.report();
+
+                if exit.load(Ordering::Relaxed) {
+                    return;
+                }
+            })
+            .unwrap();
+
+        Self {
+            thread_hdls: [
+                tpu_threads,
+                tpu_forwards_threads,
+                tpu_vote_threads,
+                vec![fwd_thread_hdl, metrics_thread_hdl],
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        }
     }
 
     pub fn join(self) -> thread::Result<()> {

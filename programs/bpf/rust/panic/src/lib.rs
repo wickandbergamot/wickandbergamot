@@ -4,12 +4,12 @@
 #[no_mangle]
 fn custom_panic(info: &core::panic::PanicInfo<'_>) {
     // Note: Full panic reporting is included here for testing purposes
-    safecoin_program::msg!("program custom panic enabled");
-    safecoin_program::msg!(&format!("{}", info));
+    solana_program::msg!("program custom panic enabled");
+    solana_program::msg!(&format!("{}", info));
 }
 
-extern crate safecoin_program;
-use safecoin_program::{
+extern crate solana_program;
+use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, pubkey::Pubkey,
 };
 

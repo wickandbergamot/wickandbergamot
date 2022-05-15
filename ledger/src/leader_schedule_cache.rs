@@ -7,7 +7,7 @@ use {
     itertools::Itertools,
     log::*,
     solana_runtime::bank::Bank,
-    safecoin_sdk::{
+    solana_sdk::{
         clock::{Epoch, Slot},
         epoch_schedule::EpochSchedule,
         pubkey::Pubkey,
@@ -258,11 +258,11 @@ mod tests {
                 bootstrap_validator_stake_lamports, create_genesis_config,
                 create_genesis_config_with_leader, GenesisConfigInfo,
             },
-            get_tmp_ledger_path,
+            get_tmp_ledger_path_auto_delete,
             staking_utils::tests::setup_vote_and_stake_accounts,
         },
         solana_runtime::bank::Bank,
-        safecoin_sdk::{
+        solana_sdk::{
             clock::NUM_CONSECUTIVE_LEADER_SLOTS,
             epoch_schedule::{
                 EpochSchedule, DEFAULT_LEADER_SCHEDULE_SLOT_OFFSET, DEFAULT_SLOTS_PER_EPOCH,
@@ -279,7 +279,7 @@ mod tests {
     #[test]
     fn test_new_cache() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(2);
-        let bank = Bank::new(&genesis_config);
+        let bank = Bank::new_for_tests(&genesis_config);
         let cache = LeaderScheduleCache::new_from_bank(&bank);
         assert_eq!(bank.slot(), 0);
         assert_eq!(cache.max_schedules(), MAX_SCHEDULES);
@@ -342,7 +342,7 @@ mod tests {
         let slots_per_epoch = MINIMUM_SLOTS_PER_EPOCH as u64;
         let epoch_schedule = EpochSchedule::custom(slots_per_epoch, slots_per_epoch / 2, true);
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(2);
-        let bank = Arc::new(Bank::new(&genesis_config));
+        let bank = Arc::new(Bank::new_for_tests(&genesis_config));
         let cache = Arc::new(LeaderScheduleCache::new(epoch_schedule, &bank));
 
         let num_threads = 10;
@@ -379,7 +379,7 @@ mod tests {
 
     #[test]
     fn test_next_leader_slot() {
-        let pubkey = safecoin_sdk::pubkey::new_rand();
+        let pubkey = solana_sdk::pubkey::new_rand();
         let mut genesis_config =
             create_genesis_config_with_leader(42, &pubkey, bootstrap_validator_stake_lamports())
                 .genesis_config;
@@ -389,7 +389,7 @@ mod tests {
             false,
         );
 
-        let bank = Bank::new(&genesis_config);
+        let bank = Bank::new_for_tests(&genesis_config);
         let cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
 
         assert_eq!(
@@ -417,7 +417,7 @@ mod tests {
 
         assert_eq!(
             cache.next_leader_slot(
-                &safecoin_sdk::pubkey::new_rand(), // not in leader_schedule
+                &solana_sdk::pubkey::new_rand(), // not in leader_schedule
                 0,
                 &bank,
                 None,
@@ -429,83 +429,79 @@ mod tests {
 
     #[test]
     fn test_next_leader_slot_blockstore() {
-        let pubkey = safecoin_sdk::pubkey::new_rand();
+        let pubkey = solana_sdk::pubkey::new_rand();
         let mut genesis_config =
             create_genesis_config_with_leader(42, &pubkey, bootstrap_validator_stake_lamports())
                 .genesis_config;
         genesis_config.epoch_schedule.warmup = false;
 
-        let bank = Bank::new(&genesis_config);
+        let bank = Bank::new_for_tests(&genesis_config);
         let cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
-        let ledger_path = get_tmp_ledger_path!();
-        {
-            let blockstore = Arc::new(
-                Blockstore::open(&ledger_path)
-                    .expect("Expected to be able to open database ledger"),
-            );
+        let ledger_path = get_tmp_ledger_path_auto_delete!();
 
-            assert_eq!(
-                cache.slot_leader_at(bank.slot(), Some(&bank)).unwrap(),
-                pubkey
-            );
-            // Check that the next leader slot after 0 is slot 1
-            assert_eq!(
-                cache
-                    .next_leader_slot(&pubkey, 0, &bank, Some(&blockstore), std::u64::MAX)
-                    .unwrap()
-                    .0,
-                1
-            );
+        let blockstore = Blockstore::open(ledger_path.path())
+            .expect("Expected to be able to open database ledger");
 
-            // Write a shred into slot 2 that chains to slot 1,
-            // but slot 1 is empty so should not be skipped
-            let (shreds, _) = make_slot_entries(2, 1, 1);
-            blockstore.insert_shreds(shreds, None, false).unwrap();
-            assert_eq!(
-                cache
-                    .next_leader_slot(&pubkey, 0, &bank, Some(&blockstore), std::u64::MAX)
-                    .unwrap()
-                    .0,
-                1
-            );
+        assert_eq!(
+            cache.slot_leader_at(bank.slot(), Some(&bank)).unwrap(),
+            pubkey
+        );
+        // Check that the next leader slot after 0 is slot 1
+        assert_eq!(
+            cache
+                .next_leader_slot(&pubkey, 0, &bank, Some(&blockstore), std::u64::MAX)
+                .unwrap()
+                .0,
+            1
+        );
 
-            // Write a shred into slot 1
-            let (shreds, _) = make_slot_entries(1, 0, 1);
+        // Write a shred into slot 2 that chains to slot 1,
+        // but slot 1 is empty so should not be skipped
+        let (shreds, _) = make_slot_entries(2, 1, 1);
+        blockstore.insert_shreds(shreds, None, false).unwrap();
+        assert_eq!(
+            cache
+                .next_leader_slot(&pubkey, 0, &bank, Some(&blockstore), std::u64::MAX)
+                .unwrap()
+                .0,
+            1
+        );
 
-            // Check that slot 1 and 2 are skipped
-            blockstore.insert_shreds(shreds, None, false).unwrap();
-            assert_eq!(
-                cache
-                    .next_leader_slot(&pubkey, 0, &bank, Some(&blockstore), std::u64::MAX)
-                    .unwrap()
-                    .0,
-                3
-            );
+        // Write a shred into slot 1
+        let (shreds, _) = make_slot_entries(1, 0, 1);
 
-            // Integrity checks
-            assert_eq!(
-                cache.next_leader_slot(
-                    &pubkey,
-                    2 * genesis_config.epoch_schedule.slots_per_epoch - 1, // no schedule generated for epoch 2
-                    &bank,
-                    Some(&blockstore),
-                    std::u64::MAX
-                ),
-                None
-            );
+        // Check that slot 1 and 2 are skipped
+        blockstore.insert_shreds(shreds, None, false).unwrap();
+        assert_eq!(
+            cache
+                .next_leader_slot(&pubkey, 0, &bank, Some(&blockstore), std::u64::MAX)
+                .unwrap()
+                .0,
+            3
+        );
 
-            assert_eq!(
-                cache.next_leader_slot(
-                    &safecoin_sdk::pubkey::new_rand(), // not in leader_schedule
-                    0,
-                    &bank,
-                    Some(&blockstore),
-                    std::u64::MAX
-                ),
-                None
-            );
-        }
-        Blockstore::destroy(&ledger_path).unwrap();
+        // Integrity checks
+        assert_eq!(
+            cache.next_leader_slot(
+                &pubkey,
+                2 * genesis_config.epoch_schedule.slots_per_epoch - 1, // no schedule generated for epoch 2
+                &bank,
+                Some(&blockstore),
+                std::u64::MAX
+            ),
+            None
+        );
+
+        assert_eq!(
+            cache.next_leader_slot(
+                &solana_sdk::pubkey::new_rand(), // not in leader_schedule
+                0,
+                &bank,
+                Some(&blockstore),
+                std::u64::MAX
+            ),
+            None
+        );
     }
 
     #[test]
@@ -517,7 +513,7 @@ mod tests {
         } = create_genesis_config(10_000 * bootstrap_validator_stake_lamports());
         genesis_config.epoch_schedule.warmup = false;
 
-        let bank = Bank::new(&genesis_config);
+        let bank = Bank::new_for_tests(&genesis_config);
         let cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
 
         // Create new vote account
@@ -585,7 +581,7 @@ mod tests {
     #[test]
     fn test_schedule_for_unconfirmed_epoch() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(2);
-        let bank = Arc::new(Bank::new(&genesis_config));
+        let bank = Arc::new(Bank::new_for_tests(&genesis_config));
         let cache = LeaderScheduleCache::new_from_bank(&bank);
 
         assert_eq!(*cache.max_epoch.read().unwrap(), 1);
@@ -600,7 +596,7 @@ mod tests {
         assert_eq!(bank.get_epoch_and_slot_index(96).0, 2);
         assert!(cache.slot_leader_at(96, Some(&bank)).is_none());
 
-        let bank2 = Bank::new_from_parent(&bank, &safecoin_sdk::pubkey::new_rand(), 95);
+        let bank2 = Bank::new_from_parent(&bank, &solana_sdk::pubkey::new_rand(), 95);
         assert!(bank2.epoch_vote_accounts(2).is_some());
 
         // Set root for a slot in epoch 1, so that epoch 2 is now confirmed
@@ -616,7 +612,7 @@ mod tests {
     #[test]
     fn test_set_max_schedules() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(2);
-        let bank = Arc::new(Bank::new(&genesis_config));
+        let bank = Arc::new(Bank::new_for_tests(&genesis_config));
         let mut cache = LeaderScheduleCache::new_from_bank(&bank);
 
         // Max schedules must be greater than 0

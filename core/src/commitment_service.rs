@@ -1,13 +1,13 @@
 use {
     crate::consensus::Stake,
-    safecoin_measure::measure::Measure,
+    solana_measure::measure::Measure,
     solana_metrics::datapoint_info,
     solana_rpc::rpc_subscriptions::RpcSubscriptions,
     solana_runtime::{
         bank::Bank,
         commitment::{BlockCommitment, BlockCommitmentCache, CommitmentSlots, VOTE_THRESHOLD_SIZE},
     },
-    safecoin_sdk::clock::Slot,
+    solana_sdk::clock::Slot,
     solana_vote_program::vote_state::VoteState,
     std::{
         cmp::max,
@@ -97,11 +97,8 @@ impl AggregateCommitmentService {
                 return Ok(());
             }
 
-            let mut aggregation_data = receiver.recv_timeout(Duration::from_secs(1))?;
-
-            while let Ok(new_data) = receiver.try_recv() {
-                aggregation_data = new_data;
-            }
+            let aggregation_data = receiver.recv_timeout(Duration::from_secs(1))?;
+            let aggregation_data = receiver.try_iter().last().unwrap_or(aggregation_data);
 
             let ancestors = aggregation_data.bank.status_cache_ancestors();
             if ancestors.is_empty() {
@@ -259,7 +256,7 @@ mod tests {
             bank_forks::BankForks,
             genesis_utils::{create_genesis_config_with_vote_accounts, ValidatorVoteKeypairs},
         },
-        safecoin_sdk::{account::Account, pubkey::Pubkey, signature::Signer},
+        solana_sdk::{account::Account, pubkey::Pubkey, signature::Signer},
         solana_stake_program::stake_state,
         solana_vote_program::{
             vote_state::{self, VoteStateVersions},
@@ -381,22 +378,22 @@ mod tests {
 
         let rooted_stake_amount = 40;
 
-        let sk1 = safecoin_sdk::pubkey::new_rand();
-        let pk1 = safecoin_sdk::pubkey::new_rand();
+        let sk1 = solana_sdk::pubkey::new_rand();
+        let pk1 = solana_sdk::pubkey::new_rand();
         let mut vote_account1 =
-            vote_state::create_account(&pk1, &safecoin_sdk::pubkey::new_rand(), 0, 100);
+            vote_state::create_account(&pk1, &solana_sdk::pubkey::new_rand(), 0, 100);
         let stake_account1 =
             stake_state::create_account(&sk1, &pk1, &vote_account1, &genesis_config.rent, 100);
-        let sk2 = safecoin_sdk::pubkey::new_rand();
-        let pk2 = safecoin_sdk::pubkey::new_rand();
+        let sk2 = solana_sdk::pubkey::new_rand();
+        let pk2 = solana_sdk::pubkey::new_rand();
         let mut vote_account2 =
-            vote_state::create_account(&pk2, &safecoin_sdk::pubkey::new_rand(), 0, 50);
+            vote_state::create_account(&pk2, &solana_sdk::pubkey::new_rand(), 0, 50);
         let stake_account2 =
             stake_state::create_account(&sk2, &pk2, &vote_account2, &genesis_config.rent, 50);
-        let sk3 = safecoin_sdk::pubkey::new_rand();
-        let pk3 = safecoin_sdk::pubkey::new_rand();
+        let sk3 = solana_sdk::pubkey::new_rand();
+        let pk3 = solana_sdk::pubkey::new_rand();
         let mut vote_account3 =
-            vote_state::create_account(&pk3, &safecoin_sdk::pubkey::new_rand(), 0, 1);
+            vote_state::create_account(&pk3, &solana_sdk::pubkey::new_rand(), 0, 1);
         let stake_account3 = stake_state::create_account(
             &sk3,
             &pk3,
@@ -404,10 +401,10 @@ mod tests {
             &genesis_config.rent,
             rooted_stake_amount,
         );
-        let sk4 = safecoin_sdk::pubkey::new_rand();
-        let pk4 = safecoin_sdk::pubkey::new_rand();
+        let sk4 = solana_sdk::pubkey::new_rand();
+        let pk4 = solana_sdk::pubkey::new_rand();
         let mut vote_account4 =
-            vote_state::create_account(&pk4, &safecoin_sdk::pubkey::new_rand(), 0, 1);
+            vote_state::create_account(&pk4, &solana_sdk::pubkey::new_rand(), 0, 1);
         let stake_account4 = stake_state::create_account(
             &sk4,
             &pk4,
@@ -432,7 +429,7 @@ mod tests {
         );
 
         // Create bank
-        let bank = Arc::new(Bank::new(&genesis_config));
+        let bank = Arc::new(Bank::new_for_tests(&genesis_config));
 
         let mut vote_state1 = VoteState::from(&vote_account1).unwrap();
         vote_state1.process_slot_vote_unchecked(3);
@@ -506,24 +503,20 @@ mod tests {
 
         let validator_vote_keypairs = ValidatorVoteKeypairs::new_rand();
         let validator_keypairs = vec![&validator_vote_keypairs];
-        let GenesisConfigInfo {
-            genesis_config,
-            mint_keypair: _,
-            voting_keypair: _,
-        } = create_genesis_config_with_vote_accounts(
+        let GenesisConfigInfo { genesis_config, .. } = create_genesis_config_with_vote_accounts(
             1_000_000_000,
             &validator_keypairs,
             vec![100; 1],
         );
 
-        let bank0 = Bank::new(&genesis_config);
+        let bank0 = Bank::new_for_tests(&genesis_config);
         let mut bank_forks = BankForks::new(bank0);
 
         // Fill bank_forks with banks with votes landing in the next slot
         // Create enough banks such that vote account will root slots 0 and 1
         for x in 0..33 {
             let previous_bank = bank_forks.get(x).unwrap();
-            let bank = Bank::new_from_parent(previous_bank, &Pubkey::default(), x + 1);
+            let bank = Bank::new_from_parent(&previous_bank, &Pubkey::default(), x + 1);
             let vote = vote_transaction::new_vote_transaction(
                 vec![x],
                 previous_bank.hash(),
@@ -548,7 +541,7 @@ mod tests {
 
         // Add an additional bank/vote that will root slot 2
         let bank33 = bank_forks.get(33).unwrap();
-        let bank34 = Bank::new_from_parent(bank33, &Pubkey::default(), 34);
+        let bank34 = Bank::new_from_parent(&bank33, &Pubkey::default(), 34);
         let vote33 = vote_transaction::new_vote_transaction(
             vec![33],
             bank33.hash(),
@@ -591,7 +584,7 @@ mod tests {
         // Add a forked bank. Because the vote for bank 33 landed in the non-ancestor, the vote
         // account's root (and thus the highest_confirmed_root) rolls back to slot 1
         let bank33 = bank_forks.get(33).unwrap();
-        let bank35 = Bank::new_from_parent(bank33, &Pubkey::default(), 35);
+        let bank35 = Bank::new_from_parent(&bank33, &Pubkey::default(), 35);
         bank_forks.insert(bank35);
 
         let working_bank = bank_forks.working_bank();
@@ -616,7 +609,7 @@ mod tests {
         // continues normally
         for x in 35..=37 {
             let previous_bank = bank_forks.get(x).unwrap();
-            let bank = Bank::new_from_parent(previous_bank, &Pubkey::default(), x + 1);
+            let bank = Bank::new_from_parent(&previous_bank, &Pubkey::default(), x + 1);
             let vote = vote_transaction::new_vote_transaction(
                 vec![x],
                 previous_bank.hash(),

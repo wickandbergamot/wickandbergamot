@@ -1,16 +1,16 @@
 [package]
 name = "solana-bpf-rust-128bit-dep"
-version = "1.8.12"
-description = "Safecoin BPF test program written in Rust"
+version = "1.9.22"
+description = "Solana BPF test program written in Rust"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/solana-labs/solana"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
+homepage = "https://solana.com/"
 documentation = "https://docs.rs/solana-bpf-rust-128bit-dep"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-safecoin-program = { path = "../../../../sdk/program", version = "=1.8.12" }
+solana-program = { path = "../../../../sdk/program", version = "=1.9.22" }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]

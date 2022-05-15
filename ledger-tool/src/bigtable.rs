@@ -6,17 +6,19 @@ use {
     },
     log::info,
     serde_json::json,
-    safecoin_clap_utils::{
+    solana_clap_utils::{
         input_parsers::pubkey_of,
         input_validators::{is_slot, is_valid_pubkey},
     },
-    safecoin_cli_output::{
+    solana_cli_output::{
         display::println_transaction, CliBlock, CliTransaction, CliTransactionConfirmation,
         OutputFormat,
     },
     solana_ledger::{blockstore::Blockstore, blockstore_db::AccessType},
-    safecoin_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature},
-    safecoin_transaction_status::{ConfirmedBlock, EncodedTransaction, UiTransactionEncoding},
+    solana_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature},
+    solana_transaction_status::{
+        ConfirmedBlockWithOptionalMetadata, EncodedTransaction, UiTransactionEncoding,
+    },
     std::{
         collections::HashSet,
         path::Path,
@@ -30,7 +32,6 @@ async fn upload(
     blockstore: Blockstore,
     starting_slot: Slot,
     ending_slot: Option<Slot>,
-    allow_missing_metadata: bool,
     force_reupload: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let bigtable = solana_storage_bigtable::LedgerStorage::new(false, None, None)
@@ -42,7 +43,6 @@ async fn upload(
         bigtable,
         starting_slot,
         ending_slot,
-        allow_missing_metadata,
         force_reupload,
         Arc::new(AtomicBool::new(false)),
     )
@@ -194,7 +194,7 @@ pub async fn transaction_history(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let bigtable = solana_storage_bigtable::LedgerStorage::new(true, None, None).await?;
 
-    let mut loaded_block: Option<(Slot, ConfirmedBlock)> = None;
+    let mut loaded_block: Option<(Slot, ConfirmedBlockWithOptionalMetadata)> = None;
     while limit > 0 {
         let results = bigtable
             .get_confirmed_signatures_for_address(
@@ -305,12 +305,6 @@ impl BigTableSubCommand for App<'_, '_> {
                                 .takes_value(true)
                                 .index(2)
                                 .help("Stop uploading at this slot [default: last available slot]"),
-                        )
-                        .arg(
-                            Arg::with_name("allow_missing_metadata")
-                                .long("allow-missing-metadata")
-                                .takes_value(false)
-                                .help("Don't panic if transaction metadata is missing"),
                         )
                         .arg(
                             Arg::with_name("force_reupload")
@@ -506,7 +500,6 @@ pub fn bigtable_process_command(ledger_path: &Path, matches: &ArgMatches<'_>) {
         ("upload", Some(arg_matches)) => {
             let starting_slot = value_t!(arg_matches, "starting_slot", Slot).unwrap_or(0);
             let ending_slot = value_t!(arg_matches, "ending_slot", Slot).ok();
-            let allow_missing_metadata = arg_matches.is_present("allow_missing_metadata");
             let force_reupload = arg_matches.is_present("force_reupload");
             let blockstore = crate::open_blockstore(
                 &canonicalize_ledger_path(ledger_path),
@@ -518,7 +511,6 @@ pub fn bigtable_process_command(ledger_path: &Path, matches: &ArgMatches<'_>) {
                 blockstore,
                 starting_slot,
                 ending_slot,
-                allow_missing_metadata,
                 force_reupload,
             ))
         }

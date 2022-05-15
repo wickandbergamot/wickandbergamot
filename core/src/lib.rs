@@ -1,6 +1,6 @@
 #![cfg_attr(RUSTC_WITH_SPECIALIZATION, feature(min_specialization))]
 #![allow(clippy::integer_arithmetic)]
-//! The `solana` library implements the Safecoin high-performance blockchain architecture.
+//! The `solana` library implements the Solana high-performance blockchain architecture.
 //! It includes a full Rust implementation of the architecture (see
 //! [Validator](server/struct.Validator.html)) as well as hooks to GPU implementations of its most
 //! paralellizable components (i.e. [SigVerify](sigverify/index.html)).  It also includes
@@ -8,6 +8,7 @@
 //!
 
 pub mod accounts_hash_verifier;
+pub mod ancestor_hashes_service;
 pub mod banking_stage;
 pub mod broadcast_stage;
 pub mod cache_block_meta_service;
@@ -21,16 +22,21 @@ pub mod completed_data_sets_service;
 pub mod consensus;
 pub mod cost_update_service;
 pub mod drop_bank_service;
+pub mod duplicate_repair_status;
 pub mod fetch_stage;
 pub mod fork_choice;
 pub mod gen_keys;
 pub mod heaviest_subtree_fork_choice;
 pub mod latest_validator_votes_for_frozen_banks;
+pub mod leader_slot_banking_stage_metrics;
+pub mod leader_slot_banking_stage_timing_metrics;
 pub mod ledger_cleanup_service;
 pub mod optimistic_confirmation_verifier;
 pub mod outstanding_requests;
 pub mod packet_hasher;
 pub mod progress_map;
+pub mod qos_service;
+pub mod repair_generic_traversal;
 pub mod repair_response;
 pub mod repair_service;
 pub mod repair_weight;
@@ -49,13 +55,14 @@ pub mod sigverify_shreds;
 pub mod sigverify_stage;
 pub mod snapshot_packager_service;
 pub mod system_monitor_service;
-pub mod test_validator;
+pub mod tower_storage;
 pub mod tpu;
 pub mod tree_diff;
 pub mod tvu;
 pub mod unfrozen_gossip_verified_vote_hashes;
 pub mod validator;
 pub mod verified_vote_packets;
+pub mod vote_simulator;
 pub mod vote_stake_tracker;
 pub mod voting_service;
 pub mod window_service;
@@ -70,7 +77,7 @@ extern crate serde_derive;
 extern crate solana_metrics;
 
 #[macro_use]
-extern crate safecoin_frozen_abi_macro;
+extern crate solana_frozen_abi_macro;
 
 #[cfg(test)]
 #[macro_use]

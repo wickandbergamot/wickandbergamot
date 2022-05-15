@@ -2,7 +2,7 @@ use {
     crate::{cluster_info_vote_listener::VerifiedLabelVotePacketsReceiver, result::Result},
     solana_perf::packet::PacketBatch,
     solana_runtime::bank::Bank,
-    safecoin_sdk::{
+    solana_sdk::{
         account::from_account, clock::Slot, hash::Hash, pubkey::Pubkey, signature::Signature,
         slot_hashes::SlotHashes, sysvar,
     },
@@ -177,16 +177,16 @@ impl VerifiedVotePackets {
 mod tests {
     use {
         super::*,
-        crate::{consensus::test::VoteSimulator, result::Error},
+        crate::{result::Error, vote_simulator::VoteSimulator},
         crossbeam_channel::unbounded,
         solana_perf::packet::Packet,
-        safecoin_sdk::slot_hashes::MAX_ENTRIES,
+        solana_sdk::slot_hashes::MAX_ENTRIES,
     };
 
     #[test]
     fn test_verified_vote_packets_receive_and_process_vote_packets() {
         let (s, r) = unbounded();
-        let vote_account_key = safecoin_sdk::pubkey::new_rand();
+        let vote_account_key = solana_sdk::pubkey::new_rand();
 
         // Construct the buffer
         let mut verified_vote_packets = VerifiedVotePackets(HashMap::new());
@@ -289,7 +289,7 @@ mod tests {
     #[test]
     fn test_verified_vote_packets_receive_and_process_vote_packets_max_len() {
         let (s, r) = unbounded();
-        let vote_account_key = safecoin_sdk::pubkey::new_rand();
+        let vote_account_key = solana_sdk::pubkey::new_rand();
 
         // Construct the buffer
         let mut verified_vote_packets = VerifiedVotePackets(HashMap::new());
@@ -431,7 +431,7 @@ mod tests {
             let expected_len = validator_batch[0].packets.len();
             assert!(validator_batch
                 .iter()
-                .all(|p| p.packets.len() == expected_len));
+                .all(|batch| batch.packets.len() == expected_len));
         }
 
         // Should be empty now

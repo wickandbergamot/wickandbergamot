@@ -4,7 +4,7 @@ title: Calling Between Programs
 
 ## Cross-Program Invocations
 
-The Safecoin runtime allows programs to call each other via a mechanism called
+The Solana runtime allows programs to call each other via a mechanism called
 cross-program invocation. Calling between programs is achieved by one program
 invoking an instruction of the other. The invoking program is halted until the
 invoked program finishes processing the instruction.
@@ -52,14 +52,12 @@ mod acme {
     }
 ```
 
-`invoke()` is built into Safecoin's runtime and is responsible for routing the
+`invoke()` is built into Solana's runtime and is responsible for routing the
 given instruction to the `token` program via the instruction's `program_id`
 field.
 
 Note that `invoke` requires the caller to pass all the accounts required by the
-instruction being invoked. This means that both the executable account (the
-ones that matches the instruction's program id) and the accounts passed to the
-instruction processor.
+instruction being invoked, except for the executable account (the `program_id`).
 
 Before invoking `pay()`, the runtime must ensure that `acme` didn't modify any
 accounts owned by `token`. It does this by applying the runtime's policy to the
@@ -134,9 +132,9 @@ account and later transfer that authority to another. This is possible because
 the program can act as the signer in the transaction that gives authority.
 
 For example, if two users want to make a wager on the outcome of a game in
-Safecoin, they must each transfer their wager's assets to some intermediary that
+Solana, they must each transfer their wager's assets to some intermediary that
 will honor their agreement. Currently, there is no way to implement this
-intermediary as a program in Safecoin because the intermediary program cannot
+intermediary as a program in Solana because the intermediary program cannot
 transfer the assets to the winner.
 
 This capability is necessary for many DeFi applications since they require
@@ -288,7 +286,7 @@ Note that the address generated using `create_program_address` is not guaranteed
 to be a valid program address off the curve. For example, let's assume that the
 seed `"escrow2"` does not generate a valid program address.
 
-To generate a valid program address using `"escrow2` as a seed, use
+To generate a valid program address using `"escrow2"` as a seed, use
 `find_program_address`, iterating through possible bump seeds until a valid
 combination is found. The preceding example becomes:
 

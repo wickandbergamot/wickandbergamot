@@ -1,7 +1,7 @@
 //! Example Rust-based BPF noop program
 
-extern crate safecoin_program;
-use safecoin_program::{
+extern crate solana_program;
+use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, pubkey::Pubkey,
 };
 

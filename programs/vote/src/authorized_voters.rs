@@ -1,7 +1,7 @@
 use {
     log::*,
     serde_derive::{Deserialize, Serialize},
-    safecoin_sdk::{clock::Epoch, pubkey::Pubkey},
+    solana_sdk::{clock::Epoch, pubkey::Pubkey},
     std::collections::BTreeMap,
 };
 

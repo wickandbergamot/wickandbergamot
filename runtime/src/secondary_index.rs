@@ -1,6 +1,6 @@
 use {
     dashmap::{mapref::entry::Entry::Occupied, DashMap},
-    safecoin_sdk::{pubkey::Pubkey, timing::AtomicInterval},
+    solana_sdk::{pubkey::Pubkey, timing::AtomicInterval},
     std::{
         collections::HashSet,
         fmt::Debug,

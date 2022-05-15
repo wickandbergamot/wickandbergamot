@@ -10,6 +10,14 @@ pub struct DataBudget {
 }
 
 impl DataBudget {
+    /// Create a data budget with max bytes, used for tests
+    pub fn restricted() -> Self {
+        Self {
+            bytes: AtomicUsize::default(),
+            last_timestamp_ms: AtomicU64::new(u64::MAX),
+        }
+    }
+
     // If there are enough bytes in the budget, consumes from
     // the budget and returns true. Otherwise returns false.
     #[must_use]
@@ -34,7 +42,7 @@ impl DataBudget {
     // Updates timestamp and returns true, if at least given milliseconds
     // has passed since last update. Otherwise returns false.
     fn can_update(&self, duration_millis: u64) -> bool {
-        let now = safecoin_sdk::timing::timestamp();
+        let now = solana_sdk::timing::timestamp();
         let mut last_timestamp = self.last_timestamp_ms.load(Ordering::Acquire);
         loop {
             if now < last_timestamp.saturating_add(duration_millis) {

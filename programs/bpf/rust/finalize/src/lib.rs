@@ -2,8 +2,8 @@
 
 #![allow(unreachable_code)]
 
-extern crate safecoin_program;
-use safecoin_program::{
+extern crate solana_program;
+use solana_program::{
     account_info::AccountInfo, bpf_loader, entrypoint, entrypoint::ProgramResult,
     loader_instruction, msg, program::invoke, pubkey::Pubkey,
 };

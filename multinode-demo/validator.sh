@@ -9,9 +9,10 @@ source "$here"/common.sh
 args=(
   --max-genesis-archive-unpacked-size 1073741824
   --no-poh-speed-test
+  --no-os-network-limits-test
 )
 airdrops_enabled=1
-node_sol=500 # 500 SAFE: number of SAFE to airdrop the node for transaction fees and vote account rent exemption (ignored if airdrops_enabled=0)
+node_sol=500 # 500 SOL: number of SOL to airdrop the node for transaction fees and vote account rent exemption (ignored if airdrops_enabled=0)
 label=
 identity=
 vote_account=
@@ -36,7 +37,7 @@ OPTIONS:
   --init-complete-file FILE - create this file, if it doesn't already exist, once node initialization is complete
   --label LABEL             - Append the given label to the configuration files, useful when running
                               multiple validators in the same workspace
-  --node-sol SAFE            - Number of SAFE this node has been funded from the genesis config (default: $node_sol)
+  --node-sol SOL            - Number of SOL this node has been funded from the genesis config (default: $node_sol)
   --no-voting               - start node without vote signer
   --rpc-port port           - custom RPC port for this node
   --no-restart              - do not restart the node if it exits
@@ -64,7 +65,7 @@ while [[ -n $1 ]]; do
     elif [[ $1 = --no-airdrop ]]; then
       airdrops_enabled=0
       shift
-    # safecoin-validator options
+    # solana-validator options
     elif [[ $1 = --expected-genesis-hash ]]; then
       args+=("$1" "$2")
       shift 2
@@ -183,7 +184,7 @@ while [[ -n $1 ]]; do
   fi
 done
 
-if [[ "$SAFECOIN_GPU_MISSING" -eq 1 ]]; then
+if [[ "$SOLANA_GPU_MISSING" -eq 1 ]]; then
   echo "Testnet requires GPUs, but none were found!  Aborting..."
   exit 1
 fi
@@ -196,7 +197,7 @@ if [[ -n $REQUIRE_LEDGER_DIR ]]; then
   if [[ -z $ledger_dir ]]; then
     usage "Error: --ledger not specified"
   fi
-  SAFECOIN_CONFIG_DIR="$ledger_dir"
+  SOLANA_CONFIG_DIR="$ledger_dir"
 fi
 
 if [[ -n $REQUIRE_KEYPAIRS ]]; then
@@ -212,7 +213,7 @@ if [[ -n $REQUIRE_KEYPAIRS ]]; then
 fi
 
 if [[ -z "$ledger_dir" ]]; then
-  ledger_dir="$SAFECOIN_CONFIG_DIR/validator$label"
+  ledger_dir="$SOLANA_CONFIG_DIR/validator$label"
 fi
 mkdir -p "$ledger_dir"
 
@@ -226,9 +227,9 @@ else
   #    positional argument
   entrypoint_hostname=${positional_args[0]}
   if [[ -z $entrypoint_hostname ]]; then
-    gossip_entrypoint=127.0.0.1:10015
+    gossip_entrypoint=127.0.0.1:8001
   else
-    gossip_entrypoint="$entrypoint_hostname":10015
+    gossip_entrypoint="$entrypoint_hostname":8001
   fi
 fi
 
@@ -247,15 +248,16 @@ default_arg --identity "$identity"
 default_arg --vote-account "$vote_account"
 default_arg --ledger "$ledger_dir"
 default_arg --log -
+default_arg --full-rpc-api
 
 if [[ $maybeRequireTower = true ]]; then
   default_arg --require-tower
 fi
 
-if [[ -n $SAFECOIN_CUDA ]]; then
-  program=$safecoin_validator_cuda
+if [[ -n $SOLANA_CUDA ]]; then
+  program=$solana_validator_cuda
 else
-  program=$safecoin_validator
+  program=$solana_validator
 fi
 
 set -e
@@ -301,7 +303,7 @@ setup_validator_accounts() {
       (
         set -x
         $solana_cli \
-          --keypair "$SAFECOIN_CONFIG_DIR/faucet.json" --url "$rpc_url" \
+          --keypair "$SOLANA_CONFIG_DIR/faucet.json" --url "$rpc_url" \
           transfer --allow-unfunded-recipient "$identity" "$node_sol"
       ) || return $?
     fi
@@ -318,7 +320,7 @@ setup_validator_accounts() {
 }
 
 # shellcheck disable=SC2086 # Don't want to double quote "$maybe_allow_private_addr"
-rpc_url=$($safecoin_gossip $maybe_allow_private_addr rpc-url --timeout 180 --entrypoint "$gossip_entrypoint")
+rpc_url=$($solana_gossip $maybe_allow_private_addr rpc-url --timeout 180 --entrypoint "$gossip_entrypoint")
 
 [[ -r "$identity" ]] || $solana_keygen new --no-passphrase -so "$identity"
 [[ -r "$vote_account" ]] || $solana_keygen new --no-passphrase -so "$vote_account"

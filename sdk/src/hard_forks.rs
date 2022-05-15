@@ -5,7 +5,7 @@
 
 use {
     byteorder::{ByteOrder, LittleEndian},
-    safecoin_sdk::clock::Slot,
+    solana_sdk::clock::Slot,
 };
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize, AbiExample, PartialEq, Eq)]

@@ -1,4 +1,4 @@
-//! The latest Safecoin BPF loader.
+//! The latest Solana BPF loader.
 //!
 //! The BPF loader is responsible for loading, finalizing, and executing BPF
 //! programs.  Not all networks may support the latest loader.  You can use the

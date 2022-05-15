@@ -1,4 +1,4 @@
-//! Safecoin Rust-based BPF program entry point supported by the latest
+//! Solana Rust-based BPF program entry point supported by the latest
 //! BPFLoader.  For more information see './bpf_loader.rs'
 
 extern crate alloc;
@@ -29,7 +29,7 @@ pub type ProcessInstruction =
 pub const SUCCESS: u64 = 0;
 
 /// Start address of the memory region used for program heap.
-pub const HEAP_START_ADDRESS: usize = 0x300000000;
+pub const HEAP_START_ADDRESS: u64 = 0x300000000;
 /// Length of the heap memory region used for program heap.
 pub const HEAP_LENGTH: usize = 32 * 1024;
 
@@ -59,7 +59,7 @@ pub const HEAP_LENGTH: usize = 32 * 1024;
 ///
 /// This macro emits symbols and definitions that may only be defined once
 /// globally. As such, if linked to other Rust crates it will cause compiler
-/// errors. To avoid this, it is common for Safecoin programs to define an
+/// errors. To avoid this, it is common for Solana programs to define an
 /// optional [Cargo feature] called `no-entrypoint`, and use it to conditionally
 /// disable the `entrypoint` macro invocation, as well as the
 /// `process_instruction` function. See a typical pattern for this in the
@@ -90,7 +90,7 @@ pub const HEAP_LENGTH: usize = 32 * 1024;
 /// #[cfg(not(feature = "no-entrypoint"))]
 /// pub mod entrypoint {
 ///
-///     use safecoin_program::{
+///     use solana_program::{
 ///         account_info::AccountInfo,
 ///         entrypoint,
 ///         entrypoint::ProgramResult,
@@ -155,7 +155,7 @@ macro_rules! custom_heap_default {
         #[cfg(all(not(feature = "custom-heap"), target_arch = "bpf"))]
         #[global_allocator]
         static A: $crate::entrypoint::BumpAllocator = $crate::entrypoint::BumpAllocator {
-            start: $crate::entrypoint::HEAP_START_ADDRESS,
+            start: $crate::entrypoint::HEAP_START_ADDRESS as usize,
             len: $crate::entrypoint::HEAP_LENGTH,
         };
     };
@@ -186,9 +186,9 @@ macro_rules! custom_heap_default {
 /// from a noop program. That number goes down the more the programs pulls in
 /// Rust's standard library for other purposes.
 ///
-/// # Defining a panic handler for Safecoin
+/// # Defining a panic handler for Solana
 ///
-/// _The mechanism for defining a Safecoin panic handler is different [from most
+/// _The mechanism for defining a Solana panic handler is different [from most
 /// Rust programs][rpanic]._
 ///
 /// [rpanic]: https://doc.rust-lang.org/nomicon/panic-handler.html
@@ -204,7 +204,7 @@ macro_rules! custom_heap_default {
 /// }
 /// ```
 ///
-/// The above is how Safecoin defines the default panic handler.
+/// The above is how Solana defines the default panic handler.
 #[macro_export]
 macro_rules! custom_panic_default {
     () => {
@@ -261,9 +261,9 @@ pub const BPF_ALIGN_OF_U128: usize = 8;
 /// The integer arithmetic in this method is safe when called on a buffer that was
 /// serialized by runtime. Use with buffers serialized otherwise is unsupported and
 /// done at one's own risk.
-#[allow(clippy::integer_arithmetic)]
 ///
 /// # Safety
+#[allow(clippy::integer_arithmetic)]
 #[allow(clippy::type_complexity)]
 pub unsafe fn deserialize<'a>(input: *mut u8) -> (&'a Pubkey, Vec<AccountInfo<'a>>, &'a [u8]) {
     let mut offset: usize = 0;

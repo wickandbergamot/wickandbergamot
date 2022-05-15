@@ -10,6 +10,6 @@ pub mod vote_transaction;
 extern crate solana_metrics;
 
 #[macro_use]
-extern crate safecoin_frozen_abi_macro;
+extern crate solana_frozen_abi_macro;
 
-pub use safecoin_sdk::vote::program::{check_id, id};
+pub use solana_sdk::vote::program::{check_id, id};

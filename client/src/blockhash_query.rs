@@ -1,12 +1,12 @@
 use {
     crate::{nonce_utils, rpc_client::RpcClient},
     clap::ArgMatches,
-    safecoin_clap_utils::{
+    solana_clap_utils::{
         input_parsers::{pubkey_of, value_of},
         nonce::*,
         offline::*,
     },
-    safecoin_sdk::{
+    solana_sdk::{
         commitment_config::CommitmentConfig, fee_calculator::FeeCalculator, hash::Hash,
         pubkey::Pubkey,
     },
@@ -19,6 +19,7 @@ pub enum Source {
 }
 
 impl Source {
+    #[deprecated(since = "1.9.0", note = "Please use `get_blockhash` instead")]
     pub fn get_blockhash_and_fee_calculator(
         &self,
         rpc_client: &RpcClient,
@@ -26,12 +27,14 @@ impl Source {
     ) -> Result<(Hash, FeeCalculator), Box<dyn std::error::Error>> {
         match self {
             Self::Cluster => {
+                #[allow(deprecated)]
                 let res = rpc_client
                     .get_recent_blockhash_with_commitment(commitment)?
                     .value;
                 Ok((res.0, res.1))
             }
             Self::NonceAccount(ref pubkey) => {
+                #[allow(clippy::redundant_closure)]
                 let data = nonce_utils::get_account_with_commitment(rpc_client, pubkey, commitment)
                     .and_then(|ref a| nonce_utils::data_from_account(a))?;
                 Ok((data.blockhash, data.fee_calculator))
@@ -39,6 +42,10 @@ impl Source {
         }
     }
 
+    #[deprecated(
+        since = "1.9.0",
+        note = "Please do not use, will no longer be available in the future"
+    )]
     pub fn get_fee_calculator(
         &self,
         rpc_client: &RpcClient,
@@ -47,6 +54,7 @@ impl Source {
     ) -> Result<Option<FeeCalculator>, Box<dyn std::error::Error>> {
         match self {
             Self::Cluster => {
+                #[allow(deprecated)]
                 let res = rpc_client
                     .get_fee_calculator_for_blockhash_with_commitment(blockhash, commitment)?
                     .value;
@@ -60,6 +68,42 @@ impl Source {
                     .map(|d| d.fee_calculator))
             }
         }
+    }
+
+    pub fn get_blockhash(
+        &self,
+        rpc_client: &RpcClient,
+        commitment: CommitmentConfig,
+    ) -> Result<Hash, Box<dyn std::error::Error>> {
+        match self {
+            Self::Cluster => {
+                let (blockhash, _) = rpc_client.get_latest_blockhash_with_commitment(commitment)?;
+                Ok(blockhash)
+            }
+            Self::NonceAccount(ref pubkey) => {
+                #[allow(clippy::redundant_closure)]
+                let data = nonce_utils::get_account_with_commitment(rpc_client, pubkey, commitment)
+                    .and_then(|ref a| nonce_utils::data_from_account(a))?;
+                Ok(data.blockhash)
+            }
+        }
+    }
+
+    pub fn is_blockhash_valid(
+        &self,
+        rpc_client: &RpcClient,
+        blockhash: &Hash,
+        commitment: CommitmentConfig,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(match self {
+            Self::Cluster => rpc_client.is_blockhash_valid(blockhash, commitment)?,
+            Self::NonceAccount(ref pubkey) => {
+                #[allow(clippy::redundant_closure)]
+                let _ = nonce_utils::get_account_with_commitment(rpc_client, pubkey, commitment)
+                    .and_then(|ref a| nonce_utils::data_from_account(a))?;
+                true
+            }
+        })
     }
 }
 
@@ -90,6 +134,7 @@ impl BlockhashQuery {
         BlockhashQuery::new(blockhash, sign_only, nonce_account)
     }
 
+    #[deprecated(since = "1.9.0", note = "Please use `get_blockhash` instead")]
     pub fn get_blockhash_and_fee_calculator(
         &self,
         rpc_client: &RpcClient,
@@ -98,14 +143,34 @@ impl BlockhashQuery {
         match self {
             BlockhashQuery::None(hash) => Ok((*hash, FeeCalculator::default())),
             BlockhashQuery::FeeCalculator(source, hash) => {
+                #[allow(deprecated)]
                 let fee_calculator = source
                     .get_fee_calculator(rpc_client, hash, commitment)?
                     .ok_or(format!("Hash has expired {:?}", hash))?;
                 Ok((*hash, fee_calculator))
             }
-            BlockhashQuery::All(source) => {
+            BlockhashQuery::All(source) =>
+            {
+                #[allow(deprecated)]
                 source.get_blockhash_and_fee_calculator(rpc_client, commitment)
             }
+        }
+    }
+
+    pub fn get_blockhash(
+        &self,
+        rpc_client: &RpcClient,
+        commitment: CommitmentConfig,
+    ) -> Result<Hash, Box<dyn std::error::Error>> {
+        match self {
+            BlockhashQuery::None(hash) => Ok(*hash),
+            BlockhashQuery::FeeCalculator(source, hash) => {
+                if !source.is_blockhash_valid(rpc_client, hash, commitment)? {
+                    return Err(format!("Hash has expired {:?}", hash).into());
+                }
+                Ok(*hash)
+            }
+            BlockhashQuery::All(source) => source.get_blockhash(rpc_client, commitment),
         }
     }
 }
@@ -127,8 +192,8 @@ mod tests {
         },
         clap::App,
         serde_json::{self, json},
-        safecoin_account_decoder::{UiAccount, UiAccountEncoding},
-        safecoin_sdk::{account::Account, hash::hash, nonce, system_program},
+        solana_account_decoder::{UiAccount, UiAccountEncoding},
+        solana_sdk::{account::Account, hash::hash, nonce, system_program},
         std::collections::HashMap,
     };
 
@@ -284,6 +349,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_blockhash_query_get_blockhash_fee_calc() {
         let test_blockhash = hash(&[0u8]);
         let rpc_blockhash = hash(&[1u8]);
@@ -292,7 +358,7 @@ mod tests {
             context: RpcResponseContext { slot: 1 },
             value: json!(RpcFees {
                 blockhash: rpc_blockhash.to_string(),
-                fee_calculator: rpc_fee_calc.clone(),
+                fee_calculator: rpc_fee_calc,
                 last_valid_slot: 42,
                 last_valid_block_height: 42,
             }),
@@ -300,7 +366,7 @@ mod tests {
         let get_fee_calculator_for_blockhash_response = json!(Response {
             context: RpcResponseContext { slot: 1 },
             value: json!(RpcFeeCalculator {
-                fee_calculator: rpc_fee_calc.clone()
+                fee_calculator: rpc_fee_calc
             }),
         });
         let mut mocks = HashMap::new();
@@ -310,7 +376,7 @@ mod tests {
             BlockhashQuery::default()
                 .get_blockhash_and_fee_calculator(&rpc_client, CommitmentConfig::default())
                 .unwrap(),
-            (rpc_blockhash, rpc_fee_calc.clone()),
+            (rpc_blockhash, rpc_fee_calc),
         );
         let mut mocks = HashMap::new();
         mocks.insert(RpcRequest::GetFees, get_recent_blockhash_response.clone());
@@ -344,7 +410,7 @@ mod tests {
         let data = nonce::state::Data {
             authority: Pubkey::new(&[3u8; 32]),
             blockhash: nonce_blockhash,
-            fee_calculator: nonce_fee_calc.clone(),
+            fee_calculator: nonce_fee_calc,
         };
         let nonce_account = Account::new_data_with_space(
             42,
@@ -373,7 +439,7 @@ mod tests {
             BlockhashQuery::All(Source::NonceAccount(nonce_pubkey))
                 .get_blockhash_and_fee_calculator(&rpc_client, CommitmentConfig::default())
                 .unwrap(),
-            (nonce_blockhash, nonce_fee_calc.clone()),
+            (nonce_blockhash, nonce_fee_calc),
         );
         let mut mocks = HashMap::new();
         mocks.insert(RpcRequest::GetAccountInfo, get_account_response.clone());

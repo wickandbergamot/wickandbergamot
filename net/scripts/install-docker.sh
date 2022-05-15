@@ -68,12 +68,19 @@ KillMode=process
 WantedBy=multi-user.target
 EOF
 
+cat > /etc/docker/daemon.json <<EOF
+{
+  "ipv6": true,
+  "fixed-cidr-v6": "2001:db8:1::/64"
+}
+EOF
+
 systemctl daemon-reload
 systemctl enable --now /lib/systemd/system/docker.service
 
-# Grant the safecoin user access to docker
+# Grant the solana user access to docker
 if id solana; then
-  addgroup safecoin docker
+  addgroup solana docker
 fi
 
 docker run hello-world

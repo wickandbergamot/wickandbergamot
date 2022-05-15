@@ -8,7 +8,7 @@ import {
   Lockup,
   PublicKey,
   sendAndConfirmTransaction,
-  LAMPORTS_PER_SAFE,
+  LAMPORTS_PER_SOL,
   StakeAuthorizationLayout,
   StakeInstruction,
   StakeProgram,
@@ -220,6 +220,21 @@ describe('StakeProgram', () => {
     expect(params).to.eql(StakeInstruction.decodeSplit(stakeInstruction));
   });
 
+  it('merge', () => {
+    const stakePubkey = Keypair.generate().publicKey;
+    const sourceStakePubKey = Keypair.generate().publicKey;
+    const authorizedPubkey = Keypair.generate().publicKey;
+    const params = {
+      stakePubkey,
+      sourceStakePubKey,
+      authorizedPubkey,
+    };
+    const transaction = StakeProgram.merge(params);
+    expect(transaction.instructions).to.have.length(1);
+    const [stakeInstruction] = transaction.instructions;
+    expect(params).to.eql(StakeInstruction.decodeMerge(stakeInstruction));
+  });
+
   it('withdraw', () => {
     const stakePubkey = Keypair.generate().publicKey;
     const authorizedPubkey = Keypair.generate().publicKey;
@@ -336,14 +351,14 @@ describe('StakeProgram', () => {
       await helpers.airdrop({
         connection,
         address: payer.publicKey,
-        amount: 2 * LAMPORTS_PER_SAFE,
+        amount: 2 * LAMPORTS_PER_SOL,
       });
 
       const authorized = Keypair.generate();
       await helpers.airdrop({
         connection,
         address: authorized.publicKey,
-        amount: 2 * LAMPORTS_PER_SAFE,
+        amount: 2 * LAMPORTS_PER_SOL,
       });
 
       const minimumAmount = await connection.getMinimumBalanceForRentExemption(
@@ -351,10 +366,10 @@ describe('StakeProgram', () => {
       );
 
       expect(await connection.getBalance(payer.publicKey)).to.eq(
-        2 * LAMPORTS_PER_SAFE,
+        2 * LAMPORTS_PER_SOL,
       );
       expect(await connection.getBalance(authorized.publicKey)).to.eq(
-        2 * LAMPORTS_PER_SAFE,
+        2 * LAMPORTS_PER_SOL,
       );
 
       {
@@ -489,11 +504,39 @@ describe('StakeProgram', () => {
       const balance = await connection.getBalance(newAccountPubkey);
       expect(balance).to.eq(minimumAmount + 2);
 
+      // Merge stake
+      let merge = StakeProgram.merge({
+        stakePubkey: newAccountPubkey,
+        sourceStakePubKey: newStake.publicKey,
+        authorizedPubkey: authorized.publicKey,
+      });
+      await sendAndConfirmTransaction(connection, merge, [authorized], {
+        preflightCommitment: 'confirmed',
+      });
+      const mergedBalance = await connection.getBalance(newAccountPubkey);
+      expect(mergedBalance).to.eq(2 * minimumAmount + 22);
+
+      // Resplit
+      split = StakeProgram.split({
+        stakePubkey: newAccountPubkey,
+        authorizedPubkey: authorized.publicKey,
+        splitStakePubkey: newStake.publicKey,
+        lamports: minimumAmount + 20,
+      });
+      await sendAndConfirmTransaction(
+        connection,
+        split,
+        [authorized, newStake],
+        {
+          preflightCommitment: 'confirmed',
+        },
+      );
+
       // Authorize to new account
       const newAuthorized = Keypair.generate();
       await connection.requestAirdrop(
         newAuthorized.publicKey,
-        LAMPORTS_PER_SAFE,
+        LAMPORTS_PER_SOL,
       );
 
       let authorize = StakeProgram.authorize({
@@ -525,6 +568,23 @@ describe('StakeProgram', () => {
         sendAndConfirmTransaction(
           connection,
           delegateNotAuthorized,
+          [authorized],
+          {
+            preflightCommitment: 'confirmed',
+          },
+        ),
+      ).to.be.rejected;
+
+      // Test accounts with different authorities can't be merged
+      let mergeNotAuthorized = StakeProgram.merge({
+        stakePubkey: newStake.publicKey,
+        sourceStakePubKey: newAccountPubkey,
+        authorizedPubkey: authorized.publicKey,
+      });
+      await expect(
+        sendAndConfirmTransaction(
+          connection,
+          mergeNotAuthorized,
           [authorized],
           {
             preflightCommitment: 'confirmed',

@@ -10,9 +10,9 @@ use {
             resolve_command, AuthorizeArgs, Command, MoveArgs, NewArgs, RebaseArgs, SetLockupArgs,
         },
     },
-    safecoin_cli_config::Config,
-    safecoin_client::{client_error::ClientError, rpc_client::RpcClient},
-    safecoin_sdk::{
+    solana_cli_config::Config,
+    solana_client::{client_error::ClientError, rpc_client::RpcClient},
+    solana_sdk::{
         message::Message,
         native_token::lamports_to_sol,
         pubkey::Pubkey,
@@ -207,8 +207,7 @@ fn send_and_confirm_message<S: Signers>(
 ) -> Result<Signature, ClientError> {
     let mut transaction = Transaction::new_unsigned(message);
 
-    let (blockhash, _fee_calculator) =
-        client.get_new_blockhash(&transaction.message().recent_blockhash)?;
+    let blockhash = client.get_new_latest_blockhash(&transaction.message().recent_blockhash)?;
     transaction.try_sign(signers, blockhash)?;
 
     if no_wait {
@@ -264,7 +263,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let balances = get_balances(&client, addresses)?;
             let lamports: u64 = balances.into_iter().map(|(_, bal)| bal).sum();
             let sol = lamports_to_sol(lamports);
-            println!("{} SAFE", sol);
+            println!("{} SOL", sol);
         }
         Command::Authorize(args) => {
             process_authorize_stake_accounts(&client, &args)?;
