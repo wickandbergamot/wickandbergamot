@@ -10,7 +10,8 @@ if [[ -n $4 ]]; then
   export RUST_LOG="$4"
 fi
 benchTpsExtraArgs="$5"
-clientIndex="$6"
+benchExchangeExtraArgs="$6"
+clientIndex="$7"
 
 missing() {
   echo "Error: $1 not specified"
@@ -42,17 +43,34 @@ skip)
 esac
 
 case $clientToRun in
-solana-bench-tps)
+safecoin-bench-tps)
   net/scripts/rsync-retry.sh -vPrc \
     "$entrypointIp":~/solana/config/bench-tps"$clientIndex".yml ./client-accounts.yml
   clientCommand="\
-    solana-bench-tps \
-      --entrypoint $entrypointIp:8001 \
+    safecoin-bench-tps \
+      --entrypoint $entrypointIp:10015 \
       --faucet $entrypointIp:9900 \
       --duration 7500 \
       --sustained \
       --threads $threadCount \
       $benchTpsExtraArgs \
+      --read-client-keys ./client-accounts.yml \
+  "
+  ;;
+safecoin-bench-exchange)
+  safecoin-keygen new --no-passphrase -fso bench.keypair
+  net/scripts/rsync-retry.sh -vPrc \
+    "$entrypointIp":~/solana/config/bench-exchange"$clientIndex".yml ./client-accounts.yml
+  clientCommand="\
+    safecoin-bench-exchange \
+      --entrypoint $entrypointIp:10015 \
+      --faucet $entrypointIp:9900 \
+      --threads $threadCount \
+      --batch-size 1000 \
+      --fund-amount 20000 \
+      --duration 7500 \
+      --identity bench.keypair \
+      $benchExchangeExtraArgs \
       --read-client-keys ./client-accounts.yml \
   "
   ;;
@@ -78,7 +96,7 @@ export USE_INSTALL=1
 echo "$(date) | $0 $*" >> client.log
 
 (
-  sudo SOLANA_METRICS_CONFIG="$SOLANA_METRICS_CONFIG" scripts/oom-monitor.sh
+  sudo SAFECOIN_METRICS_CONFIG="$SAFECOIN_METRICS_CONFIG" scripts/oom-monitor.sh
 ) > oom-monitor.log 2>&1 &
 echo \$! > oom-monitor.pid
 scripts/fd-monitor.sh > fd-monitor.log 2>&1 &

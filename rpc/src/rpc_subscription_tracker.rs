@@ -1,17 +1,16 @@
 use {
     crate::rpc_subscriptions::{NotificationEntry, RpcNotification, TimestampedNotificationEntry},
     dashmap::{mapref::entry::Entry as DashEntry, DashMap},
-    solana_account_decoder::{UiAccountEncoding, UiDataSliceConfig},
-    solana_client::rpc_filter::RpcFilterType,
+    safecoin_account_decoder::{UiAccountEncoding, UiDataSliceConfig},
+    safecoin_client::rpc_filter::RpcFilterType,
     solana_metrics::{CounterToken, TokenCounter},
     solana_runtime::{
         bank::{TransactionLogCollectorConfig, TransactionLogCollectorFilter},
         bank_forks::BankForks,
     },
-    solana_sdk::{
+    safecoin_sdk::{
         clock::Slot, commitment_config::CommitmentConfig, pubkey::Pubkey, signature::Signature,
     },
-    solana_transaction_status::{TransactionDetails, UiTransactionEncoding},
     std::{
         collections::{
             hash_map::{Entry, HashMap},
@@ -45,7 +44,6 @@ impl From<SubscriptionId> for u64 {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SubscriptionParams {
     Account(AccountSubscriptionParams),
-    Block(BlockSubscriptionParams),
     Logs(LogsSubscriptionParams),
     Program(ProgramSubscriptionParams),
     Signature(SignatureSubscriptionParams),
@@ -64,7 +62,6 @@ impl SubscriptionParams {
             SubscriptionParams::Signature(_) => "signatureNotification",
             SubscriptionParams::Slot => "slotNotification",
             SubscriptionParams::SlotsUpdates => "slotsUpdatesNotification",
-            SubscriptionParams::Block(_) => "blockNotification",
             SubscriptionParams::Root => "rootNotification",
             SubscriptionParams::Vote => "voteNotification",
         }
@@ -76,7 +73,6 @@ impl SubscriptionParams {
             SubscriptionParams::Logs(params) => Some(params.commitment),
             SubscriptionParams::Program(params) => Some(params.commitment),
             SubscriptionParams::Signature(params) => Some(params.commitment),
-            SubscriptionParams::Block(params) => Some(params.commitment),
             SubscriptionParams::Slot
             | SubscriptionParams::SlotsUpdates
             | SubscriptionParams::Root
@@ -87,13 +83,12 @@ impl SubscriptionParams {
     fn is_commitment_watcher(&self) -> bool {
         let commitment = match self {
             SubscriptionParams::Account(params) => &params.commitment,
-            SubscriptionParams::Block(params) => &params.commitment,
             SubscriptionParams::Logs(params) => &params.commitment,
             SubscriptionParams::Program(params) => &params.commitment,
             SubscriptionParams::Signature(params) => &params.commitment,
-            SubscriptionParams::Root
-            | SubscriptionParams::Slot
+            SubscriptionParams::Slot
             | SubscriptionParams::SlotsUpdates
+            | SubscriptionParams::Root
             | SubscriptionParams::Vote => return false,
         };
         !commitment.is_confirmed()
@@ -102,13 +97,12 @@ impl SubscriptionParams {
     fn is_gossip_watcher(&self) -> bool {
         let commitment = match self {
             SubscriptionParams::Account(params) => &params.commitment,
-            SubscriptionParams::Block(params) => &params.commitment,
             SubscriptionParams::Logs(params) => &params.commitment,
             SubscriptionParams::Program(params) => &params.commitment,
             SubscriptionParams::Signature(params) => &params.commitment,
-            SubscriptionParams::Root
-            | SubscriptionParams::Slot
+            SubscriptionParams::Slot
             | SubscriptionParams::SlotsUpdates
+            | SubscriptionParams::Root
             | SubscriptionParams::Vote => return false,
         };
         commitment.is_confirmed()
@@ -131,21 +125,6 @@ pub struct AccountSubscriptionParams {
     pub encoding: UiAccountEncoding,
     pub data_slice: Option<UiDataSliceConfig>,
     pub commitment: CommitmentConfig,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct BlockSubscriptionParams {
-    pub commitment: CommitmentConfig,
-    pub encoding: UiTransactionEncoding,
-    pub kind: BlockSubscriptionKind,
-    pub transaction_details: TransactionDetails,
-    pub show_rewards: bool,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum BlockSubscriptionKind {
-    All,
-    MentionsAccountOrProgram(Pubkey),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -506,15 +485,12 @@ impl SubscriptionsTracker {
     ) -> &HashMap<Signature, HashMap<SubscriptionId, Arc<SubscriptionInfo>>> {
         &self.by_signature
     }
-
     pub fn commitment_watchers(&self) -> &HashMap<SubscriptionId, Arc<SubscriptionInfo>> {
         &self.commitment_watchers
     }
-
     pub fn gossip_watchers(&self) -> &HashMap<SubscriptionId, Arc<SubscriptionInfo>> {
         &self.gossip_watchers
     }
-
     pub fn node_progress_watchers(&self) -> &HashMap<SubscriptionParams, Arc<SubscriptionInfo>> {
         &self.node_progress_watchers
     }
@@ -685,7 +661,7 @@ mod tests {
     #[test]
     fn subscription_info() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
-        let bank = Bank::new_for_tests(&genesis_config);
+        let bank = Bank::new(&genesis_config);
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
         let mut tracker = SubscriptionsTracker::new(bank_forks);
 
@@ -701,7 +677,7 @@ mod tests {
         assert_eq!(*info.last_notified_slot.read().unwrap(), 0);
 
         let account_params = SubscriptionParams::Account(AccountSubscriptionParams {
-            pubkey: Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap(),
+            pubkey: Pubkey::from_str("ToKLx75MGim1d1jRusuVX8xvdvvbSDESVaNXpRA9PHN").unwrap(),
             commitment: CommitmentConfig::finalized(),
             encoding: UiAccountEncoding::Base64Zstd,
             data_slice: None,
@@ -731,7 +707,7 @@ mod tests {
         }
 
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
-        let bank = Bank::new_for_tests(&genesis_config);
+        let bank = Bank::new(&genesis_config);
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
         let mut tracker = SubscriptionsTracker::new(bank_forks);
 
@@ -741,7 +717,7 @@ mod tests {
         assert_eq!(counts(&tracker), (0, 0, 0, 0));
 
         let account_params = SubscriptionParams::Account(AccountSubscriptionParams {
-            pubkey: Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap(),
+            pubkey: Pubkey::from_str("ToKLx75MGim1d1jRusuVX8xvdvvbSDESVaNXpRA9PHN").unwrap(),
             commitment: CommitmentConfig::finalized(),
             encoding: UiAccountEncoding::Base64Zstd,
             data_slice: None,
@@ -752,7 +728,7 @@ mod tests {
         assert_eq!(counts(&tracker), (0, 0, 0, 0));
 
         let account_params2 = SubscriptionParams::Account(AccountSubscriptionParams {
-            pubkey: Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap(),
+            pubkey: Pubkey::from_str("ToKLx75MGim1d1jRusuVX8xvdvvbSDESVaNXpRA9PHN").unwrap(),
             commitment: CommitmentConfig::confirmed(),
             encoding: UiAccountEncoding::Base64Zstd,
             data_slice: None,

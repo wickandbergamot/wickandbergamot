@@ -1,6 +1,6 @@
 import React from "react";
-import { SolBalance } from "utils";
-import { BlockResponse, PublicKey } from "@solana/web3.js";
+import { lamportsToSafeString } from "utils";
+import { BlockResponse, PublicKey } from "@safecoin/web3.js";
 import { Address } from "components/common/Address";
 
 const PAGE_SIZE = 10;
@@ -49,15 +49,11 @@ export function BlockRewardsCard({ block }: { block: BlockResponse }) {
                     <Address pubkey={new PublicKey(reward.pubkey)} link />
                   </td>
                   <td>{reward.rewardType}</td>
+                  <td>{lamportsToSafeString(reward.lamports)}</td>
                   <td>
-                    <SolBalance lamports={reward.lamports} />
-                  </td>
-                  <td>
-                    {reward.postBalance ? (
-                      <SolBalance lamports={reward.postBalance} />
-                    ) : (
-                      "-"
-                    )}
+                    {reward.postBalance
+                      ? lamportsToSafeString(reward.postBalance)
+                      : "-"}
                   </td>
                   <td>{percentChange ? percentChange + "%" : "-"}</td>
                 </tr>

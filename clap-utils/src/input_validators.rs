@@ -1,7 +1,7 @@
 use {
     crate::keypair::{parse_signer_source, SignerSourceKind, ASK_KEYWORD},
     chrono::DateTime,
-    solana_sdk::{
+    safecoin_sdk::{
         clock::{Epoch, Slot},
         hash::Hash,
         pubkey::{Pubkey, MAX_SEED_LEN},
@@ -213,10 +213,10 @@ where
 
 pub fn normalize_to_url_if_moniker<T: AsRef<str>>(url_or_moniker: T) -> String {
     match url_or_moniker.as_ref() {
-        "m" | "mainnet-beta" => "https://api.mainnet-beta.solana.com",
-        "t" | "testnet" => "https://api.testnet.solana.com",
-        "d" | "devnet" => "https://api.devnet.solana.com",
-        "l" | "localhost" => "http://localhost:8899",
+        "m" | "mainnet-beta" => "https://api.mainnet-beta.safecoin.org",
+        "t" | "testnet" => "https://api.testnet.safecoin.org",
+        "d" | "devnet" => "https://api.devnet.safecoin.org",
+        "l" | "localhost" => "http://localhost:8328",
         url => url,
     }
     .to_string()
@@ -234,22 +234,6 @@ where
     T: AsRef<str> + Display,
 {
     is_parsable_generic::<Slot, _>(slot)
-}
-
-pub fn is_pow2<T>(bins: T) -> Result<(), String>
-where
-    T: AsRef<str> + Display,
-{
-    bins.as_ref()
-        .parse::<usize>()
-        .map_err(|e| format!("Unable to parse, provided: {}, err: {}", bins, e))
-        .and_then(|v| {
-            if !v.is_power_of_two() {
-                Err(format!("Must be a power of 2: {}", v))
-            } else {
-                Ok(())
-            }
-        })
 }
 
 pub fn is_port<T>(port: T) -> Result<(), String>

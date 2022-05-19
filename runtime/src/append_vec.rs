@@ -1,14 +1,11 @@
-//! Persistent storage for accounts.
-//!
-//! For more information, see:
-//!
-//! <https://docs.solana.com/implemented-proposals/persistent-account-storage>
+//! Persistent storage for accounts. For more information, see:
+//! https://docs.solana.com/implemented-proposals/persistent-account-storage
 
 use {
     log::*,
     memmap2::MmapMut,
     serde::{Deserialize, Serialize},
-    solana_sdk::{
+    safecoin_sdk::{
         account::{Account, AccountSharedData, ReadableAccount},
         clock::{Epoch, Slot},
         hash::Hash,
@@ -16,7 +13,6 @@ use {
     },
     std::{
         borrow::Borrow,
-        convert::TryFrom,
         fs::{remove_file, OpenOptions},
         io::{self, Seek, SeekFrom, Write},
         mem,
@@ -37,7 +33,7 @@ macro_rules! u64_align {
     };
 }
 
-const MAXIMUM_APPEND_VEC_FILE_SIZE: u64 = 16 * 1024 * 1024 * 1024; // 16 GiB
+const MAXIMUM_APPEND_VEC_FILE_SIZE: usize = 16 * 1024 * 1024 * 1024; // 16 GiB
 
 pub type StoredMetaWriteVersion = u64;
 
@@ -260,10 +256,7 @@ impl AppendVec {
                 std::io::ErrorKind::Other,
                 format!("too small file size {} for AppendVec", file_size),
             ))
-        } else if usize::try_from(MAXIMUM_APPEND_VEC_FILE_SIZE)
-            .map(|max| file_size > max)
-            .unwrap_or(true)
-        {
+        } else if file_size > MAXIMUM_APPEND_VEC_FILE_SIZE {
             Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 format!("too large file size {} for AppendVec", file_size),
@@ -539,7 +532,7 @@ pub mod test_utils {
     use {
         super::StoredMeta,
         rand::{distributions::Alphanumeric, thread_rng, Rng},
-        solana_sdk::{account::AccountSharedData, pubkey::Pubkey},
+        safecoin_sdk::{account::AccountSharedData, pubkey::Pubkey},
         std::{fs::create_dir_all, path::PathBuf},
     };
 
@@ -588,7 +581,7 @@ pub mod tests {
         super::{test_utils::*, *},
         assert_matches::assert_matches,
         rand::{thread_rng, Rng},
-        solana_sdk::{account::WritableAccount, timing::duration_as_ms},
+        safecoin_sdk::{account::WritableAccount, timing::duration_as_ms},
         std::time::Instant,
     };
 
@@ -791,7 +784,7 @@ pub mod tests {
         let mut av = AppendVec::new(path, true, 1024 * 1024);
         av.set_no_remove_on_drop();
 
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = safecoin_sdk::pubkey::new_rand();
         let owner = Pubkey::default();
         let data_len = 3_u64;
         let mut account = AccountSharedData::new(0, data_len as usize, &owner);

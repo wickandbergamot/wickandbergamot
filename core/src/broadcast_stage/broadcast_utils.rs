@@ -1,10 +1,9 @@
 use {
     crate::result::Result,
-    solana_entry::entry::Entry,
-    solana_ledger::shred::Shred,
+    solana_ledger::{entry::Entry, shred::Shred},
     solana_poh::poh_recorder::WorkingBankEntry,
     solana_runtime::bank::Bank,
-    solana_sdk::clock::Slot,
+    safecoin_sdk::clock::Slot,
     std::{
         sync::{mpsc::Receiver, Arc},
         time::{Duration, Instant},
@@ -21,7 +20,6 @@ pub(super) struct ReceiveResults {
 #[derive(Clone)]
 pub struct UnfinishedSlotInfo {
     pub next_shred_index: u32,
-    pub(crate) next_code_index: u32,
     pub slot: Slot,
     pub parent: Slot,
     // Data shreds buffered to make a batch of size
@@ -85,7 +83,7 @@ mod tests {
     use {
         super::*,
         solana_ledger::genesis_utils::{create_genesis_config, GenesisConfigInfo},
-        solana_sdk::{
+        safecoin_sdk::{
             genesis_config::GenesisConfig, pubkey::Pubkey, system_transaction,
             transaction::Transaction,
         },
@@ -98,10 +96,10 @@ mod tests {
             mint_keypair,
             ..
         } = create_genesis_config(2);
-        let bank0 = Arc::new(Bank::new_for_tests(&genesis_config));
+        let bank0 = Arc::new(Bank::new(&genesis_config));
         let tx = system_transaction::transfer(
             &mint_keypair,
-            &solana_sdk::pubkey::new_rand(),
+            &safecoin_sdk::pubkey::new_rand(),
             1,
             genesis_config.hash(),
         );

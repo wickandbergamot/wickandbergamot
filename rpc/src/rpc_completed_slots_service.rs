@@ -1,8 +1,8 @@
 use {
     crate::rpc_subscriptions::RpcSubscriptions,
-    solana_client::rpc_response::SlotUpdate,
+    safecoin_client::rpc_response::SlotUpdate,
     solana_ledger::blockstore::CompletedSlotsReceiver,
-    solana_sdk::timing::timestamp,
+    safecoin_sdk::timing::timestamp,
     std::{
         sync::Arc,
         thread::{Builder, JoinHandle},

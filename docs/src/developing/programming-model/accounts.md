@@ -18,7 +18,7 @@ and collects rent. Any account that drops to zero lamports is purged. Accounts
 can also be marked [rent-exempt](#rent-exemption) if they contain a sufficient
 number of lamports.
 
-In the same way that a Linux user uses a path to look up a file, a Solana client
+In the same way that a Linux user uses a path to look up a file, a Safecoin client
 uses an _address_ to look up an account. The address is a 256-bit public key.
 
 ## Signers
@@ -118,10 +118,10 @@ One example is when programs use a sysvar account. Unless the program checks the
 account's address or owner, it's impossible to be sure whether it's a real and
 valid sysvar account merely by successful deserialization of the account's data.
 
-Accordingly, the Solana SDK [checks the sysvar account's validity during
-deserialization](https://github.com/solana-labs/solana/blob/a95675a7ce1651f7b59443eb146b356bc4b3f374/sdk/program/src/sysvar/mod.rs#L65).
+Accordingly, the Safecoin SDK [checks the sysvar account's validity during
+deserialization](https://github.com/fair-exchange/safecoin/blob/a95675a7ce1651f7b59443eb146b356bc4b3f374/sdk/program/src/sysvar/mod.rs#L65).
 A alternative and safer way to read a sysvar is via the sysvar's [`get()`
-function](https://github.com/solana-labs/solana/blob/64bfc14a75671e4ec3fe969ded01a599645080eb/sdk/program/src/sysvar/mod.rs#L73)
+function](https://github.com/fair-exchange/safecoin/blob/64bfc14a75671e4ec3fe969ded01a599645080eb/sdk/program/src/sysvar/mod.rs#L73)
 which doesn't require these checks.
 
 If the program always modifies the account in question, the address/owner check
@@ -130,18 +130,77 @@ and the containing transaction will be thrown out.
 
 ## Rent
 
-Keeping accounts alive on Solana incurs a storage cost called _rent_ because the
+Keeping accounts alive on Safecoin incurs a storage cost called _rent_ because the
 blockchain cluster must actively maintain the data to process any future transactions.
 This is different from Bitcoin and Ethereum, where storing accounts doesn't
 incur any costs.
 
-Currently, all new accounts are required to be rent-exempt.
+The rent is debited from an account's balance by the runtime upon the first
+access (including the initial account creation) in the current epoch by
+transactions or once per an epoch if there are no transactions. The fee is
+currently a fixed rate, measured in bytes-times-epochs. The fee may change in
+the future.
+
+For the sake of simple rent calculation, rent is always collected for a single,
+full epoch. Rent is not pro-rated, meaning there are neither fees nor refunds
+for partial epochs. This means that, on account creation, the first rent
+collected isn't for the current partial epoch, but collected up front for the
+next full epoch. Subsequent rent collections are for further future epochs. On
+the other end, if the balance of an already-rent-collected account drops below
+another rent fee mid-epoch, the account will continue to exist through the
+current epoch and be purged immediately at the start of the upcoming epoch.
+
+Accounts can be exempt from paying rent if they maintain a minimum balance. This
+rent-exemption is described below.
+
+### Calculation of rent
+
+Note: The rent rate can change in the future.
+
+As of writing, the fixed rent fee is 19.055441478439427 lamports per byte-epoch
+on the testnet and mainnet-beta clusters. An [epoch](terminology.md#epoch) is
+targeted to be 2 days (For devnet, the rent fee is 0.3608183131797095 lamports
+per byte-epoch with its 54m36s-long epoch).
+
+This value is calculated to target 0.01 SAFE per mebibyte-day (exactly matching
+to 3.56 SAFE per mebibyte-year):
+
+```text
+Rent fee: 19.055441478439427 = 10_000_000 (0.01 SAFE) * 365(approx. day in a year) / (1024 * 1024)(1 MiB) / (365.25/2)(epochs in 1 year)
+```
+
+And rent calculation is done with the `f64` precision and the final result is
+truncated to `u64` in lamports.
+
+The rent calculation includes account metadata (address, owner, lamports, etc)
+in the size of an account. Therefore the smallest an account can be for rent
+calculations is 128 bytes.
+
+For example, an account is created with the initial transfer of 10,000 lamports
+and no additional data. Rent is immediately debited from it on creation,
+resulting in a balance of 7,561 lamports:
+
+```text
+Rent: 2,439 = 19.055441478439427 (rent rate) * 128 bytes (minimum account size) * 1 (epoch)
+Account Balance: 7,561 = 10,000 (transfered lamports) - 2,439 (this account's rent fee for an epoch)
+```
+
+The account balance will be reduced to 5,122 lamports at the next epoch even if
+there is no activity:
+
+```text
+Account Balance: 5,122 = 7,561 (current balance) - 2,439 (this account's rent fee for an epoch)
+```
+
+Accordingly, a minimum-size account will be immediately removed after creation
+if the transferred lamports are less than or equal to 2,439.
 
 ### Rent exemption
 
-An account is considered rent-exempt if it holds at least 2 years worth of rent.
-This is checked every time an account's balance is reduced, and transactions
-that would reduce the balance to below the minimum amount will fail.
+Alternatively, an account can be made entirely exempt from rent collection by
+depositing at least 2 years worth of rent. This is checked every time an
+account's balance is reduced, and rent is immediately debited once the balance
+goes below the minimum amount.
 
 Program executable accounts are required by the runtime to be rent-exempt to
 avoid being purged.
@@ -152,19 +211,19 @@ minimum balance for a particular account size. The following calculation is
 illustrative only.
 
 For example, a program executable with the size of 15,000 bytes requires a
-balance of 105,290,880 lamports (=~ 0.105 SOL) to be rent-exempt:
+balance of 105,290,880 lamports (=~ 0.105 SAFE) to be rent-exempt:
 
 ```text
 105,290,880 = 19.055441478439427 (fee rate) * (128 + 15_000)(account size including metadata) * ((365.25/2) * 2)(epochs in 2 years)
 ```
 
-Rent can also be estimated via the [`solana rent` CLI subcommand](cli/usage.md#solana-rent)
+Rent can also be estimated via the [`safecoin rent` CLI subcommand](cli/usage.md#solana-rent)
 
 ```text
-$ solana rent 15000
-Rent per byte-year: 0.00000348 SOL
-Rent per epoch: 0.000288276 SOL
-Rent-exempt minimum: 0.10529088 SOL
+$ safecoin rent 15000
+Rent per byte-year: 0.00000348 SAFE
+Rent per epoch: 0.000288276 SAFE
+Rent-exempt minimum: 0.10529088 SAFE
 ```
 
 Note: Rest assured that, should the storage rent rate need to be increased at some

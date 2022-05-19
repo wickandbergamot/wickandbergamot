@@ -1,13 +1,12 @@
 use {
-    crate::accounts_db::SnapshotStorage, log::*, solana_measure::measure::Measure,
-    solana_sdk::clock::Slot, std::ops::Range,
+    crate::accounts_db::SnapshotStorage, log::*, safecoin_measure::measure::Measure,
+    safecoin_sdk::clock::Slot, std::ops::Range,
 };
 
 pub struct SortedStorages<'a> {
     range: Range<Slot>,
     storages: Vec<Option<&'a SnapshotStorage>>,
     slot_count: usize,
-    storage_count: usize,
 }
 
 impl<'a> SortedStorages<'a> {
@@ -30,10 +29,6 @@ impl<'a> SortedStorages<'a> {
 
     pub fn slot_count(&self) -> usize {
         self.slot_count
-    }
-
-    pub fn storage_count(&self) -> usize {
-        self.storage_count
     }
 
     // assumptions:
@@ -83,9 +78,7 @@ impl<'a> SortedStorages<'a> {
         let mut slot_count = 0;
         let mut time = Measure::start("get slot");
         let source_ = source.clone();
-        let mut storage_count = 0;
-        source_.for_each(|(storages, slot)| {
-            storage_count += storages.len();
+        source_.for_each(|(_, slot)| {
             slot_count += 1;
             adjust_min_max(*slot);
         });
@@ -115,7 +108,6 @@ impl<'a> SortedStorages<'a> {
             range,
             storages,
             slot_count,
-            storage_count,
         }
     }
 }
@@ -139,7 +131,6 @@ pub mod tests {
                 range,
                 storages,
                 slot_count,
-                storage_count: 0,
             }
         }
     }

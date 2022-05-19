@@ -8,7 +8,7 @@ import {
   PublicKey,
   SignatureResult,
   TransactionSignature,
-} from "@solana/web3.js";
+} from "@safecoin/web3.js";
 import { BpfLoaderDetailsCard } from "components/instruction/bpf-loader/BpfLoaderDetailsCard";
 import { MemoDetailsCard } from "components/instruction/MemoDetailsCard";
 import { SerumDetailsCard } from "components/instruction/SerumDetailsCard";
@@ -29,7 +29,7 @@ import { isSerumInstruction } from "components/instruction/serum/types";
 import { isTokenLendingInstruction } from "components/instruction/token-lending/types";
 import { isTokenSwapInstruction } from "components/instruction/token-swap/types";
 import { isBonfidaBotInstruction } from "components/instruction/bonfida-bot/types";
-import { useFetchTransactionDetails } from "providers/transactions/parsed";
+import { useFetchTransactionDetails } from "providers/transactions/details";
 import {
   useTransactionDetails,
   useTransactionStatus,
@@ -39,8 +39,6 @@ import { BpfUpgradeableLoaderDetailsCard } from "components/instruction/bpf-upgr
 import { VoteDetailsCard } from "components/instruction/vote/VoteDetailsCard";
 import { isWormholeInstruction } from "components/instruction/wormhole/types";
 import { AssociatedTokenDetailsCard } from "components/instruction/AssociatedTokenDetailsCard";
-import { isMangoInstruction } from "components/instruction/mango/types";
-import { MangoDetailsCard } from "components/instruction/MangoDetails";
 
 export type InstructionDetailsProps = {
   tx: ParsedTransaction;
@@ -167,7 +165,7 @@ function renderInstructionCard({
     };
 
     switch (ix.program) {
-      case "spl-token":
+      case "safe-token":
         return <TokenDetailsCard {...props} />;
       case "bpf-loader":
         return <BpfLoaderDetailsCard {...props} />;
@@ -177,9 +175,9 @@ function renderInstructionCard({
         return <SystemDetailsCard {...props} />;
       case "stake":
         return <StakeDetailsCard {...props} />;
-      case "spl-memo":
+      case "safe-memo":
         return <MemoDetailsCard {...props} />;
-      case "spl-associated-token-account":
+      case "safe-associated-token-account":
         return <AssociatedTokenDetailsCard {...props} />;
       case "vote":
         return <VoteDetailsCard {...props} />;
@@ -210,8 +208,6 @@ function renderInstructionCard({
 
   if (isBonfidaBotInstruction(transactionIx)) {
     return <BonfidaBotDetailsCard key={key} {...props} />;
-  } else if (isMangoInstruction(transactionIx)) {
-    return <MangoDetailsCard key={key} {...props} />;
   } else if (isSerumInstruction(transactionIx)) {
     return <SerumDetailsCard key={key} {...props} />;
   } else if (isTokenSwapInstruction(transactionIx)) {

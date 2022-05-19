@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Fetches the latest SPL programs and produces the solana-genesis command-line
+# Fetches the latest SPL programs and produces the safecoin-genesis command-line
 # arguments needed to install them
 #
 
@@ -29,7 +29,7 @@ fetch_program() {
       set -x
       curl -L --retry 5 --retry-delay 2 --retry-connrefused \
         -o "$so" \
-        "https://github.com/solana-labs/solana-program-library/releases/download/$name-v$version/$so_name"
+        "https://github.com/fair-exchange/safecoin-program-library/releases/download/$name-v$version/$so_name"
     )
 
     mkdir -p ~/.cache/solana-spl
@@ -38,11 +38,11 @@ fetch_program() {
 
 }
 
-fetch_program token 3.2.0 TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA BPFLoader2111111111111111111111111111111111
-fetch_program memo  1.0.0 Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMNo BPFLoader1111111111111111111111111111111111
-fetch_program memo  3.0.0 MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr BPFLoader2111111111111111111111111111111111
-fetch_program associated-token-account 1.0.3 ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL BPFLoader2111111111111111111111111111111111
-fetch_program feature-proposal 1.0.0 Feat1YXHhH6t1juaWF74WLcfv4XoNocjXA6sPWHNgAse BPFLoader2111111111111111111111111111111111
+fetch_program token 3.2.0 ToKLx75MGim1d1jRusuVX8xvdvvbSDESVaNXpRA9PHN BPFLoader2111111111111111111111111111111111
+fetch_program memo  1.0.0 MEMDqRW2fYAU19mcFnoDVoqG4Br4t7TdyWjjv38P6Nc BPFLoader1111111111111111111111111111111111
+fetch_program memo  3.0.0 MEMWKbqsjEB8o972BvDHExZFSauzGZKvB4xHDVPFowh BPFLoader2111111111111111111111111111111111
+fetch_program associated-token-account 1.0.3 AToD9iqHSc2fhEP9Jp7UYA6mRjHQ4CTWyzCsw8X3tH7K BPFLoader2111111111111111111111111111111111
+fetch_program feature-proposal 1.0.0 FEAj1Fwb2c9Kx9uHLGB2WH4Qhp2vACsJoudMVYHfE3ek BPFLoader2111111111111111111111111111111111
 
 echo "${genesis_args[@]}" > spl-genesis-args.sh
 
@@ -51,5 +51,5 @@ echo "Available SPL programs:"
 ls -l spl_*.so
 
 echo
-echo "solana-genesis command-line arguments (spl-genesis-args.sh):"
+echo "safecoin-genesis command-line arguments (spl-genesis-args.sh):"
 cat spl-genesis-args.sh

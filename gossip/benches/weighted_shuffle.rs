@@ -5,7 +5,7 @@ extern crate test;
 use {
     rand::{Rng, SeedableRng},
     rand_chacha::ChaChaRng,
-    solana_gossip::weighted_shuffle::{weighted_shuffle, WeightedShuffle},
+    safecoin_gossip::weighted_shuffle::{weighted_shuffle, WeightedShuffle},
     std::iter::repeat_with,
     test::Bencher,
 };
@@ -21,7 +21,7 @@ fn bench_weighted_shuffle_old(bencher: &mut Bencher) {
     let weights = make_weights(&mut rng);
     bencher.iter(|| {
         rng.fill(&mut seed[..]);
-        weighted_shuffle::<u64, &u64, std::slice::Iter<'_, u64>>(weights.iter(), seed);
+        weighted_shuffle(&weights, seed);
     });
 }
 
@@ -32,8 +32,8 @@ fn bench_weighted_shuffle_new(bencher: &mut Bencher) {
     let weights = make_weights(&mut rng);
     bencher.iter(|| {
         rng.fill(&mut seed[..]);
-        WeightedShuffle::new("", &weights)
-            .shuffle(&mut ChaChaRng::from_seed(seed))
+        WeightedShuffle::new(&mut ChaChaRng::from_seed(seed), &weights)
+            .unwrap()
             .collect::<Vec<_>>()
     });
 }

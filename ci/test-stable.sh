@@ -39,28 +39,28 @@ test-stable-bpf)
   # rustfilt required for dumping BPF assembly listings
   "$cargo" install rustfilt
 
-  # solana-keygen required when building C programs
+  # safecoin-keygen required when building C programs
   _ "$cargo" build --manifest-path=keygen/Cargo.toml
-
   export PATH="$PWD/target/debug":$PATH
   cargo_build_bpf="$(realpath ./cargo-build-bpf)"
-  cargo_test_bpf="$(realpath ./cargo-test-bpf)"
 
-  # BPF solana-sdk legacy compile test
+  # BPF safecoin-sdk legacy compile test
   "$cargo_build_bpf" --manifest-path sdk/Cargo.toml
 
-  # BPF C program system tests
+  # BPF Program unit tests
+  "$cargo" test --manifest-path programs/bpf/Cargo.toml
+  "$cargo_build_bpf" --manifest-path programs/bpf/Cargo.toml --bpf-sdk sdk/bpf
+
+  # BPF program system tests
   _ make -C programs/bpf/c tests
   _ "$cargo" stable test \
     --manifest-path programs/bpf/Cargo.toml \
     --no-default-features --features=bpf_c,bpf_rust -- --nocapture
 
-  # BPF Rust program unit tests
+  # Dump BPF program assembly listings
   for bpf_test in programs/bpf/rust/*; do
     if pushd "$bpf_test"; then
-      "$cargo" test
-      "$cargo_build_bpf" --bpf-sdk ../../../../sdk/bpf --dump
-      "$cargo_test_bpf" --bpf-sdk ../../../../sdk/bpf
+      "$cargo_build_bpf" --dump
       popd
     fi
   done
@@ -87,15 +87,15 @@ test-stable-perf)
     rm -rf target/perf-libs
     ./fetch-perf-libs.sh
 
-    # Force CUDA for solana-core unit tests
+    # Force CUDA for safecoin-core unit tests
     export TEST_PERF_LIBS_CUDA=1
 
     # Force CUDA in ci/localnet-sanity.sh
-    export SOLANA_CUDA=1
+    export SAFECOIN_CUDA=1
   fi
 
   _ "$cargo" stable build --bins ${V:+--verbose}
-  _ "$cargo" stable test --package solana-perf --package solana-ledger --package solana-core --lib ${V:+--verbose} -- --nocapture
+  _ "$cargo" stable test --package safecoin-perf --package safecoin-ledger --package safecoin-core --lib ${V:+--verbose} -- --nocapture
   _ "$cargo" stable run --manifest-path poh-bench/Cargo.toml ${V:+--verbose} -- --hashes-per-tick 10
   ;;
 test-local-cluster)
@@ -111,19 +111,6 @@ test-local-cluster-flakey)
 test-local-cluster-slow)
   _ "$cargo" stable build --release --bins ${V:+--verbose}
   _ "$cargo" stable test --release --package solana-local-cluster --test local_cluster_slow ${V:+--verbose} -- --nocapture --test-threads=1
-  exit 0
-  ;;
-test-wasm)
-  _ node --version
-  _ npm --version
-  for dir in sdk/{program,}; do
-    if [[ -r "$dir"/package.json ]]; then
-      pushd "$dir"
-      _ npm install
-      _ npm test
-      popd
-    fi
-  done
   exit 0
   ;;
 *)

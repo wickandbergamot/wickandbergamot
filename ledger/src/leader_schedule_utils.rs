@@ -1,7 +1,7 @@
 use {
     crate::leader_schedule::LeaderSchedule,
     solana_runtime::bank::Bank,
-    solana_sdk::{
+    safecoin_sdk::{
         clock::{Epoch, Slot, NUM_CONSECUTIVE_LEADER_SLOTS},
         pubkey::Pubkey,
     },
@@ -13,10 +13,7 @@ pub fn leader_schedule(epoch: Epoch, bank: &Bank) -> Option<LeaderSchedule> {
     bank.epoch_staked_nodes(epoch).map(|stakes| {
         let mut seed = [0u8; 32];
         seed[0..8].copy_from_slice(&epoch.to_le_bytes());
-        let mut stakes: Vec<_> = stakes
-            .iter()
-            .map(|(pubkey, stake)| (*pubkey, *stake))
-            .collect();
+        let mut stakes: Vec<_> = stakes.into_iter().collect();
         sort_stakes(&mut stakes);
         LeaderSchedule::new(
             &stakes,
@@ -88,17 +85,13 @@ mod tests {
 
     #[test]
     fn test_leader_schedule_via_bank() {
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = safecoin_sdk::pubkey::new_rand();
         let genesis_config =
             create_genesis_config_with_leader(0, &pubkey, bootstrap_validator_stake_lamports())
                 .genesis_config;
-        let bank = Bank::new_for_tests(&genesis_config);
+        let bank = Bank::new(&genesis_config);
 
-        let pubkeys_and_stakes: Vec<_> = bank
-            .staked_nodes()
-            .iter()
-            .map(|(pubkey, stake)| (*pubkey, *stake))
-            .collect();
+        let pubkeys_and_stakes: Vec<_> = bank.staked_nodes().into_iter().collect();
         let seed = [0u8; 32];
         let leader_schedule = LeaderSchedule::new(
             &pubkeys_and_stakes,
@@ -114,18 +107,18 @@ mod tests {
 
     #[test]
     fn test_leader_scheduler1_basic() {
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = safecoin_sdk::pubkey::new_rand();
         let genesis_config =
             create_genesis_config_with_leader(42, &pubkey, bootstrap_validator_stake_lamports())
                 .genesis_config;
-        let bank = Bank::new_for_tests(&genesis_config);
+        let bank = Bank::new(&genesis_config);
         assert_eq!(slot_leader_at(bank.slot(), &bank).unwrap(), pubkey);
     }
 
     #[test]
     fn test_sort_stakes_basic() {
-        let pubkey0 = solana_sdk::pubkey::new_rand();
-        let pubkey1 = solana_sdk::pubkey::new_rand();
+        let pubkey0 = safecoin_sdk::pubkey::new_rand();
+        let pubkey1 = safecoin_sdk::pubkey::new_rand();
         let mut stakes = vec![(pubkey0, 1), (pubkey1, 2)];
         sort_stakes(&mut stakes);
         assert_eq!(stakes, vec![(pubkey1, 2), (pubkey0, 1)]);
@@ -133,8 +126,8 @@ mod tests {
 
     #[test]
     fn test_sort_stakes_with_dup() {
-        let pubkey0 = solana_sdk::pubkey::new_rand();
-        let pubkey1 = solana_sdk::pubkey::new_rand();
+        let pubkey0 = safecoin_sdk::pubkey::new_rand();
+        let pubkey1 = safecoin_sdk::pubkey::new_rand();
         let mut stakes = vec![(pubkey0, 1), (pubkey1, 2), (pubkey0, 1)];
         sort_stakes(&mut stakes);
         assert_eq!(stakes, vec![(pubkey1, 2), (pubkey0, 1)]);
@@ -143,7 +136,7 @@ mod tests {
     #[test]
     fn test_sort_stakes_with_equal_stakes() {
         let pubkey0 = Pubkey::default();
-        let pubkey1 = solana_sdk::pubkey::new_rand();
+        let pubkey1 = safecoin_sdk::pubkey::new_rand();
         let mut stakes = vec![(pubkey0, 1), (pubkey1, 1)];
         sort_stakes(&mut stakes);
         assert_eq!(stakes, vec![(pubkey1, 1), (pubkey0, 1)]);

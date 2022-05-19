@@ -6,11 +6,11 @@ use {
     clap::{App, AppSettings, Arg, ArgMatches, SubCommand},
     console::style,
     serde::{Deserialize, Deserializer, Serialize, Serializer},
-    solana_clap_utils::{input_parsers::*, input_validators::*, keypair::*},
-    solana_cli_output::{QuietDisplay, VerboseDisplay},
-    solana_client::{client_error::ClientError, rpc_client::RpcClient},
-    solana_remote_wallet::remote_wallet::RemoteWalletManager,
-    solana_sdk::{
+    safecoin_clap_utils::{input_parsers::*, input_validators::*, keypair::*},
+    safecoin_cli_output::{QuietDisplay, VerboseDisplay},
+    safecoin_client::{client_error::ClientError, rpc_client::RpcClient},
+    safecoin_remote_wallet::remote_wallet::RemoteWalletManager,
+    safecoin_sdk::{
         account::Account,
         clock::Slot,
         feature::{self, Feature},
@@ -28,8 +28,6 @@ use {
     },
 };
 
-const DEFAULT_MAX_ACTIVE_DISPLAY_AGE_SLOTS: Slot = 15_000_000; // ~90days
-
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ForceActivation {
     No,
@@ -41,7 +39,6 @@ pub enum ForceActivation {
 pub enum FeatureCliCommand {
     Status {
         features: Vec<Pubkey>,
-        display_all: bool,
     },
     Activate {
         feature: Pubkey,
@@ -367,11 +364,6 @@ impl FeatureSubCommands for App<'_, '_> {
                                 .index(1)
                                 .multiple(true)
                                 .help("Feature status to query [default: all known features]"),
-                        )
-                        .arg(
-                            Arg::with_name("display_all")
-                                .long("display-all")
-                                .help("display all features regardless of age"),
                         ),
                 )
                 .subcommand(
@@ -443,13 +435,9 @@ pub fn parse_feature_subcommand(
             } else {
                 FEATURE_NAMES.keys().cloned().collect()
             };
-            let display_all = matches.is_present("display_all");
             features.sort();
             CliCommandInfo {
-                command: CliCommand::Feature(FeatureCliCommand::Status {
-                    features,
-                    display_all,
-                }),
+                command: CliCommand::Feature(FeatureCliCommand::Status { features }),
                 signers: vec![],
             }
         }
@@ -464,10 +452,7 @@ pub fn process_feature_subcommand(
     feature_subcommand: &FeatureCliCommand,
 ) -> ProcessResult {
     match feature_subcommand {
-        FeatureCliCommand::Status {
-            features,
-            display_all,
-        } => process_status(rpc_client, config, features, *display_all),
+        FeatureCliCommand::Status { features } => process_status(rpc_client, config, features),
         FeatureCliCommand::Activate { feature, force } => {
             process_activate(rpc_client, config, *feature, *force)
         }
@@ -590,7 +575,7 @@ fn feature_activation_allowed(
                  stake_percent,
                  rpc_nodes_percent,
                  ..
-             }| (*stake_percent >= 95., *rpc_nodes_percent >= 95.),
+             }| (*stake_percent >= 60., *rpc_nodes_percent >= 60.),
         )
         .unwrap_or((false, false));
 
@@ -678,44 +663,33 @@ fn process_status(
     rpc_client: &RpcClient,
     config: &CliConfig,
     feature_ids: &[Pubkey],
-    display_all: bool,
 ) -> ProcessResult {
-    let filter = if !display_all {
-        let now = rpc_client.get_slot()?;
-        now.checked_sub(DEFAULT_MAX_ACTIVE_DISPLAY_AGE_SLOTS)
-    } else {
-        None
-    };
+    let mut features: Vec<CliFeature> = vec![];
     let mut inactive = false;
-    let mut features = rpc_client
+    for (i, account) in rpc_client
         .get_multiple_accounts(feature_ids)?
         .into_iter()
-        .zip(feature_ids)
-        .map(|(account, feature_id)| {
-            let feature_name = FEATURE_NAMES.get(feature_id).unwrap();
-            account
-                .and_then(status_from_account)
-                .map(|feature_status| CliFeature {
+        .enumerate()
+    {
+        let feature_id = &feature_ids[i];
+        let feature_name = FEATURE_NAMES.get(feature_id).unwrap();
+        if let Some(account) = account {
+            if let Some(feature_status) = status_from_account(account) {
+                features.push(CliFeature {
                     id: feature_id.to_string(),
                     description: feature_name.to_string(),
                     status: feature_status,
-                })
-                .unwrap_or_else(|| {
-                    inactive = true;
-                    CliFeature {
-                        id: feature_id.to_string(),
-                        description: feature_name.to_string(),
-                        status: CliFeatureStatus::Inactive,
-                    }
-                })
-        })
-        .filter(|feature| match (filter, &feature.status) {
-            (Some(min_activation), CliFeatureStatus::Active(activation)) => {
-                activation > &min_activation
+                });
+                continue;
             }
-            _ => true,
-        })
-        .collect::<Vec<_>>();
+        }
+        inactive = true;
+        features.push(CliFeature {
+            id: feature_id.to_string(),
+            description: feature_name.to_string(),
+            status: CliFeatureStatus::Inactive,
+        });
+    }
 
     features.sort_unstable();
 
@@ -760,12 +734,12 @@ fn process_activate(
 
     let rent = rpc_client.get_minimum_balance_for_rent_exemption(Feature::size_of())?;
 
-    let blockhash = rpc_client.get_latest_blockhash()?;
+    let (blockhash, fee_calculator) = rpc_client.get_recent_blockhash()?;
     let (message, _) = resolve_spend_tx_and_check_account_balance(
         rpc_client,
         false,
         SpendAmount::Some(rent),
-        &blockhash,
+        &fee_calculator,
         &config.signers[0].pubkey(),
         |lamports| {
             Message::new(

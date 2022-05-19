@@ -1,18 +1,17 @@
 use {
-    clap::{crate_name, value_t, value_t_or_exit, values_t_or_exit, App, Arg},
+    clap::{crate_name, value_t, value_t_or_exit, App, Arg},
     log::*,
-    solana_clap_utils::{
+    safecoin_clap_utils::{
         input_parsers::{pubkey_of, pubkeys_of, value_of},
         input_validators::{
-            is_parsable, is_pubkey, is_pubkey_or_keypair, is_slot, is_url_or_moniker,
+            is_pubkey, is_pubkey_or_keypair, is_slot, is_url_or_moniker,
             normalize_to_url_if_moniker,
         },
     },
-    solana_client::rpc_client::RpcClient,
-    solana_core::tower_storage::FileTowerStorage,
-    solana_faucet::faucet::{run_local_faucet_with_port, FAUCET_PORT},
-    solana_rpc::{rpc::JsonRpcConfig, rpc_pubsub_service::PubSubConfig},
-    solana_sdk::{
+    safecoin_client::rpc_client::RpcClient,
+    safecoin_faucet::faucet::{run_local_faucet_with_port, FAUCET_PORT},
+    solana_rpc::rpc::JsonRpcConfig,
+    safecoin_sdk::{
         account::AccountSharedData,
         clock::Slot,
         epoch_schedule::{EpochSchedule, MINIMUM_SLOTS_PER_EPOCH},
@@ -24,10 +23,9 @@ use {
         system_program,
     },
     solana_streamer::socket::SocketAddrSpace,
-    solana_test_validator::*,
-    solana_validator::{
+    safecoin_validator::{
         admin_rpc_service, dashboard::Dashboard, ledger_lockfile, lock_ledger, println_name_value,
-        redirect_stderr_to_file,
+        redirect_stderr_to_file, test_validator::*,
     },
     std::{
         collections::HashSet,
@@ -42,11 +40,11 @@ use {
 
 /* 10,000 was derived empirically by watching the size
  * of the rocksdb/ directory self-limit itself to the
- * 40MB-150MB range when running `solana-test-validator`
+ * 40MB-150MB range when running `safecoin-test-validator`
  */
 const DEFAULT_MAX_LEDGER_SHREDS: u64 = 10_000;
 
-const DEFAULT_FAUCET_SOL: f64 = 1_000_000.;
+const DEFAULT_FAUCET_SAFE: f64 = 1_000_000.;
 
 #[derive(PartialEq)]
 enum Output {
@@ -59,9 +57,9 @@ fn main() {
     let default_rpc_port = rpc_port::DEFAULT_RPC_PORT.to_string();
     let default_faucet_port = FAUCET_PORT.to_string();
     let default_limit_ledger_size = DEFAULT_MAX_LEDGER_SHREDS.to_string();
-    let default_faucet_sol = DEFAULT_FAUCET_SOL.to_string();
+    let default_faucet_sol = DEFAULT_FAUCET_SAFE.to_string();
 
-    let matches = App::new("solana-test-validator")
+    let matches = App::new("safecoin-test-validator")
         .about("Test Validator")
         .version(solana_version::version!())
         .arg({
@@ -71,7 +69,7 @@ fn main() {
                 .value_name("PATH")
                 .takes_value(true)
                 .help("Configuration file to use");
-            if let Some(ref config_file) = *solana_cli_config::CONFIG_FILE {
+            if let Some(ref config_file) = *safecoin_cli_config::CONFIG_FILE {
                 arg.default_value(config_file)
             } else {
                 arg
@@ -85,7 +83,7 @@ fn main() {
                 .takes_value(true)
                 .validator(is_url_or_moniker)
                 .help(
-                    "URL for Solana's JSON RPC or moniker (or their first letter): \
+                    "URL for Safecoin's JSON RPC or moniker (or their first letter): \
                    [mainnet-beta, testnet, devnet, localhost]",
                 ),
         )
@@ -142,7 +140,7 @@ fn main() {
                 .value_name("PORT")
                 .takes_value(true)
                 .default_value(&default_faucet_port)
-                .validator(solana_validator::port_validator)
+                .validator(safecoin_validator::port_validator)
                 .help("Enable the faucet on this port"),
         )
         .arg(
@@ -151,14 +149,8 @@ fn main() {
                 .value_name("PORT")
                 .takes_value(true)
                 .default_value(&default_rpc_port)
-                .validator(solana_validator::port_validator)
+                .validator(safecoin_validator::port_validator)
                 .help("Enable JSON RPC on this port, and the next port for the RPC websocket"),
-        )
-        .arg(
-            Arg::with_name("rpc_pubsub_enable_vote_subscription")
-                .long("rpc-pubsub-enable-vote-subscription")
-                .takes_value(false)
-                .help("Enable the unstable RPC PubSub `voteSubscribe` subscription"),
         )
         .arg(
             Arg::with_name("bpf_program")
@@ -174,31 +166,10 @@ fn main() {
                 ),
         )
         .arg(
-            Arg::with_name("account")
-                .long("account")
-                .value_name("ADDRESS FILENAME.JSON")
-                .takes_value(true)
-                .number_of_values(2)
-                .multiple(true)
-                .help(
-                    "Load an account from the provided JSON file (see `solana account --help` on how to dump \
-                        an account to file). Files are searched for relatively to CWD and tests/fixtures. \
-                        If the ledger already exists then this parameter is silently ignored",
-                ),
-        )
-        .arg(
             Arg::with_name("no_bpf_jit")
                 .long("no-bpf-jit")
                 .takes_value(false)
                 .help("Disable the just-in-time compiler and instead use the interpreter for BPF. Windows always disables JIT."),
-        )
-        .arg(
-            Arg::with_name("ticks_per_slot")
-                .long("ticks-per-slot")
-                .value_name("TICKS")
-                .validator(is_parsable::<u64>)
-                .takes_value(true)
-                .help("The number of ticks in a slot"),
         )
         .arg(
             Arg::with_name("slots_per_epoch")
@@ -245,7 +216,7 @@ fn main() {
                 .long("dynamic-port-range")
                 .value_name("MIN_PORT-MAX_PORT")
                 .takes_value(true)
-                .validator(solana_validator::port_range_validator)
+                .validator(safecoin_validator::port_range_validator)
                 .help(
                     "Range to use for dynamically assigned ports \
                     [default: 1024-65535]",
@@ -303,36 +274,12 @@ fn main() {
             Arg::with_name("faucet_sol")
                 .long("faucet-sol")
                 .takes_value(true)
-                .value_name("SOL")
+                .value_name("SAFE")
                 .default_value(default_faucet_sol.as_str())
                 .help(
-                    "Give the faucet address this much SOL in genesis. \
+                    "Give the faucet address this much SAFE in genesis. \
                      If the ledger already exists then this parameter is silently ignored",
                 ),
-        )
-        .arg(
-            Arg::with_name("geyser_plugin_config")
-                .long("geyser-plugin-config")
-                .alias("accountsdb-plugin-config")
-                .value_name("FILE")
-                .takes_value(true)
-                .multiple(true)
-                .hidden(true)
-                .help("Specify the configuration file for the Geyser plugin."),
-        )
-        .arg(
-            Arg::with_name("no_accounts_db_caching")
-                .long("no-accounts-db-caching")
-                .help("Disables accounts caching"),
-        )
-        .arg(
-            Arg::with_name("deactivate_feature")
-                .long("deactivate-feature")
-                .takes_value(true)
-                .value_name("FEATURE_PUBKEY")
-                .validator(is_pubkey)
-                .multiple(true)
-                .help("deactivate this feature in genesis.")
         )
         .get_matches();
 
@@ -401,9 +348,9 @@ fn main() {
     // TODO: Ideally test-validator should *only* allow private addresses.
     let socket_addr_space = SocketAddrSpace::new(/*allow_private_addr=*/ true);
     let cli_config = if let Some(config_file) = matches.value_of("config_file") {
-        solana_cli_config::Config::load(config_file).unwrap_or_default()
+        safecoin_cli_config::Config::load(config_file).unwrap_or_default()
     } else {
-        solana_cli_config::Config::default()
+        safecoin_cli_config::Config::default()
     };
 
     let cluster_rpc_client = value_t!(matches, "json_rpc_url", String)
@@ -419,9 +366,7 @@ fn main() {
         });
 
     let rpc_port = value_t_or_exit!(matches, "rpc_port", u16);
-    let enable_vote_subscription = matches.is_present("rpc_pubsub_enable_vote_subscription");
     let faucet_port = value_t_or_exit!(matches, "faucet_port", u16);
-    let ticks_per_slot = value_t!(matches, "ticks_per_slot", u64).ok();
     let slots_per_epoch = value_t!(matches, "slots_per_epoch", Slot).ok();
     let gossip_host = matches.value_of("gossip_host").map(|gossip_host| {
         solana_net_utils::parse_host(gossip_host).unwrap_or_else(|err| {
@@ -448,7 +393,7 @@ fn main() {
         faucet_port,
     ));
 
-    let mut programs_to_load = vec![];
+    let mut programs = vec![];
     if let Some(values) = matches.values_of("bpf_program") {
         let values: Vec<&str> = values.collect::<Vec<_>>();
         for address_program in values.chunks(2) {
@@ -471,9 +416,9 @@ fn main() {
                         exit(1);
                     }
 
-                    programs_to_load.push(ProgramInfo {
+                    programs.push(ProgramInfo {
                         program_id: address,
-                        loader: solana_sdk::bpf_loader::id(),
+                        loader: safecoin_sdk::bpf_loader::id(),
                         program_path,
                     });
                 }
@@ -482,25 +427,7 @@ fn main() {
         }
     }
 
-    let mut accounts_to_load = vec![];
-    if let Some(values) = matches.values_of("account") {
-        let values: Vec<&str> = values.collect::<Vec<_>>();
-        for address_filename in values.chunks(2) {
-            match address_filename {
-                [address, filename] => {
-                    let address = address.parse::<Pubkey>().unwrap_or_else(|err| {
-                        println!("Error: invalid address {}: {}", address, err);
-                        exit(1);
-                    });
-
-                    accounts_to_load.push(AccountInfo { address, filename });
-                }
-                _ => unreachable!(),
-            }
-        }
-    }
-
-    let accounts_to_clone: HashSet<_> = pubkeys_of(&matches, "clone_account")
+    let clone_accounts: HashSet<_> = pubkeys_of(&matches, "clone_account")
         .map(|v| v.into_iter().collect())
         .unwrap_or_default();
 
@@ -558,18 +485,13 @@ fn main() {
         });
     }
 
-    let features_to_deactivate = pubkeys_of(&matches, "deactivate_feature").unwrap_or_default();
-
     if TestValidatorGenesis::ledger_exists(&ledger_path) {
         for (name, long) in &[
             ("bpf_program", "--bpf-program"),
             ("clone_account", "--clone"),
-            ("account", "--account"),
             ("mint_address", "--mint"),
-            ("ticks_per_slot", "--ticks-per-slot"),
             ("slots_per_epoch", "--slots-per-epoch"),
             ("faucet_sol", "--faucet-sol"),
-            ("deactivate_feature", "--deactivate-feature"),
         ] {
             if matches.is_present(name) {
                 println!("{} argument ignored, ledger already exists", long);
@@ -578,18 +500,15 @@ fn main() {
     } else if random_mint {
         println_name_value(
             "\nNotice!",
-            "No wallet available. `solana airdrop` localnet SOL after creating one\n",
+            "No wallet available. `safecoin airdrop` localnet SAFE after creating one\n",
         );
     }
 
     let mut genesis = TestValidatorGenesis::default();
     genesis.max_ledger_shreds = value_of(&matches, "limit_ledger_size");
     genesis.max_genesis_archive_unpacked_size = Some(u64::MAX);
-    genesis.accounts_db_caching_enabled = !matches.is_present("no_accounts_db_caching");
 
-    let tower_storage = Arc::new(FileTowerStorage::new(ledger_path.clone()));
-
-    let admin_service_post_init = Arc::new(RwLock::new(None));
+    let admin_service_cluster_info = Arc::new(RwLock::new(None));
     admin_rpc_service::run(
         &ledger_path,
         admin_rpc_service::AdminRpcRequestMetadata {
@@ -601,8 +520,7 @@ fn main() {
             start_time: std::time::SystemTime::now(),
             validator_exit: genesis.validator_exit.clone(),
             authorized_voter_keypairs: genesis.authorized_voter_keypairs.clone(),
-            post_init: admin_service_post_init.clone(),
-            tower_storage: tower_storage.clone(),
+            cluster_info: admin_service_cluster_info.clone(),
         },
     );
     let dashboard = if output == Output::Dashboard {
@@ -620,7 +538,6 @@ fn main() {
 
     genesis
         .ledger_path(&ledger_path)
-        .tower_storage(tower_storage)
         .add_account(
             faucet_pubkey,
             AccountSharedData::new(faucet_lamports, 0, &system_program::id()),
@@ -629,21 +546,15 @@ fn main() {
             enable_rpc_transaction_history: true,
             enable_cpi_and_log_storage: true,
             faucet_addr,
-            ..JsonRpcConfig::default_for_test()
-        })
-        .pubsub_config(PubSubConfig {
-            enable_vote_subscription,
-            ..PubSubConfig::default()
+            ..JsonRpcConfig::default()
         })
         .bpf_jit(!matches.is_present("no_bpf_jit"))
         .rpc_port(rpc_port)
-        .add_programs_with_path(&programs_to_load)
-        .add_accounts_from_json_files(&accounts_to_load)
-        .deactivate_features(&features_to_deactivate);
+        .add_programs_with_path(&programs);
 
-    if !accounts_to_clone.is_empty() {
+    if !clone_accounts.is_empty() {
         genesis.clone_accounts(
-            accounts_to_clone,
+            clone_accounts,
             cluster_rpc_client
                 .as_ref()
                 .expect("bug: --url argument missing?"),
@@ -652,10 +563,6 @@ fn main() {
 
     if let Some(warp_slot) = warp_slot {
         genesis.warp_slot(warp_slot);
-    }
-
-    if let Some(ticks_per_slot) = ticks_per_slot {
-        genesis.ticks_per_slot(ticks_per_slot);
     }
 
     if let Some(slots_per_epoch) = slots_per_epoch {
@@ -684,23 +591,9 @@ fn main() {
         genesis.bind_ip_addr(bind_address);
     }
 
-    if matches.is_present("geyser_plugin_config") {
-        genesis.geyser_plugin_config_files = Some(
-            values_t_or_exit!(matches, "geyser_plugin_config", String)
-                .into_iter()
-                .map(PathBuf::from)
-                .collect(),
-        );
-    }
-
     match genesis.start_with_mint_address(mint_address, socket_addr_space) {
         Ok(test_validator) => {
-            *admin_service_post_init.write().unwrap() =
-                Some(admin_rpc_service::AdminRpcRequestMetadataPostInit {
-                    bank_forks: test_validator.bank_forks(),
-                    cluster_info: test_validator.cluster_info(),
-                    vote_account: test_validator.vote_account_address(),
-                });
+            *admin_service_cluster_info.write().unwrap() = Some(test_validator.cluster_info());
             if let Some(dashboard) = dashboard {
                 dashboard.run(Duration::from_millis(250));
             }

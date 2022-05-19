@@ -1,34 +1,34 @@
-use solana_sdk::{
+use safecoin_sdk::{
     account::{Account, AccountSharedData},
     pubkey::Pubkey,
     rent::Rent,
 };
 
-mod spl_token {
-    solana_sdk::declare_id!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+mod safe_token {
+    safecoin_sdk::declare_id!("ToKLx75MGim1d1jRusuVX8xvdvvbSDESVaNXpRA9PHN");
 }
-mod spl_memo_1_0 {
-    solana_sdk::declare_id!("Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMNo");
+mod safe_memo_1_0 {
+    safecoin_sdk::declare_id!("MEMDqRW2fYAU19mcFnoDVoqG4Br4t7TdyWjjv38P6Nc");
 }
-mod spl_memo_3_0 {
-    solana_sdk::declare_id!("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
+mod safe_memo_3_0 {
+    safecoin_sdk::declare_id!("MEMWKbqsjEB8o972BvDHExZFSauzGZKvB4xHDVPFowh");
 }
-mod spl_associated_token_account {
-    solana_sdk::declare_id!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+mod safe_associated_token_account {
+    safecoin_sdk::declare_id!("AToD9iqHSc2fhEP9Jp7UYA6mRjHQ4CTWyzCsw8X3tH7K");
 }
 
 static SPL_PROGRAMS: &[(Pubkey, &[u8])] = &[
-    (spl_token::ID, include_bytes!("programs/spl_token-3.2.0.so")),
+    (safe_token::ID, include_bytes!("programs/safe_token-3.2.0.so")),
     (
-        spl_memo_1_0::ID,
-        include_bytes!("programs/spl_memo-1.0.0.so"),
+        safe_memo_1_0::ID,
+        include_bytes!("programs/safe_memo-1.0.0.so"),
     ),
     (
-        spl_memo_3_0::ID,
-        include_bytes!("programs/spl_memo-3.0.0.so"),
+        safe_memo_3_0::ID,
+        include_bytes!("programs/safe_memo-3.0.0.so"),
     ),
     (
-        spl_associated_token_account::ID,
+        safe_associated_token_account::ID,
         include_bytes!("programs/spl_associated-token-account-1.0.3.so"),
     ),
 ];
@@ -42,7 +42,7 @@ pub fn spl_programs(rent: &Rent) -> Vec<(Pubkey, AccountSharedData)> {
                 AccountSharedData::from(Account {
                     lamports: rent.minimum_balance(elf.len()).min(1),
                     data: elf.to_vec(),
-                    owner: solana_sdk::bpf_loader::id(),
+                    owner: safecoin_sdk::bpf_loader::id(),
                     executable: true,
                     rent_epoch: 0,
                 }),

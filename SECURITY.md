@@ -5,7 +5,7 @@
 2. [Incident Response Process](#process)
 
 <a name="reporting"></a>
-## Reporting security problems to Solana
+## Reporting security problems to Safecoin
 
 **DO NOT CREATE AN ISSUE** to report a security problem. Instead, please send an
 email to security@solana.com and provide your github username so we can add you
@@ -18,33 +18,33 @@ Expect a response as fast as possible, within one business day at the latest.
 We offer bounties for critical security issues. Please see below for more details.
 
 Loss of Funds:
-$2,000,000 USD in locked SOL tokens (locked for 12 months)
+$500,000 USD in locked SAFE tokens (locked for 12 months)
 * Theft of funds without users signature from any account
 * Theft of funds without users interaction in system, token, stake, vote programs
 * Theft of funds that requires users signature - creating a vote program that drains the delegated stakes.
 
 Consensus/Safety Violations:
-$1,000,000 USD in locked SOL tokens (locked for 12 months)
+$250,000 USD in locked SAFE tokens (locked for 12 months)
 * Consensus safety violation
 * Tricking a validator to accept an optimistic confirmation or rooted slot without a double vote, etc..
 
 Other Attacks:
- $400,000 USD in locked SOL tokens (locked for 12 months)
+ $100,000 USD in locked SAFE tokens (locked for 12 months)
 * Protocol liveness attacks,
 * Eclipse attacks,
 * Remote attacks that partition the network,
 
 DoS Attacks:
-$100,000 USD in locked SOL tokens (locked for 12 months)
+$25,000 USD in locked SAFE tokens (locked for 12 months)
 * Remote resource exaustion via Non-RPC protocols
 
 RPC DoS/Crashes:
-$5,000 USD in locked SOL tokens (locked for 12 months)
+$5,000 USD in locked SAFE tokens (locked for 12 months)
 * RPC attacks
 
 Out of Scope:
 The following components are out of scope for the bounty program
-* Metrics: `/metrics` in the monorepo as well as https://metrics.solana.com
+* Metrics: `/metrics` in the monorepo as well as https://metrics.safecoin.org
 * Explorer: `/explorer` in the monorepo as well as https://explorer.solana.com
 * Any encrypted credentials, auth tokens, etc. checked into the repo
 * Bugs in dependencies. Please take them upstream!
@@ -60,12 +60,12 @@ Payment of Bug Bounties:
 * Payments for eligible bug reports are distributed monthly.
 * Bounties for all bug reports submitted in a given month are paid out in the middle of the
 following month.
-* The SOL/USD conversion rate used for payments is the market price at the end of
+* The SAFE/USD conversion rate used for payments is the market price at the end of
   the last day of the month for the month in which the bug was submitted.
 * The reference for this price is the Closing Price given by Coingecko.com on
   that date given here:
   https://www.coingecko.com/en/coins/solana/historical_data/usd#panel
-* For example, for all bugs submitted in March 2021, the SOL/USD price for bug
+* For example, for all bugs submitted in March 2021, the SAFE/USD price for bug
   payouts is the Close price on 2021-03-31 of $19.49.  This applies to all bugs
   submitted in March 2021, to be paid in mid-April 2021.
 * Bug bounties are paid out in
@@ -81,7 +81,7 @@ followed to contain, respond and remediate:
 
 ### 1. Establish a new draft security advisory
 In response to an email to security@solana.com, a member of the `solana-labs/admins` group will
-1. Create a new draft security advisory for the incident at https://github.com/solana-labs/solana/security/advisories
+1. Create a new draft security advisory for the incident at https://github.com/fair-exchange/safecoin/security/advisories
 1. Add the reporter's github user and the `solana-labs/security-incident-response` group to the draft security advisory
 1. Create a private fork of the repository (grey button towards the bottom of the page)
 1. Respond to the reporter by email, sharing a link to the draft security advisory
@@ -92,7 +92,7 @@ issue. If necessary, members of the `solana-labs/security-incident-response`
 group may add other github users to the advisory to assist.
 
 If it is determined that this not a critical network issue then the advisory
-should be closed and if more follow-up is required a normal Solana public github
+should be closed and if more follow-up is required a normal Safecoin public github
 issue should be created.
 
 ### 3. Prepare Fixes
@@ -109,7 +109,7 @@ core development team.
 ### 4. Notify Security Group Validators
 Once an ETA is available for the fix, a member of the
 `solana-labs/security-incident-response` group should notify the validators so
-they can prepare for an update using the "Solana Red Alert" notification system.
+they can prepare for an update using the "Safecoin Red Alert" notification system.
 
 The teams are all over the world and it's critical to provide actionable
 information at the right time. Don't be the person that wakes everybody up at
@@ -127,7 +127,7 @@ the advisory id (example:
 https://release.solana.com/GHSA-hx59-f5g4-jghh/v1.4.patch). Contact a member of
 the `solana-labs/admins` group if you require access to release.solana.com
 
-Using the "Solana Red Alert" channel:
+Using the "Safecoin Red Alert" channel:
 1. Notify validators that there's an issue and a patch will be provided in X minutes
 2. If X minutes expires and there's no patch, notify of the delay and provide a
    new ETA

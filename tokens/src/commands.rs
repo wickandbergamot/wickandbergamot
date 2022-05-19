@@ -4,7 +4,7 @@ use {
             BalancesArgs, DistributeTokensArgs, SenderStakeArgs, StakeArgs, TransactionLogArgs,
         },
         db::{self, TransactionInfo},
-        spl_token::*,
+        safe_token::*,
         token_display::Token,
     },
     chrono::prelude::*,
@@ -14,16 +14,17 @@ use {
     indicatif::{ProgressBar, ProgressStyle},
     pickledb::PickleDb,
     serde::{Deserialize, Serialize},
-    solana_account_decoder::parse_token::{
-        pubkey_from_spl_token, real_number_string, spl_token_pubkey,
+    safecoin_account_decoder::parse_token::{
+        pubkey_from_safe_token, real_number_string, safe_token_pubkey,
     },
-    solana_client::{
+    safecoin_client::{
         client_error::{ClientError, Result as ClientResult},
         rpc_client::RpcClient,
         rpc_config::RpcSendTransactionConfig,
         rpc_request::MAX_GET_SIGNATURE_STATUSES_QUERY_ITEMS,
+        rpc_response::Fees,
     },
-    solana_sdk::{
+    safecoin_sdk::{
         clock::Slot,
         commitment_config::CommitmentConfig,
         instruction::Instruction,
@@ -37,9 +38,9 @@ use {
         system_instruction,
         transaction::Transaction,
     },
-    solana_transaction_status::TransactionStatus,
-    spl_associated_token_account::get_associated_token_address,
-    spl_token::solana_program::program_error::ProgramError,
+    safecoin_transaction_status::TransactionStatus,
+    safe_associated_token_account::get_associated_token_address,
+    safe_token::safecoin_program::program_error::ProgramError,
     std::{
         cmp::{self},
         io,
@@ -62,7 +63,7 @@ pub struct Allocation {
 #[derive(Debug, PartialEq)]
 pub enum FundingSource {
     FeePayer,
-    SplTokenAccount,
+    SafeTokenAccount,
     StakeAccount,
     SystemAccount,
 }
@@ -167,7 +168,7 @@ fn transfer<S: Signer>(
     let create_instruction =
         system_instruction::transfer(&sender_keypair.pubkey(), to_pubkey, lamports);
     let message = Message::new(&[create_instruction], Some(&sender_keypair.pubkey()));
-    let recent_blockhash = client.get_latest_blockhash()?;
+    let (recent_blockhash, _fees) = client.get_recent_blockhash()?;
     Ok(Transaction::new(
         &[sender_keypair],
         message,
@@ -182,8 +183,8 @@ fn distribution_instructions(
     lockup_date: Option<DateTime<Utc>>,
     do_create_associated_token_account: bool,
 ) -> Vec<Instruction> {
-    if args.spl_token_args.is_some() {
-        return build_spl_token_instructions(allocation, args, do_create_associated_token_account);
+    if args.safe_token_args.is_some() {
+        return build_safe_token_instructions(allocation, args, do_create_associated_token_account);
     }
 
     match &args.stake_args {
@@ -308,15 +309,15 @@ fn build_messages(
             Some(allocation.lockup_date.parse::<DateTime<Utc>>().unwrap())
         };
 
-        let do_create_associated_token_account = if let Some(spl_token_args) = &args.spl_token_args
+        let do_create_associated_token_account = if let Some(safe_token_args) = &args.safe_token_args
         {
             let wallet_address = allocation.recipient.parse().unwrap();
             let associated_token_address = get_associated_token_address(
                 &wallet_address,
-                &spl_token_pubkey(&spl_token_args.mint),
+                &safe_token_pubkey(&safe_token_args.mint),
             );
             let do_create_associated_token_account = client
-                .get_multiple_accounts(&[pubkey_from_spl_token(&associated_token_address)])?[0]
+                .get_multiple_accounts(&[pubkey_from_safe_token(&associated_token_address)])?[0]
                 .is_none();
             if do_create_associated_token_account {
                 *created_accounts += 1;
@@ -324,7 +325,7 @@ fn build_messages(
             println!(
                 "{:<44}  {:>24}",
                 allocation.recipient,
-                real_number_string(allocation.amount, spl_token_args.decimals)
+                real_number_string(allocation.amount, safe_token_args.decimals)
             );
             do_create_associated_token_account
         } else {
@@ -343,11 +344,7 @@ fn build_messages(
             do_create_associated_token_account,
         );
         let fee_payer_pubkey = args.fee_payer.pubkey();
-        let message = Message::new_with_blockhash(
-            &instructions,
-            Some(&fee_payer_pubkey),
-            &client.get_latest_blockhash()?,
-        );
+        let message = Message::new(&instructions, Some(&fee_payer_pubkey));
         messages.push(message);
         stake_extras.push((new_stake_account_keypair, lockup_date));
     }
@@ -393,8 +390,13 @@ fn send_messages(
             if args.dry_run {
                 Ok((Transaction::new_unsigned(message), std::u64::MAX))
             } else {
-                let (blockhash, last_valid_block_height) =
-                    client.get_latest_blockhash_with_commitment(CommitmentConfig::default())?;
+                let Fees {
+                    blockhash,
+                    last_valid_block_height,
+                    ..
+                } = client
+                    .get_fees_with_commitment(CommitmentConfig::default())?
+                    .value;
                 let transaction = Transaction::new(&signers, message, blockhash);
                 let config = RpcSendTransactionConfig {
                     skip_preflight: true,
@@ -449,10 +451,14 @@ fn distribute_allocations(
         &mut created_accounts,
     )?;
 
-    if args.spl_token_args.is_some() {
-        check_spl_token_balances(&messages, allocations, client, args, created_accounts)?;
+    let num_signatures = messages
+        .iter()
+        .map(|message| message.header.num_required_signatures as usize)
+        .sum();
+    if args.safe_token_args.is_some() {
+        check_safe_token_balances(num_signatures, allocations, client, args, created_accounts)?;
     } else {
-        check_payer_balances(&messages, allocations, client, args)?;
+        check_payer_balances(num_signatures, allocations, client, args)?;
     }
 
     send_messages(client, db, allocations, args, exit, messages, stake_extras)?;
@@ -543,12 +549,12 @@ pub fn process_allocations(
         &args.input_csv,
         args.transfer_amount,
         require_lockup_heading,
-        args.spl_token_args.is_some(),
+        args.safe_token_args.is_some(),
     )?;
 
     let starting_total_tokens = allocations.iter().map(|x| x.amount).sum();
-    let starting_total_tokens = if let Some(spl_token_args) = &args.spl_token_args {
-        Token::spl_token(starting_total_tokens, spl_token_args.decimals)
+    let starting_total_tokens = if let Some(safe_token_args) = &args.safe_token_args {
+        Token::safe_token(starting_total_tokens, safe_token_args.decimals)
     } else {
         Token::sol(starting_total_tokens)
     };
@@ -574,10 +580,10 @@ pub fn process_allocations(
     let distributed_tokens = transaction_infos.iter().map(|x| x.amount).sum();
     let undistributed_tokens = allocations.iter().map(|x| x.amount).sum();
     let (distributed_tokens, undistributed_tokens) =
-        if let Some(spl_token_args) = &args.spl_token_args {
+        if let Some(safe_token_args) = &args.safe_token_args {
             (
-                Token::spl_token(distributed_tokens, spl_token_args.decimals),
-                Token::spl_token(undistributed_tokens, spl_token_args.decimals),
+                Token::safe_token(distributed_tokens, safe_token_args.decimals),
+                Token::safe_token(undistributed_tokens, safe_token_args.decimals),
             )
         } else {
             (
@@ -631,7 +637,7 @@ fn finalize_transactions(
 
     while opt_confirmations.is_some() {
         if let Some(confirmations) = opt_confirmations {
-            progress_bar.set_message(format!(
+            progress_bar.set_message(&format!(
                 "[{}/{}] Finalizing transactions",
                 confirmations, 32,
             ));
@@ -730,20 +736,18 @@ fn log_transaction_confirmations(
 }
 
 fn check_payer_balances(
-    messages: &[Message],
+    num_signatures: usize,
     allocations: &[Allocation],
     client: &RpcClient,
     args: &DistributeTokensArgs,
 ) -> Result<(), Error> {
     let mut undistributed_tokens: u64 = allocations.iter().map(|x| x.amount).sum();
 
-    let fees = messages
-        .iter()
-        .map(|message| client.get_fee_for_message(message))
-        .collect::<Result<Vec<_>, _>>()
-        .unwrap()
-        .iter()
-        .sum();
+    let (_blockhash, fee_calculator) = client.get_recent_blockhash()?;
+    let fees = fee_calculator
+        .lamports_per_signature
+        .checked_mul(num_signatures as u64)
+        .unwrap();
 
     let (distribution_source, unlocked_sol_source) = if let Some(stake_args) = &args.stake_args {
         let total_unlocked_sol = allocations.len() as u64 * stake_args.unlocked_sol;
@@ -819,11 +823,11 @@ fn check_payer_balances(
 
 pub fn process_balances(client: &RpcClient, args: &BalancesArgs) -> Result<(), Error> {
     let allocations: Vec<Allocation> =
-        read_allocations(&args.input_csv, None, false, args.spl_token_args.is_some())?;
+        read_allocations(&args.input_csv, None, false, args.safe_token_args.is_some())?;
     let allocations = merge_allocations(&allocations);
 
-    let token = if let Some(spl_token_args) = &args.spl_token_args {
-        spl_token_args.mint.to_string()
+    let token = if let Some(safe_token_args) = &args.safe_token_args {
+        safe_token_args.mint.to_string()
     } else {
         "◎".to_string()
     };
@@ -839,8 +843,8 @@ pub fn process_balances(client: &RpcClient, args: &BalancesArgs) -> Result<(), E
     );
 
     for allocation in &allocations {
-        if let Some(spl_token_args) = &args.spl_token_args {
-            print_token_balances(client, allocation, spl_token_args)?;
+        if let Some(safe_token_args) = &args.safe_token_args {
+            print_token_balances(client, allocation, safe_token_args)?;
         } else {
             let address: Pubkey = allocation.recipient.parse().unwrap();
             let expected = lamports_to_sol(allocation.amount);
@@ -866,7 +870,7 @@ pub fn process_transaction_log(args: &TransactionLogArgs) -> Result<(), Error> {
 
 use {
     crate::db::check_output_file,
-    solana_sdk::{pubkey::Pubkey, signature::Keypair},
+    safecoin_sdk::{pubkey::Pubkey, signature::Keypair},
     tempfile::{tempdir, NamedTempFile},
 };
 pub fn test_process_distribute_tokens_with_client(
@@ -896,7 +900,7 @@ pub fn test_process_distribute_tokens_with_client(
     } else {
         sol_to_lamports(1000.0)
     };
-    let alice_pubkey = solana_sdk::pubkey::new_rand();
+    let alice_pubkey = safecoin_sdk::pubkey::new_rand();
     let allocations_file = NamedTempFile::new().unwrap();
     let input_csv = allocations_file.path().to_str().unwrap().to_string();
     let mut wtr = csv::WriterBuilder::new().from_writer(allocations_file);
@@ -927,7 +931,7 @@ pub fn test_process_distribute_tokens_with_client(
         transaction_db: transaction_db.clone(),
         output_path: Some(output_path.clone()),
         stake_args: None,
-        spl_token_args: None,
+        safe_token_args: None,
         transfer_amount,
     };
     let confirmations = process_allocations(client, &args, exit.clone()).unwrap();
@@ -989,14 +993,14 @@ pub fn test_process_create_stake_with_client(client: &RpcClient, sender_keypair:
     );
     let message = Message::new(&instructions, Some(&sender_keypair.pubkey()));
     let signers = [&sender_keypair, &stake_account_keypair];
-    let blockhash = client.get_latest_blockhash().unwrap();
+    let (blockhash, _fees) = client.get_recent_blockhash().unwrap();
     let transaction = Transaction::new(&signers, message, blockhash);
     client
         .send_and_confirm_transaction_with_spinner(&transaction)
         .unwrap();
 
     let expected_amount = sol_to_lamports(1000.0);
-    let alice_pubkey = solana_sdk::pubkey::new_rand();
+    let alice_pubkey = safecoin_sdk::pubkey::new_rand();
     let file = NamedTempFile::new().unwrap();
     let input_csv = file.path().to_str().unwrap().to_string();
     let mut wtr = csv::WriterBuilder::new().from_writer(file);
@@ -1033,7 +1037,7 @@ pub fn test_process_create_stake_with_client(client: &RpcClient, sender_keypair:
         transaction_db: transaction_db.clone(),
         output_path: Some(output_path.clone()),
         stake_args: Some(stake_args),
-        spl_token_args: None,
+        safe_token_args: None,
         sender_keypair: Box::new(sender_keypair),
         transfer_amount: None,
     };
@@ -1111,14 +1115,14 @@ pub fn test_process_distribute_stake_with_client(client: &RpcClient, sender_keyp
     );
     let message = Message::new(&instructions, Some(&sender_keypair.pubkey()));
     let signers = [&sender_keypair, &stake_account_keypair];
-    let blockhash = client.get_latest_blockhash().unwrap();
+    let (blockhash, _fees) = client.get_recent_blockhash().unwrap();
     let transaction = Transaction::new(&signers, message, blockhash);
     client
         .send_and_confirm_transaction_with_spinner(&transaction)
         .unwrap();
 
     let expected_amount = sol_to_lamports(1000.0);
-    let alice_pubkey = solana_sdk::pubkey::new_rand();
+    let alice_pubkey = safecoin_sdk::pubkey::new_rand();
     let file = NamedTempFile::new().unwrap();
     let input_csv = file.path().to_str().unwrap().to_string();
     let mut wtr = csv::WriterBuilder::new().from_writer(file);
@@ -1161,7 +1165,7 @@ pub fn test_process_distribute_stake_with_client(client: &RpcClient, sender_keyp
         transaction_db: transaction_db.clone(),
         output_path: Some(output_path.clone()),
         stake_args: Some(stake_args),
-        spl_token_args: None,
+        safe_token_args: None,
         sender_keypair: Box::new(sender_keypair),
         transfer_amount: None,
     };
@@ -1210,27 +1214,14 @@ pub fn test_process_distribute_stake_with_client(client: &RpcClient, sender_keyp
 mod tests {
     use {
         super::*,
-        solana_sdk::{
-            instruction::AccountMeta,
+        solana_core::test_validator::TestValidator,
+        safecoin_sdk::{
             signature::{read_keypair_file, write_keypair_file, Signer},
             stake::instruction::StakeInstruction,
         },
         solana_streamer::socket::SocketAddrSpace,
-        solana_test_validator::TestValidator,
-        solana_transaction_status::TransactionConfirmationStatus,
+        safecoin_transaction_status::TransactionConfirmationStatus,
     };
-
-    fn one_signer_message(client: &RpcClient) -> Message {
-        Message::new_with_blockhash(
-            &[Instruction::new_with_bytes(
-                Pubkey::new_unique(),
-                &[],
-                vec![AccountMeta::new(Pubkey::default(), true)],
-            )],
-            None,
-            &client.get_latest_blockhash().unwrap(),
-        )
-    }
 
     #[test]
     fn test_process_token_allocations() {
@@ -1278,7 +1269,7 @@ mod tests {
 
     #[test]
     fn test_read_allocations() {
-        let alice_pubkey = solana_sdk::pubkey::new_rand();
+        let alice_pubkey = safecoin_sdk::pubkey::new_rand();
         let allocation = Allocation {
             recipient: alice_pubkey.to_string(),
             amount: 42,
@@ -1317,8 +1308,8 @@ mod tests {
 
     #[test]
     fn test_read_allocations_no_lockup() {
-        let pubkey0 = solana_sdk::pubkey::new_rand();
-        let pubkey1 = solana_sdk::pubkey::new_rand();
+        let pubkey0 = safecoin_sdk::pubkey::new_rand();
+        let pubkey1 = safecoin_sdk::pubkey::new_rand();
         let file = NamedTempFile::new().unwrap();
         let input_csv = file.path().to_str().unwrap().to_string();
         let mut wtr = csv::WriterBuilder::new().from_writer(file);
@@ -1349,8 +1340,8 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_read_allocations_malformed() {
-        let pubkey0 = solana_sdk::pubkey::new_rand();
-        let pubkey1 = solana_sdk::pubkey::new_rand();
+        let pubkey0 = safecoin_sdk::pubkey::new_rand();
+        let pubkey1 = safecoin_sdk::pubkey::new_rand();
         let file = NamedTempFile::new().unwrap();
         let input_csv = file.path().to_str().unwrap().to_string();
         let mut wtr = csv::WriterBuilder::new().from_writer(file);
@@ -1380,9 +1371,9 @@ mod tests {
 
     #[test]
     fn test_read_allocations_transfer_amount() {
-        let pubkey0 = solana_sdk::pubkey::new_rand();
-        let pubkey1 = solana_sdk::pubkey::new_rand();
-        let pubkey2 = solana_sdk::pubkey::new_rand();
+        let pubkey0 = safecoin_sdk::pubkey::new_rand();
+        let pubkey1 = safecoin_sdk::pubkey::new_rand();
+        let pubkey2 = safecoin_sdk::pubkey::new_rand();
         let file = NamedTempFile::new().unwrap();
         let input_csv = file.path().to_str().unwrap().to_string();
         let mut wtr = csv::WriterBuilder::new().from_writer(file);
@@ -1419,8 +1410,8 @@ mod tests {
 
     #[test]
     fn test_apply_previous_transactions() {
-        let alice = solana_sdk::pubkey::new_rand();
-        let bob = solana_sdk::pubkey::new_rand();
+        let alice = safecoin_sdk::pubkey::new_rand();
+        let bob = safecoin_sdk::pubkey::new_rand();
         let mut allocations = vec![
             Allocation {
                 recipient: alice.to_string(),
@@ -1448,8 +1439,8 @@ mod tests {
 
     #[test]
     fn test_has_same_recipient() {
-        let alice_pubkey = solana_sdk::pubkey::new_rand();
-        let bob_pubkey = solana_sdk::pubkey::new_rand();
+        let alice_pubkey = safecoin_sdk::pubkey::new_rand();
+        let bob_pubkey = safecoin_sdk::pubkey::new_rand();
         let lockup0 = "2021-01-07T00:00:00Z".to_string();
         let lockup1 = "9999-12-31T23:59:59Z".to_string();
         let alice_alloc = Allocation {
@@ -1505,8 +1496,8 @@ mod tests {
             amount: sol_to_lamports(1.0),
             lockup_date: lockup_date_str.to_string(),
         };
-        let stake_account_address = solana_sdk::pubkey::new_rand();
-        let new_stake_account_address = solana_sdk::pubkey::new_rand();
+        let stake_account_address = safecoin_sdk::pubkey::new_rand();
+        let new_stake_account_address = safecoin_sdk::pubkey::new_rand();
         let lockup_authority = Keypair::new();
         let lockup_authority_address = lockup_authority.pubkey();
         let sender_stake_args = SenderStakeArgs {
@@ -1527,7 +1518,7 @@ mod tests {
             transaction_db: "".to_string(),
             output_path: None,
             stake_args: Some(stake_args),
-            spl_token_args: None,
+            safe_token_args: None,
             sender_keypair: Box::new(Keypair::new()),
             transfer_amount: None,
         };
@@ -1554,7 +1545,7 @@ mod tests {
         use std::env;
         let out_dir = env::var("FARF_DIR").unwrap_or_else(|_| "farf".to_string());
 
-        format!("{}/tmp/{}-{}", out_dir, name, pubkey)
+        format!("{}/tmp/{}-{}", out_dir, name, pubkey.to_string())
     }
 
     fn initialize_check_payer_balances_inputs(
@@ -1563,7 +1554,7 @@ mod tests {
         fee_payer: &str,
         stake_args: Option<StakeArgs>,
     ) -> (Vec<Allocation>, DistributeTokensArgs) {
-        let recipient = solana_sdk::pubkey::new_rand();
+        let recipient = safecoin_sdk::pubkey::new_rand();
         let allocations = vec![Allocation {
             recipient: recipient.to_string(),
             amount: allocation_amount,
@@ -1577,7 +1568,7 @@ mod tests {
             transaction_db: "".to_string(),
             output_path: None,
             stake_args,
-            spl_token_args: None,
+            safe_token_args: None,
             transfer_amount: None,
         };
         (allocations, args)
@@ -1585,10 +1576,13 @@ mod tests {
 
     #[test]
     fn test_check_payer_balances_distribute_tokens_single_payer() {
+        let fees = 10_000;
+        let fees_in_sol = lamports_to_sol(fees);
+
         let alice = Keypair::new();
         let test_validator = TestValidator::with_custom_fees(
             alice.pubkey(),
-            10_000,
+            fees,
             None,
             SocketAddrSpace::Unspecified,
         );
@@ -1597,11 +1591,6 @@ mod tests {
         let client = RpcClient::new_with_commitment(url, CommitmentConfig::processed());
         let sender_keypair_file = tmp_file_path("keypair_file", &alice.pubkey());
         write_keypair_file(&alice, &sender_keypair_file).unwrap();
-
-        let fees = client
-            .get_fee_for_message(&one_signer_message(&client))
-            .unwrap();
-        let fees_in_sol = lamports_to_sol(fees);
 
         let allocation_amount = 1000.0;
 
@@ -1612,7 +1601,7 @@ mod tests {
             &sender_keypair_file,
             None,
         );
-        check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args).unwrap();
+        check_payer_balances(1, &allocations, &client, &args).unwrap();
 
         // Unfunded payer
         let unfunded_payer = Keypair::new();
@@ -1625,9 +1614,7 @@ mod tests {
             .unwrap()
             .into();
 
-        let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
-                .unwrap_err();
+        let err_result = check_payer_balances(1, &allocations, &client, &args).unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(
                 sources,
@@ -1664,9 +1651,7 @@ mod tests {
         args.fee_payer = read_keypair_file(&partially_funded_payer_keypair_file)
             .unwrap()
             .into();
-        let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
-                .unwrap_err();
+        let err_result = check_payer_balances(1, &allocations, &client, &args).unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(
                 sources,
@@ -1680,21 +1665,18 @@ mod tests {
 
     #[test]
     fn test_check_payer_balances_distribute_tokens_separate_payers() {
+        let fees = 10_000;
+        let fees_in_sol = lamports_to_sol(fees);
         let alice = Keypair::new();
         let test_validator = TestValidator::with_custom_fees(
             alice.pubkey(),
-            10_000,
+            fees,
             None,
             SocketAddrSpace::Unspecified,
         );
         let url = test_validator.rpc_url();
 
         let client = RpcClient::new_with_commitment(url, CommitmentConfig::processed());
-
-        let fees = client
-            .get_fee_for_message(&one_signer_message(&client))
-            .unwrap();
-        let fees_in_sol = lamports_to_sol(fees);
 
         let sender_keypair_file = tmp_file_path("keypair_file", &alice.pubkey());
         write_keypair_file(&alice, &sender_keypair_file).unwrap();
@@ -1722,7 +1704,7 @@ mod tests {
             &sender_keypair_file,
             None,
         );
-        check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args).unwrap();
+        check_payer_balances(1, &allocations, &client, &args).unwrap();
 
         // Unfunded sender
         let unfunded_payer = Keypair::new();
@@ -1733,9 +1715,7 @@ mod tests {
             .into();
         args.fee_payer = read_keypair_file(&sender_keypair_file).unwrap().into();
 
-        let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
-                .unwrap_err();
+        let err_result = check_payer_balances(1, &allocations, &client, &args).unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(sources, vec![FundingSource::SystemAccount].into());
             assert_eq!(amount, allocation_amount.to_string());
@@ -1749,9 +1729,7 @@ mod tests {
             .unwrap()
             .into();
 
-        let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
-                .unwrap_err();
+        let err_result = check_payer_balances(1, &allocations, &client, &args).unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(sources, vec![FundingSource::FeePayer].into());
             assert_eq!(amount, fees_in_sol.to_string());
@@ -1785,7 +1763,7 @@ mod tests {
         );
         let message = Message::new(&instructions, Some(&sender_keypair.pubkey()));
         let signers = [sender_keypair, &stake_account_keypair];
-        let blockhash = client.get_latest_blockhash().unwrap();
+        let (blockhash, _fees) = client.get_recent_blockhash().unwrap();
         let transaction = Transaction::new(&signers, message, blockhash);
         client
             .send_and_confirm_transaction_with_spinner(&transaction)
@@ -1807,20 +1785,17 @@ mod tests {
 
     #[test]
     fn test_check_payer_balances_distribute_stakes_single_payer() {
+        let fees = 10_000;
+        let fees_in_sol = lamports_to_sol(fees);
         let alice = Keypair::new();
         let test_validator = TestValidator::with_custom_fees(
             alice.pubkey(),
-            10_000,
+            fees,
             None,
             SocketAddrSpace::Unspecified,
         );
         let url = test_validator.rpc_url();
         let client = RpcClient::new_with_commitment(url, CommitmentConfig::processed());
-
-        let fees = client
-            .get_fee_for_message(&one_signer_message(&client))
-            .unwrap();
-        let fees_in_sol = lamports_to_sol(fees);
 
         let sender_keypair_file = tmp_file_path("keypair_file", &alice.pubkey());
         write_keypair_file(&alice, &sender_keypair_file).unwrap();
@@ -1841,22 +1816,17 @@ mod tests {
             &sender_keypair_file,
             Some(stake_args),
         );
-        check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args).unwrap();
+        check_payer_balances(1, &allocations, &client, &args).unwrap();
 
         // Underfunded stake-account
         let expensive_allocation_amount = 5000.0;
         let expensive_allocations = vec![Allocation {
-            recipient: solana_sdk::pubkey::new_rand().to_string(),
+            recipient: safecoin_sdk::pubkey::new_rand().to_string(),
             amount: sol_to_lamports(expensive_allocation_amount),
             lockup_date: "".to_string(),
         }];
-        let err_result = check_payer_balances(
-            &[one_signer_message(&client)],
-            &expensive_allocations,
-            &client,
-            &args,
-        )
-        .unwrap_err();
+        let err_result =
+            check_payer_balances(1, &expensive_allocations, &client, &args).unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(sources, vec![FundingSource::StakeAccount].into());
             assert_eq!(
@@ -1878,9 +1848,7 @@ mod tests {
             .unwrap()
             .into();
 
-        let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
-                .unwrap_err();
+        let err_result = check_payer_balances(1, &allocations, &client, &args).unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(
                 sources,
@@ -1917,9 +1885,7 @@ mod tests {
         args.fee_payer = read_keypair_file(&partially_funded_payer_keypair_file)
             .unwrap()
             .into();
-        let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
-                .unwrap_err();
+        let err_result = check_payer_balances(1, &allocations, &client, &args).unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(
                 sources,
@@ -1933,21 +1899,18 @@ mod tests {
 
     #[test]
     fn test_check_payer_balances_distribute_stakes_separate_payers() {
+        let fees = 10_000;
+        let fees_in_sol = lamports_to_sol(fees);
         let alice = Keypair::new();
         let test_validator = TestValidator::with_custom_fees(
             alice.pubkey(),
-            10_000,
+            fees,
             None,
             SocketAddrSpace::Unspecified,
         );
         let url = test_validator.rpc_url();
 
         let client = RpcClient::new_with_commitment(url, CommitmentConfig::processed());
-
-        let fees = client
-            .get_fee_for_message(&one_signer_message(&client))
-            .unwrap();
-        let fees_in_sol = lamports_to_sol(fees);
 
         let sender_keypair_file = tmp_file_path("keypair_file", &alice.pubkey());
         write_keypair_file(&alice, &sender_keypair_file).unwrap();
@@ -1982,7 +1945,7 @@ mod tests {
             &sender_keypair_file,
             Some(stake_args),
         );
-        check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args).unwrap();
+        check_payer_balances(1, &allocations, &client, &args).unwrap();
 
         // Unfunded sender
         let unfunded_payer = Keypair::new();
@@ -1993,9 +1956,7 @@ mod tests {
             .into();
         args.fee_payer = read_keypair_file(&sender_keypair_file).unwrap().into();
 
-        let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
-                .unwrap_err();
+        let err_result = check_payer_balances(1, &allocations, &client, &args).unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(sources, vec![FundingSource::SystemAccount].into());
             assert_eq!(amount, unlocked_sol.to_string());
@@ -2009,9 +1970,7 @@ mod tests {
             .unwrap()
             .into();
 
-        let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
-                .unwrap_err();
+        let err_result = check_payer_balances(1, &allocations, &client, &args).unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(sources, vec![FundingSource::FeePayer].into());
             assert_eq!(amount, fees_in_sol.to_string());
@@ -2064,7 +2023,7 @@ mod tests {
             transaction_db: "".to_string(),
             output_path: None,
             stake_args: None,
-            spl_token_args: None,
+            safe_token_args: None,
             transfer_amount: None,
         };
         let allocation = Allocation {
@@ -2186,7 +2145,7 @@ mod tests {
             transaction_db: "".to_string(),
             output_path: None,
             stake_args: None,
-            spl_token_args: None,
+            safe_token_args: None,
             transfer_amount: None,
         };
         let allocation = Allocation {
@@ -2306,7 +2265,7 @@ mod tests {
             transaction_db: "".to_string(),
             output_path: None,
             stake_args: None,
-            spl_token_args: None,
+            safe_token_args: None,
             transfer_amount: None,
         };
 

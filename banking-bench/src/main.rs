@@ -6,21 +6,20 @@ use {
     rand::{thread_rng, Rng},
     rayon::prelude::*,
     solana_core::banking_stage::BankingStage,
-    solana_gossip::cluster_info::{ClusterInfo, Node},
+    safecoin_gossip::cluster_info::{ClusterInfo, Node},
     solana_ledger::{
         blockstore::Blockstore,
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
         get_tmp_ledger_path,
-        leader_schedule_cache::LeaderScheduleCache,
     },
-    solana_measure::measure::Measure,
+    safecoin_measure::measure::Measure,
     solana_perf::packet::to_packet_batches,
     solana_poh::poh_recorder::{create_test_recorder, PohRecorder, WorkingBankEntry},
     solana_runtime::{
         accounts_background_service::AbsRequestSender, bank::Bank, bank_forks::BankForks,
         cost_model::CostModel,
     },
-    solana_sdk::{
+    safecoin_sdk::{
         hash::Hash,
         signature::{Keypair, Signature},
         system_transaction,
@@ -71,7 +70,7 @@ fn make_accounts_txs(
     hash: Hash,
     same_payer: bool,
 ) -> Vec<Transaction> {
-    let to_pubkey = solana_sdk::pubkey::new_rand();
+    let to_pubkey = safecoin_sdk::pubkey::new_rand();
     let payer_key = Keypair::new();
     let dummy = system_transaction::transfer(&payer_key, &to_pubkey, 1, hash);
     (0..total_num_transactions)
@@ -80,9 +79,9 @@ fn make_accounts_txs(
             let mut new = dummy.clone();
             let sig: Vec<u8> = (0..64).map(|_| thread_rng().gen::<u8>()).collect();
             if !same_payer {
-                new.message.account_keys[0] = solana_sdk::pubkey::new_rand();
+                new.message.account_keys[0] = safecoin_sdk::pubkey::new_rand();
             }
-            new.message.account_keys[1] = solana_sdk::pubkey::new_rand();
+            new.message.account_keys[1] = safecoin_sdk::pubkey::new_rand();
             new.signatures = vec![Signature::new(&sig[0..64])];
             new
         })
@@ -171,7 +170,7 @@ fn main() {
     let (vote_sender, vote_receiver) = unbounded();
     let (tpu_vote_sender, tpu_vote_receiver) = unbounded();
     let (replay_vote_sender, _replay_vote_receiver) = unbounded();
-    let bank0 = Bank::new_for_benches(&genesis_config);
+    let bank0 = Bank::new(&genesis_config);
     let mut bank_forks = BankForks::new(bank0);
     let mut bank = bank_forks.working_bank();
 
@@ -205,8 +204,7 @@ fn main() {
         });
         bank.clear_signatures();
         //sanity check, make sure all the transactions can execute in parallel
-
-        let res = bank.process_transactions(transactions.iter());
+        let res = bank.process_transactions(&transactions);
         for r in res {
             assert!(r.is_ok(), "sanity parallel execution error: {:?}", r);
         }
@@ -219,13 +217,8 @@ fn main() {
         let blockstore = Arc::new(
             Blockstore::open(&ledger_path).expect("Expected to be able to open database ledger"),
         );
-        let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
-        let (exit, poh_recorder, poh_service, signal_receiver) = create_test_recorder(
-            &bank,
-            &blockstore,
-            None,
-            Some(leader_schedule_cache.clone()),
-        );
+        let (exit, poh_recorder, poh_service, signal_receiver) =
+            create_test_recorder(&bank, &blockstore, None);
         let cluster_info = ClusterInfo::new(
             Node::new_localhost().info,
             Arc::new(Keypair::new()),
@@ -256,7 +249,7 @@ fn main() {
         let base_tx_count = bank.transaction_count();
         let mut txs_processed = 0;
         let mut root = 1;
-        let collector = solana_sdk::pubkey::new_rand();
+        let collector = safecoin_sdk::pubkey::new_rand();
         let config = Config {
             packets_per_batch: packets_per_chunk,
             chunk_len,
@@ -320,10 +313,11 @@ fn main() {
                 tx_total_us += duration_as_us(&now.elapsed());
 
                 let mut poh_time = Measure::start("poh_time");
-                poh_recorder
-                    .lock()
-                    .unwrap()
-                    .reset(bank.clone(), Some((bank.slot(), bank.slot() + 1)));
+                poh_recorder.lock().unwrap().reset(
+                    bank.last_blockhash(),
+                    bank.slot(),
+                    Some((bank.slot(), bank.slot() + 1)),
+                );
                 poh_time.stop();
 
                 let mut new_bank_time = Measure::start("new_bank");
@@ -338,7 +332,6 @@ fn main() {
                 poh_recorder.lock().unwrap().set_bank(&bank);
                 assert!(poh_recorder.lock().unwrap().bank().is_some());
                 if bank.slot() > 32 {
-                    leader_schedule_cache.set_root(&bank);
                     bank_forks.set_root(root, &AbsRequestSender::default(), None);
                     root += 1;
                 }

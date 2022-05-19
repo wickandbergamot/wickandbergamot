@@ -1,4 +1,4 @@
-//! The `rpc_banks_service` module implements the Solana Banks RPC API.
+//! The `rpc_banks_service` module implements the Safecoin Banks RPC API.
 
 use {
     crate::banks_server::start_tcp_server,
@@ -107,7 +107,7 @@ mod tests {
 
     #[test]
     fn test_rpc_banks_server_exit() {
-        let bank_forks = Arc::new(RwLock::new(BankForks::new(Bank::default_for_tests())));
+        let bank_forks = Arc::new(RwLock::new(BankForks::new(Bank::default())));
         let block_commitment_cache = Arc::new(RwLock::new(BlockCommitmentCache::default()));
         let exit = Arc::new(AtomicBool::new(false));
         let addr = "127.0.0.1:0".parse().unwrap();

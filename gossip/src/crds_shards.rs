@@ -139,7 +139,7 @@ mod test {
             crds_value::CrdsValue,
         },
         rand::{thread_rng, Rng},
-        solana_sdk::timing::timestamp,
+        safecoin_sdk::timing::timestamp,
         std::{collections::HashSet, iter::repeat_with, ops::Index},
     };
 
@@ -149,7 +149,7 @@ mod test {
         let mut crds = Crds::default();
         crds.insert(value, timestamp(), GossipRoute::LocalMessage)
             .unwrap();
-        crds.get::<&VersionedCrdsValue>(&label).cloned().unwrap()
+        crds.get(&label).cloned().unwrap()
     }
 
     // Returns true if the first mask_bits most significant bits of hash is the

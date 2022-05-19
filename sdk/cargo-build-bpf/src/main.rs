@@ -5,7 +5,7 @@ use {
     },
     regex::Regex,
     solana_download_utils::download_file,
-    solana_sdk::signature::{write_keypair_file, Keypair},
+    safecoin_sdk::signature::{write_keypair_file, Keypair},
     std::{
         collections::{HashMap, HashSet},
         env,
@@ -428,9 +428,12 @@ fn build_bpf_package(config: &Config, target_directory: &Path, package: &cargo_m
         }
     };
 
-    let legacy_program_feature_present = package.name == "solana-sdk";
+    let legacy_program_feature_present = package.name == "safecoin-sdk";
     let root_package_dir = &package.manifest_path.parent().unwrap_or_else(|| {
-        eprintln!("Unable to get directory of {}", package.manifest_path);
+        eprintln!(
+            "Unable to get directory of {}",
+            package.manifest_path.display()
+        );
         exit(1);
     });
 
@@ -447,7 +450,8 @@ fn build_bpf_package(config: &Config, target_directory: &Path, package: &cargo_m
     env::set_current_dir(&root_package_dir).unwrap_or_else(|err| {
         eprintln!(
             "Unable to set current directory to {}: {}",
-            root_package_dir, err
+            root_package_dir.display(),
+            err
         );
         exit(1);
     });
@@ -462,9 +466,7 @@ fn build_bpf_package(config: &Config, target_directory: &Path, package: &cargo_m
     if legacy_program_feature_present {
         println!("Legacy program feature detected");
     }
-    let bpf_tools_download_file_name = if cfg!(target_os = "windows") {
-        "solana-bpf-tools-windows.tar.bz2"
-    } else if cfg!(target_os = "macos") {
+    let bpf_tools_download_file_name = if cfg!(target_os = "macos") {
         "solana-bpf-tools-osx.tar.bz2"
     } else {
         "solana-bpf-tools-linux.tar.bz2"
@@ -474,20 +476,17 @@ fn build_bpf_package(config: &Config, target_directory: &Path, package: &cargo_m
         eprintln!("Can't get home directory path: {}", err);
         exit(1);
     }));
-
-    // The following line is scanned by CI configuration script to
-    // separate cargo caches according to the version of sbf-tools.
-    let bpf_tools_version = "v1.25";
+    let version = "v1.20";
     let package = "bpf-tools";
     let target_path = home_dir
         .join(".cache")
         .join("solana")
-        .join(bpf_tools_version)
+        .join(version)
         .join(package);
     install_if_missing(
         config,
         package,
-        bpf_tools_version,
+        version,
         "https://github.com/solana-labs/bpf-tools/releases/download",
         bpf_tools_download_file_name,
         &target_path,
@@ -519,21 +518,16 @@ fn build_bpf_package(config: &Config, target_directory: &Path, package: &cargo_m
     env::set_var("AR", llvm_bin.join("llvm-ar"));
     env::set_var("OBJDUMP", llvm_bin.join("llvm-objdump"));
     env::set_var("OBJCOPY", llvm_bin.join("llvm-objcopy"));
-    const RF_LTO: &str = "-C lto=no";
-    let mut rustflags = match env::var("RUSTFLAGS") {
+    let rustflags = match env::var("RUSTFLAGS") {
         Ok(rf) => {
-            if rf.contains(&RF_LTO) {
+            if rf.contains("-C lto=no") {
                 rf
             } else {
-                format!("{} {}", rf, RF_LTO)
+                rf + &" -C lto=no".to_string()
             }
         }
-        _ => RF_LTO.to_string(),
+        _ => "-C lto=no".to_string(),
     };
-    if cfg!(windows) && !rustflags.contains("-C linker=") {
-        let ld_path = llvm_bin.join("ld.lld");
-        rustflags = format!("{} -C linker={}", rustflags, ld_path.display());
-    }
     if config.verbose {
         println!("RUSTFLAGS={}", rustflags);
     }
@@ -613,17 +607,6 @@ fn build_bpf_package(config: &Config, target_directory: &Path, package: &cargo_m
         }
 
         if file_older_or_missing(&program_unstripped_so, &program_so) {
-            #[cfg(windows)]
-            let output = spawn(
-                &llvm_bin.join("llvm-objcopy"),
-                &[
-                    "--strip-all".as_ref(),
-                    program_unstripped_so.as_os_str(),
-                    program_so.as_os_str(),
-                ],
-                config.generate_child_script_on_failure,
-            );
-            #[cfg(not(windows))]
             let output = spawn(
                 &config.bpf_sdk.join("scripts").join("strip.sh"),
                 &[&program_unstripped_so, &program_so],
@@ -635,26 +618,13 @@ fn build_bpf_package(config: &Config, target_directory: &Path, package: &cargo_m
         }
 
         if config.dump && file_older_or_missing(&program_unstripped_so, &program_dump) {
-            let dump_script = config.bpf_sdk.join("scripts").join("dump.sh");
-            #[cfg(windows)]
-            {
-                eprintln!("Using Bash scripts from within a program is not supported on Windows, skipping `--dump`.");
-                eprintln!(
-                    "Please run \"{} {} {}\" from a Bash-supporting shell, then re-run this command to see the processed program dump.",
-                    &dump_script.display(),
-                    &program_unstripped_so.display(),
-                    &program_dump.display());
-            }
-            #[cfg(not(windows))]
-            {
-                let output = spawn(
-                    &dump_script,
-                    &[&program_unstripped_so, &program_dump],
-                    config.generate_child_script_on_failure,
-                );
-                if config.verbose {
-                    println!("{}", output);
-                }
+            let output = spawn(
+                &config.bpf_sdk.join("scripts").join("dump.sh"),
+                &[&program_unstripped_so, &program_dump],
+                config.generate_child_script_on_failure,
+            );
+            if config.verbose {
+                println!("{}", output);
             }
             postprocess_dump(&program_dump);
         }
@@ -663,7 +633,7 @@ fn build_bpf_package(config: &Config, target_directory: &Path, package: &cargo_m
 
         println!();
         println!("To deploy this program:");
-        println!("  $ solana program deploy {}", program_so.display());
+        println!("  $ safecoin program deploy {}", program_so.display());
         println!("The program address will default to this keypair (override with --program-id):");
         println!("  {}", program_keypair.display());
     } else if config.dump {
@@ -713,6 +683,10 @@ fn build_bpf(config: Config, manifest_path: Option<PathBuf>) {
 }
 
 fn main() {
+    if cfg!(windows) {
+        println!("Safecoin Rust BPF toolchain is not available on Windows");
+        exit(1);
+    }
     let default_config = Config::default();
     let default_bpf_sdk = format!("{}", default_config.bpf_sdk.display());
 
@@ -743,7 +717,7 @@ fn main() {
                 .value_name("PATH")
                 .takes_value(true)
                 .default_value(&default_bpf_sdk)
-                .help("Path to the Solana BPF SDK"),
+                .help("Path to the Safecoin BPF SDK"),
         )
         .arg(
             Arg::with_name("cargo_args")

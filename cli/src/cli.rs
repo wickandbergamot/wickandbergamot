@@ -7,11 +7,11 @@ use {
     log::*,
     num_traits::FromPrimitive,
     serde_json::{self, Value},
-    solana_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*},
-    solana_cli_output::{
+    safecoin_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*},
+    safecoin_cli_output::{
         display::println_name_value, CliSignature, CliValidatorsSortOrder, OutputFormat,
     },
-    solana_client::{
+    safecoin_client::{
         blockhash_query::BlockhashQuery,
         client_error::{ClientError, Result as ClientResult},
         nonce_utils,
@@ -20,8 +20,8 @@ use {
             RpcLargestAccountsFilter, RpcSendTransactionConfig, RpcTransactionLogsFilter,
         },
     },
-    solana_remote_wallet::remote_wallet::RemoteWalletManager,
-    solana_sdk::{
+    safecoin_remote_wallet::remote_wallet::RemoteWalletManager,
+    safecoin_sdk::{
         clock::{Epoch, Slot},
         commitment_config::CommitmentConfig,
         decode_error::DecodeError,
@@ -83,6 +83,7 @@ pub enum CliCommand {
         filter: RpcTransactionLogsFilter,
     },
     Ping {
+        lamports: u64,
         interval: Duration,
         count: Option<u64>,
         timeout: Duration,
@@ -161,7 +162,6 @@ pub enum CliCommand {
         address: Option<SignerIndex>,
         use_deprecated_loader: bool,
         allow_excessive_balance: bool,
-        skip_fee_check: bool,
     },
     Program(ProgramCliCommand),
     // Stake Commands
@@ -324,13 +324,6 @@ pub enum CliCommand {
         memo: Option<String>,
         fee_payer: SignerIndex,
     },
-    CloseVoteAccount {
-        vote_account_pubkey: Pubkey,
-        destination_account_pubkey: Pubkey,
-        withdraw_authority: SignerIndex,
-        memo: Option<String>,
-        fee_payer: SignerIndex,
-    },
     VoteAuthorize {
         vote_account_pubkey: Pubkey,
         new_authorized_pubkey: Pubkey,
@@ -424,11 +417,11 @@ pub enum CliError {
     ClientError(#[from] ClientError),
     #[error("Command not recognized: {0}")]
     CommandNotRecognized(String),
-    #[error("Account {1} has insufficient funds for fee ({0} SOL)")]
+    #[error("Account {1} has insufficient funds for fee ({0} SAFE)")]
     InsufficientFundsForFee(f64, Pubkey),
-    #[error("Account {1} has insufficient funds for spend ({0} SOL)")]
+    #[error("Account {1} has insufficient funds for spend ({0} SAFE)")]
     InsufficientFundsForSpend(f64, Pubkey),
-    #[error("Account {2} has insufficient funds for spend ({0} SOL) + fee ({1} SOL)")]
+    #[error("Account {2} has insufficient funds for spend ({0} SAFE) + fee ({1} SAFE)")]
     InsufficientFundsForSpendAndFee(f64, f64, Pubkey),
     #[error(transparent)]
     InvalidNonce(nonce_utils::Error),
@@ -479,15 +472,15 @@ pub struct CliConfig<'a> {
 
 impl CliConfig<'_> {
     fn default_keypair_path() -> String {
-        solana_cli_config::Config::default().keypair_path
+        safecoin_cli_config::Config::default().keypair_path
     }
 
     fn default_json_rpc_url() -> String {
-        solana_cli_config::Config::default().json_rpc_url
+        safecoin_cli_config::Config::default().json_rpc_url
     }
 
     fn default_websocket_url() -> String {
-        solana_cli_config::Config::default().websocket_url
+        safecoin_cli_config::Config::default().websocket_url
     }
 
     fn default_commitment() -> CommitmentConfig {
@@ -524,13 +517,13 @@ impl CliConfig<'_> {
             (SettingType::Explicit, websocket_cfg_url.to_string()),
             (
                 SettingType::Computed,
-                solana_cli_config::Config::compute_websocket_url(&normalize_to_url_if_moniker(
+                safecoin_cli_config::Config::compute_websocket_url(&normalize_to_url_if_moniker(
                     json_rpc_cmd_url,
                 )),
             ),
             (
                 SettingType::Computed,
-                solana_cli_config::Config::compute_websocket_url(&normalize_to_url_if_moniker(
+                safecoin_cli_config::Config::compute_websocket_url(&normalize_to_url_if_moniker(
                     json_rpc_cfg_url,
                 )),
             ),
@@ -744,7 +737,6 @@ pub fn parse_command(
                 signers.push(signer);
                 1
             });
-            let skip_fee_check = matches.is_present("skip_fee_check");
 
             Ok(CliCommandInfo {
                 command: CliCommand::Deploy {
@@ -752,7 +744,6 @@ pub fn parse_command(
                     address,
                     use_deprecated_loader: matches.is_present("use_deprecated_loader"),
                     allow_excessive_balance: matches.is_present("allow_excessive_balance"),
-                    skip_fee_check,
                 },
                 signers,
             })
@@ -852,9 +843,6 @@ pub fn parse_command(
         ("vote-account", Some(matches)) => parse_vote_get_account_command(matches, wallet_manager),
         ("withdraw-from-vote-account", Some(matches)) => {
             parse_withdraw_from_vote_account(matches, default_signer, wallet_manager)
-        }
-        ("close-vote-account", Some(matches)) => {
-            parse_close_vote_account(matches, default_signer, wallet_manager)
         }
         // Wallet Commands
         ("account", Some(matches)) => parse_account(matches, wallet_manager),
@@ -975,6 +963,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
         CliCommand::LiveSlots => process_live_slots(config),
         CliCommand::Logs { filter } => process_logs(config, filter),
         CliCommand::Ping {
+            lamports,
             interval,
             count,
             timeout,
@@ -983,6 +972,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
         } => process_ping(
             &rpc_client,
             config,
+            *lamports,
             interval,
             count,
             timeout,
@@ -1129,7 +1119,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             address,
             use_deprecated_loader,
             allow_excessive_balance,
-            skip_fee_check,
         } => process_deploy(
             rpc_client,
             config,
@@ -1137,7 +1126,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             *address,
             *use_deprecated_loader,
             *allow_excessive_balance,
-            *skip_fee_check,
         ),
         CliCommand::Program(program_subcommand) => {
             process_program_subcommand(rpc_client, config, program_subcommand)
@@ -1479,21 +1467,6 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             memo.as_ref(),
             *fee_payer,
         ),
-        CliCommand::CloseVoteAccount {
-            vote_account_pubkey,
-            withdraw_authority,
-            destination_account_pubkey,
-            memo,
-            fee_payer,
-        } => process_close_vote_account(
-            &rpc_client,
-            config,
-            vote_account_pubkey,
-            *withdraw_authority,
-            destination_account_pubkey,
-            memo.as_ref(),
-            *fee_payer,
-        ),
         CliCommand::VoteAuthorize {
             vote_account_pubkey,
             new_authorized_pubkey,
@@ -1576,7 +1549,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
 
         // Wallet Commands
 
-        // Request an airdrop from Solana Faucet;
+        // Request an airdrop from Safecoin Faucet;
         CliCommand::Airdrop { pubkey, lamports } => {
             process_airdrop(&rpc_client, config, pubkey, *lamports)
         }
@@ -1644,7 +1617,7 @@ pub fn request_and_confirm_airdrop(
     to_pubkey: &Pubkey,
     lamports: u64,
 ) -> ClientResult<Signature> {
-    let recent_blockhash = rpc_client.get_latest_blockhash()?;
+    let (recent_blockhash, _fee_calculator) = rpc_client.get_recent_blockhash()?;
     let signature =
         rpc_client.request_airdrop_with_blockhash(to_pubkey, lamports, &recent_blockhash)?;
     rpc_client.confirm_transaction_with_spinner(
@@ -1709,13 +1682,13 @@ mod tests {
     use {
         super::*,
         serde_json::{json, Value},
-        solana_client::{
+        safecoin_client::{
             blockhash_query,
             mock_sender::SIGNATURE,
             rpc_request::RpcRequest,
             rpc_response::{Response, RpcResponseContext},
         },
-        solana_sdk::{
+        safecoin_sdk::{
             pubkey::Pubkey,
             signature::{
                 keypair_from_seed, read_keypair_file, write_keypair_file, Keypair, Presigner,
@@ -1723,7 +1696,7 @@ mod tests {
             stake, system_program,
             transaction::TransactionError,
         },
-        solana_transaction_status::TransactionConfirmationStatus,
+        safecoin_transaction_status::TransactionConfirmationStatus,
         std::path::PathBuf,
     };
 
@@ -1762,7 +1735,7 @@ mod tests {
         assert_eq!(signer_info.signers.len(), 1);
         assert_eq!(signer_info.index_of(None), Some(0));
         assert_eq!(
-            signer_info.index_of(Some(solana_sdk::pubkey::new_rand())),
+            signer_info.index_of(Some(safecoin_sdk::pubkey::new_rand())),
             None
         );
 
@@ -1820,7 +1793,7 @@ mod tests {
     fn test_cli_parse_command() {
         let test_commands = get_clap_app("test", "desc", "version");
 
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = safecoin_sdk::pubkey::new_rand();
         let pubkey_string = format!("{}", pubkey);
 
         let default_keypair = Keypair::new();
@@ -1911,7 +1884,7 @@ mod tests {
         assert!(parse_command(&test_bad_signature, &default_signer, &mut None).is_err());
 
         // Test CreateAddressWithSeed
-        let from_pubkey = Some(solana_sdk::pubkey::new_rand());
+        let from_pubkey = Some(safecoin_sdk::pubkey::new_rand());
         let from_str = from_pubkey.unwrap().to_string();
         for (name, program_id) in &[
             ("STAKE", stake::program::id()),
@@ -1969,7 +1942,6 @@ mod tests {
                     address: None,
                     use_deprecated_loader: false,
                     allow_excessive_balance: false,
-                    skip_fee_check: false,
                 },
                 signers: vec![read_keypair_file(&keypair_file).unwrap().into()],
             }
@@ -1992,7 +1964,6 @@ mod tests {
                     address: Some(1),
                     use_deprecated_loader: false,
                     allow_excessive_balance: false,
-                    skip_fee_check: false,
                 },
                 signers: vec![
                     read_keypair_file(&keypair_file).unwrap().into(),
@@ -2033,7 +2004,7 @@ mod tests {
         // Success cases
         let mut config = CliConfig {
             rpc_client: Some(Arc::new(RpcClient::new_mock("succeeds".to_string()))),
-            json_rpc_url: "http://127.0.0.1:8899".to_string(),
+            json_rpc_url: "http://127.0.0.1:8328".to_string(),
             ..CliConfig::default()
         };
 
@@ -2053,7 +2024,7 @@ mod tests {
             pubkey: None,
             use_lamports_unit: false,
         };
-        assert_eq!(process_command(&config).unwrap(), "0.00000005 SOL");
+        assert_eq!(process_command(&config).unwrap(), "0.00000005 SAFE");
 
         let good_signature = Signature::new(&bs58::decode(SIGNATURE).into_vec().unwrap());
         config.command = CliCommand::Confirm(good_signature);
@@ -2099,11 +2070,11 @@ mod tests {
         let rpc_client = RpcClient::new_mock_with_mocks("".to_string(), mocks);
         let mut vote_config = CliConfig {
             rpc_client: Some(Arc::new(rpc_client)),
-            json_rpc_url: "http://127.0.0.1:8899".to_string(),
+            json_rpc_url: "http://127.0.0.1:8328".to_string(),
             ..CliConfig::default()
         };
         let current_authority = keypair_from_seed(&[5; 32]).unwrap();
-        let new_authorized_pubkey = solana_sdk::pubkey::new_rand();
+        let new_authorized_pubkey = safecoin_sdk::pubkey::new_rand();
         vote_config.signers = vec![&current_authority];
         vote_config.command = CliCommand::VoteAuthorize {
             vote_account_pubkey: bob_pubkey,
@@ -2141,7 +2112,7 @@ mod tests {
 
         let bob_keypair = Keypair::new();
         let bob_pubkey = bob_keypair.pubkey();
-        let custodian = solana_sdk::pubkey::new_rand();
+        let custodian = safecoin_sdk::pubkey::new_rand();
         config.command = CliCommand::CreateStakeAccount {
             stake_account: 1,
             seed: None,
@@ -2167,8 +2138,8 @@ mod tests {
         let result = process_command(&config);
         assert!(result.is_ok());
 
-        let stake_account_pubkey = solana_sdk::pubkey::new_rand();
-        let to_pubkey = solana_sdk::pubkey::new_rand();
+        let stake_account_pubkey = safecoin_sdk::pubkey::new_rand();
+        let to_pubkey = safecoin_sdk::pubkey::new_rand();
         config.command = CliCommand::WithdrawStake {
             stake_account_pubkey,
             destination_account_pubkey: to_pubkey,
@@ -2188,7 +2159,7 @@ mod tests {
         let result = process_command(&config);
         assert!(result.is_ok());
 
-        let stake_account_pubkey = solana_sdk::pubkey::new_rand();
+        let stake_account_pubkey = safecoin_sdk::pubkey::new_rand();
         config.command = CliCommand::DeactivateStake {
             stake_account_pubkey,
             stake_authority: 0,
@@ -2204,7 +2175,7 @@ mod tests {
         let result = process_command(&config);
         assert!(result.is_ok());
 
-        let stake_account_pubkey = solana_sdk::pubkey::new_rand();
+        let stake_account_pubkey = safecoin_sdk::pubkey::new_rand();
         let split_stake_account = Keypair::new();
         config.command = CliCommand::SplitStake {
             stake_account_pubkey,
@@ -2224,8 +2195,8 @@ mod tests {
         let result = process_command(&config);
         assert!(result.is_ok());
 
-        let stake_account_pubkey = solana_sdk::pubkey::new_rand();
-        let source_stake_account_pubkey = solana_sdk::pubkey::new_rand();
+        let stake_account_pubkey = safecoin_sdk::pubkey::new_rand();
+        let source_stake_account_pubkey = safecoin_sdk::pubkey::new_rand();
         let merge_stake_account = Keypair::new();
         config.command = CliCommand::MergeStake {
             stake_account_pubkey,
@@ -2250,7 +2221,7 @@ mod tests {
         assert_eq!(process_command(&config).unwrap(), "1234");
 
         // CreateAddressWithSeed
-        let from_pubkey = solana_sdk::pubkey::new_rand();
+        let from_pubkey = safecoin_sdk::pubkey::new_rand();
         config.signers = vec![];
         config.command = CliCommand::CreateAddressWithSeed {
             from_pubkey: Some(from_pubkey),
@@ -2263,7 +2234,7 @@ mod tests {
         assert_eq!(address.unwrap(), expected_address.to_string());
 
         // Need airdrop cases
-        let to = solana_sdk::pubkey::new_rand();
+        let to = safecoin_sdk::pubkey::new_rand();
         config.signers = vec![&keypair];
         config.command = CliCommand::Airdrop {
             pubkey: Some(to),
@@ -2386,7 +2357,6 @@ mod tests {
             address: None,
             use_deprecated_loader: false,
             allow_excessive_balance: false,
-            skip_fee_check: false,
         };
         config.output_format = OutputFormat::JsonCompact;
         let result = process_command(&config);
@@ -2407,7 +2377,6 @@ mod tests {
             address: None,
             use_deprecated_loader: false,
             allow_excessive_balance: false,
-            skip_fee_check: false,
         };
         assert!(process_command(&config).is_err());
     }
@@ -2421,7 +2390,7 @@ mod tests {
         write_keypair_file(&default_keypair, &default_keypair_file).unwrap();
         let default_signer = DefaultSigner::new("", &default_keypair_file);
 
-        //Test Transfer Subcommand, SOL
+        //Test Transfer Subcommand, SAFE
         let from_keypair = keypair_from_seed(&[0u8; 32]).unwrap();
         let from_pubkey = from_keypair.pubkey();
         let from_string = from_pubkey.to_string();

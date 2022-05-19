@@ -14,7 +14,7 @@ use {
     },
     serde::{de::DeserializeOwned, Serialize},
     solana_runtime::hardened_unpack::UnpackError,
-    solana_sdk::{
+    safecoin_sdk::{
         clock::{Slot, UnixTimestamp},
         pubkey::Pubkey,
         signature::Signature,
@@ -101,8 +101,6 @@ pub enum BlockstoreError {
     ProtobufDecodeError(#[from] prost::DecodeError),
     ParentEntriesUnavailable,
     SlotUnavailable,
-    UnsupportedTransactionVersion,
-    MissingTransactionMetadata,
 }
 pub type Result<T> = std::result::Result<T, BlockstoreError>;
 
@@ -431,7 +429,7 @@ impl Rocks {
                 }
             }
         };
-        // this is only needed for LedgerCleanupService. so guard with PrimaryOnly (i.e. running solana-validator)
+        // this is only needed for LedgerCleanupService. so guard with PrimaryOnly (i.e. running safecoin-validator)
         if matches!(access_type, AccessType::PrimaryOnly) {
             for cf_name in cf_names {
                 // these special column families must be excluded from LedgerCleanupService's rocksdb
@@ -788,6 +786,14 @@ impl ColumnName for columns::TransactionStatusIndex {
     const NAME: &'static str = TRANSACTION_STATUS_INDEX_CF;
 }
 
+impl SlotColumn for columns::BankHash {}
+impl ColumnName for columns::BankHash {
+    const NAME: &'static str = BANK_HASH_CF;
+}
+impl TypedColumn for columns::BankHash {
+    type Type = blockstore_meta::FrozenHashVersioned;
+}
+
 impl SlotColumn for columns::Rewards {}
 impl ColumnName for columns::Rewards {
     const NAME: &'static str = REWARDS_CF;
@@ -938,14 +944,6 @@ impl ColumnName for columns::Orphans {
 }
 impl TypedColumn for columns::Orphans {
     type Type = bool;
-}
-
-impl SlotColumn for columns::BankHash {}
-impl ColumnName for columns::BankHash {
-    const NAME: &'static str = BANK_HASH_CF;
-}
-impl TypedColumn for columns::BankHash {
-    type Type = blockstore_meta::FrozenHashVersioned;
 }
 
 impl SlotColumn for columns::Root {}
@@ -1363,7 +1361,7 @@ fn get_cf_options<C: 'static + Column + ColumnName>(
 ) -> Options {
     let mut options = Options::default();
     // 256 * 8 = 2GB. 6 of these columns should take at most 12GB of RAM
-    options.set_max_write_buffer_number(8);
+    options.set_max_write_buffer_number(30);
     options.set_write_buffer_size(MAX_WRITE_BUFFER_SIZE as usize);
     let file_num_compaction_trigger = 4;
     // Recommend that this be around the size of level 0. Level 0 estimated size in stable state is

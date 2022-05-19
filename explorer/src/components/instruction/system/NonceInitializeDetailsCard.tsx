@@ -3,7 +3,7 @@ import {
   SystemProgram,
   SignatureResult,
   ParsedInstruction,
-} from "@solana/web3.js";
+} from "@safecoin/web3.js";
 import { InstructionCard } from "../InstructionCard";
 import { Address } from "components/common/Address";
 import { InitializeNonceInfo } from "./types";
@@ -23,27 +23,27 @@ export function NonceInitializeDetailsCard(props: {
       ix={ix}
       index={index}
       result={result}
-      title="System Program: Initialize Nonce"
+      title="Initialize Nonce"
       innerCards={innerCards}
       childIndex={childIndex}
     >
       <tr>
         <td>Program</td>
-        <td className="text-lg-end">
+        <td className="text-lg-right">
           <Address pubkey={SystemProgram.programId} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Nonce Address</td>
-        <td className="text-lg-end">
+        <td className="text-lg-right">
           <Address pubkey={info.nonceAccount} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Authority Address</td>
-        <td className="text-lg-end">
+        <td className="text-lg-right">
           <Address pubkey={info.nonceAuthority} alignRight link />
         </td>
       </tr>

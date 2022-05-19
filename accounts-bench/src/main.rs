@@ -4,14 +4,14 @@ extern crate log;
 use {
     clap::{crate_description, crate_name, value_t, App, Arg},
     rayon::prelude::*,
-    solana_measure::measure::Measure,
+    safecoin_measure::measure::Measure,
     solana_runtime::{
         accounts::{create_test_accounts, update_accounts_bench, Accounts},
         accounts_db::AccountShrinkThreshold,
         accounts_index::AccountSecondaryIndexes,
         ancestors::Ancestors,
     },
-    solana_sdk::{genesis_config::ClusterType, pubkey::Pubkey},
+    safecoin_sdk::{genesis_config::ClusterType, pubkey::Pubkey},
     std::{env, fs, path::PathBuf},
 };
 
@@ -62,12 +62,13 @@ fn main() {
     if fs::remove_dir_all(path.clone()).is_err() {
         println!("Warning: Couldn't remove {:?}", path);
     }
-    let accounts = Accounts::new_with_config_for_benches(
+    let accounts = Accounts::new_with_config(
         vec![path],
         &ClusterType::Testnet,
         AccountSecondaryIndexes::default(),
         false,
         AccountShrinkThreshold::default(),
+        None,
     );
     println!("Creating {} accounts", num_accounts);
     let mut create_time = Measure::start("create accounts");
@@ -104,7 +105,7 @@ fn main() {
     for x in 0..iterations {
         if clean {
             let mut time = Measure::start("clean");
-            accounts.accounts_db.clean_accounts(None, false, None);
+            accounts.accounts_db.clean_accounts(None, false);
             time.stop();
             println!("{}", time);
             for slot in 0..num_slots {
@@ -120,12 +121,11 @@ fn main() {
             let results_store = accounts.accounts_db.update_accounts_hash_with_index_option(
                 false,
                 false,
-                solana_sdk::clock::Slot::default(),
+                safecoin_sdk::clock::Slot::default(),
                 &ancestors,
                 None,
                 false,
                 None,
-                false,
             );
             time_store.stop();
             if results != results_store {

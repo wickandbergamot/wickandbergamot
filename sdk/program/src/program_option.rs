@@ -1,5 +1,5 @@
-//! A C representation of Rust's `std::option::Option` used across the FFI
-//! boundary for Solana program interfaces
+//! A C representation of Rust's `std::option::Option` used accross the FFI
+//! boundary for Safecoin program interfaces
 //!
 //! This implementation mostly matches `std::option` except iterators since the iteration
 //! trait requires returning `std::option::Option`
@@ -880,7 +880,7 @@ impl<T: Clone> Clone for COption<T> {
 }
 
 impl<T> Default for COption<T> {
-    /// Returns [`COption::None`][COption::None].
+    /// Returns [`COption::None`][COption::COption::None].
     ///
     /// # Examples
     ///

@@ -9,25 +9,24 @@ use {
     bip39::{Language, Mnemonic, MnemonicType, Seed},
     clap::{App, AppSettings, Arg, ArgMatches, SubCommand},
     log::*,
-    solana_account_decoder::{UiAccountEncoding, UiDataSliceConfig},
+    safecoin_account_decoder::{UiAccountEncoding, UiDataSliceConfig},
     solana_bpf_loader_program::{syscalls::register_syscalls, BpfError, ThisInstructionMeter},
-    solana_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*},
-    solana_cli_output::{
+    safecoin_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*},
+    safecoin_cli_output::{
         CliProgram, CliProgramAccountType, CliProgramAuthority, CliProgramBuffer, CliProgramId,
         CliUpgradeableBuffer, CliUpgradeableBuffers, CliUpgradeableProgram,
         CliUpgradeableProgramClosed, CliUpgradeablePrograms,
     },
-    solana_client::{
+    safecoin_client::{
         client_error::ClientErrorKind,
         rpc_client::RpcClient,
         rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig, RpcSendTransactionConfig},
         rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType},
         tpu_client::{TpuClient, TpuClientConfig},
     },
-    solana_program_runtime::invoke_context::InvokeContext,
     solana_rbpf::{elf::Executable, verifier, vm::Config},
-    solana_remote_wallet::remote_wallet::RemoteWalletManager,
-    solana_sdk::{
+    safecoin_remote_wallet::remote_wallet::RemoteWalletManager,
+    safecoin_sdk::{
         account::Account,
         account_utils::StateMut,
         bpf_loader, bpf_loader_deprecated,
@@ -35,8 +34,9 @@ use {
         instruction::{Instruction, InstructionError},
         loader_instruction,
         message::Message,
-        native_token::Sol,
+        native_token::Safe,
         packet::PACKET_DATA_SIZE,
+        process_instruction::MockInvokeContext,
         pubkey::Pubkey,
         signature::{keypair_from_seed, read_keypair_file, Keypair, Signature, Signer},
         system_instruction::{self, SystemError},
@@ -65,7 +65,6 @@ pub enum ProgramCliCommand {
         is_final: bool,
         max_len: Option<usize>,
         allow_excessive_balance: bool,
-        skip_fee_check: bool,
     },
     WriteBuffer {
         program_location: String,
@@ -73,7 +72,6 @@ pub enum ProgramCliCommand {
         buffer_pubkey: Option<Pubkey>,
         buffer_authority_signer_index: Option<SignerIndex>,
         max_len: Option<usize>,
-        skip_fee_check: bool,
     },
     SetBufferAuthority {
         buffer_pubkey: Pubkey,
@@ -115,13 +113,6 @@ impl ProgramSubCommands for App<'_, '_> {
             SubCommand::with_name("program")
                 .about("Program management")
                 .setting(AppSettings::SubcommandRequiredElseHelp)
-                .arg(
-                    Arg::with_name("skip_fee_check")
-                        .long("skip-fee-check")
-                        .hidden(true)
-                        .takes_value(false)
-                        .global(true)
-                )
                 .subcommand(
                     SubCommand::with_name("deploy")
                         .about("Deploy a program")
@@ -174,7 +165,7 @@ impl ProgramSubCommands for App<'_, '_> {
                             Arg::with_name("allow_excessive_balance")
                                 .long("allow-excessive-deploy-account-balance")
                                 .takes_value(false)
-                                .help("Use the designated program id even if the account already holds a large balance of SOL")
+                                .help("Use the designated program id even if the account already holds a large balance of SAFE")
                         ),
                 )
                 .subcommand(
@@ -318,7 +309,7 @@ impl ProgramSubCommands for App<'_, '_> {
                             Arg::with_name("lamports")
                                 .long("lamports")
                                 .takes_value(false)
-                                .help("Display balance in lamports instead of SOL"),
+                                .help("Display balance in lamports instead of SAFE"),
                         ),
                 )
                 .subcommand(
@@ -378,7 +369,7 @@ impl ProgramSubCommands for App<'_, '_> {
                             Arg::with_name("lamports")
                                 .long("lamports")
                                 .takes_value(false)
-                                .help("Display balance in lamports instead of SOL"),
+                                .help("Display balance in lamports instead of SAFE"),
                         ),
                 )
         )
@@ -413,13 +404,7 @@ impl ProgramSubCommands for App<'_, '_> {
                     Arg::with_name("allow_excessive_balance")
                         .long("allow-excessive-deploy-account-balance")
                         .takes_value(false)
-                        .help("Use the designated program id, even if the account already holds a large balance of SOL")
-                )
-                .arg(
-                    Arg::with_name("skip_fee_check")
-                        .long("skip-fee-check")
-                        .hidden(true)
-                        .takes_value(false)
+                        .help("Use the designated program id, even if the account already holds a large balance of SAFE")
                 ),
         )
     }
@@ -430,14 +415,7 @@ pub fn parse_program_subcommand(
     default_signer: &DefaultSigner,
     wallet_manager: &mut Option<Arc<RemoteWalletManager>>,
 ) -> Result<CliCommandInfo, CliError> {
-    let (subcommand, sub_matches) = matches.subcommand();
-    let matches_skip_fee_check = matches.is_present("skip_fee_check");
-    let sub_matches_skip_fee_check = sub_matches
-        .map(|m| m.is_present("skip_fee_check"))
-        .unwrap_or(false);
-    let skip_fee_check = matches_skip_fee_check || sub_matches_skip_fee_check;
-
-    let response = match (subcommand, sub_matches) {
+    let response = match matches.subcommand() {
         ("deploy", Some(matches)) => {
             let mut bulk_signers = vec![Some(
                 default_signer.signer_from_path(matches, wallet_manager)?,
@@ -497,7 +475,6 @@ pub fn parse_program_subcommand(
                     is_final: matches.is_present("final"),
                     max_len,
                     allow_excessive_balance: matches.is_present("allow_excessive_balance"),
-                    skip_fee_check,
                 }),
                 signers: signer_info.signers,
             }
@@ -543,7 +520,6 @@ pub fn parse_program_subcommand(
                     buffer_authority_signer_index: signer_info
                         .index_of_or_none(buffer_authority_pubkey),
                     max_len,
-                    skip_fee_check,
                 }),
                 signers: signer_info.signers,
             }
@@ -692,7 +668,6 @@ pub fn process_program_subcommand(
             is_final,
             max_len,
             allow_excessive_balance,
-            skip_fee_check,
         } => process_program_deploy(
             rpc_client,
             config,
@@ -705,7 +680,6 @@ pub fn process_program_subcommand(
             *is_final,
             *max_len,
             *allow_excessive_balance,
-            *skip_fee_check,
         ),
         ProgramCliCommand::WriteBuffer {
             program_location,
@@ -713,7 +687,6 @@ pub fn process_program_subcommand(
             buffer_pubkey,
             buffer_authority_signer_index,
             max_len,
-            skip_fee_check,
         } => process_write_buffer(
             rpc_client,
             config,
@@ -722,7 +695,6 @@ pub fn process_program_subcommand(
             *buffer_pubkey,
             *buffer_authority_signer_index,
             *max_len,
-            *skip_fee_check,
         ),
         ProgramCliCommand::SetBufferAuthority {
             buffer_pubkey,
@@ -820,7 +792,6 @@ fn process_program_deploy(
     is_final: bool,
     max_len: Option<usize>,
     allow_excessive_balance: bool,
-    skip_fee_check: bool,
 ) -> ProcessResult {
     let (words, mnemonic, buffer_keypair) = create_ephemeral_keypair()?;
     let (buffer_provided, buffer_signer, buffer_pubkey) = if let Some(i) = buffer_signer_index {
@@ -975,7 +946,6 @@ fn process_program_deploy(
             &buffer_pubkey,
             Some(upgrade_authority_signer),
             allow_excessive_balance,
-            skip_fee_check,
         )
     } else {
         do_process_program_upgrade(
@@ -986,7 +956,6 @@ fn process_program_deploy(
             config.signers[upgrade_authority_signer_index],
             &buffer_pubkey,
             buffer_signer,
-            skip_fee_check,
         )
     };
     if result.is_ok() && is_final {
@@ -1013,7 +982,6 @@ fn process_write_buffer(
     buffer_pubkey: Option<Pubkey>,
     buffer_authority_signer_index: Option<SignerIndex>,
     max_len: Option<usize>,
-    skip_fee_check: bool,
 ) -> ProcessResult {
     // Create ephemeral keypair to use for Buffer account, if not provided
     let (words, mnemonic, buffer_keypair) = create_ephemeral_keypair()?;
@@ -1081,7 +1049,6 @@ fn process_write_buffer(
         &buffer_pubkey,
         Some(buffer_authority),
         true,
-        skip_fee_check,
     );
 
     if result.is_err() && buffer_signer_index.is_none() && buffer_signer.is_some() {
@@ -1105,7 +1072,7 @@ fn process_set_authority(
     };
 
     trace!("Set a new authority");
-    let blockhash = rpc_client.get_latest_blockhash()?;
+    let (blockhash, _) = rpc_client.get_recent_blockhash()?;
 
     let mut tx = if let Some(ref pubkey) = program_pubkey {
         Transaction::new_unsigned(Message::new(
@@ -1484,7 +1451,7 @@ fn close(
     authority_signer: &dyn Signer,
     program_pubkey: Option<&Pubkey>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let blockhash = rpc_client.get_latest_blockhash()?;
+    let (blockhash, _) = rpc_client.get_recent_blockhash()?;
 
     let mut tx = Transaction::new_unsigned(Message::new(
         &[bpf_loader_upgradeable::close_any(
@@ -1668,7 +1635,6 @@ pub fn process_deploy(
     buffer_signer_index: Option<SignerIndex>,
     use_deprecated_loader: bool,
     allow_excessive_balance: bool,
-    skip_fee_check: bool,
 ) -> ProcessResult {
     // Create ephemeral keypair to use for Buffer account, if not provided
     let (words, mnemonic, buffer_keypair) = create_ephemeral_keypair()?;
@@ -1699,7 +1665,6 @@ pub fn process_deploy(
         &buffer_signer.pubkey(),
         Some(buffer_signer),
         allow_excessive_balance,
-        skip_fee_check,
     );
     if result.is_err() && buffer_signer_index.is_none() {
         report_ephemeral_mnemonic(words, mnemonic);
@@ -1738,11 +1703,9 @@ fn do_process_program_write_and_deploy(
     buffer_pubkey: &Pubkey,
     buffer_authority_signer: Option<&dyn Signer>,
     allow_excessive_balance: bool,
-    skip_fee_check: bool,
 ) -> ProcessResult {
     // Build messages to calculate fees
     let mut messages: Vec<&Message> = Vec::new();
-    let blockhash = rpc_client.get_latest_blockhash()?;
 
     // Initialize buffer account or complete if already partially initialized
     let (initial_message, write_messages, balance_needed) =
@@ -1788,10 +1751,9 @@ fn do_process_program_write_and_deploy(
                 )
             };
             let initial_message = if !initial_instructions.is_empty() {
-                Some(Message::new_with_blockhash(
+                Some(Message::new(
                     &initial_instructions,
                     Some(&config.signers[0].pubkey()),
-                    &blockhash,
                 ))
             } else {
                 None
@@ -1811,7 +1773,7 @@ fn do_process_program_write_and_deploy(
                 } else {
                     loader_instruction::write(buffer_pubkey, loader_id, offset, bytes)
                 };
-                Message::new_with_blockhash(&[instruction], Some(&payer_pubkey), &blockhash)
+                Message::new(&[instruction], Some(&payer_pubkey))
             };
 
             let mut write_messages = vec![];
@@ -1840,7 +1802,7 @@ fn do_process_program_write_and_deploy(
 
     let final_message = if let Some(program_signers) = program_signers {
         let message = if loader_id == &bpf_loader_upgradeable::id() {
-            Message::new_with_blockhash(
+            Message::new(
                 &bpf_loader_upgradeable::deploy_with_max_program_len(
                     &config.signers[0].pubkey(),
                     &program_signers[0].pubkey(),
@@ -1852,13 +1814,11 @@ fn do_process_program_write_and_deploy(
                     programdata_len,
                 )?,
                 Some(&config.signers[0].pubkey()),
-                &blockhash,
             )
         } else {
-            Message::new_with_blockhash(
+            Message::new(
                 &[loader_instruction::finalize(buffer_pubkey, loader_id)],
                 Some(&config.signers[0].pubkey()),
-                &blockhash,
             )
         };
         Some(message)
@@ -1869,9 +1829,7 @@ fn do_process_program_write_and_deploy(
         messages.push(message);
     }
 
-    if !skip_fee_check {
-        check_payer(&rpc_client, config, balance_needed, &messages)?;
-    }
+    check_payer(&rpc_client, config, balance_needed, &messages)?;
 
     send_deploy_messages(
         rpc_client,
@@ -1905,7 +1863,6 @@ fn do_process_program_upgrade(
     upgrade_authority: &dyn Signer,
     buffer_pubkey: &Pubkey,
     buffer_signer: Option<&dyn Signer>,
-    skip_fee_check: bool,
 ) -> ProcessResult {
     let loader_id = bpf_loader_upgradeable::id();
     let data_len = program_data.len();
@@ -1915,7 +1872,6 @@ fn do_process_program_upgrade(
 
     // Build messages to calculate fees
     let mut messages: Vec<&Message> = Vec::new();
-    let blockhash = rpc_client.get_latest_blockhash()?;
 
     let (initial_message, write_messages, balance_needed) =
         if let Some(buffer_signer) = buffer_signer {
@@ -1947,10 +1903,9 @@ fn do_process_program_upgrade(
             };
 
             let initial_message = if !initial_instructions.is_empty() {
-                Some(Message::new_with_blockhash(
+                Some(Message::new(
                     &initial_instructions,
                     Some(&config.signers[0].pubkey()),
-                    &blockhash,
                 ))
             } else {
                 None
@@ -1966,7 +1921,7 @@ fn do_process_program_upgrade(
                     offset,
                     bytes,
                 );
-                Message::new_with_blockhash(&[instruction], Some(&payer_pubkey), &blockhash)
+                Message::new(&[instruction], Some(&payer_pubkey))
             };
 
             // Create and add write messages
@@ -1993,7 +1948,7 @@ fn do_process_program_upgrade(
     }
 
     // Create and add final message
-    let final_message = Message::new_with_blockhash(
+    let final_message = Message::new(
         &[bpf_loader_upgradeable::upgrade(
             program_id,
             buffer_pubkey,
@@ -2001,14 +1956,10 @@ fn do_process_program_upgrade(
             &config.signers[0].pubkey(),
         )],
         Some(&config.signers[0].pubkey()),
-        &blockhash,
     );
     messages.push(&final_message);
 
-    if !skip_fee_check {
-        check_payer(&rpc_client, config, balance_needed, &messages)?;
-    }
-
+    check_payer(&rpc_client, config, balance_needed, &messages)?;
     send_deploy_messages(
         rpc_client,
         config,
@@ -2032,14 +1983,17 @@ fn read_and_verify_elf(program_location: &str) -> Result<Vec<u8>, Box<dyn std::e
     let mut program_data = Vec::new();
     file.read_to_end(&mut program_data)
         .map_err(|err| format!("Unable to read program file: {}", err))?;
-    let mut invoke_context = InvokeContext::new_mock(&[], &[]);
+    let mut invoke_context = MockInvokeContext::new(vec![]);
 
     // Verify the program
     Executable::<BpfError, ThisInstructionMeter>::from_elf(
         &program_data,
         Some(verifier::check),
         Config {
-            reject_broken_elfs: true,
+            reject_unresolved_syscalls: true,
+            verify_mul64_imm_nonzero: false,
+            verify_shift32_imm: true,
+            reject_section_virtual_address_file_offset_mismatch: true,
             ..Config::default()
         },
         register_syscalls(&mut invoke_context).unwrap(),
@@ -2078,7 +2032,9 @@ fn complete_partial_program_init(
             elf_pubkey,
             account_data_len as u64,
         ));
-        instructions.push(system_instruction::assign(elf_pubkey, loader_id));
+        if account.owner != *loader_id {
+            instructions.push(system_instruction::assign(elf_pubkey, loader_id));
+        }
         if account.lamports < minimum_balance {
             let balance = minimum_balance - account.lamports;
             instructions.push(system_instruction::transfer(
@@ -2093,7 +2049,7 @@ fn complete_partial_program_init(
         {
             return Err(format!(
                 "Buffer account has a balance: {:?}; it may already be in use",
-                Sol(account.lamports)
+                Safe(account.lamports)
             )
             .into());
         }
@@ -2107,11 +2063,14 @@ fn check_payer(
     balance_needed: u64,
     messages: &[&Message],
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let (_, fee_calculator) = rpc_client.get_recent_blockhash()?;
+
     // Does the payer have enough?
     check_account_for_spend_multiple_fees_with_commitment(
         rpc_client,
         &config.signers[0].pubkey(),
         balance_needed,
+        &fee_calculator,
         messages,
         config.commitment,
     )?;
@@ -2133,7 +2092,7 @@ fn send_deploy_messages(
     if let Some(message) = initial_message {
         if let Some(initial_signer) = initial_signer {
             trace!("Preparing the required accounts");
-            let blockhash = rpc_client.get_latest_blockhash()?;
+            let (blockhash, _) = rpc_client.get_recent_blockhash()?;
 
             let mut initial_transaction = Transaction::new_unsigned(message.clone());
             // Most of the initial_transaction combinations require both the fee-payer and new program
@@ -2185,7 +2144,7 @@ fn send_deploy_messages(
     if let Some(message) = final_message {
         if let Some(final_signers) = final_signers {
             trace!("Deploying program");
-            let blockhash = rpc_client.get_latest_blockhash()?;
+            let (blockhash, _) = rpc_client.get_recent_blockhash()?;
 
             let mut final_tx = Transaction::new_unsigned(message.clone());
             let mut signers = final_signers.to_vec();
@@ -2226,15 +2185,15 @@ fn report_ephemeral_mnemonic(words: usize, mnemonic: bip39::Mnemonic) {
         divider
     );
     eprintln!(
-        "`solana-keygen recover` and the following {}-word seed phrase:",
+        "`safecoin-keygen recover` and the following {}-word seed phrase:",
         words
     );
     eprintln!("{}\n{}\n{}", divider, phrase, divider);
     eprintln!("To resume a deploy, pass the recovered keypair as the");
-    eprintln!("[BUFFER_SIGNER] to `solana program deploy` or `solana write-buffer'.");
+    eprintln!("[BUFFER_SIGNER] to `safecoin program deploy` or `safecoin write-buffer'.");
     eprintln!("Or to recover the account's lamports, pass it as the");
     eprintln!(
-        "[BUFFER_ACCOUNT_ADDRESS] argument to `solana program close`.\n{}",
+        "[BUFFER_ACCOUNT_ADDRESS] argument to `safecoin program close`.\n{}",
         divider
     );
 }
@@ -2248,8 +2207,8 @@ mod tests {
             cli::{parse_command, process_command},
         },
         serde_json::Value,
-        solana_cli_output::OutputFormat,
-        solana_sdk::signature::write_keypair_file,
+        safecoin_cli_output::OutputFormat,
+        safecoin_sdk::signature::write_keypair_file,
     };
 
     fn make_tmp_path(name: &str) -> String {
@@ -2295,7 +2254,6 @@ mod tests {
                     is_final: false,
                     max_len: None,
                     allow_excessive_balance: false,
-                    skip_fee_check: false,
                 }),
                 signers: vec![read_keypair_file(&keypair_file).unwrap().into()],
             }
@@ -2322,7 +2280,6 @@ mod tests {
                     is_final: false,
                     max_len: Some(42),
                     allow_excessive_balance: false,
-                    skip_fee_check: false,
                 }),
                 signers: vec![read_keypair_file(&keypair_file).unwrap().into()],
             }
@@ -2351,7 +2308,6 @@ mod tests {
                     is_final: false,
                     max_len: None,
                     allow_excessive_balance: false,
-                    skip_fee_check: false,
                 }),
                 signers: vec![
                     read_keypair_file(&keypair_file).unwrap().into(),
@@ -2382,7 +2338,6 @@ mod tests {
                     is_final: false,
                     max_len: None,
                     allow_excessive_balance: false,
-                    skip_fee_check: false,
                 }),
                 signers: vec![read_keypair_file(&keypair_file).unwrap().into()],
             }
@@ -2412,7 +2367,6 @@ mod tests {
                     is_final: false,
                     max_len: None,
                     allow_excessive_balance: false,
-                    skip_fee_check: false,
                 }),
                 signers: vec![
                     read_keypair_file(&keypair_file).unwrap().into(),
@@ -2445,7 +2399,6 @@ mod tests {
                     is_final: false,
                     max_len: None,
                     allow_excessive_balance: false,
-                    skip_fee_check: false,
                 }),
                 signers: vec![
                     read_keypair_file(&keypair_file).unwrap().into(),
@@ -2473,7 +2426,6 @@ mod tests {
                     upgrade_authority_signer_index: 0,
                     is_final: true,
                     max_len: None,
-                    skip_fee_check: false,
                     allow_excessive_balance: false,
                 }),
                 signers: vec![read_keypair_file(&keypair_file).unwrap().into()],
@@ -2507,7 +2459,6 @@ mod tests {
                     buffer_pubkey: None,
                     buffer_authority_signer_index: Some(0),
                     max_len: None,
-                    skip_fee_check: false,
                 }),
                 signers: vec![read_keypair_file(&keypair_file).unwrap().into()],
             }
@@ -2531,7 +2482,6 @@ mod tests {
                     buffer_pubkey: None,
                     buffer_authority_signer_index: Some(0),
                     max_len: Some(42),
-                    skip_fee_check: false,
                 }),
                 signers: vec![read_keypair_file(&keypair_file).unwrap().into()],
             }
@@ -2558,7 +2508,6 @@ mod tests {
                     buffer_pubkey: Some(buffer_keypair.pubkey()),
                     buffer_authority_signer_index: Some(0),
                     max_len: None,
-                    skip_fee_check: false,
                 }),
                 signers: vec![
                     read_keypair_file(&keypair_file).unwrap().into(),
@@ -2588,7 +2537,6 @@ mod tests {
                     buffer_pubkey: None,
                     buffer_authority_signer_index: Some(1),
                     max_len: None,
-                    skip_fee_check: false,
                 }),
                 signers: vec![
                     read_keypair_file(&keypair_file).unwrap().into(),
@@ -2623,7 +2571,6 @@ mod tests {
                     buffer_pubkey: Some(buffer_keypair.pubkey()),
                     buffer_authority_signer_index: Some(2),
                     max_len: None,
-                    skip_fee_check: false,
                 }),
                 signers: vec![
                     read_keypair_file(&keypair_file).unwrap().into(),
@@ -3066,7 +3013,6 @@ mod tests {
                 is_final: false,
                 max_len: None,
                 allow_excessive_balance: false,
-                skip_fee_check: false,
             }),
             signers: vec![&default_keypair],
             output_format: OutputFormat::JsonCompact,

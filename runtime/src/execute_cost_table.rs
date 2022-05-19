@@ -4,7 +4,7 @@
 /// When its capacity limit is reached, it prunes old and less-used programs
 /// to make room for new ones.
 use log::*;
-use {solana_sdk::pubkey::Pubkey, std::collections::HashMap};
+use {safecoin_sdk::pubkey::Pubkey, std::collections::HashMap};
 
 // prune is rather expensive op, free up bulk space in each operation
 // would be more efficient. PRUNE_RATIO defines the after prune table
@@ -66,7 +66,7 @@ impl ExecuteCostTable {
                 .map(|(key, _)| key)
                 .expect("cannot find mode from cost table");
 
-            *self.table.get(key).unwrap()
+            *self.table.get(&key).unwrap()
         }
     }
 
@@ -74,7 +74,7 @@ impl ExecuteCostTable {
     // client is advised to call `get_average()` or `get_mode()` to
     // assign a 'default' value for new program.
     pub fn get_cost(&self, key: &Pubkey) -> Option<&u64> {
-        self.table.get(key)
+        self.table.get(&key)
     }
 
     pub fn upsert(&mut self, key: &Pubkey, value: u64) -> Option<u64> {
@@ -95,10 +95,6 @@ impl ExecuteCostTable {
         *timestamp = Self::micros_since_epoch();
 
         Some(*program_cost)
-    }
-
-    pub fn get_program_keys(&self) -> Vec<&Pubkey> {
-        self.table.keys().collect()
     }
 
     // prune the old programs so the table contains `new_size` of records,

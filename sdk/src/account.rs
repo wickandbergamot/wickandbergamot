@@ -4,10 +4,10 @@ use {
         lamports::LamportsError,
         pubkey::Pubkey,
     },
-    solana_program::{account_info::AccountInfo, debug_account_data::*, sysvar::Sysvar},
+    safecoin_program::{account_info::AccountInfo, sysvar::Sysvar},
     std::{
         cell::{Ref, RefCell},
-        fmt,
+        cmp, fmt,
         rc::Rc,
         sync::Arc,
     },
@@ -15,7 +15,7 @@ use {
 
 /// An Account with data that is stored on chain
 #[repr(C)]
-#[frozen_abi(digest = "HawRVHh7t4d3H3bitWHFt25WhhoDmbJMCfWdESQQoYEy")]
+#[frozen_abi(digest = "AXJTWWXfp49rHb34ayFzFLSEuaRbMUsVPNzBDyP3UPjc")]
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Default, AbiExample)]
 #[serde(rename_all = "camelCase")]
 pub struct Account {
@@ -103,13 +103,6 @@ pub trait WritableAccount: ReadableAccount {
         );
         Ok(())
     }
-    fn saturating_add_lamports(&mut self, lamports: u64) {
-        self.set_lamports(self.lamports().saturating_add(lamports))
-    }
-    fn saturating_sub_lamports(&mut self, lamports: u64) {
-        self.set_lamports(self.lamports().saturating_sub(lamports))
-    }
-    fn data_mut(&mut self) -> &mut Vec<u8>;
     fn data_as_mut_slice(&mut self) -> &mut [u8];
     fn set_owner(&mut self, owner: Pubkey);
     fn copy_into_owner_from_slice(&mut self, source: &[u8]);
@@ -163,9 +156,6 @@ impl WritableAccount for Account {
     fn set_lamports(&mut self, lamports: u64) {
         self.lamports = lamports;
     }
-    fn data_mut(&mut self) -> &mut Vec<u8> {
-        &mut self.data
-    }
     fn data_as_mut_slice(&mut self) -> &mut [u8] {
         &mut self.data
     }
@@ -202,11 +192,9 @@ impl WritableAccount for AccountSharedData {
     fn set_lamports(&mut self, lamports: u64) {
         self.lamports = lamports;
     }
-    fn data_mut(&mut self) -> &mut Vec<u8> {
-        Arc::make_mut(&mut self.data)
-    }
     fn data_as_mut_slice(&mut self) -> &mut [u8] {
-        &mut self.data_mut()[..]
+        let data = Arc::make_mut(&mut self.data);
+        &mut data[..]
     }
     fn set_owner(&mut self, owner: Pubkey) {
         self.owner = owner;
@@ -292,16 +280,22 @@ impl ReadableAccount for Ref<'_, Account> {
 }
 
 fn debug_fmt<T: ReadableAccount>(item: &T, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let mut f = f.debug_struct("Account");
-
-    f.field("lamports", &item.lamports())
-        .field("data.len", &item.data().len())
-        .field("owner", &item.owner())
-        .field("executable", &item.executable())
-        .field("rent_epoch", &item.rent_epoch());
-    debug_account_data(item.data(), &mut f);
-
-    f.finish()
+    let data_len = cmp::min(64, item.data().len());
+    let data_str = if data_len > 0 {
+        format!(" data: {}", hex::encode(item.data()[..data_len].to_vec()))
+    } else {
+        "".to_string()
+    };
+    write!(
+        f,
+        "Account {{ lamports: {} data.len: {} owner: {} executable: {} rent_epoch: {}{} }}",
+        item.lamports(),
+        item.data().len(),
+        item.owner(),
+        item.executable(),
+        item.rent_epoch(),
+        data_str,
+    )
 }
 
 impl fmt::Debug for Account {
@@ -323,21 +317,6 @@ fn shared_new<T: WritableAccount>(lamports: u64, space: usize, owner: &Pubkey) -
         *owner,
         bool::default(),
         Epoch::default(),
-    )
-}
-
-fn shared_new_rent_epoch<T: WritableAccount>(
-    lamports: u64,
-    space: usize,
-    owner: &Pubkey,
-    rent_epoch: Epoch,
-) -> T {
-    T::create(
-        lamports,
-        vec![0u8; space],
-        *owner,
-        bool::default(),
-        rent_epoch,
     )
 }
 
@@ -449,9 +428,6 @@ impl Account {
     ) -> Result<RefCell<Self>, bincode::Error> {
         shared_new_ref_data_with_space(lamports, state, space, owner)
     }
-    pub fn new_rent_epoch(lamports: u64, space: usize, owner: &Pubkey, rent_epoch: Epoch) -> Self {
-        shared_new_rent_epoch(lamports, space, owner, rent_epoch)
-    }
     pub fn deserialize_data<T: serde::de::DeserializeOwned>(&self) -> Result<T, bincode::Error> {
         shared_deserialize_data(self)
     }
@@ -508,9 +484,6 @@ impl AccountSharedData {
     ) -> Result<RefCell<Self>, bincode::Error> {
         shared_new_ref_data_with_space(lamports, state, space, owner)
     }
-    pub fn new_rent_epoch(lamports: u64, space: usize, owner: &Pubkey, rent_epoch: Epoch) -> Self {
-        shared_new_rent_epoch(lamports, space, owner, rent_epoch)
-    }
     pub fn deserialize_data<T: serde::de::DeserializeOwned>(&self) -> Result<T, bincode::Error> {
         shared_deserialize_data(self)
     }
@@ -536,7 +509,7 @@ pub fn create_account_with_fields<S: Sysvar>(
     (lamports, rent_epoch): InheritableAccountFields,
 ) -> Account {
     let data_len = S::size_of().max(bincode::serialized_size(sysvar).unwrap() as usize);
-    let mut account = Account::new(lamports, data_len, &solana_program::sysvar::id());
+    let mut account = Account::new(lamports, data_len, &safecoin_program::sysvar::id());
     to_account::<S, Account>(sysvar, &mut account).unwrap();
     account.rent_epoch = rent_epoch;
     account
@@ -584,7 +557,7 @@ pub fn to_account<S: Sysvar, T: WritableAccount>(sysvar: &S, account: &mut T) ->
 
 /// Return the information required to construct an `AccountInfo`.  Used by the
 /// `AccountInfo` conversion implementations.
-impl solana_program::account_info::Account for Account {
+impl safecoin_program::account_info::Account for Account {
     fn get(&mut self) -> (&mut u64, &mut [u8], &Pubkey, bool, Epoch) {
         (
             &mut self.lamports,
@@ -825,28 +798,6 @@ pub mod tests {
         let key = Pubkey::new_unique();
         let (_account1, mut account2) = make_two_accounts(&key);
         account2.checked_sub_lamports(u64::MAX).unwrap();
-    }
-
-    #[test]
-    fn test_account_saturating_add_lamports() {
-        let key = Pubkey::new_unique();
-        let (mut account, _) = make_two_accounts(&key);
-
-        let remaining = 22;
-        account.set_lamports(u64::MAX - remaining);
-        account.saturating_add_lamports(remaining * 2);
-        assert_eq!(account.lamports(), u64::MAX);
-    }
-
-    #[test]
-    fn test_account_saturating_sub_lamports() {
-        let key = Pubkey::new_unique();
-        let (mut account, _) = make_two_accounts(&key);
-
-        let remaining = 33;
-        account.set_lamports(remaining);
-        account.saturating_sub_lamports(remaining * 2);
-        assert_eq!(account.lamports(), 0);
     }
 
     #[test]

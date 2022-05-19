@@ -15,7 +15,7 @@ OUT_DIR ?= ./out
 OS := $(shell uname)
 
 LLVM_DIR = $(LOCAL_PATH)../dependencies/bpf-tools/llvm
-LLVM_SYSTEM_INC_DIRS := $(LLVM_DIR)/lib/clang/13.0.0/include
+LLVM_SYSTEM_INC_DIRS := $(LLVM_DIR)/lib/clang/12.0.1/include
 COMPILER_RT_DIR = $(LOCAL_PATH)../dependencies/bpf-tools/rust/lib/rustlib/bpfel-unknown-unknown/lib
 STD_INC_DIRS := $(LLVM_DIR)/include
 STD_LIB_DIRS := $(LLVM_DIR)/lib
@@ -79,7 +79,7 @@ READ_ELF_FLAGS := \
 
 TESTFRAMEWORK_RPATH := $(abspath $(LOCAL_PATH)../dependencies/criterion/lib)
 TESTFRAMEWORK_FLAGS := \
-  -DSOL_TEST \
+  -DSAFE_TEST \
   -isystem $(LOCAL_PATH)../dependencies/criterion/include \
   -L $(LOCAL_PATH)../dependencies/criterion/lib \
   -rpath $(TESTFRAMEWORK_RPATH) \
@@ -193,10 +193,10 @@ $1: $2
 	$(_@)mkdir -p $(dir $1)
 	$(_@)$(LLD) $(BPF_LLD_FLAGS) -o $1 $2 $(COMPILER_RT_DIR)/libcompiler_builtins-*.rlib
 ifeq (,$(wildcard $(subst .so,-keypair.json,$1)))
-	$(_@)solana-keygen new --no-passphrase --silent -o $(subst .so,-keypair.json,$1)
+	$(_@)safecoin-keygen new --no-passphrase --silent -o $(subst .so,-keypair.json,$1)
 endif
 	@echo To deploy this program:
-	@echo $$$$ solana program deploy $(abspath $1)
+	@echo $$$$ safecoin program deploy $(abspath $1)
 endef
 
 define TEST_C_RULE

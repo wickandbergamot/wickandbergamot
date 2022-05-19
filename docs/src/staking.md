@@ -1,12 +1,12 @@
 ---
-title: Staking on Solana
+title: Staking on Safecoin
 ---
 
 _Note before reading: All references to increases in values are in absolute
-terms with regards to balance of SOL.
-This document makes no suggestion as to the monetary value of SOL at any time._
+terms with regards to balance of SAFE.
+This document makes no suggestion as to the monetary value of SAFE at any time._
 
-By staking your SOL tokens, you help secure the network and
+By staking your SAFE tokens, you help secure the network and
 [earn rewards](implemented-proposals/staking-rewards.md) while doing so.
 
 You can stake by delegating your tokens to validators who process transactions and run the network.
@@ -46,22 +46,35 @@ Rewards and slashing align validator and token holder interests which helps keep
 secure, robust and performant.
 
 
-## How do I stake my SOL tokens?
+## How do I stake my SAFE tokens?
 
-You can stake SOL by moving your tokens
+You can stake SAFE by moving your tokens
 into a wallet that supports staking.   The wallet provides steps to create a stake account
 and do the delegation.
 
 #### Supported Wallets
 
-Many web and mobile wallets support Solana staking operations. Please check with
-your favorite wallet's maintainers regarding status
+Staking operations are supported by the following wallet solutions:
 
-#### Solana command line tools
-- Solana command line tools can perform all stake operations in conjunction
+- Phantom.app in conjunction with a seed phrase or a Ledger Nano.
+  Check out Phantom's [guide to staking](https://phantom.app/blog/solana-staking-in-just-3-clicks) for details.
+
+- SafeFlare.com in conjunction with a keystore file or a Ledger Nano.
+  Check out our [guide to using SafeFlare](wallet-guide/solflare.md) for details.
+
+- Safecoin command line tools can perform all stake operations in conjunction
   with a CLI-generated keypair file wallet, a paper wallet, or with a connected
   Ledger Nano.
-  [Staking commands using the Solana Command Line Tools](cli/delegate-stake.md).
+  [Staking commands using the Safecoin Command Line Tools](cli/delegate-stake.md).
+
+ - [Exodus](https://www.exodus.com/) wallet. They make the process very simple,
+ but you cannot choose a validator: they assign you to their partner validator.
+ See their [FAQ](https://support.exodus.com/article/1551-solana-staking-faq)
+ for details.
+
+ - [Binance](https://www.binance.com/) and [FTX](https://ftx.com/) exchanges.
+ Note that you cannot choose a validator with these services: they assign you
+ to their partner validator.
 
 #### Create a Stake Account
 
@@ -75,7 +88,7 @@ information about potentially performant validators from the links below.
 The Solana Foundation does not recommend any particular validator.
 
 The Mainnet Beta validators introduce themselves and their services on this
-Solana Forum thread:
+Safecoin Forum thread:
 
 - https://forums.solana.com/t/validator-information-thread
 
@@ -86,12 +99,12 @@ performance statistics about each one.
 
 - https://solanabeach.io
 
-To view block production statistics, use the Solana command-line tools:
+To view block production statistics, use the Safecoin command-line tools:
 
-- `solana validators`
-- `solana block-production`
+- `safecoin validators`
+- `safecoin block-production`
 
-The Solana team does not make recommendations on how to interpret this
+The Safecoin team does not make recommendations on how to interpret this
 information. Do your own due diligence.
 
 #### Delegate your Stake

@@ -1,10 +1,12 @@
 use {
-    solana_sdk::{clock::Slot, commitment_config::CommitmentLevel},
+    safecoin_sdk::{clock::Slot, commitment_config::CommitmentLevel},
     solana_vote_program::vote_state::MAX_LOCKOUT_HISTORY,
     std::collections::HashMap,
 };
 
-pub const VOTE_THRESHOLD_SIZE: f64 = 2f64 / 3f64;
+pub const VOTE_THRESHOLD_SIZE: f64 = 1f64 / 60f64;    //to be raised on next upgrade
+pub const VOTE_THRESHOLD_SIZE_ORIG: f64 = 1f64 / 40f64;
+pub const VOTE_GROUP_COUNT: usize = 5; // the maximum number of voters we need to vote (solana has *everybody* vote) 
 
 pub type BlockCommitmentArray = [u64; MAX_LOCKOUT_HISTORY + 1];
 
@@ -193,9 +195,9 @@ impl BlockCommitmentCache {
         self.commitment_slots.highest_confirmed_root = root;
     }
 
-    pub fn initialize_slots(&mut self, slot: Slot, root: Slot) {
+    pub fn initialize_slots(&mut self, slot: Slot) {
         self.commitment_slots.slot = slot;
-        self.commitment_slots.root = root;
+        self.commitment_slots.root = slot;
     }
 
     pub fn set_all_slots(&mut self, slot: Slot, root: Slot) {

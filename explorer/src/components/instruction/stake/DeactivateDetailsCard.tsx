@@ -3,7 +3,7 @@ import {
   SignatureResult,
   StakeProgram,
   ParsedInstruction,
-} from "@solana/web3.js";
+} from "@safecoin/web3.js";
 import { InstructionCard } from "../InstructionCard";
 import { Address } from "components/common/Address";
 import { DeactivateInfo } from "./types";
@@ -23,27 +23,27 @@ export function DeactivateDetailsCard(props: {
       ix={ix}
       index={index}
       result={result}
-      title="Stake Program: Deactivate Stake"
+      title="Deactivate Stake"
       innerCards={innerCards}
       childIndex={childIndex}
     >
       <tr>
         <td>Program</td>
-        <td className="text-lg-end">
+        <td className="text-lg-right">
           <Address pubkey={StakeProgram.programId} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Stake Address</td>
-        <td className="text-lg-end">
+        <td className="text-lg-right">
           <Address pubkey={info.stakeAccount} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Authority Address</td>
-        <td className="text-lg-end">
+        <td className="text-lg-right">
           <Address pubkey={info.stakeAuthority} alignRight link />
         </td>
       </tr>

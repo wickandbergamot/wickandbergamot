@@ -7,36 +7,20 @@
 use {
     crate::{block_cost_limits::*, execute_cost_table::ExecuteCostTable},
     log::*,
-    solana_sdk::{pubkey::Pubkey, transaction::SanitizedTransaction},
+    safecoin_sdk::{pubkey::Pubkey, transaction::Transaction},
     std::collections::HashMap,
 };
 
 const MAX_WRITABLE_ACCOUNTS: usize = 256;
 
 // costs are stored in number of 'compute unit's
-#[derive(Debug)]
+#[derive(AbiExample, Default, Debug)]
 pub struct TransactionCost {
     pub writable_accounts: Vec<Pubkey>,
     pub signature_cost: u64,
     pub write_lock_cost: u64,
     pub data_bytes_cost: u64,
-    pub builtins_execution_cost: u64,
-    pub bpf_execution_cost: u64,
-    pub is_simple_vote: bool,
-}
-
-impl Default for TransactionCost {
-    fn default() -> Self {
-        Self {
-            writable_accounts: Vec::with_capacity(MAX_WRITABLE_ACCOUNTS),
-            signature_cost: 0u64,
-            write_lock_cost: 0u64,
-            data_bytes_cost: 0u64,
-            builtins_execution_cost: 0u64,
-            bpf_execution_cost: 0u64,
-            is_simple_vote: false,
-        }
-    }
+    pub execution_cost: u64,
 }
 
 impl TransactionCost {
@@ -52,17 +36,11 @@ impl TransactionCost {
         self.signature_cost = 0;
         self.write_lock_cost = 0;
         self.data_bytes_cost = 0;
-        self.builtins_execution_cost = 0;
-        self.bpf_execution_cost = 0;
-        self.is_simple_vote = false;
+        self.execution_cost = 0;
     }
 
     pub fn sum(&self) -> u64 {
-        self.signature_cost
-            .saturating_add(self.write_lock_cost)
-            .saturating_add(self.data_bytes_cost)
-            .saturating_add(self.builtins_execution_cost)
-            .saturating_add(self.bpf_execution_cost)
+        self.signature_cost + self.write_lock_cost + self.data_bytes_cost + self.execution_cost
     }
 }
 
@@ -82,6 +60,7 @@ impl CostModel {
         cost_table
             .iter()
             .map(|(key, cost)| (key, cost))
+            .chain(BUILT_IN_INSTRUCTION_COSTS.iter())
             .for_each(|(program_id, cost)| {
                 match self
                     .instruction_execution_cost_table
@@ -107,16 +86,17 @@ impl CostModel {
         );
     }
 
-    pub fn calculate_cost(&self, transaction: &SanitizedTransaction) -> TransactionCost {
+    pub fn calculate_cost(
+        &self,
+        transaction: &Transaction,
+        demote_program_write_locks: bool,
+    ) -> TransactionCost {
         let mut tx_cost = TransactionCost::new_with_capacity(MAX_WRITABLE_ACCOUNTS);
 
         tx_cost.signature_cost = self.get_signature_cost(transaction);
-        self.get_write_lock_cost(&mut tx_cost, transaction);
+        self.get_write_lock_cost(&mut tx_cost, transaction, demote_program_write_locks);
         tx_cost.data_bytes_cost = self.get_data_bytes_cost(transaction);
-        let (builtins_cost, bpf_cost) = self.get_transaction_cost(transaction);
-        tx_cost.builtins_execution_cost = builtins_cost;
-        tx_cost.bpf_execution_cost = bpf_cost;
-        tx_cost.is_simple_vote = transaction.is_simple_vote_transaction();
+        tx_cost.execution_cost = self.get_transaction_cost(transaction);
 
         debug!("transaction {:?} has cost {:?}", transaction, tx_cost);
         tx_cost
@@ -139,6 +119,10 @@ impl CostModel {
         self.instruction_execution_cost_table.get_cost_table()
     }
 
+    fn get_signature_cost(&self, transaction: &Transaction) -> u64 {
+        transaction.signatures.len() as u64 * SIGNATURE_COST
+    }
+
     pub fn find_instruction_cost(&self, program_key: &Pubkey) -> u64 {
         match self.instruction_execution_cost_table.get_cost(program_key) {
             Some(cost) => *cost,
@@ -153,22 +137,15 @@ impl CostModel {
         }
     }
 
-    pub fn get_program_keys(&self) -> Vec<&Pubkey> {
-        self.instruction_execution_cost_table.get_program_keys()
-    }
-
-    fn get_signature_cost(&self, transaction: &SanitizedTransaction) -> u64 {
-        transaction.signatures().len() as u64 * SIGNATURE_COST
-    }
-
     fn get_write_lock_cost(
         &self,
         tx_cost: &mut TransactionCost,
-        transaction: &SanitizedTransaction,
+        transaction: &Transaction,
+        demote_program_write_locks: bool,
     ) {
         let message = transaction.message();
-        message.account_keys_iter().enumerate().for_each(|(i, k)| {
-            let is_writable = message.is_writable(i);
+        message.account_keys.iter().enumerate().for_each(|(i, k)| {
+            let is_writable = message.is_writable(i, demote_program_write_locks);
 
             if is_writable {
                 tx_cost.writable_accounts.push(*k);
@@ -177,36 +154,29 @@ impl CostModel {
         });
     }
 
-    fn get_data_bytes_cost(&self, transaction: &SanitizedTransaction) -> u64 {
+    fn get_data_bytes_cost(&self, transaction: &Transaction) -> u64 {
         let mut data_bytes_cost: u64 = 0;
-        transaction
-            .message()
-            .program_instructions_iter()
-            .for_each(|(_, ix)| {
-                data_bytes_cost += ix.data.len() as u64 / DATA_BYTES_UNITS;
-            });
+        transaction.message().instructions.iter().for_each(|ix| {
+            data_bytes_cost += ix.data.len() as u64 / DATA_BYTES_UNITS;
+        });
         data_bytes_cost
     }
 
-    fn get_transaction_cost(&self, transaction: &SanitizedTransaction) -> (u64, u64) {
-        let mut builtin_costs = 0u64;
-        let mut bpf_costs = 0u64;
+    fn get_transaction_cost(&self, transaction: &Transaction) -> u64 {
+        let mut cost: u64 = 0;
 
-        for (program_id, instruction) in transaction.message().program_instructions_iter() {
-            // to keep the same behavior, look for builtin first
-            if let Some(builtin_cost) = BUILT_IN_INSTRUCTION_COSTS.get(program_id) {
-                builtin_costs = builtin_costs.saturating_add(*builtin_cost);
-            } else {
-                let instruction_cost = self.find_instruction_cost(program_id);
-                trace!(
-                    "instruction {:?} has cost of {}",
-                    instruction,
-                    instruction_cost
-                );
-                bpf_costs = bpf_costs.saturating_add(instruction_cost);
-            }
+        for instruction in &transaction.message().instructions {
+            let program_id =
+                transaction.message().account_keys[instruction.program_id_index as usize];
+            let instruction_cost = self.find_instruction_cost(&program_id);
+            trace!(
+                "instruction {:?} has cost of {}",
+                instruction,
+                instruction_cost
+            );
+            cost = cost.saturating_add(instruction_cost);
         }
-        (builtin_costs, bpf_costs)
+        cost
     }
 }
 
@@ -218,7 +188,7 @@ mod tests {
             bank::Bank,
             genesis_utils::{create_genesis_config, GenesisConfigInfo},
         },
-        solana_sdk::{
+        safecoin_sdk::{
             bpf_loader,
             hash::Hash,
             instruction::CompiledInstruction,
@@ -226,7 +196,6 @@ mod tests {
             signature::{Keypair, Signer},
             system_instruction::{self},
             system_program, system_transaction,
-            transaction::Transaction,
         },
         std::{
             str::FromStr,
@@ -242,7 +211,7 @@ mod tests {
             mint_keypair,
             ..
         } = create_genesis_config(10);
-        let bank = Arc::new(Bank::new_no_wallclock_throttle_for_tests(&genesis_config));
+        let bank = Arc::new(Bank::new_no_wallclock_throttle(&genesis_config));
         let start_hash = bank.last_blockhash();
         (mint_keypair, start_hash)
     }
@@ -271,55 +240,26 @@ mod tests {
     }
 
     #[test]
-    fn test_iterating_instruction_cost_by_program_keys() {
-        solana_logger::setup();
-        let mut testee = CostModel::default();
-
-        let mut test_key_and_cost = HashMap::<Pubkey, u64>::new();
-        (0u64..10u64).for_each(|n| {
-            test_key_and_cost.insert(Pubkey::new_unique(), n);
-        });
-
-        test_key_and_cost.iter().for_each(|(key, cost)| {
-            let _ = testee.upsert_instruction_cost(key, *cost).unwrap();
-            info!("key {:?} cost {}", key, cost);
-        });
-
-        let keys = testee.get_program_keys();
-        // verify each key has pre-set value
-        keys.iter().for_each(|key| {
-            let expected_cost = test_key_and_cost.get(key).unwrap();
-            info!(
-                "check key {:?} expect {} find {}",
-                key,
-                expected_cost,
-                testee.find_instruction_cost(key)
-            );
-            assert_eq!(*expected_cost, testee.find_instruction_cost(key));
-        });
-    }
-
-    #[test]
     fn test_cost_model_simple_transaction() {
         let (mint_keypair, start_hash) = test_setup();
 
         let keypair = Keypair::new();
-        let simple_transaction = SanitizedTransaction::from_transaction_for_tests(
-            system_transaction::transfer(&mint_keypair, &keypair.pubkey(), 2, start_hash),
-        );
+        let simple_transaction =
+            system_transaction::transfer(&mint_keypair, &keypair.pubkey(), 2, start_hash);
         debug!(
             "system_transaction simple_transaction {:?}",
             simple_transaction
         );
 
         // expected cost for one system transfer instructions
-        let expected_execution_cost = BUILT_IN_INSTRUCTION_COSTS
-            .get(&system_program::id())
-            .unwrap();
+        let expected_cost = 8;
 
-        let testee = CostModel::default();
+        let mut testee = CostModel::default();
+        testee
+            .upsert_instruction_cost(&system_program::id(), expected_cost)
+            .unwrap();
         assert_eq!(
-            (*expected_execution_cost, 0),
+            expected_cost,
             testee.get_transaction_cost(&simple_transaction)
         );
     }
@@ -328,26 +268,23 @@ mod tests {
     fn test_cost_model_transaction_many_transfer_instructions() {
         let (mint_keypair, start_hash) = test_setup();
 
-        let key1 = solana_sdk::pubkey::new_rand();
-        let key2 = solana_sdk::pubkey::new_rand();
+        let key1 = safecoin_sdk::pubkey::new_rand();
+        let key2 = safecoin_sdk::pubkey::new_rand();
         let instructions =
             system_instruction::transfer_many(&mint_keypair.pubkey(), &[(key1, 1), (key2, 1)]);
         let message = Message::new(&instructions, Some(&mint_keypair.pubkey()));
-        let tx = SanitizedTransaction::from_transaction_for_tests(Transaction::new(
-            &[&mint_keypair],
-            message,
-            start_hash,
-        ));
+        let tx = Transaction::new(&[&mint_keypair], message, start_hash);
         debug!("many transfer transaction {:?}", tx);
 
         // expected cost for two system transfer instructions
-        let program_cost = BUILT_IN_INSTRUCTION_COSTS
-            .get(&system_program::id())
-            .unwrap();
+        let program_cost = 8;
         let expected_cost = program_cost * 2;
 
-        let testee = CostModel::default();
-        assert_eq!((expected_cost, 0), testee.get_transaction_cost(&tx));
+        let mut testee = CostModel::default();
+        testee
+            .upsert_instruction_cost(&system_program::id(), program_cost)
+            .unwrap();
+        assert_eq!(expected_cost, testee.get_transaction_cost(&tx));
     }
 
     #[test]
@@ -355,22 +292,20 @@ mod tests {
         let (mint_keypair, start_hash) = test_setup();
 
         // construct a transaction with multiple random instructions
-        let key1 = solana_sdk::pubkey::new_rand();
-        let key2 = solana_sdk::pubkey::new_rand();
-        let prog1 = solana_sdk::pubkey::new_rand();
-        let prog2 = solana_sdk::pubkey::new_rand();
+        let key1 = safecoin_sdk::pubkey::new_rand();
+        let key2 = safecoin_sdk::pubkey::new_rand();
+        let prog1 = safecoin_sdk::pubkey::new_rand();
+        let prog2 = safecoin_sdk::pubkey::new_rand();
         let instructions = vec![
             CompiledInstruction::new(3, &(), vec![0, 1]),
             CompiledInstruction::new(4, &(), vec![0, 2]),
         ];
-        let tx = SanitizedTransaction::from_transaction_for_tests(
-            Transaction::new_with_compiled_instructions(
-                &[&mint_keypair],
-                &[key1, key2],
-                start_hash,
-                vec![prog1, prog2],
-                instructions,
-            ),
+        let tx = Transaction::new_with_compiled_instructions(
+            &[&mint_keypair],
+            &[key1, key2],
+            start_hash,
+            vec![prog1, prog2],
+            instructions,
         );
         debug!("many random transaction {:?}", tx);
 
@@ -379,7 +314,7 @@ mod tests {
 
         // expected cost for two random/unknown program is
         let expected_cost = testee.instruction_execution_cost_table.get_mode() * 2;
-        assert_eq!((0, expected_cost), result);
+        assert_eq!(expected_cost, result);
     }
 
     #[test]
@@ -395,18 +330,16 @@ mod tests {
             CompiledInstruction::new(4, &(), vec![0, 2]),
             CompiledInstruction::new(5, &(), vec![1, 3]),
         ];
-        let tx = SanitizedTransaction::from_transaction_for_tests(
-            Transaction::new_with_compiled_instructions(
-                &[&signer1, &signer2],
-                &[key1, key2],
-                Hash::new_unique(),
-                vec![prog1, prog2],
-                instructions,
-            ),
+        let tx = Transaction::new_with_compiled_instructions(
+            &[&signer1, &signer2],
+            &[key1, key2],
+            Hash::new_unique(),
+            vec![prog1, prog2],
+            instructions,
         );
 
         let cost_model = CostModel::default();
-        let tx_cost = cost_model.calculate_cost(&tx);
+        let tx_cost = cost_model.calculate_cost(&tx, /*demote_program_write_locks=*/ true);
         assert_eq!(2 + 2, tx_cost.writable_accounts.len());
         assert_eq!(signer1.pubkey(), tx_cost.writable_accounts[0]);
         assert_eq!(signer2.pubkey(), tx_cost.writable_accounts[1]);
@@ -436,22 +369,19 @@ mod tests {
     #[test]
     fn test_cost_model_calculate_cost() {
         let (mint_keypair, start_hash) = test_setup();
-        let tx = SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
-            &mint_keypair,
-            &Keypair::new().pubkey(),
-            2,
-            start_hash,
-        ));
+        let tx =
+            system_transaction::transfer(&mint_keypair, &Keypair::new().pubkey(), 2, start_hash);
 
         let expected_account_cost = WRITE_LOCK_UNITS * 2;
-        let expected_execution_cost = BUILT_IN_INSTRUCTION_COSTS
-            .get(&system_program::id())
-            .unwrap();
+        let expected_execution_cost = 8;
 
-        let cost_model = CostModel::default();
-        let tx_cost = cost_model.calculate_cost(&tx);
+        let mut cost_model = CostModel::default();
+        cost_model
+            .upsert_instruction_cost(&system_program::id(), expected_execution_cost)
+            .unwrap();
+        let tx_cost = cost_model.calculate_cost(&tx, /*demote_program_write_locks=*/ true);
         assert_eq!(expected_account_cost, tx_cost.write_lock_cost);
-        assert_eq!(*expected_execution_cost, tx_cost.builtins_execution_cost);
+        assert_eq!(expected_execution_cost, tx_cost.execution_cost);
         assert_eq!(2, tx_cost.writable_accounts.len());
     }
 
@@ -477,22 +407,20 @@ mod tests {
     fn test_cost_model_can_be_shared_concurrently_with_rwlock() {
         let (mint_keypair, start_hash) = test_setup();
         // construct a transaction with multiple random instructions
-        let key1 = solana_sdk::pubkey::new_rand();
-        let key2 = solana_sdk::pubkey::new_rand();
-        let prog1 = solana_sdk::pubkey::new_rand();
-        let prog2 = solana_sdk::pubkey::new_rand();
+        let key1 = safecoin_sdk::pubkey::new_rand();
+        let key2 = safecoin_sdk::pubkey::new_rand();
+        let prog1 = safecoin_sdk::pubkey::new_rand();
+        let prog2 = safecoin_sdk::pubkey::new_rand();
         let instructions = vec![
             CompiledInstruction::new(3, &(), vec![0, 1]),
             CompiledInstruction::new(4, &(), vec![0, 2]),
         ];
-        let tx = Arc::new(SanitizedTransaction::from_transaction_for_tests(
-            Transaction::new_with_compiled_instructions(
-                &[&mint_keypair],
-                &[key1, key2],
-                start_hash,
-                vec![prog1, prog2],
-                instructions,
-            ),
+        let tx = Arc::new(Transaction::new_with_compiled_instructions(
+            &[&mint_keypair],
+            &[key1, key2],
+            start_hash,
+            vec![prog1, prog2],
+            instructions,
         ));
 
         let number_threads = 10;
@@ -517,7 +445,8 @@ mod tests {
                 } else {
                     thread::spawn(move || {
                         let cost_model = cost_model.write().unwrap();
-                        let tx_cost = cost_model.calculate_cost(&tx);
+                        let tx_cost = cost_model
+                            .calculate_cost(&tx, /*demote_program_write_locks=*/ true);
                         assert_eq!(3, tx_cost.writable_accounts.len());
                         assert_eq!(expected_account_cost, tx_cost.write_lock_cost);
                     })
@@ -548,14 +477,14 @@ mod tests {
             assert_eq!(*cost, cost_model.find_instruction_cost(id));
         }
 
-        // verify built-in programs are not in bpf_costs
+        // verify built-in programs
         assert!(cost_model
             .instruction_execution_cost_table
             .get_cost(&system_program::id())
-            .is_none());
+            .is_some());
         assert!(cost_model
             .instruction_execution_cost_table
             .get_cost(&solana_vote_program::id())
-            .is_none());
+            .is_some());
     }
 }

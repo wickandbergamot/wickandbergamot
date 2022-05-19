@@ -1,9 +1,11 @@
 use {
     crossbeam_channel::{Receiver, RecvTimeoutError, Sender},
-    solana_entry::entry::Entry,
-    solana_ledger::blockstore::{Blockstore, CompletedDataSetInfo},
+    solana_ledger::{
+        blockstore::{Blockstore, CompletedDataSetInfo},
+        entry::Entry,
+    },
     solana_rpc::{max_slots::MaxSlots, rpc_subscriptions::RpcSubscriptions},
-    solana_sdk::signature::Signature,
+    safecoin_sdk::signature::Signature,
     std::{
         sync::{
             atomic::{AtomicBool, Ordering},
@@ -104,7 +106,7 @@ impl CompletedDataSetsService {
 pub mod test {
     use {
         super::*,
-        solana_sdk::{
+        safecoin_sdk::{
             hash::Hash,
             signature::{Keypair, Signer},
             transaction::Transaction,

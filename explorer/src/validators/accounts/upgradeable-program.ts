@@ -9,7 +9,6 @@ import {
   union,
   coerce,
   create,
-  any,
 } from "superstruct";
 import { ParsedInfo } from "validators";
 import { PublicKeyFromString } from "validators/pubkey";
@@ -50,27 +49,9 @@ export const ProgramBufferAccount = type({
   info: ProgramBufferAccountInfo,
 });
 
-export type ProgramUninitializedAccountInfo = Infer<
-  typeof ProgramUninitializedAccountInfo
->;
-export const ProgramUninitializedAccountInfo = any();
-
-export type ProgramUninitializedAccount = Infer<
-  typeof ProgramUninitializedAccount
->;
-export const ProgramUninitializedAccount = type({
-  type: literal("uninitialized"),
-  info: ProgramUninitializedAccountInfo,
-});
-
 export type UpgradeableLoaderAccount = Infer<typeof UpgradeableLoaderAccount>;
 export const UpgradeableLoaderAccount = coerce(
-  union([
-    ProgramAccount,
-    ProgramDataAccount,
-    ProgramBufferAccount,
-    ProgramUninitializedAccount,
-  ]),
+  union([ProgramAccount, ProgramDataAccount, ProgramBufferAccount]),
   ParsedInfo,
   (value) => {
     // Coercions like `PublicKeyFromString` are not applied within
@@ -92,12 +73,6 @@ export const UpgradeableLoaderAccount = coerce(
         return {
           type: value.type,
           info: create(value.info, ProgramBufferAccountInfo),
-        };
-      }
-      case "uninitialized": {
-        return {
-          type: value.type,
-          info: create(value.info, ProgramUninitializedAccountInfo),
         };
       }
       default: {

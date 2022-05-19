@@ -53,7 +53,7 @@ for Cargo_toml in $Cargo_tomls; do
     set -x
     crate=$(dirname "$Cargo_toml")
     # The rocksdb package does not build with the stock rust docker image so use
-    # the solana rust docker image
+    # the safecoin rust docker image
     cargoCommand="cargo publish --token $CRATES_IO_TOKEN"
     ci/docker-run.sh "$rust_stable_docker_image" bash -exc "cd $crate; $cargoCommand"
   ) || true # <-- Don't fail.  We want to be able to retry the job in cases when a publish fails halfway due to network/cloud issues
@@ -70,7 +70,7 @@ for Cargo_toml in $Cargo_tomls; do
         rm -rf crate-test
         "$cargo" stable init crate-test
         cd crate-test/
-        echo "${crate_name} = \"=${expectedCrateVersion}\"" >> Cargo.toml
+        echo "${crate_name} = \"${expectedCrateVersion}\"" >> Cargo.toml
         echo "[workspace]" >> Cargo.toml
         "$cargo" stable check
       ) && really_uploaded=1

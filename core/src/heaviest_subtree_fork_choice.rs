@@ -6,9 +6,9 @@ use {
         latest_validator_votes_for_frozen_banks::LatestValidatorVotesForFrozenBanks,
         progress_map::ProgressMap, tree_diff::TreeDiff,
     },
-    solana_measure::measure::Measure,
+    safecoin_measure::measure::Measure,
     solana_runtime::{bank::Bank, bank_forks::BankForks, epoch_stakes::EpochStakes},
-    solana_sdk::{
+    safecoin_sdk::{
         clock::{Epoch, Slot},
         epoch_schedule::EpochSchedule,
         hash::Hash,
@@ -168,7 +168,7 @@ pub struct HeaviestSubtreeForkChoice {
 }
 
 impl HeaviestSubtreeForkChoice {
-    pub fn new(root: SlotHashKey) -> Self {
+    pub(crate) fn new(root: SlotHashKey) -> Self {
         let mut heaviest_subtree_fork_choice = Self {
             root,
             // Doesn't implement default because `root` must
@@ -183,7 +183,7 @@ impl HeaviestSubtreeForkChoice {
 
     // Given a root and a list of `frozen_banks` sorted smallest to greatest by slot,
     // return a new HeaviestSubtreeForkChoice
-    pub fn new_from_frozen_banks(root: SlotHashKey, frozen_banks: &[Arc<Bank>]) -> Self {
+    pub(crate) fn new_from_frozen_banks(root: SlotHashKey, frozen_banks: &[Arc<Bank>]) -> Self {
         let mut heaviest_subtree_fork_choice = HeaviestSubtreeForkChoice::new(root);
         let mut prev_slot = root.0;
         for bank in frozen_banks.iter() {
@@ -206,7 +206,8 @@ impl HeaviestSubtreeForkChoice {
         heaviest_subtree_fork_choice
     }
 
-    pub fn new_from_bank_forks(bank_forks: &BankForks) -> Self {
+    #[cfg(test)]
+    pub(crate) fn new_from_bank_forks(bank_forks: &BankForks) -> Self {
         let mut frozen_banks: Vec<_> = bank_forks.frozen_banks().values().cloned().collect();
 
         frozen_banks.sort_by_key(|bank| bank.slot());
@@ -215,12 +216,12 @@ impl HeaviestSubtreeForkChoice {
     }
 
     #[cfg(test)]
-    pub fn new_from_tree<T: GetSlotHash>(forks: Tree<T>) -> Self {
-        let root = forks.root().data().slot_hash();
+    pub(crate) fn new_from_tree<T: GetSlotHash>(forks: Tree<T>) -> Self {
+        let root = forks.root().data.slot_hash();
         let mut walk = TreeWalk::from(forks);
         let mut heaviest_subtree_fork_choice = HeaviestSubtreeForkChoice::new(root);
         while let Some(visit) = walk.get() {
-            let slot_hash = visit.node().data().slot_hash();
+            let slot_hash = visit.node().data.slot_hash();
             if heaviest_subtree_fork_choice
                 .fork_infos
                 .contains_key(&slot_hash)
@@ -228,7 +229,7 @@ impl HeaviestSubtreeForkChoice {
                 walk.forward();
                 continue;
             }
-            let parent_slot_hash = walk.get_parent().map(|n| n.data().slot_hash());
+            let parent_slot_hash = walk.get_parent().map(|n| n.data.slot_hash());
             heaviest_subtree_fork_choice.add_new_leaf_slot(slot_hash, parent_slot_hash);
             walk.forward();
         }
@@ -475,27 +476,6 @@ impl HeaviestSubtreeForkChoice {
         self.fork_infos
             .get(slot_hash_key)
             .map(|fork_info| fork_info.is_candidate())
-    }
-
-    /// Returns if a node with slot `maybe_ancestor_slot` is an ancestor of the node with
-    /// key `node_key`
-    pub fn is_strict_ancestor(
-        &self,
-        maybe_ancestor_key: &SlotHashKey,
-        node_key: &SlotHashKey,
-    ) -> bool {
-        if maybe_ancestor_key == node_key {
-            return false;
-        }
-
-        if maybe_ancestor_key.0 > node_key.0 {
-            return false;
-        }
-
-        let mut ancestor_iterator = self.ancestor_iterator(*node_key);
-        ancestor_iterator.any(|(ancestor_slot, ancestor_hash)| {
-            ancestor_slot == maybe_ancestor_key.0 && ancestor_hash == maybe_ancestor_key.1
-        })
     }
 
     fn propagate_new_leaf(
@@ -964,16 +944,19 @@ impl ForkChoice for HeaviestSubtreeForkChoice {
         bank_forks: &RwLock<BankForks>,
     ) -> (Arc<Bank>, Option<Arc<Bank>>) {
         let r_bank_forks = bank_forks.read().unwrap();
-
-        // BankForks should only contain one valid version of this slot
         (
+            // BankForks should only contain one valid version of this slot
             r_bank_forks
                 .get_with_checked_hash(self.best_overall_slot())
-                .unwrap(),
+                .unwrap()
+                .clone(),
             self.heaviest_slot_on_same_voted_fork(tower)
                 .map(|slot_hash| {
                     // BankForks should only contain one valid version of this slot
-                    r_bank_forks.get_with_checked_hash(slot_hash).unwrap()
+                    r_bank_forks
+                        .get_with_checked_hash(slot_hash)
+                        .unwrap()
+                        .clone()
                 }),
         )
     }
@@ -1005,21 +988,11 @@ impl ForkChoice for HeaviestSubtreeForkChoice {
         }
     }
 
-    fn mark_fork_valid_candidate(&mut self, valid_slot_hash_key: &SlotHashKey) -> Vec<SlotHashKey> {
+    fn mark_fork_valid_candidate(&mut self, valid_slot_hash_key: &SlotHashKey) {
         info!(
             "marking fork starting at: {:?} valid candidate",
             valid_slot_hash_key
         );
-        let mut newly_duplicate_confirmed_ancestors = vec![];
-
-        for ancestor_key in std::iter::once(*valid_slot_hash_key)
-            .chain(self.ancestor_iterator(*valid_slot_hash_key))
-        {
-            if !self.is_duplicate_confirmed(&ancestor_key).unwrap() {
-                newly_duplicate_confirmed_ancestors.push(ancestor_key);
-            }
-        }
-
         let mut update_operations = UpdateOperations::default();
         // Notify all the children of this node that a parent was marked as valid
         for child_hash_key in self.subtree_diff(*valid_slot_hash_key, SlotHashKey::default()) {
@@ -1033,7 +1006,6 @@ impl ForkChoice for HeaviestSubtreeForkChoice {
         // Aggregate across all ancestors to find the new best slots including this fork
         self.insert_aggregate_operations(&mut update_operations, *valid_slot_hash_key);
         self.process_update_operations(update_operations);
-        newly_duplicate_confirmed_ancestors
     }
 }
 
@@ -1076,9 +1048,9 @@ impl<'a> Iterator for AncestorIterator<'a> {
 mod test {
     use {
         super::*,
-        crate::vote_simulator::VoteSimulator,
+        crate::consensus::test::VoteSimulator,
         solana_runtime::{bank::Bank, bank_utils},
-        solana_sdk::{hash::Hash, slot_history::SlotHistory},
+        safecoin_sdk::{hash::Hash, slot_history::SlotHistory},
         std::{collections::HashSet, ops::Range},
         trees::tr,
     };
@@ -1097,7 +1069,7 @@ mod test {
         let mut heaviest_subtree_fork_choice = HeaviestSubtreeForkChoice::new_from_tree(forks);
 
         let stake = 100;
-        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys_for_tests(1, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(1, stake);
         heaviest_subtree_fork_choice.add_votes(
             [(vote_pubkeys[0], (4, Hash::default()))].iter(),
             bank.epoch_stakes_map(),
@@ -1126,7 +1098,7 @@ mod test {
         */
         let forks = tr(3) / (tr(4) / (tr(5)));
         let stake = 100;
-        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys_for_tests(1, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(1, stake);
         let mut heaviest_subtree_fork_choice = HeaviestSubtreeForkChoice::new_from_tree(forks);
         heaviest_subtree_fork_choice.add_votes(
             [(vote_pubkeys[0], (5, Hash::default()))].iter(),
@@ -1204,10 +1176,10 @@ mod test {
                 .map(|s| (s, Hash::default()))
                 .collect::<Vec<_>>()
         );
-        assert!(heaviest_subtree_fork_choice
+        let parents: Vec<_> = heaviest_subtree_fork_choice
             .ancestor_iterator((0, Hash::default()))
-            .next()
-            .is_none());
+            .collect();
+        assert!(parents.is_empty());
 
         // Set a root, everything but slots 2, 4 should be removed
         heaviest_subtree_fork_choice.set_root((2, Hash::default()));
@@ -1237,7 +1209,7 @@ mod test {
         */
         let forks = tr(0) / (tr(1) / (tr(2) / (tr(4))) / (tr(3)));
         let mut vote_simulator = VoteSimulator::new(1);
-        vote_simulator.fill_bank_forks(forks, &HashMap::new(), true);
+        vote_simulator.fill_bank_forks(forks, &HashMap::new());
         let bank_forks = vote_simulator.bank_forks;
         let mut frozen_banks: Vec<_> = bank_forks
             .read()
@@ -1350,7 +1322,7 @@ mod test {
     fn test_set_root_and_add_votes() {
         let mut heaviest_subtree_fork_choice = setup_forks();
         let stake = 100;
-        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys_for_tests(1, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(1, stake);
 
         // Vote for slot 2
         heaviest_subtree_fork_choice.add_votes(
@@ -1405,7 +1377,7 @@ mod test {
     fn test_set_root_and_add_outdated_votes() {
         let mut heaviest_subtree_fork_choice = setup_forks();
         let stake = 100;
-        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys_for_tests(1, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(1, stake);
 
         // Vote for slot 0
         heaviest_subtree_fork_choice.add_votes(
@@ -1555,8 +1527,11 @@ mod test {
             .add_new_leaf_slot((10, Hash::default()), Some((4, Hash::default())));
         let ancestors = heaviest_subtree_fork_choice
             .ancestor_iterator((10, Hash::default()))
-            .chain(std::iter::once((10, Hash::default())));
-        for a in ancestors {
+            .collect::<Vec<_>>();
+        for a in ancestors
+            .into_iter()
+            .chain(std::iter::once((10, Hash::default())))
+        {
             assert_eq!(heaviest_subtree_fork_choice.best_slot(&a).unwrap().0, 10);
         }
 
@@ -1565,8 +1540,11 @@ mod test {
             .add_new_leaf_slot((9, Hash::default()), Some((4, Hash::default())));
         let ancestors = heaviest_subtree_fork_choice
             .ancestor_iterator((9, Hash::default()))
-            .chain(std::iter::once((9, Hash::default())));
-        for a in ancestors {
+            .collect::<Vec<_>>();
+        for a in ancestors
+            .into_iter()
+            .chain(std::iter::once((9, Hash::default())))
+        {
             assert_eq!(heaviest_subtree_fork_choice.best_slot(&a).unwrap().0, 9);
         }
 
@@ -1575,14 +1553,17 @@ mod test {
             .add_new_leaf_slot((11, Hash::default()), Some((4, Hash::default())));
         let ancestors = heaviest_subtree_fork_choice
             .ancestor_iterator((11, Hash::default()))
-            .chain(std::iter::once((9, Hash::default())));
-        for a in ancestors {
+            .collect::<Vec<_>>();
+        for a in ancestors
+            .into_iter()
+            .chain(std::iter::once((9, Hash::default())))
+        {
             assert_eq!(heaviest_subtree_fork_choice.best_slot(&a).unwrap().0, 9);
         }
 
         // Add a vote for the other branch at slot 3.
         let stake = 100;
-        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys_for_tests(2, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(2, stake);
         let leaf6 = 6;
         // Leaf slot 9 stops being the `best_slot` at slot 1 because there
         // are now votes for the branch at slot 3
@@ -1599,8 +1580,11 @@ mod test {
             .add_new_leaf_slot((8, Hash::default()), Some((4, Hash::default())));
         let ancestors = heaviest_subtree_fork_choice
             .ancestor_iterator((8, Hash::default()))
-            .chain(std::iter::once((8, Hash::default())));
-        for a in ancestors {
+            .collect::<Vec<_>>();
+        for a in ancestors
+            .into_iter()
+            .chain(std::iter::once((8, Hash::default())))
+        {
             let best_slot = if a.0 > 1 { 8 } else { leaf6 };
             assert_eq!(
                 heaviest_subtree_fork_choice.best_slot(&a).unwrap().0,
@@ -1623,8 +1607,11 @@ mod test {
             .add_new_leaf_slot((7, Hash::default()), Some((4, Hash::default())));
         let ancestors = heaviest_subtree_fork_choice
             .ancestor_iterator((7, Hash::default()))
-            .chain(std::iter::once((8, Hash::default())));
-        for a in ancestors {
+            .collect::<Vec<_>>();
+        for a in ancestors
+            .into_iter()
+            .chain(std::iter::once((8, Hash::default())))
+        {
             assert_eq!(heaviest_subtree_fork_choice.best_slot(&a).unwrap().0, 8);
         }
 
@@ -1653,7 +1640,7 @@ mod test {
         let forks = tr(0) / (tr(4) / (tr(6)));
         let mut heaviest_subtree_fork_choice = HeaviestSubtreeForkChoice::new_from_tree(forks);
         let stake = 100;
-        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys_for_tests(1, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(1, stake);
 
         // slot 6 should be the best because it's the only leaf
         assert_eq!(heaviest_subtree_fork_choice.best_overall_slot().0, 6);
@@ -1813,7 +1800,7 @@ mod test {
     fn test_process_update_operations() {
         let mut heaviest_subtree_fork_choice = setup_forks();
         let stake = 100;
-        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys_for_tests(3, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(3, stake);
 
         let pubkey_votes: Vec<(Pubkey, SlotHashKey)> = vec![
             (vote_pubkeys[0], (3, Hash::default())),
@@ -1886,7 +1873,7 @@ mod test {
     fn test_generate_update_operations() {
         let mut heaviest_subtree_fork_choice = setup_forks();
         let stake = 100;
-        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys_for_tests(3, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(3, stake);
         let pubkey_votes: Vec<(Pubkey, SlotHashKey)> = vec![
             (vote_pubkeys[0], (3, Hash::default())),
             (vote_pubkeys[1], (4, Hash::default())),
@@ -2067,7 +2054,7 @@ mod test {
     fn test_add_votes() {
         let mut heaviest_subtree_fork_choice = setup_forks();
         let stake = 100;
-        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys_for_tests(3, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(3, stake);
 
         let pubkey_votes: Vec<(Pubkey, SlotHashKey)> = vec![
             (vote_pubkeys[0], (3, Hash::default())),
@@ -2094,8 +2081,7 @@ mod test {
             setup_duplicate_forks();
         let stake = 10;
         let num_validators = 2;
-        let (bank, vote_pubkeys) =
-            bank_utils::setup_bank_and_vote_pubkeys_for_tests(num_validators, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(num_validators, stake);
 
         let pubkey_votes: Vec<(Pubkey, SlotHashKey)> = vec![
             (vote_pubkeys[0], duplicate_leaves_descended_from_4[0]),
@@ -2177,8 +2163,7 @@ mod test {
             setup_duplicate_forks();
         let stake = 10;
         let num_validators = 2;
-        let (bank, vote_pubkeys) =
-            bank_utils::setup_bank_and_vote_pubkeys_for_tests(num_validators, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(num_validators, stake);
 
         let pubkey_votes: Vec<(Pubkey, SlotHashKey)> = vec![
             (vote_pubkeys[0], duplicate_leaves_descended_from_4[0]),
@@ -2250,8 +2235,7 @@ mod test {
             setup_duplicate_forks();
         let stake = 10;
         let num_validators = 2;
-        let (bank, vote_pubkeys) =
-            bank_utils::setup_bank_and_vote_pubkeys_for_tests(num_validators, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(num_validators, stake);
 
         // Both voters voted on duplicate_leaves_descended_from_4[1], so thats the heaviest
         // branch
@@ -2354,8 +2338,7 @@ mod test {
             setup_duplicate_forks();
         let stake = 10;
         let num_validators = 3;
-        let (bank, vote_pubkeys) =
-            bank_utils::setup_bank_and_vote_pubkeys_for_tests(num_validators, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(num_validators, stake);
 
         let pubkey_votes: Vec<(Pubkey, SlotHashKey)> = vec![
             (vote_pubkeys[0], duplicate_leaves_descended_from_4[0]),
@@ -2484,8 +2467,7 @@ mod test {
 
         let stake = 0;
         let num_validators = 2;
-        let (bank, vote_pubkeys) =
-            bank_utils::setup_bank_and_vote_pubkeys_for_tests(num_validators, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(num_validators, stake);
 
         // Make new vote with vote_pubkeys[0] for a higher slot
         // Create new child with heaviest duplicate parent
@@ -2568,7 +2550,7 @@ mod test {
         assert!(!heaviest_subtree_fork_choice.is_best_child(&(10, Hash::default())));
 
         // Add vote for 9, it's the best again
-        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys_for_tests(3, 100);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(3, 100);
         heaviest_subtree_fork_choice.add_votes(
             [(vote_pubkeys[0], (9, Hash::default()))].iter(),
             bank.epoch_stakes_map(),
@@ -2582,7 +2564,7 @@ mod test {
     #[test]
     fn test_merge() {
         let stake = 100;
-        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys_for_tests(4, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(4, stake);
         /*
             Build fork structure:
                  slot 0
@@ -2726,7 +2708,7 @@ mod test {
     #[test]
     fn test_merge_duplicate() {
         let stake = 100;
-        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys_for_tests(2, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(2, stake);
         let mut slot_5_duplicate_hashes = std::iter::repeat_with(|| (5, Hash::new_unique()))
             .take(2)
             .collect::<Vec<_>>();
@@ -2909,7 +2891,7 @@ mod test {
     fn test_mark_valid_invalid_forks() {
         let mut heaviest_subtree_fork_choice = setup_forks();
         let stake = 100;
-        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys_for_tests(3, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(3, stake);
 
         let pubkey_votes: Vec<(Pubkey, SlotHashKey)> = vec![
             (vote_pubkeys[0], (6, Hash::default())),
@@ -3030,7 +3012,7 @@ mod test {
             duplicate_leaves_descended_from_5,
         ) = setup_duplicate_forks();
         let stake = 100;
-        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys_for_tests(3, stake);
+        let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(3, stake);
 
         let pubkey_votes: Vec<(Pubkey, SlotHashKey)> = vec![
             (vote_pubkeys[0], duplicate_leaves_descended_from_4[0]),

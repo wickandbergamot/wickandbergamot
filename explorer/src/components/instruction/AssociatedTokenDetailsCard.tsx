@@ -1,5 +1,5 @@
 import React from "react";
-import { ParsedInstruction, PublicKey, SignatureResult } from "@solana/web3.js";
+import { ParsedInstruction, PublicKey, SignatureResult } from "@safecoin/web3.js";
 import { InstructionCard } from "./InstructionCard";
 import { Address } from "components/common/Address";
 
@@ -28,28 +28,28 @@ export function AssociatedTokenDetailsCard({
     >
       <tr>
         <td>Program</td>
-        <td className="text-lg-end">
+        <td className="text-lg-right">
           <Address pubkey={ix.programId} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Account</td>
-        <td className="text-lg-end">
+        <td className="text-lg-right">
           <Address pubkey={new PublicKey(info.account)} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Mint</td>
-        <td className="text-lg-end">
+        <td className="text-lg-right">
           <Address pubkey={new PublicKey(info.mint)} alignRight link />
         </td>
       </tr>
 
       <tr>
         <td>Wallet</td>
-        <td className="text-lg-end">
+        <td className="text-lg-right">
           <Address pubkey={new PublicKey(info.wallet)} alignRight link />
         </td>
       </tr>

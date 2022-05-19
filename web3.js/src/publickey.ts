@@ -1,10 +1,10 @@
 import BN from 'bn.js';
 import bs58 from 'bs58';
-import {Buffer} from 'buffer';
 import nacl from 'tweetnacl';
-import {sha256} from '@ethersproject/sha2';
+import {sha256} from 'crypto-hash';
+import {Buffer} from 'buffer';
 
-import {Struct, SOLANA_SCHEMA} from './util/borsh-schema';
+import {Struct, SAFECOIN_SCHEMA} from './util/borsh-schema';
 import {toBuffer} from './util/to-buffer';
 
 /**
@@ -12,10 +12,7 @@ import {toBuffer} from './util/to-buffer';
  */
 export const MAX_SEED_LENGTH = 32;
 
-/**
- * Value to be converted into public key
- */
-export type PublicKeyInitData =
+type PublicKeyInitData =
   | number
   | string
   | Buffer
@@ -23,10 +20,7 @@ export type PublicKeyInitData =
   | Array<number>
   | PublicKeyData;
 
-/**
- * JSON object representation of PublicKey class
- */
-export type PublicKeyData = {
+type PublicKeyData = {
   /** @internal */
   _bn: BN;
 };
@@ -117,10 +111,7 @@ export class PublicKey extends Struct {
 
   /**
    * Derive a public key from another key, a seed, and a program ID.
-   * The program ID will also serve as the owner of the public key, giving
-   * it permission to write data to the account.
    */
-  /* eslint-disable require-await */
   static async createWithSeed(
     fromPublicKey: PublicKey,
     seed: string,
@@ -131,14 +122,13 @@ export class PublicKey extends Struct {
       Buffer.from(seed),
       programId.toBuffer(),
     ]);
-    const hash = sha256(new Uint8Array(buffer)).slice(2);
+    const hash = await sha256(new Uint8Array(buffer));
     return new PublicKey(Buffer.from(hash, 'hex'));
   }
 
   /**
    * Derive a program address from seeds and a program ID.
    */
-  /* eslint-disable require-await */
   static async createProgramAddress(
     seeds: Array<Buffer | Uint8Array>,
     programId: PublicKey,
@@ -155,7 +145,7 @@ export class PublicKey extends Struct {
       programId.toBuffer(),
       Buffer.from('ProgramDerivedAddress'),
     ]);
-    let hash = sha256(new Uint8Array(buffer)).slice(2);
+    let hash = await sha256(new Uint8Array(buffer));
     let publicKeyBytes = new BN(hash, 16).toArray(undefined, 32);
     if (is_on_curve(publicKeyBytes)) {
       throw new Error(`Invalid seeds, address must fall off the curve`);
@@ -200,7 +190,7 @@ export class PublicKey extends Struct {
   }
 }
 
-SOLANA_SCHEMA.set(PublicKey, {
+SAFECOIN_SCHEMA.set(PublicKey, {
   kind: 'struct',
   fields: [['_bn', 'u256']],
 });

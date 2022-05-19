@@ -6,7 +6,7 @@ use {
     solana_bpf_loader_program::serialization::{
         serialize_parameters_aligned, serialize_parameters_unaligned,
     },
-    solana_sdk::{
+    safecoin_sdk::{
         account::{Account, AccountSharedData},
         bpf_loader,
         keyed_account::KeyedAccount,
@@ -22,18 +22,18 @@ fn create_inputs() -> (
     Vec<RefCell<AccountSharedData>>,
     Vec<u8>,
 ) {
-    let program_id = solana_sdk::pubkey::new_rand();
-    let dup_key = solana_sdk::pubkey::new_rand();
-    let dup_key2 = solana_sdk::pubkey::new_rand();
+    let program_id = safecoin_sdk::pubkey::new_rand();
+    let dup_key = safecoin_sdk::pubkey::new_rand();
+    let dup_key2 = safecoin_sdk::pubkey::new_rand();
     let keys = vec![
         dup_key,
         dup_key,
-        solana_sdk::pubkey::new_rand(),
-        solana_sdk::pubkey::new_rand(),
+        safecoin_sdk::pubkey::new_rand(),
+        safecoin_sdk::pubkey::new_rand(),
         dup_key2,
         dup_key2,
-        solana_sdk::pubkey::new_rand(),
-        solana_sdk::pubkey::new_rand(),
+        safecoin_sdk::pubkey::new_rand(),
+        safecoin_sdk::pubkey::new_rand(),
     ];
     let accounts = vec![
         RefCell::new(AccountSharedData::from(Account {

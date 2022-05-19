@@ -1,6 +1,6 @@
 use {
     crate::{parse_account_data::ParseAccountError, StringAmount},
-    solana_sdk::{
+    safecoin_sdk::{
         clock::{Epoch, Slot},
         pubkey::Pubkey,
     },

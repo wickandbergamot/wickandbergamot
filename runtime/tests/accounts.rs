@@ -6,7 +6,7 @@ use {
         accounts_db::{AccountsDb, LoadHint},
         ancestors::Ancestors,
     },
-    solana_sdk::{
+    safecoin_sdk::{
         account::{AccountSharedData, ReadableAccount, WritableAccount},
         clock::Slot,
         genesis_config::ClusterType,
@@ -28,7 +28,7 @@ fn test_shrink_and_clean() {
 
     // repeat the whole test scenario
     for _ in 0..5 {
-        let accounts = Arc::new(AccountsDb::new_single_for_tests());
+        let accounts = Arc::new(AccountsDb::new_single());
         let accounts_for_shrink = accounts.clone();
 
         // spawn the slot shrinking background thread
@@ -49,7 +49,7 @@ fn test_shrink_and_clean() {
         for current_slot in 0..100 {
             while alive_accounts.len() <= 10 {
                 alive_accounts.push((
-                    solana_sdk::pubkey::new_rand(),
+                    safecoin_sdk::pubkey::new_rand(),
                     AccountSharedData::new(thread_rng().gen_range(0, 50), 0, &owner),
                 ));
             }
@@ -65,7 +65,7 @@ fn test_shrink_and_clean() {
 
         // let's dance.
         for _ in 0..10 {
-            accounts.clean_accounts(None, false, None);
+            accounts.clean_accounts(None, false);
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
 
@@ -78,8 +78,8 @@ fn test_shrink_and_clean() {
 #[test]
 fn test_bad_bank_hash() {
     solana_logger::setup();
-    use solana_sdk::signature::{Keypair, Signer};
-    let db = AccountsDb::new_for_tests(Vec::new(), &ClusterType::Development);
+    use safecoin_sdk::signature::{Keypair, Signer};
+    let db = AccountsDb::new(Vec::new(), &ClusterType::Development);
 
     let some_slot: Slot = 0;
     let ancestors = Ancestors::from(vec![some_slot]);

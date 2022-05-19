@@ -1,11 +1,11 @@
 use {
     crate::rpc_filter::RpcFilterType,
-    solana_account_decoder::{UiAccountEncoding, UiDataSliceConfig},
-    solana_sdk::{
+    safecoin_account_decoder::{UiAccountEncoding, UiDataSliceConfig},
+    safecoin_sdk::{
         clock::{Epoch, Slot},
         commitment_config::{CommitmentConfig, CommitmentLevel},
     },
-    solana_transaction_status::{TransactionDetails, UiTransactionEncoding},
+    safecoin_transaction_status::{TransactionDetails, UiTransactionEncoding},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -180,23 +180,6 @@ pub struct RpcSignatureSubscribeConfig {
     #[serde(flatten)]
     pub commitment: Option<CommitmentConfig>,
     pub enable_received_notification: Option<bool>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum RpcBlockSubscribeFilter {
-    All,
-    MentionsAccountOrProgram(String),
-}
-
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RpcBlockSubscribeConfig {
-    #[serde(flatten)]
-    pub commitment: Option<CommitmentConfig>,
-    pub encoding: Option<UiTransactionEncoding>,
-    pub transaction_details: Option<TransactionDetails>,
-    pub show_rewards: Option<bool>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

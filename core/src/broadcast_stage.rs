@@ -2,9 +2,8 @@
 #![allow(clippy::rc_buffer)]
 use {
     self::{
-        broadcast_duplicates_run::{BroadcastDuplicatesConfig, BroadcastDuplicatesRun},
-        broadcast_fake_shreds_run::BroadcastFakeShredsRun,
-        broadcast_metrics::*,
+        broadcast_duplicates_run::BroadcastDuplicatesRun,
+        broadcast_fake_shreds_run::BroadcastFakeShredsRun, broadcast_metrics::*,
         fail_entry_verification_broadcast_run::FailEntryVerificationBroadcastRun,
         standard_broadcast_run::StandardBroadcastRun,
     },
@@ -17,16 +16,15 @@ use {
         Sender as CrossbeamSender,
     },
     itertools::Itertools,
-    solana_gossip::cluster_info::{ClusterInfo, ClusterInfoError, DATA_PLANE_FANOUT},
+    safecoin_gossip::cluster_info::{ClusterInfo, ClusterInfoError},
     solana_ledger::{blockstore::Blockstore, shred::Shred},
-    solana_measure::measure::Measure,
+    safecoin_measure::measure::Measure,
     solana_metrics::{inc_new_counter_error, inc_new_counter_info},
     solana_poh::poh_recorder::WorkingBankEntry,
     solana_runtime::{bank::Bank, bank_forks::BankForks},
-    solana_sdk::{
+    safecoin_sdk::{
         clock::Slot,
         pubkey::Pubkey,
-        signature::Keypair,
         timing::{timestamp, AtomicInterval},
     },
     solana_streamer::{
@@ -35,7 +33,6 @@ use {
     },
     std::{
         collections::HashMap,
-        iter::repeat,
         net::UdpSocket,
         sync::{
             atomic::{AtomicBool, Ordering},
@@ -47,7 +44,7 @@ use {
     },
 };
 
-pub mod broadcast_duplicates_run;
+mod broadcast_duplicates_run;
 mod broadcast_fake_shreds_run;
 pub mod broadcast_metrics;
 pub(crate) mod broadcast_utils;
@@ -66,6 +63,14 @@ pub(crate) type TransmitReceiver = Receiver<(Arc<Vec<Shred>>, Option<BroadcastSh
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum BroadcastStageReturnType {
     ChannelDisconnected,
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct BroadcastDuplicatesConfig {
+    /// Percentage of stake to send different version of slots to
+    pub stake_partition: u8,
+    /// Number of slots to wait before sending duplicate shreds
+    pub duplicate_send_delay: usize,
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -89,6 +94,7 @@ impl BroadcastStageType {
         bank_forks: &Arc<RwLock<BankForks>>,
         shred_version: u16,
     ) -> BroadcastStage {
+        let keypair = cluster_info.keypair.clone();
         match self {
             BroadcastStageType::Standard => BroadcastStage::new(
                 sock,
@@ -98,7 +104,7 @@ impl BroadcastStageType {
                 exit_sender,
                 blockstore,
                 bank_forks,
-                StandardBroadcastRun::new(shred_version),
+                StandardBroadcastRun::new(keypair, shred_version),
             ),
 
             BroadcastStageType::FailEntryVerification => BroadcastStage::new(
@@ -109,7 +115,7 @@ impl BroadcastStageType {
                 exit_sender,
                 blockstore,
                 bank_forks,
-                FailEntryVerificationBroadcastRun::new(shred_version),
+                FailEntryVerificationBroadcastRun::new(keypair, shred_version),
             ),
 
             BroadcastStageType::BroadcastFakeShreds => BroadcastStage::new(
@@ -120,7 +126,7 @@ impl BroadcastStageType {
                 exit_sender,
                 blockstore,
                 bank_forks,
-                BroadcastFakeShredsRun::new(0, shred_version),
+                BroadcastFakeShredsRun::new(keypair, 0, shred_version),
             ),
 
             BroadcastStageType::BroadcastDuplicates(config) => BroadcastStage::new(
@@ -131,7 +137,7 @@ impl BroadcastStageType {
                 exit_sender,
                 blockstore,
                 bank_forks,
-                BroadcastDuplicatesRun::new(shred_version, config.clone()),
+                BroadcastDuplicatesRun::new(keypair, shred_version, config.clone()),
             ),
         }
     }
@@ -140,7 +146,6 @@ impl BroadcastStageType {
 trait BroadcastRun {
     fn run(
         &mut self,
-        keypair: &Keypair,
         blockstore: &Arc<Blockstore>,
         receiver: &Receiver<WorkingBankEntry>,
         socket_sender: &Sender<(Arc<Vec<Shred>>, Option<BroadcastShredBatchInfo>)>,
@@ -185,7 +190,6 @@ pub struct BroadcastStage {
 impl BroadcastStage {
     #[allow(clippy::too_many_arguments)]
     fn run(
-        cluster_info: Arc<ClusterInfo>,
         blockstore: &Arc<Blockstore>,
         receiver: &Receiver<WorkingBankEntry>,
         socket_sender: &Sender<(Arc<Vec<Shred>>, Option<BroadcastShredBatchInfo>)>,
@@ -193,13 +197,8 @@ impl BroadcastStage {
         mut broadcast_stage_run: impl BroadcastRun,
     ) -> BroadcastStageReturnType {
         loop {
-            let res = broadcast_stage_run.run(
-                &cluster_info.keypair(),
-                blockstore,
-                receiver,
-                socket_sender,
-                blockstore_sender,
-            );
+            let res =
+                broadcast_stage_run.run(blockstore, receiver, socket_sender, blockstore_sender);
             let res = Self::handle_error(res, "run");
             if let Some(res) = res {
                 return res;
@@ -261,23 +260,19 @@ impl BroadcastStage {
         let bs_run = broadcast_stage_run.clone();
 
         let socket_sender_ = socket_sender.clone();
-        let thread_hdl = {
-            let cluster_info = cluster_info.clone();
-            Builder::new()
-                .name("solana-broadcaster".to_string())
-                .spawn(move || {
-                    let _finalizer = Finalizer::new(exit);
-                    Self::run(
-                        cluster_info,
-                        &btree,
-                        &receiver,
-                        &socket_sender_,
-                        &blockstore_sender,
-                        bs_run,
-                    )
-                })
-                .unwrap()
-        };
+        let thread_hdl = Builder::new()
+            .name("solana-broadcaster".to_string())
+            .spawn(move || {
+                let _finalizer = Finalizer::new(exit);
+                Self::run(
+                    &btree,
+                    &receiver,
+                    &socket_sender_,
+                    &blockstore_sender,
+                    bs_run,
+                )
+            })
+            .unwrap();
         let mut thread_hdls = vec![thread_hdl];
         let socket_receiver = Arc::new(Mutex::new(socket_receiver));
         for sock in socks.into_iter() {
@@ -415,6 +410,8 @@ pub fn broadcast_shreds(
 ) -> Result<()> {
     let mut result = Ok(());
     let mut shred_select = Measure::start("shred_select");
+    // Only the leader broadcasts shreds.
+    let leader = cluster_info.id();
     let (root_bank, working_bank) = {
         let bank_forks = bank_forks.read().unwrap();
         (bank_forks.root_bank(), bank_forks.working_bank())
@@ -428,13 +425,12 @@ pub fn broadcast_shreds(
                 cluster_nodes_cache.get(slot, &root_bank, &working_bank, cluster_info);
             update_peer_stats(&cluster_nodes, last_datapoint_submit);
             let root_bank = root_bank.clone();
-            shreds.flat_map(move |shred| {
-                repeat(&shred.payload).zip(cluster_nodes.get_broadcast_addrs(
-                    shred,
-                    &root_bank,
-                    DATA_PLANE_FANOUT,
-                    socket_addr_space,
-                ))
+            shreds.filter_map(move |shred| {
+                let seed = shred.seed(leader, &root_bank);
+                let node = cluster_nodes.get_broadcast_peer(seed)?;
+                socket_addr_space
+                    .check(&node.tvu)
+                    .then(|| (&shred.payload, node.tvu))
             })
         })
         .collect();
@@ -457,16 +453,16 @@ pub mod test {
     use {
         super::*,
         crossbeam_channel::unbounded,
-        solana_entry::entry::create_ticks,
-        solana_gossip::cluster_info::{ClusterInfo, Node},
+        safecoin_gossip::cluster_info::{ClusterInfo, Node},
         solana_ledger::{
             blockstore::{make_slot_entries, Blockstore},
+            entry::create_ticks,
             genesis_utils::{create_genesis_config, GenesisConfigInfo},
             get_tmp_ledger_path,
             shred::{max_ticks_per_n_shreds, ProcessShredsStats, Shredder},
         },
         solana_runtime::bank::Bank,
-        solana_sdk::{
+        safecoin_sdk::{
             hash::Hash,
             pubkey::Pubkey,
             signature::{Keypair, Signer},
@@ -496,7 +492,6 @@ pub mod test {
             &keypair,
             &data_shreds[0..],
             true, // is_last_in_slot
-            0,    // next_code_index
             &mut ProcessShredsStats::default(),
         )
         .unwrap();
@@ -548,7 +543,7 @@ pub mod test {
         let (transmit_sender, transmit_receiver) = channel();
         let (retransmit_slots_sender, retransmit_slots_receiver) = unbounded();
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(100_000);
-        let bank0 = Arc::new(Bank::new_for_tests(&genesis_config));
+        let bank0 = Arc::new(Bank::new(&genesis_config));
 
         // Make some shreds
         let updated_slot = 0;
@@ -624,10 +619,11 @@ pub mod test {
         let exit_sender = Arc::new(AtomicBool::new(false));
 
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
-        let bank = Bank::new_for_tests(&genesis_config);
+        let bank = Bank::new(&genesis_config);
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
         let bank = bank_forks.read().unwrap().root_bank();
 
+        let leader_keypair = cluster_info.keypair.clone();
         // Start up the broadcast stage
         let broadcast_service = BroadcastStage::new(
             leader_info.sockets.broadcast,
@@ -637,7 +633,7 @@ pub mod test {
             &exit_sender,
             &blockstore,
             &bank_forks,
-            StandardBroadcastRun::new(0),
+            StandardBroadcastRun::new(leader_keypair, 0),
         );
 
         MockBroadcastStage {

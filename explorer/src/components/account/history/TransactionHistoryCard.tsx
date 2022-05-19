@@ -2,7 +2,7 @@ import React from "react";
 import { Signature } from "components/common/Signature";
 import { Slot } from "components/common/Slot";
 import Moment from "react-moment";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@safecoin/web3.js";
 import {
   useAccountHistory,
   useFetchAccountHistory,
@@ -70,7 +70,9 @@ export function TransactionHistoryCard({ pubkey }: { pubkey: PublicKey }) {
           )}
 
           <td>
-            <span className={`badge bg-${statusClass}-soft`}>{statusText}</span>
+            <span className={`badge badge-soft-${statusClass}`}>
+              {statusText}
+            </span>
           </td>
         </tr>
       );

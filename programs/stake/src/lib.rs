@@ -1,11 +1,11 @@
 #![cfg_attr(RUSTC_WITH_SPECIALIZATION, feature(min_specialization))]
 #![allow(clippy::integer_arithmetic)]
-use solana_sdk::genesis_config::GenesisConfig;
+use safecoin_sdk::genesis_config::GenesisConfig;
 #[deprecated(
-    since = "1.8.0",
-    note = "Please use `solana_sdk::stake::program::id` or `solana_program::stake::program::id` instead"
+    since = "1.7.2",
+    note = "Please use `safecoin_sdk::stake::program::id` or `safecoin_program::stake::program::id` instead"
 )]
-pub use solana_sdk::stake::program::{check_id, id};
+pub use safecoin_sdk::stake::program::{check_id, id};
 
 pub mod config;
 pub mod stake_instruction;

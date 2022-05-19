@@ -1,28 +1,28 @@
 [package]
-name = "solana-keygen"
-version = "1.9.22"
-description = "Solana key generation utility"
+name = "safecoin-keygen"
+version = "1.8.12"
+description = "Safecoin key generation utility"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/solana-labs/solana"
+repository = "https://github.com/fair-exchange/safecoin"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
-documentation = "https://docs.rs/solana-keygen"
-edition = "2021"
+homepage = "https://safecoin.org/"
+documentation = "https://docs.rs/safecoin-keygen"
+edition = "2018"
 
 [dependencies]
-bs58 = "0.4.0"
+bs58 = "0.3.1"
 clap = "2.33"
 dirs-next = "2.0.0"
-num_cpus = "1.13.1"
-solana-clap-utils = { path = "../clap-utils", version = "=1.9.22" }
-solana-cli-config = { path = "../cli-config", version = "=1.9.22" }
-solana-remote-wallet = { path = "../remote-wallet", version = "=1.9.22" }
-solana-sdk = { path = "../sdk", version = "=1.9.22" }
-solana-version = { path = "../version", version = "=1.9.22" }
-tiny-bip39 = "0.8.2"
+num_cpus = "1.13.0"
+safecoin-clap-utils = { path = "../clap-utils", version = "=1.8.12" }
+safecoin-cli-config = { path = "../cli-config", version = "=1.8.12" }
+safecoin-remote-wallet = { path = "../remote-wallet", version = "=1.8.12" }
+safecoin-sdk = { path = "../sdk", version = "=1.8.12" }
+safecoin-version = { path = "../version", version = "=1.8.12" }
+tiny-bip39 = "0.8.1"
 
 [[bin]]
-name = "solana-keygen"
+name = "safecoin-keygen"
 path = "src/keygen.rs"
 
 [package.metadata.docs.rs]

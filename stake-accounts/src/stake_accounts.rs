@@ -1,4 +1,4 @@
-use solana_sdk::{
+use safecoin_sdk::{
     clock::SECONDS_PER_DAY,
     instruction::Instruction,
     message::Message,
@@ -284,7 +284,7 @@ mod tests {
     use {
         super::*,
         solana_runtime::{bank::Bank, bank_client::BankClient},
-        solana_sdk::{
+        safecoin_sdk::{
             account::{AccountSharedData, ReadableAccount},
             client::SyncClient,
             genesis_config::create_genesis_config,
@@ -296,7 +296,7 @@ mod tests {
 
     fn create_bank(lamports: u64) -> (Bank, Keypair, u64) {
         let (genesis_config, mint_keypair) = create_genesis_config(lamports);
-        let bank = Bank::new_for_tests(&genesis_config);
+        let bank = Bank::new(&genesis_config);
         let rent = bank.get_minimum_balance_for_rent_exemption(std::mem::size_of::<StakeState>());
         (bank, mint_keypair, rent)
     }
@@ -361,8 +361,8 @@ mod tests {
         let base_keypair = Keypair::new();
         let base_pubkey = base_keypair.pubkey();
         let lamports = rent + 1;
-        let stake_authority_pubkey = solana_sdk::pubkey::new_rand();
-        let withdraw_authority_pubkey = solana_sdk::pubkey::new_rand();
+        let stake_authority_pubkey = safecoin_sdk::pubkey::new_rand();
+        let withdraw_authority_pubkey = safecoin_sdk::pubkey::new_rand();
 
         let message = new_stake_account(
             &fee_payer_pubkey,
@@ -420,8 +420,8 @@ mod tests {
             .send_and_confirm_message(&signers, message)
             .unwrap();
 
-        let new_stake_authority_pubkey = solana_sdk::pubkey::new_rand();
-        let new_withdraw_authority_pubkey = solana_sdk::pubkey::new_rand();
+        let new_stake_authority_pubkey = safecoin_sdk::pubkey::new_rand();
+        let new_withdraw_authority_pubkey = safecoin_sdk::pubkey::new_rand();
         let messages = authorize_stake_accounts(
             &fee_payer_pubkey,
             &base_pubkey,
@@ -634,8 +634,8 @@ mod tests {
 
         let new_base_keypair = Keypair::new();
         let new_base_pubkey = new_base_keypair.pubkey();
-        let new_stake_authority_pubkey = solana_sdk::pubkey::new_rand();
-        let new_withdraw_authority_pubkey = solana_sdk::pubkey::new_rand();
+        let new_stake_authority_pubkey = safecoin_sdk::pubkey::new_rand();
+        let new_withdraw_authority_pubkey = safecoin_sdk::pubkey::new_rand();
         let balances = get_balances(&bank_client, &base_pubkey, num_accounts);
         let messages = move_stake_accounts(
             &fee_payer_pubkey,

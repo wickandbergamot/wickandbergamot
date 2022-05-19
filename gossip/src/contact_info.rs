@@ -1,6 +1,6 @@
 use {
     crate::crds_value::MAX_WALLCLOCK,
-    solana_sdk::{
+    safecoin_sdk::{
         pubkey::Pubkey,
         rpc_port,
         sanitize::{Sanitize, SanitizeError},
@@ -109,7 +109,7 @@ impl ContactInfo {
     pub fn new_rand<R: rand::Rng>(rng: &mut R, pubkey: Option<Pubkey>) -> Self {
         let delay = 10 * 60 * 1000; // 10 minutes
         let now = timestamp() - delay + rng.gen_range(0, 2 * delay);
-        let pubkey = pubkey.unwrap_or_else(solana_sdk::pubkey::new_rand);
+        let pubkey = pubkey.unwrap_or_else(safecoin_sdk::pubkey::new_rand);
         ContactInfo::new_localhost(&pubkey, now)
     }
 
@@ -119,7 +119,7 @@ impl ContactInfo {
         let addr = socketaddr!("224.0.1.255:1000");
         assert!(addr.ip().is_multicast());
         Self {
-            id: solana_sdk::pubkey::new_rand(),
+            id: safecoin_sdk::pubkey::new_rand(),
             gossip: addr,
             tvu: addr,
             tvu_forwards: addr,
@@ -152,7 +152,7 @@ impl ContactInfo {
         let rpc = SocketAddr::new(bind_addr.ip(), rpc_port::DEFAULT_RPC_PORT);
         let rpc_pubsub = SocketAddr::new(bind_addr.ip(), rpc_port::DEFAULT_RPC_PUBSUB_PORT);
         let serve_repair = next_port(bind_addr, 6);
-        let tpu_vote = next_port(bind_addr, 7);
+        let tpu_vote = next_port(&bind_addr, 7);
         Self {
             id: *pubkey,
             gossip,

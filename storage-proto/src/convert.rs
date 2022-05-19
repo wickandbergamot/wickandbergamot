@@ -1,7 +1,7 @@
 use {
     crate::{StoredExtendedRewards, StoredTransactionStatusMeta},
-    solana_account_decoder::parse_token::{real_number_string_trimmed, UiTokenAmount},
-    solana_sdk::{
+    safecoin_account_decoder::parse_token::{real_number_string_trimmed, UiTokenAmount},
+    safecoin_sdk::{
         hash::Hash,
         instruction::{CompiledInstruction, InstructionError},
         message::{Message, MessageHeader},
@@ -9,10 +9,9 @@ use {
         signature::Signature,
         transaction::{Transaction, TransactionError},
     },
-    solana_transaction_status::{
-        ConfirmedBlock, ConfirmedBlockWithOptionalMetadata, InnerInstructions, Reward, RewardType,
-        TransactionByAddrInfo, TransactionStatusMeta, TransactionTokenBalance,
-        TransactionWithMetadata, TransactionWithOptionalMetadata,
+    safecoin_transaction_status::{
+        ConfirmedBlock, InnerInstructions, Reward, RewardType, TransactionByAddrInfo,
+        TransactionStatusMeta, TransactionTokenBalance, TransactionWithStatusMeta,
     },
     std::{
         convert::{TryFrom, TryInto},
@@ -136,7 +135,7 @@ impl From<ConfirmedBlock> for generated::ConfirmedBlock {
     }
 }
 
-impl TryFrom<generated::ConfirmedBlock> for ConfirmedBlockWithOptionalMetadata {
+impl TryFrom<generated::ConfirmedBlock> for ConfirmedBlock {
     type Error = bincode::Error;
     fn try_from(
         confirmed_block: generated::ConfirmedBlock,
@@ -158,8 +157,7 @@ impl TryFrom<generated::ConfirmedBlock> for ConfirmedBlockWithOptionalMetadata {
             transactions: transactions
                 .into_iter()
                 .map(|tx| tx.try_into())
-                .collect::<std::result::Result<Vec<TransactionWithOptionalMetadata>, Self::Error>>(
-                )?,
+                .collect::<std::result::Result<Vec<TransactionWithStatusMeta>, Self::Error>>()?,
             rewards: rewards.into_iter().map(|r| r.into()).collect(),
             block_time: block_time.map(|generated::UnixTimestamp { timestamp }| timestamp),
             block_height: block_height.map(|generated::BlockHeight { block_height }| block_height),
@@ -167,16 +165,17 @@ impl TryFrom<generated::ConfirmedBlock> for ConfirmedBlockWithOptionalMetadata {
     }
 }
 
-impl From<TransactionWithMetadata> for generated::ConfirmedTransaction {
-    fn from(value: TransactionWithMetadata) -> Self {
+impl From<TransactionWithStatusMeta> for generated::ConfirmedTransaction {
+    fn from(value: TransactionWithStatusMeta) -> Self {
+        let meta = value.meta.map(|meta| meta.into());
         Self {
             transaction: Some(value.transaction.into()),
-            meta: Some(value.meta.into()),
+            meta,
         }
     }
 }
 
-impl TryFrom<generated::ConfirmedTransaction> for TransactionWithOptionalMetadata {
+impl TryFrom<generated::ConfirmedTransaction> for TransactionWithStatusMeta {
     type Error = bincode::Error;
     fn try_from(value: generated::ConfirmedTransaction) -> std::result::Result<Self, Self::Error> {
         let meta = value.meta.map(|meta| meta.try_into()).transpose()?;
@@ -282,13 +281,11 @@ impl From<TransactionStatusMeta> for generated::TransactionStatusMeta {
                 err: bincode::serialize(&err).expect("transaction error to serialize to bytes"),
             }),
         };
-        let inner_instructions_none = inner_instructions.is_none();
         let inner_instructions = inner_instructions
             .unwrap_or_default()
             .into_iter()
             .map(|ii| ii.into())
             .collect();
-        let log_messages_none = log_messages.is_none();
         let log_messages = log_messages.unwrap_or_default();
         let pre_token_balances = pre_token_balances
             .unwrap_or_default()
@@ -312,9 +309,7 @@ impl From<TransactionStatusMeta> for generated::TransactionStatusMeta {
             pre_balances,
             post_balances,
             inner_instructions,
-            inner_instructions_none,
             log_messages,
-            log_messages_none,
             pre_token_balances,
             post_token_balances,
             rewards,
@@ -339,9 +334,7 @@ impl TryFrom<generated::TransactionStatusMeta> for TransactionStatusMeta {
             pre_balances,
             post_balances,
             inner_instructions,
-            inner_instructions_none,
             log_messages,
-            log_messages_none,
             pre_token_balances,
             post_token_balances,
             rewards,
@@ -350,21 +343,13 @@ impl TryFrom<generated::TransactionStatusMeta> for TransactionStatusMeta {
             None => Ok(()),
             Some(tx_error) => Err(bincode::deserialize(&tx_error.err)?),
         };
-        let inner_instructions = if inner_instructions_none {
-            None
-        } else {
-            Some(
-                inner_instructions
-                    .into_iter()
-                    .map(|inner| inner.into())
-                    .collect(),
-            )
-        };
-        let log_messages = if log_messages_none {
-            None
-        } else {
-            Some(log_messages)
-        };
+        let inner_instructions = Some(
+            inner_instructions
+                .into_iter()
+                .map(|inner| inner.into())
+                .collect(),
+        );
+        let log_messages = Some(log_messages);
         let pre_token_balances = Some(
             pre_token_balances
                 .into_iter()
@@ -537,8 +522,6 @@ impl TryFrom<tx_by_addr::TransactionError> for TransactionError {
                     47 => InstructionError::ArithmeticOverflow,
                     48 => InstructionError::UnsupportedSysvar,
                     49 => InstructionError::IllegalOwner,
-                    50 => InstructionError::MaxAccountsDataSizeExceeded,
-                    51 => InstructionError::ActiveVoteAccountClose,
                     _ => return Err("Invalid InstructionError"),
                 };
 
@@ -569,15 +552,6 @@ impl TryFrom<tx_by_addr::TransactionError> for TransactionError {
             17 => TransactionError::WouldExceedMaxBlockCostLimit,
             18 => TransactionError::UnsupportedVersion,
             19 => TransactionError::InvalidWritableAccount,
-            20 => TransactionError::WouldExceedMaxAccountCostLimit,
-            21 => TransactionError::WouldExceedMaxAccountDataCostLimit,
-            22 => TransactionError::TooManyAccountLocks,
-            23 => TransactionError::AddressLookupTableNotFound,
-            24 => TransactionError::InvalidAddressLookupTableOwner,
-            25 => TransactionError::InvalidAddressLookupTableData,
-            26 => TransactionError::InvalidAddressLookupTableIndex,
-            27 => TransactionError::InvalidRentPayingAccount,
-            28 => TransactionError::WouldExceedMaxVoteCostLimit,
             _ => return Err("Invalid TransactionError"),
         })
     }
@@ -644,33 +618,6 @@ impl From<TransactionError> for tx_by_addr::TransactionError {
                 }
                 TransactionError::InvalidWritableAccount => {
                     tx_by_addr::TransactionErrorType::InvalidWritableAccount
-                }
-                TransactionError::WouldExceedMaxAccountCostLimit => {
-                    tx_by_addr::TransactionErrorType::WouldExceedMaxAccountCostLimit
-                }
-                TransactionError::WouldExceedMaxAccountDataCostLimit => {
-                    tx_by_addr::TransactionErrorType::WouldExceedMaxAccountDataCostLimit
-                }
-                TransactionError::TooManyAccountLocks => {
-                    tx_by_addr::TransactionErrorType::TooManyAccountLocks
-                }
-                TransactionError::AddressLookupTableNotFound => {
-                    tx_by_addr::TransactionErrorType::AddressLookupTableNotFound
-                }
-                TransactionError::InvalidAddressLookupTableOwner => {
-                    tx_by_addr::TransactionErrorType::InvalidAddressLookupTableOwner
-                }
-                TransactionError::InvalidAddressLookupTableData => {
-                    tx_by_addr::TransactionErrorType::InvalidAddressLookupTableData
-                }
-                TransactionError::InvalidAddressLookupTableIndex => {
-                    tx_by_addr::TransactionErrorType::InvalidAddressLookupTableIndex
-                }
-                TransactionError::InvalidRentPayingAccount => {
-                    tx_by_addr::TransactionErrorType::InvalidRentPayingAccount
-                }
-                TransactionError::WouldExceedMaxVoteCostLimit => {
-                    tx_by_addr::TransactionErrorType::WouldExceedMaxVoteCostLimit
                 }
             } as i32,
             instruction_error: match transaction_error {
@@ -826,12 +773,6 @@ impl From<TransactionError> for tx_by_addr::TransactionError {
                             InstructionError::IllegalOwner => {
                                 tx_by_addr::InstructionErrorType::IllegalOwner
                             }
-                            InstructionError::MaxAccountsDataSizeExceeded => {
-                                tx_by_addr::InstructionErrorType::MaxAccountsDataSizeExceeded
-                            }
-                            InstructionError::ActiveVoteAccountClose => {
-                                tx_by_addr::InstructionErrorType::ActiveVoteAccountClose
-                            }
                         } as i32,
                         custom: match instruction_error {
                             InstructionError::Custom(custom) => {
@@ -953,14 +894,6 @@ mod test {
 
     #[test]
     fn test_transaction_error_encode() {
-        let transaction_error = TransactionError::AccountBorrowOutstanding;
-        let tx_by_addr_transaction_error: tx_by_addr::TransactionError =
-            transaction_error.clone().into();
-        assert_eq!(
-            transaction_error,
-            tx_by_addr_transaction_error.try_into().unwrap()
-        );
-
         let transaction_error = TransactionError::AccountInUse;
         let tx_by_addr_transaction_error: tx_by_addr::TransactionError =
             transaction_error.clone().into();
@@ -985,14 +918,6 @@ mod test {
             tx_by_addr_transaction_error.try_into().unwrap()
         );
 
-        let transaction_error = TransactionError::AlreadyProcessed;
-        let tx_by_addr_transaction_error: tx_by_addr::TransactionError =
-            transaction_error.clone().into();
-        assert_eq!(
-            transaction_error,
-            tx_by_addr_transaction_error.try_into().unwrap()
-        );
-
         let transaction_error = TransactionError::BlockhashNotFound;
         let tx_by_addr_transaction_error: tx_by_addr::TransactionError =
             transaction_error.clone().into();
@@ -1010,6 +935,14 @@ mod test {
         );
 
         let transaction_error = TransactionError::ClusterMaintenance;
+        let tx_by_addr_transaction_error: tx_by_addr::TransactionError =
+            transaction_error.clone().into();
+        assert_eq!(
+            transaction_error,
+            tx_by_addr_transaction_error.try_into().unwrap()
+        );
+
+        let transaction_error = TransactionError::AlreadyProcessed;
         let tx_by_addr_transaction_error: tx_by_addr::TransactionError =
             transaction_error.clone().into();
         assert_eq!(
@@ -1074,38 +1007,6 @@ mod test {
         );
 
         let transaction_error = TransactionError::SignatureFailure;
-        let tx_by_addr_transaction_error: tx_by_addr::TransactionError =
-            transaction_error.clone().into();
-        assert_eq!(
-            transaction_error,
-            tx_by_addr_transaction_error.try_into().unwrap()
-        );
-
-        let transaction_error = TransactionError::WouldExceedMaxBlockCostLimit;
-        let tx_by_addr_transaction_error: tx_by_addr::TransactionError =
-            transaction_error.clone().into();
-        assert_eq!(
-            transaction_error,
-            tx_by_addr_transaction_error.try_into().unwrap()
-        );
-
-        let transaction_error = TransactionError::WouldExceedMaxVoteCostLimit;
-        let tx_by_addr_transaction_error: tx_by_addr::TransactionError =
-            transaction_error.clone().into();
-        assert_eq!(
-            transaction_error,
-            tx_by_addr_transaction_error.try_into().unwrap()
-        );
-
-        let transaction_error = TransactionError::WouldExceedMaxAccountCostLimit;
-        let tx_by_addr_transaction_error: tx_by_addr::TransactionError =
-            transaction_error.clone().into();
-        assert_eq!(
-            transaction_error,
-            tx_by_addr_transaction_error.try_into().unwrap()
-        );
-
-        let transaction_error = TransactionError::UnsupportedVersion;
         let tx_by_addr_transaction_error: tx_by_addr::TransactionError =
             transaction_error.clone().into();
         assert_eq!(

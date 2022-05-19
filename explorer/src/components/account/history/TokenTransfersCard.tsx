@@ -4,7 +4,7 @@ import {
   ParsedInstruction,
   PartiallyDecodedInstruction,
   PublicKey,
-} from "@solana/web3.js";
+} from "@safecoin/web3.js";
 import { useAccountHistory } from "providers/accounts";
 import { useTokenRegistry } from "providers/mints/token-registry";
 import { create } from "superstruct";
@@ -185,7 +185,7 @@ export function TokenTransfersCard({ pubkey }: { pubkey: PublicKey }) {
               </td>
 
               <td>
-                <span className={`badge bg-${statusClass}-soft`}>
+                <span className={`badge badge-soft-${statusClass}`}>
                   {statusText}
                 </span>
               </td>
@@ -250,7 +250,7 @@ function getTransfer(
   cluster: Cluster,
   signature: string
 ): Transfer | TransferChecked | undefined {
-  if ("parsed" in instruction && instruction.program === "spl-token") {
+  if ("parsed" in instruction && instruction.program === "safe-token") {
     try {
       const { type: rawType } = instruction.parsed;
       const type = create(rawType, TokenInstructionType);

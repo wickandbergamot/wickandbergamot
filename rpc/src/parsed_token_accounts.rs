@@ -1,19 +1,17 @@
 use {
     jsonrpc_core::{Error, Result},
-    solana_account_decoder::{
+    safecoin_account_decoder::{
         parse_account_data::AccountAdditionalData,
-        parse_token::{
-            get_token_account_mint, spl_token_native_mint, spl_token_native_mint_program_id,
-        },
+        parse_token::{get_token_account_mint, safe_token_id, safe_token_native_mint},
         UiAccount, UiAccountData, UiAccountEncoding,
     },
-    solana_client::rpc_response::RpcKeyedAccount,
+    safecoin_client::rpc_response::RpcKeyedAccount,
     solana_runtime::bank::Bank,
-    solana_sdk::{
+    safecoin_sdk::{
         account::{AccountSharedData, ReadableAccount},
         pubkey::Pubkey,
     },
-    spl_token::{solana_program::program_pack::Pack, state::Mint},
+    safe_token::{safecoin_program::program_pack::Pack, state::Mint},
     std::{collections::HashMap, sync::Arc},
 };
 
@@ -25,7 +23,7 @@ pub fn get_parsed_token_account(
     let additional_data = get_token_account_mint(account.data())
         .and_then(|mint_pubkey| get_mint_owner_and_decimals(&bank, &mint_pubkey).ok())
         .map(|(_, decimals)| AccountAdditionalData {
-            spl_token_decimals: Some(decimals),
+            safe_token_decimals: Some(decimals),
         });
 
     UiAccount::encode(
@@ -47,12 +45,12 @@ where
     let mut mint_decimals: HashMap<Pubkey, u8> = HashMap::new();
     keyed_accounts.filter_map(move |(pubkey, account)| {
         let additional_data = get_token_account_mint(account.data()).map(|mint_pubkey| {
-            let spl_token_decimals = mint_decimals.get(&mint_pubkey).cloned().or_else(|| {
+            let safe_token_decimals = mint_decimals.get(&mint_pubkey).cloned().or_else(|| {
                 let (_, decimals) = get_mint_owner_and_decimals(&bank, &mint_pubkey).ok()?;
                 mint_decimals.insert(mint_pubkey, decimals);
                 Some(decimals)
             });
-            AccountAdditionalData { spl_token_decimals }
+            AccountAdditionalData { safe_token_decimals }
         });
 
         let maybe_encoded_account = UiAccount::encode(
@@ -76,11 +74,8 @@ where
 /// Analyze a mint Pubkey that may be the native_mint and get the mint-account owner (token
 /// program_id) and decimals
 pub fn get_mint_owner_and_decimals(bank: &Arc<Bank>, mint: &Pubkey) -> Result<(Pubkey, u8)> {
-    if mint == &spl_token_native_mint() {
-        Ok((
-            spl_token_native_mint_program_id(),
-            spl_token::native_mint::DECIMALS,
-        ))
+    if mint == &safe_token_native_mint() {
+        Ok((safe_token_id(), safe_token::native_mint::DECIMALS))
     } else {
         let mint_account = bank.get_account(mint).ok_or_else(|| {
             Error::invalid_params("Invalid param: could not find mint".to_string())

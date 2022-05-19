@@ -2,8 +2,8 @@ use {
     chrono::prelude::*,
     pickledb::{error::Error, PickleDb, PickleDbDumpPolicy},
     serde::{Deserialize, Serialize},
-    solana_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature, transaction::Transaction},
-    solana_transaction_status::TransactionStatus,
+    safecoin_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature, transaction::Transaction},
+    safecoin_transaction_status::TransactionStatus,
     std::{cmp::Ordering, fs, io, path::Path},
 };
 
@@ -164,7 +164,11 @@ pub fn update_finalized_transaction(
 
     if let Some(e) = &transaction_status.err {
         // The transaction was finalized, but execution failed. Drop it.
-        eprintln!("Error in transaction with signature {}: {}", signature, e);
+        eprintln!(
+            "Error in transaction with signature {}: {}",
+            signature,
+            e.to_string()
+        );
         eprintln!("Discarding transaction record");
         db.rem(&signature.to_string())?;
         return Ok(None);
@@ -209,8 +213,8 @@ mod tests {
     use {
         super::*,
         csv::{ReaderBuilder, Trim},
-        solana_sdk::transaction::TransactionError,
-        solana_transaction_status::TransactionConfirmationStatus,
+        safecoin_sdk::transaction::TransactionError,
+        safecoin_transaction_status::TransactionConfirmationStatus,
         tempfile::NamedTempFile,
     };
 
@@ -226,7 +230,7 @@ mod tests {
         };
         let info2 = TransactionInfo::default();
         let info3 = TransactionInfo {
-            recipient: solana_sdk::pubkey::new_rand(),
+            recipient: safecoin_sdk::pubkey::new_rand(),
             ..TransactionInfo::default()
         };
 

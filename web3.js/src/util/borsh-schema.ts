@@ -1,5 +1,5 @@
 import {Buffer} from 'buffer';
-import {serialize, deserialize, deserializeUnchecked} from 'borsh';
+import {serialize, deserialize} from 'borsh';
 
 // Class wrapping a plain object
 export class Struct {
@@ -8,15 +8,11 @@ export class Struct {
   }
 
   encode(): Buffer {
-    return Buffer.from(serialize(SOLANA_SCHEMA, this));
+    return Buffer.from(serialize(SAFECOIN_SCHEMA, this));
   }
 
   static decode(data: Buffer): any {
-    return deserialize(SOLANA_SCHEMA, this, data);
-  }
-
-  static decodeUnchecked(data: Buffer): any {
-    return deserializeUnchecked(SOLANA_SCHEMA, this, data);
+    return deserialize(SAFECOIN_SCHEMA, this, data);
   }
 }
 
@@ -35,4 +31,4 @@ export class Enum extends Struct {
   }
 }
 
-export const SOLANA_SCHEMA: Map<Function, any> = new Map();
+export const SAFECOIN_SCHEMA: Map<Function, any> = new Map();

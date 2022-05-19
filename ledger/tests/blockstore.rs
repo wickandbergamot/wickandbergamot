@@ -1,17 +1,16 @@
 use {
-    solana_entry::entry,
     solana_ledger::{
         blockstore::{self, Blockstore},
-        get_tmp_ledger_path_auto_delete,
+        entry, get_tmp_ledger_path,
     },
-    solana_sdk::hash::Hash,
+    safecoin_sdk::hash::Hash,
     std::{sync::Arc, thread::Builder},
 };
 
 #[test]
 fn test_multiple_threads_insert_shred() {
-    let ledger_path = get_tmp_ledger_path_auto_delete!();
-    let blockstore = Arc::new(Blockstore::open(ledger_path.path()).unwrap());
+    let blockstore_path = get_tmp_ledger_path!();
+    let blockstore = Arc::new(Blockstore::open(&blockstore_path).unwrap());
 
     for _ in 0..100 {
         let num_threads = 10;
@@ -45,4 +44,8 @@ fn test_multiple_threads_insert_shred() {
         // Delete slots for next iteration
         blockstore.purge_and_compact_slots(0, num_threads + 1);
     }
+
+    // Cleanup
+    drop(blockstore);
+    Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
 }

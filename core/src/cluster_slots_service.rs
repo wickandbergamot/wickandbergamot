@@ -1,11 +1,11 @@
 use {
     crate::cluster_slots::ClusterSlots,
     crossbeam_channel::{Receiver, RecvTimeoutError, Sender},
-    solana_gossip::cluster_info::ClusterInfo,
+    safecoin_gossip::cluster_info::ClusterInfo,
     solana_ledger::blockstore::Blockstore,
-    solana_measure::measure::Measure,
+    safecoin_measure::measure::Measure,
     solana_runtime::bank_forks::BankForks,
-    solana_sdk::clock::Slot,
+    safecoin_sdk::clock::Slot,
     std::{
         sync::{
             atomic::{AtomicBool, Ordering},
@@ -181,8 +181,8 @@ impl ClusterSlotsService {
 mod test {
     use {
         super::*,
-        solana_gossip::{cluster_info::Node, crds_value::LowestSlot},
-        solana_sdk::{pubkey::Pubkey, signature::Keypair},
+        safecoin_gossip::{cluster_info::Node, crds_value::CrdsValueLabel},
+        safecoin_sdk::{pubkey::Pubkey, signature::Keypair},
         solana_streamer::socket::SocketAddrSpace,
     };
 
@@ -198,8 +198,10 @@ mod test {
         ClusterSlotsService::update_lowest_slot(5, &cluster_info);
         cluster_info.flush_push_queue();
         let lowest = {
-            let gossip_crds = cluster_info.gossip.crds.read().unwrap();
-            gossip_crds.get::<&LowestSlot>(pubkey).unwrap().clone()
+            let label = CrdsValueLabel::LowestSlot(pubkey);
+            let gossip = cluster_info.gossip.read().unwrap();
+            let entry = gossip.crds.get(&label).unwrap();
+            entry.value.lowest_slot().unwrap().clone()
         };
         assert_eq!(lowest.lowest, 5);
     }

@@ -1,15 +1,12 @@
-//! The `rpc_service` module implements the Solana JSON RPC service.
+//! The `rpc_service` module implements the Safecoin JSON RPC service.
 
 use {
     crate::{
-        cluster_tpu_info::ClusterTpuInfo,
         max_slots::MaxSlots,
         optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank,
-        rpc::{
-            rpc_accounts::*, rpc_bank::*, rpc_deprecated_v1_7::*, rpc_deprecated_v1_9::*,
-            rpc_full::*, rpc_minimal::*, rpc_obsolete_v1_7::*, *,
-        },
+        rpc::{rpc_deprecated_v1_7::*, rpc_full::*, rpc_minimal::*, rpc_obsolete_v1_7::*, *},
         rpc_health::*,
+        send_transaction_service::{self, LeaderInfo, SendTransactionService},
     },
     jsonrpc_core::{futures::prelude::*, MetaIoHandler},
     jsonrpc_http_server::{
@@ -17,8 +14,8 @@ use {
         RequestMiddlewareAction, ServerBuilder,
     },
     regex::Regex,
-    solana_client::rpc_cache::LargestAccountsCache,
-    solana_gossip::cluster_info::ClusterInfo,
+    safecoin_client::rpc_cache::LargestAccountsCache,
+    safecoin_gossip::cluster_info::ClusterInfo,
     solana_ledger::{
         bigtable_upload_service::BigTableUploadService, blockstore::Blockstore,
         leader_schedule_cache::LeaderScheduleCache,
@@ -27,15 +24,14 @@ use {
     solana_perf::thread::renice_this_thread,
     solana_poh::poh_recorder::PohRecorder,
     solana_runtime::{
-        bank_forks::BankForks, commitment::BlockCommitmentCache,
-        snapshot_archive_info::SnapshotArchiveInfoGetter, snapshot_config::SnapshotConfig,
+        bank_forks::{BankForks, SnapshotConfig},
+        commitment::BlockCommitmentCache,
         snapshot_utils,
     },
-    solana_sdk::{
+    safecoin_sdk::{
         exit::Exit, genesis_config::DEFAULT_GENESIS_DOWNLOAD_PATH, hash::Hash,
         native_token::lamports_to_sol, pubkey::Pubkey,
     },
-    solana_send_transaction_service::send_transaction_service::{self, SendTransactionService},
     std::{
         collections::HashSet,
         net::SocketAddr,
@@ -50,8 +46,6 @@ use {
     tokio_util::codec::{BytesCodec, FramedRead},
 };
 
-const FULL_SNAPSHOT_REQUEST_PATH: &str = "/snapshot.tar.bz2";
-const INCREMENTAL_SNAPSHOT_REQUEST_PATH: &str = "/incremental-snapshot.tar.bz2";
 const LARGEST_ACCOUNTS_CACHE_DURATION: u64 = 60 * 60 * 2;
 
 pub struct JsonRpcService {
@@ -65,8 +59,7 @@ pub struct JsonRpcService {
 
 struct RpcRequestMiddleware {
     ledger_path: PathBuf,
-    full_snapshot_archive_path_regex: Regex,
-    incremental_snapshot_archive_path_regex: Regex,
+    snapshot_archive_path_regex: Regex,
     snapshot_config: Option<SnapshotConfig>,
     bank_forks: Arc<RwLock<BankForks>>,
     health: Arc<RpcHealth>,
@@ -81,12 +74,8 @@ impl RpcRequestMiddleware {
     ) -> Self {
         Self {
             ledger_path,
-            full_snapshot_archive_path_regex: Regex::new(
-                snapshot_utils::FULL_SNAPSHOT_ARCHIVE_FILENAME_REGEX,
-            )
-            .unwrap(),
-            incremental_snapshot_archive_path_regex: Regex::new(
-                snapshot_utils::INCREMENTAL_SNAPSHOT_ARCHIVE_FILENAME_REGEX,
+            snapshot_archive_path_regex: Regex::new(
+                r"^/snapshot-\d+-[[:alnum:]]+\.(tar|tar\.bz2|tar\.zst|tar\.gz)$",
             )
             .unwrap(),
             snapshot_config,
@@ -119,23 +108,16 @@ impl RpcRequestMiddleware {
     }
 
     fn is_file_get_path(&self, path: &str) -> bool {
-        if path == DEFAULT_GENESIS_DOWNLOAD_PATH {
-            return true;
+        match path {
+            DEFAULT_GENESIS_DOWNLOAD_PATH => true,
+            _ => {
+                if self.snapshot_config.is_some() {
+                    self.snapshot_archive_path_regex.is_match(path)
+                } else {
+                    false
+                }
+            }
         }
-
-        if self.snapshot_config.is_none() {
-            return false;
-        }
-
-        let starting_character = '/';
-        if !path.starts_with(starting_character) {
-            return false;
-        }
-
-        let path = path.trim_start_matches(starting_character);
-
-        self.full_snapshot_archive_path_regex.is_match(path)
-            || self.incremental_snapshot_archive_path_regex.is_match(path)
     }
 
     #[cfg(unix)]
@@ -168,7 +150,7 @@ impl RpcRequestMiddleware {
                     self.snapshot_config
                         .as_ref()
                         .unwrap()
-                        .snapshot_archives_dir
+                        .snapshot_package_output_path
                         .join(stem)
                 }
             }
@@ -219,37 +201,15 @@ impl RequestMiddleware for RpcRequestMiddleware {
         trace!("request uri: {}", request.uri());
 
         if let Some(ref snapshot_config) = self.snapshot_config {
-            if request.uri().path() == FULL_SNAPSHOT_REQUEST_PATH
-                || request.uri().path() == INCREMENTAL_SNAPSHOT_REQUEST_PATH
-            {
+            if request.uri().path() == "/snapshot.tar.bz2" {
                 // Convenience redirect to the latest snapshot
-                let full_snapshot_archive_info =
-                    snapshot_utils::get_highest_full_snapshot_archive_info(
-                        &snapshot_config.snapshot_archives_dir,
-                    );
-                let snapshot_archive_info =
-                    if let Some(full_snapshot_archive_info) = full_snapshot_archive_info {
-                        if request.uri().path() == FULL_SNAPSHOT_REQUEST_PATH {
-                            Some(full_snapshot_archive_info.snapshot_archive_info().clone())
-                        } else {
-                            snapshot_utils::get_highest_incremental_snapshot_archive_info(
-                                &snapshot_config.snapshot_archives_dir,
-                                full_snapshot_archive_info.slot(),
-                            )
-                            .map(|incremental_snapshot_archive_info| {
-                                incremental_snapshot_archive_info
-                                    .snapshot_archive_info()
-                                    .clone()
-                            })
-                        }
-                    } else {
-                        None
-                    };
-                return if let Some(snapshot_archive_info) = snapshot_archive_info {
+                return if let Some((snapshot_archive, _)) =
+                    snapshot_utils::get_highest_snapshot_archive_path(
+                        &snapshot_config.snapshot_package_output_path,
+                    ) {
                     RpcRequestMiddleware::redirect(&format!(
                         "/{}",
-                        snapshot_archive_info
-                            .path
+                        snapshot_archive
                             .file_name()
                             .unwrap_or_else(|| std::ffi::OsStr::new(""))
                             .to_str()
@@ -285,7 +245,8 @@ impl RequestMiddleware for RpcRequestMiddleware {
 fn process_rest(bank_forks: &Arc<RwLock<BankForks>>, path: &str) -> Option<String> {
     match path {
         "/v0/circulating-supply" => {
-            let bank = bank_forks.read().unwrap().root_bank();
+            let r_bank_forks = bank_forks.read().unwrap();
+            let bank = r_bank_forks.root_bank();
             let total_supply = bank.capitalization();
             let non_circulating_supply =
                 solana_runtime::non_circulating_supply::calculate_non_circulating_supply(&bank)
@@ -297,7 +258,8 @@ fn process_rest(bank_forks: &Arc<RwLock<BankForks>>, path: &str) -> Option<Strin
             ))
         }
         "/v0/total-supply" => {
-            let bank = bank_forks.read().unwrap().root_bank();
+            let r_bank_forks = bank_forks.read().unwrap();
+            let bank = r_bank_forks.root_bank();
             let total_supply = bank.capitalization();
             Some(format!("{}", lamports_to_sol(total_supply)))
         }
@@ -401,7 +363,7 @@ impl JsonRpcService {
                 (None, None)
             };
 
-        let full_api = config.full_api;
+        let minimal_api = config.minimal_api;
         let obsolete_v1_7_api = config.obsolete_v1_7_api;
         let (request_processor, receiver) = JsonRpcRequestProcessor::new(
             config,
@@ -422,7 +384,7 @@ impl JsonRpcService {
         );
 
         let leader_info =
-            poh_recorder.map(|recorder| ClusterTpuInfo::new(cluster_info.clone(), recorder));
+            poh_recorder.map(|recorder| LeaderInfo::new(cluster_info.clone(), recorder));
         let _send_transaction_service = Arc::new(SendTransactionService::new_with_config(
             tpu_address,
             &bank_forks,
@@ -445,12 +407,9 @@ impl JsonRpcService {
                 let mut io = MetaIoHandler::default();
 
                 io.extend_with(rpc_minimal::MinimalImpl.to_delegate());
-                if full_api {
-                    io.extend_with(rpc_bank::BankDataImpl.to_delegate());
-                    io.extend_with(rpc_accounts::AccountsDataImpl.to_delegate());
+                if !minimal_api {
                     io.extend_with(rpc_full::FullImpl.to_delegate());
                     io.extend_with(rpc_deprecated_v1_7::DeprecatedV1_7Impl.to_delegate());
-                    io.extend_with(rpc_deprecated_v1_9::DeprecatedV1_9Impl.to_delegate());
                 }
                 if obsolete_v1_7_api {
                     io.extend_with(rpc_obsolete_v1_7::ObsoleteV1_7Impl.to_delegate());
@@ -523,17 +482,21 @@ mod tests {
     use {
         super::*,
         crate::rpc::create_validator_exit,
-        solana_gossip::{
+        safecoin_gossip::{
             contact_info::ContactInfo,
             crds::GossipRoute,
-            crds_value::{CrdsData, CrdsValue, SnapshotHashes},
+            crds_value::{CrdsData, CrdsValue, SnapshotHash},
         },
         solana_ledger::{
             genesis_utils::{create_genesis_config, GenesisConfigInfo},
             get_tmp_ledger_path,
         },
-        solana_runtime::bank::Bank,
-        solana_sdk::{
+        solana_runtime::{
+            bank::Bank,
+            bank_forks::ArchiveFormat,
+            snapshot_utils::{SnapshotVersion, DEFAULT_MAX_SNAPSHOTS_TO_RETAIN},
+        },
+        safecoin_sdk::{
             genesis_config::{ClusterType, DEFAULT_GENESIS_ARCHIVE},
             signature::Signer,
             signer::keypair::Keypair,
@@ -555,7 +518,7 @@ mod tests {
         } = create_genesis_config(10_000);
         let exit = Arc::new(AtomicBool::new(false));
         let validator_exit = create_validator_exit(&exit);
-        let bank = Bank::new_for_tests(&genesis_config);
+        let bank = Bank::new(&genesis_config);
         let cluster_info = Arc::new(ClusterInfo::new(
             ContactInfo::default(),
             Arc::new(Keypair::new()),
@@ -615,7 +578,7 @@ mod tests {
             mut genesis_config, ..
         } = create_genesis_config(10_000);
         genesis_config.cluster_type = ClusterType::MainnetBeta;
-        let bank = Bank::new_for_tests(&genesis_config);
+        let bank = Bank::new(&genesis_config);
         Arc::new(RwLock::new(BankForks::new(bank)))
     }
 
@@ -641,7 +604,15 @@ mod tests {
         );
         let rrm_with_snapshot_config = RpcRequestMiddleware::new(
             PathBuf::from("/"),
-            Some(SnapshotConfig::default()),
+            Some(SnapshotConfig {
+                snapshot_interval_slots: 0,
+                snapshot_package_output_path: PathBuf::from("/"),
+                snapshot_path: PathBuf::from("/"),
+                archive_format: ArchiveFormat::TarBzip2,
+                snapshot_version: SnapshotVersion::default(),
+                maximum_snapshots_to_retain: DEFAULT_MAX_SNAPSHOTS_TO_RETAIN,
+                packager_thread_niceness_adj: 0,
+            }),
             bank_forks,
             RpcHealth::stub(),
         );
@@ -654,10 +625,6 @@ mod tests {
         assert!(!rrm.is_file_get_path(
             "/snapshot-100-AvFf9oS8A8U78HdjT9YG2sTTThLHJZmhaMn2g8vkWYnr.tar.bz2"
         ));
-        assert!(!rrm.is_file_get_path(
-            "/incremental-snapshot-100-200-AvFf9oS8A8U78HdjT9YG2sTTThLHJZmhaMn2g8vkWYnr.tar.bz2"
-        ));
-
         assert!(rrm_with_snapshot_config.is_file_get_path(
             "/snapshot-100-AvFf9oS8A8U78HdjT9YG2sTTThLHJZmhaMn2g8vkWYnr.tar.bz2"
         ));
@@ -669,32 +636,11 @@ mod tests {
         assert!(rrm_with_snapshot_config
             .is_file_get_path("/snapshot-100-AvFf9oS8A8U78HdjT9YG2sTTThLHJZmhaMn2g8vkWYnr.tar"));
 
-        assert!(rrm_with_snapshot_config.is_file_get_path(
-            "/incremental-snapshot-100-200-AvFf9oS8A8U78HdjT9YG2sTTThLHJZmhaMn2g8vkWYnr.tar.bz2"
-        ));
-        assert!(rrm_with_snapshot_config.is_file_get_path(
-            "/incremental-snapshot-100-200-AvFf9oS8A8U78HdjT9YG2sTTThLHJZmhaMn2g8vkWYnr.tar.zst"
-        ));
-        assert!(rrm_with_snapshot_config.is_file_get_path(
-            "/incremental-snapshot-100-200-AvFf9oS8A8U78HdjT9YG2sTTThLHJZmhaMn2g8vkWYnr.tar.gz"
-        ));
-        assert!(rrm_with_snapshot_config.is_file_get_path(
-            "/incremental-snapshot-100-200-AvFf9oS8A8U78HdjT9YG2sTTThLHJZmhaMn2g8vkWYnr.tar"
-        ));
-
         assert!(!rrm_with_snapshot_config.is_file_get_path(
             "/snapshot-notaslotnumber-AvFf9oS8A8U78HdjT9YG2sTTThLHJZmhaMn2g8vkWYnr.tar.bz2"
         ));
-        assert!(!rrm_with_snapshot_config.is_file_get_path(
-            "/incremental-snapshot-notaslotnumber-200-AvFf9oS8A8U78HdjT9YG2sTTThLHJZmhaMn2g8vkWYnr.tar.bz2"
-        ));
-        assert!(!rrm_with_snapshot_config.is_file_get_path(
-            "/incremental-snapshot-100-notaslotnumber-AvFf9oS8A8U78HdjT9YG2sTTThLHJZmhaMn2g8vkWYnr.tar.bz2"
-        ));
 
         assert!(!rrm_with_snapshot_config.is_file_get_path("../../../test/snapshot-123-xxx.tar"));
-        assert!(!rrm_with_snapshot_config
-            .is_file_get_path("../../../test/incremental-snapshot-123-456-xxx.tar"));
 
         assert!(!rrm.is_file_get_path("/"));
         assert!(!rrm.is_file_get_path(".."));
@@ -783,9 +729,9 @@ mod tests {
         let health_check_slot_distance = 123;
         let override_health_check = Arc::new(AtomicBool::new(false));
         let known_validators = vec![
-            solana_sdk::pubkey::new_rand(),
-            solana_sdk::pubkey::new_rand(),
-            solana_sdk::pubkey::new_rand(),
+            safecoin_sdk::pubkey::new_rand(),
+            safecoin_sdk::pubkey::new_rand(),
+            safecoin_sdk::pubkey::new_rand(),
         ];
 
         let health = Arc::new(RpcHealth::new(
@@ -813,11 +759,11 @@ mod tests {
         // This node is ahead of the known validators
         cluster_info
             .gossip
-            .crds
             .write()
             .unwrap()
+            .crds
             .insert(
-                CrdsValue::new_unsigned(CrdsData::AccountsHashes(SnapshotHashes::new(
+                CrdsValue::new_unsigned(CrdsData::AccountsHashes(SnapshotHash::new(
                     known_validators[0],
                     vec![
                         (1, Hash::default()),
@@ -834,11 +780,11 @@ mod tests {
         // Node is slightly behind the known validators
         cluster_info
             .gossip
-            .crds
             .write()
             .unwrap()
+            .crds
             .insert(
-                CrdsValue::new_unsigned(CrdsData::AccountsHashes(SnapshotHashes::new(
+                CrdsValue::new_unsigned(CrdsData::AccountsHashes(SnapshotHash::new(
                     known_validators[1],
                     vec![(1000 + health_check_slot_distance - 1, Hash::default())],
                 ))),
@@ -851,11 +797,11 @@ mod tests {
         // Node is far behind the known validators
         cluster_info
             .gossip
-            .crds
             .write()
             .unwrap()
+            .crds
             .insert(
-                CrdsValue::new_unsigned(CrdsData::AccountsHashes(SnapshotHashes::new(
+                CrdsValue::new_unsigned(CrdsData::AccountsHashes(SnapshotHash::new(
                     known_validators[2],
                     vec![(1000 + health_check_slot_distance, Hash::default())],
                 ))),

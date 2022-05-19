@@ -1,5 +1,5 @@
 use {
-    solana_sdk::{
+    safecoin_sdk::{
         account::{Account, AccountSharedData},
         feature::{self, Feature},
         feature_set::FeatureSet,
@@ -52,11 +52,10 @@ pub struct GenesisConfigInfo {
     pub genesis_config: GenesisConfig,
     pub mint_keypair: Keypair,
     pub voting_keypair: Keypair,
-    pub validator_pubkey: Pubkey,
 }
 
 pub fn create_genesis_config(mint_lamports: u64) -> GenesisConfigInfo {
-    create_genesis_config_with_leader(mint_lamports, &solana_sdk::pubkey::new_rand(), 0)
+    create_genesis_config_with_leader(mint_lamports, &safecoin_sdk::pubkey::new_rand(), 0)
 }
 
 pub fn create_genesis_config_with_vote_accounts(
@@ -85,11 +84,10 @@ pub fn create_genesis_config_with_vote_accounts_and_cluster_type(
     let voting_keypair =
         Keypair::from_bytes(&voting_keypairs[0].borrow().vote_keypair.to_bytes()).unwrap();
 
-    let validator_pubkey = voting_keypairs[0].borrow().node_keypair.pubkey();
     let genesis_config = create_genesis_config_with_leader_ex(
         mint_lamports,
         &mint_keypair.pubkey(),
-        &validator_pubkey,
+        &voting_keypairs[0].borrow().node_keypair.pubkey(),
         &voting_keypairs[0].borrow().vote_keypair.pubkey(),
         &voting_keypairs[0].borrow().stake_keypair.pubkey(),
         stakes[0],
@@ -104,7 +102,6 @@ pub fn create_genesis_config_with_vote_accounts_and_cluster_type(
         genesis_config,
         mint_keypair,
         voting_keypair,
-        validator_pubkey,
     };
 
     for (validator_voting_keypairs, stake) in voting_keypairs[1..].iter().zip(&stakes[1..]) {
@@ -149,7 +146,7 @@ pub fn create_genesis_config_with_leader(
         &mint_keypair.pubkey(),
         validator_pubkey,
         &voting_keypair.pubkey(),
-        &solana_sdk::pubkey::new_rand(),
+        &safecoin_sdk::pubkey::new_rand(),
         validator_stake_lamports,
         VALIDATOR_LAMPORTS,
         FeeRateGovernor::new(0, 0), // most tests can't handle transaction fees
@@ -162,7 +159,6 @@ pub fn create_genesis_config_with_leader(
         genesis_config,
         mint_keypair,
         voting_keypair,
-        validator_pubkey: *validator_pubkey,
     }
 }
 

@@ -1,9 +1,9 @@
 const math = require("remark-math");
 const katex = require("rehype-katex");
 module.exports = {
-  title: "Solana Docs",
+  title: "Safecoin Docs",
   tagline:
-    "Solana is an open source project implementing a new, high-performance, permissionless blockchain.",
+    "Safecoin is an open source project implementing a new, high-performance, permissionless blockchain.",
   url: "https://docs.solana.com",
   baseUrl: "/",
   favicon: "img/favicon.ico",
@@ -20,34 +20,13 @@ module.exports = {
     },
   ],
   i18n: {
-    defaultLocale: "en",
-    locales: ["en", "de", "es", "ru", "ar"],
-    // localesNotBuilding: ["ko", "pt", "vi", "zh", "ja"],
-    localeConfigs: {
-      en: {
-        label: "English",
-      },
-      ru: {
-        label: "Русский",
-      },
-      es: {
-        label: "Español",
-      },
-      de: {
-        label: "Deutsch",
-      },
-      ar: {
-        label: "العربية",
-      },
-      ko: {
-        label: "한국어",
-      },
-    },
+    defaultLocale: 'en',
+    locales: ['en', 'zh'],
   },
   themeConfig: {
     navbar: {
       logo: {
-        alt: "Solana Logo",
+        alt: "Safecoin Logo",
         src: "img/logo-horizontal.svg",
         srcDark: "img/logo-horizontal-dark.svg",
       },
@@ -78,8 +57,8 @@ module.exports = {
           position: "left",
         },
         {
-          type: "localeDropdown",
-          position: "right",
+          type: 'localeDropdown',
+          position: 'right',
         },
         {
           href: "https://discordapp.com/invite/pquxPsq",
@@ -87,7 +66,7 @@ module.exports = {
           position: "right",
         },
         {
-          href: "https://github.com/solana-labs/solana",
+          href: "https://github.com/fair-exchange/safecoin",
           label: "GitHub",
           position: "right",
         },
@@ -133,7 +112,7 @@ module.exports = {
           items: [
             {
               label: "GitHub",
-              href: "https://github.com/solana-labs/solana",
+              href: "https://github.com/fair-exchange/safecoin",
             },
           ],
         },

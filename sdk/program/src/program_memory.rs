@@ -1,4 +1,4 @@
-//! Solana Rust-based BPF memory operations
+//! Safecoin Rust-based BPF memory operations
 
 /// Memcpy
 ///

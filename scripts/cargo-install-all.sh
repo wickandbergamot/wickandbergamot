@@ -4,7 +4,6 @@
 # other workspace crates or native program crates.
 here="$(dirname "$0")"
 readlink_cmd="readlink"
-echo "OSTYPE IS: $OSTYPE"
 if [[ $OSTYPE == darwin* ]]; then
   # Mac OS X's version of `readlink` does not support the -f option,
   # But `greadlink` does, which you can get with `brew install coreutils`
@@ -74,29 +73,29 @@ if [[ $CI_OS_NAME = windows ]]; then
     cargo-build-bpf
     cargo-test-bpf
     solana
-    solana-install
-    solana-install-init
-    solana-keygen
-    solana-stake-accounts
-    solana-test-validator
-    solana-tokens
+    safecoin-install
+    safecoin-install-init
+    safecoin-keygen
+    safecoin-stake-accounts
+    safecoin-test-validator
+    safecoin-tokens
   )
 else
   ./fetch-perf-libs.sh
 
   BINS=(
     solana
-    solana-bench-tps
-    solana-faucet
-    solana-gossip
-    solana-install
-    solana-keygen
-    solana-ledger-tool
-    solana-log-analyzer
-    solana-net-shaper
-    solana-sys-tuner
-    solana-validator
-    rbpf-cli
+    safecoin-bench-exchange
+    safecoin-bench-tps
+    safecoin-faucet
+    safecoin-gossip
+    safecoin-install
+    safecoin-keygen
+    safecoin-ledger-tool
+    safecoin-log-analyzer
+    safecoin-net-shaper
+    safecoin-sys-tuner
+    safecoin-validator
   )
 
   # Speed up net.sh deploys by excluding unused binaries
@@ -104,18 +103,18 @@ else
     BINS+=(
       cargo-build-bpf
       cargo-test-bpf
-      solana-dos
-      solana-install-init
-      solana-stake-accounts
-      solana-test-validator
-      solana-tokens
-      solana-watchtower
+      safecoin-dos
+      safecoin-install-init
+      safecoin-stake-accounts
+      safecoin-test-validator
+      safecoin-tokens
+      safecoin-watchtower
     )
   fi
 
-  #XXX: Ensure `solana-genesis` is built LAST!
-  # See https://github.com/solana-labs/solana/issues/5826
-  BINS+=(solana-genesis)
+  #XXX: Ensure `safecoin-genesis` is built LAST!
+  # See https://github.com/fair-exchange/safecoin/issues/5826
+  BINS+=(safecoin-genesis)
 fi
 
 binArgs=()
@@ -130,10 +129,10 @@ mkdir -p "$installDir/bin"
   # shellcheck disable=SC2086 # Don't want to double quote $rust_version
   "$cargo" $maybeRustVersion build $maybeReleaseFlag "${binArgs[@]}"
 
-  # Exclude `spl-token` binary for net.sh builds
+  # Exclude `safe-token` binary for net.sh builds
   if [[ -z "$validatorOnly" ]]; then
     # shellcheck disable=SC2086 # Don't want to double quote $rust_version
-    "$cargo" $maybeRustVersion install --locked spl-token-cli --root "$installDir"
+    "$cargo" $maybeRustVersion install safe-token-cli --root "$installDir"
   fi
 )
 
@@ -145,12 +144,8 @@ if [[ -d target/perf-libs ]]; then
   cp -a target/perf-libs "$installDir"/bin/perf-libs
 fi
 
-if [[ -z "$validatorOnly" ]]; then
-  # shellcheck disable=SC2086 # Don't want to double quote $rust_version
-  "$cargo" $maybeRustVersion build --manifest-path programs/bpf_loader/gen-syscall-list/Cargo.toml
-  mkdir -p "$installDir"/bin/sdk/bpf
-  cp -a sdk/bpf/* "$installDir"/bin/sdk/bpf
-fi
+mkdir -p "$installDir"/bin/sdk/bpf
+cp -a sdk/bpf/* "$installDir"/bin/sdk/bpf
 
 (
   set -x

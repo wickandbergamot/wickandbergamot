@@ -1,5 +1,5 @@
 import React from "react";
-import { ConfirmedSignatureInfo } from "@solana/web3.js";
+import { ConfirmedSignatureInfo } from "@safecoin/web3.js";
 import {
   getTokenProgramInstructionName,
   InstructionType,
@@ -16,7 +16,7 @@ export function InstructionDetails({
 
   let instructionTypes = instructionType.innerInstructions
     .map((ix) => {
-      if ("parsed" in ix && ix.program === "spl-token") {
+      if ("parsed" in ix && ix.program === "safe-token") {
         return getTokenProgramInstructionName(ix, tx);
       }
       return undefined;
@@ -32,7 +32,7 @@ export function InstructionDetails({
               e.preventDefault();
               setExpanded(!expanded);
             }}
-            className={`c-pointer fe me-2 ${
+            className={`c-pointer fe mr-2 ${
               expanded ? "fe-minus-square" : "fe-plus-square"
             }`}
           ></span>

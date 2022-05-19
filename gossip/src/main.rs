@@ -5,17 +5,18 @@ use {
         crate_description, crate_name, value_t, value_t_or_exit, App, AppSettings, Arg, ArgMatches,
         SubCommand,
     },
-    solana_clap_utils::{
+    safecoin_clap_utils::{
         input_parsers::keypair_of,
         input_validators::{is_keypair_or_ask_keyword, is_port, is_pubkey},
     },
-    solana_gossip::{contact_info::ContactInfo, gossip_service::discover},
-    solana_sdk::pubkey::Pubkey,
+    safecoin_gossip::{contact_info::ContactInfo, gossip_service::discover},
+    safecoin_sdk::pubkey::Pubkey,
     solana_streamer::socket::SocketAddrSpace,
     std::{
         error,
         net::{IpAddr, Ipv4Addr, SocketAddr},
         process::exit,
+        sync::Arc,
         time::Duration,
     },
 };
@@ -232,7 +233,7 @@ fn process_spy(matches: &ArgMatches, socket_addr_space: SocketAddrSpace) -> std:
         .value_of("node_pubkey")
         .map(|pubkey_str| pubkey_str.parse::<Pubkey>().unwrap());
     let shred_version = value_t_or_exit!(matches, "shred_version", u16);
-    let identity_keypair = keypair_of(matches, "identity");
+    let identity_keypair = keypair_of(matches, "identity").map(Arc::new);
 
     let entrypoint_addr = parse_entrypoint(matches);
 

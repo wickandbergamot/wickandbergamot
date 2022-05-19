@@ -5,7 +5,7 @@ use {
         crate_description, crate_name, value_t, value_t_or_exit, values_t_or_exit, App,
         AppSettings, Arg, ArgMatches, SubCommand,
     },
-    solana_clap_utils::{
+    safecoin_clap_utils::{
         input_parsers::STDOUT_OUTFILE_TOKEN,
         input_validators::{is_parsable, is_prompt_signer_source},
         keypair::{
@@ -14,9 +14,9 @@ use {
         },
         ArgConstant, DisplayError,
     },
-    solana_cli_config::{Config, CONFIG_FILE},
-    solana_remote_wallet::remote_wallet::RemoteWalletManager,
-    solana_sdk::{
+    safecoin_cli_config::{Config, CONFIG_FILE},
+    safecoin_remote_wallet::remote_wallet::RemoteWalletManager,
+    safecoin_sdk::{
         instruction::{AccountMeta, Instruction},
         message::Message,
         pubkey::{write_pubkey_file, Pubkey},
@@ -53,7 +53,7 @@ const WORD_COUNT_ARG: ArgConstant<'static> = ArgConstant {
 const LANGUAGE_ARG: ArgConstant<'static> = ArgConstant {
     long: "language",
     name: "language",
-    help: "Specify the mnemonic language that will be present in the generated seed phrase",
+    help: "Specify the mnemonic lanaguage that will be present in the generated seed phrase",
 };
 
 const NO_PASSPHRASE_ARG: ArgConstant<'static> = ArgConstant {
@@ -142,7 +142,7 @@ fn get_keypair_from_matches(
     } else if !config.keypair_path.is_empty() {
         &config.keypair_path
     } else {
-        path.extend(&[".config", "solana", "id.json"]);
+        path.extend(&[".config", "safecoin", "id.json"]);
         path.to_str().unwrap()
     };
     signer_from_path(matches, path, "pubkey recovery", wallet_manager)
@@ -554,7 +554,7 @@ fn do_main(matches: &ArgMatches<'_>) -> Result<(), Box<dyn error::Error>> {
             } else if matches.is_present(NO_OUTFILE_ARG.name) {
                 None
             } else {
-                path.extend(&[".config", "solana", "id.json"]);
+                path.extend(&[".config", "safecoin", "id.json"]);
                 Some(path.to_str().unwrap())
             };
 
@@ -597,7 +597,7 @@ fn do_main(matches: &ArgMatches<'_>) -> Result<(), Box<dyn error::Error>> {
             let outfile = if matches.is_present("outfile") {
                 matches.value_of("outfile").unwrap()
             } else {
-                path.extend(&[".config", "solana", "id.json"]);
+                path.extend(&[".config", "safecoin", "id.json"]);
                 path.to_str().unwrap()
             };
 

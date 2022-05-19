@@ -1,13 +1,11 @@
 import React from "react";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@safecoin/web3.js";
 import { CacheEntry, FetchStatus } from "providers/cache";
 import {
   useFetchAccountInfo,
   useAccountInfo,
   Account,
   ProgramData,
-  TokenProgramData,
-  useMintAccountInfo,
 } from "providers/accounts";
 import { StakeAccountSection } from "components/account/StakeAccountSection";
 import { TokenAccountSection } from "components/account/TokenAccountSection";
@@ -36,15 +34,11 @@ import { TransactionHistoryCard } from "components/account/history/TransactionHi
 import { TokenTransfersCard } from "components/account/history/TokenTransfersCard";
 import { TokenInstructionsCard } from "components/account/history/TokenInstructionsCard";
 import { RewardsCard } from "components/account/RewardsCard";
-import { MetaplexMetadataCard } from "components/account/MetaplexMetadataCard";
-import { NFTHeader } from "components/account/MetaplexNFTHeader";
-import { DomainsCard } from "components/account/DomainsCard";
-import isMetaplexNFT from "providers/accounts/utils/isMetaplexNFT";
 
 const IDENTICON_WIDTH = 64;
 
 const TABS_LOOKUP: { [id: string]: Tab[] } = {
-  "spl-token:mint": [
+  "safe-token:mint": [
     {
       slug: "transfers",
       title: "Transfers",
@@ -59,13 +53,6 @@ const TABS_LOOKUP: { [id: string]: Tab[] } = {
       slug: "largest",
       title: "Distribution",
       path: "/largest",
-    },
-  ],
-  "spl-token:mint:metaplexNFT": [
-    {
-      slug: "metadata",
-      title: "Metadata",
-      path: "/metadata",
     },
   ],
   stake: [
@@ -111,7 +98,7 @@ const TABS_LOOKUP: { [id: string]: Tab[] } = {
 };
 
 const TOKEN_TABS_HIDDEN = [
-  "spl-token:mint",
+  "safe-token:mint",
   "config",
   "vote",
   "sysvar",
@@ -161,19 +148,9 @@ export function AccountHeader({
 }) {
   const { tokenRegistry } = useTokenRegistry();
   const tokenDetails = tokenRegistry.get(address);
-  const mintInfo = useMintAccountInfo(address);
   const account = info?.data;
   const data = account?.details?.data;
-  const isToken = data?.program === "spl-token" && data?.parsed.type === "mint";
-
-  if (isMetaplexNFT(data, mintInfo)) {
-    return (
-      <NFTHeader
-        nftData={(data as TokenProgramData).nftData!}
-        address={address}
-      />
-    );
-  }
+  const isToken = data?.program === "safe-token" && data?.parsed.type === "mint";
 
   if (tokenDetails || isToken) {
     return (
@@ -196,7 +173,7 @@ export function AccountHeader({
           </div>
         </div>
 
-        <div className="col mb-3 ms-n3 ms-md-n2">
+        <div className="col mb-3 ml-n3 ml-md-n2">
           <h6 className="header-pretitle">Token</h6>
           <h2 className="header-title">
             {tokenDetails?.name || "Unknown Token"}
@@ -253,7 +230,7 @@ function DetailsSections({
       {flaggedAccounts.has(address) && (
         <div className="alert alert-danger alert-scam" role="alert">
           Warning! This account has been flagged by the community as a scam
-          account. Please be cautious sending SOL to this account.
+          account. Please be cautious sending SAFE to this account.
         </div>
       )}
       {<InfoSection account={account} />}
@@ -282,7 +259,7 @@ function InfoSection({ account }: { account: Account }) {
         stakeAccountType={data.parsed.type}
       />
     );
-  } else if (data && data.program === "spl-token") {
+  } else if (data && data.program === "safe-token") {
     return <TokenAccountSection account={account} tokenAccount={data.parsed} />;
   } else if (data && data.program === "nonce") {
     return <NonceAccountSection account={account} nonceAccount={data.parsed} />;
@@ -317,9 +294,7 @@ export type MoreTabs =
   | "blockhashes"
   | "transfers"
   | "instructions"
-  | "rewards"
-  | "metadata"
-  | "domains";
+  | "rewards";
 
 function MoreSection({
   account,
@@ -383,12 +358,6 @@ function MoreSection({
         data.parsed.type === "recentBlockhashes" && (
           <BlockhashesCard blockhashes={data.parsed.info} />
         )}
-      {tab === "metadata" && (
-        <MetaplexMetadataCard
-          nftData={(account.details?.data as TokenProgramData).nftData!}
-        />
-      )}
-      {tab === "domains" && <DomainsCard pubkey={pubkey} />}
     </>
   );
 }
@@ -415,15 +384,6 @@ function getTabs(data?: ProgramData): Tab[] {
     tabs.push(...TABS_LOOKUP[programTypeKey]);
   }
 
-  // Add the key for Metaplex NFTs
-  if (
-    data &&
-    programTypeKey === "spl-token:mint" &&
-    (data as TokenProgramData).nftData
-  ) {
-    tabs.push(...TABS_LOOKUP[`${programTypeKey}:metaplexNFT`]);
-  }
-
   if (
     !data ||
     !(
@@ -435,11 +395,6 @@ function getTabs(data?: ProgramData): Tab[] {
       slug: "tokens",
       title: "Tokens",
       path: "/tokens",
-    });
-    tabs.push({
-      slug: "domains",
-      title: "Domains",
-      path: "/domains",
     });
   }
 

@@ -6,17 +6,14 @@ use {
         contact_info::ContactInfo,
     },
     rand::{thread_rng, Rng},
-    solana_client::thin_client::{create_client, ThinClient},
+    safecoin_client::thin_client::{create_client, ThinClient},
     solana_perf::recycler::Recycler,
     solana_runtime::bank_forks::BankForks,
-    solana_sdk::{
+    safecoin_sdk::{
         pubkey::Pubkey,
         signature::{Keypair, Signer},
     },
-    solana_streamer::{
-        socket::SocketAddrSpace,
-        streamer::{self, StreamerReceiveStats},
-    },
+    solana_streamer::{socket::SocketAddrSpace, streamer},
     std::{
         collections::HashSet,
         net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, UdpSocket},
@@ -53,10 +50,10 @@ impl GossipService {
         let socket_addr_space = *cluster_info.socket_addr_space();
         let t_receiver = streamer::receiver(
             gossip_socket.clone(),
-            exit.clone(),
+            exit,
             request_sender,
             Recycler::default(),
-            Arc::new(StreamerReceiveStats::new("gossip_receiver")),
+            "gossip_receiver",
             1,
             false,
         );
@@ -132,7 +129,7 @@ pub fn discover_cluster(
 }
 
 pub fn discover(
-    keypair: Option<Keypair>,
+    keypair: Option<Arc<Keypair>>,
     entrypoint: Option<&SocketAddr>,
     num_nodes: Option<usize>, // num_nodes only counts validators, excludes spy nodes
     timeout: Duration,
@@ -145,7 +142,8 @@ pub fn discover(
     Vec<ContactInfo>, // all gossip peers
     Vec<ContactInfo>, // tvu peers (validators)
 )> {
-    let keypair = keypair.unwrap_or_else(Keypair::new);
+    let keypair = keypair.unwrap_or_else(|| Arc::new(Keypair::new()));
+
     let exit = Arc::new(AtomicBool::new(false));
     let (gossip_service, ip_echo, spy_ref) = make_gossip_node(
         keypair,
@@ -309,8 +307,8 @@ fn spy(
 
 /// Makes a spy or gossip node based on whether or not a gossip_addr was passed in
 /// Pass in a gossip addr to fully participate in gossip instead of relying on just pulls
-pub fn make_gossip_node(
-    keypair: Keypair,
+fn make_gossip_node(
+    keypair: Arc<Keypair>,
     entrypoint: Option<&SocketAddr>,
     exit: &Arc<AtomicBool>,
     gossip_addr: Option<&SocketAddr>,
@@ -319,11 +317,11 @@ pub fn make_gossip_node(
     socket_addr_space: SocketAddrSpace,
 ) -> (GossipService, Option<TcpListener>, Arc<ClusterInfo>) {
     let (node, gossip_socket, ip_echo) = if let Some(gossip_addr) = gossip_addr {
-        ClusterInfo::gossip_node(keypair.pubkey(), gossip_addr, shred_version)
+        ClusterInfo::gossip_node(&keypair.pubkey(), gossip_addr, shred_version)
     } else {
-        ClusterInfo::spy_node(keypair.pubkey(), shred_version)
+        ClusterInfo::spy_node(&keypair.pubkey(), shred_version)
     };
-    let cluster_info = ClusterInfo::new(node, Arc::new(keypair), socket_addr_space);
+    let cluster_info = ClusterInfo::new(node, keypair, socket_addr_space);
     if let Some(entrypoint) = entrypoint {
         cluster_info.set_entrypoint(ContactInfo::new_gossip_entry_point(entrypoint));
     }
@@ -375,8 +373,8 @@ mod tests {
     fn test_gossip_services_spy() {
         const TIMEOUT: Duration = Duration::from_secs(5);
         let keypair = Keypair::new();
-        let peer0 = solana_sdk::pubkey::new_rand();
-        let peer1 = solana_sdk::pubkey::new_rand();
+        let peer0 = safecoin_sdk::pubkey::new_rand();
+        let peer1 = safecoin_sdk::pubkey::new_rand();
         let contact_info = ContactInfo::new_localhost(&keypair.pubkey(), 0);
         let peer0_info = ContactInfo::new_localhost(&peer0, 0);
         let peer1_info = ContactInfo::new_localhost(&peer1, 0);
@@ -408,7 +406,7 @@ mod tests {
             spy_ref.clone(),
             None,
             TIMEOUT,
-            Some(solana_sdk::pubkey::new_rand()),
+            Some(safecoin_sdk::pubkey::new_rand()),
             None,
         );
         assert!(!met_criteria);
@@ -422,7 +420,7 @@ mod tests {
             spy_ref.clone(),
             Some(1),
             TIMEOUT,
-            Some(solana_sdk::pubkey::new_rand()),
+            Some(safecoin_sdk::pubkey::new_rand()),
             None,
         );
         assert!(!met_criteria);

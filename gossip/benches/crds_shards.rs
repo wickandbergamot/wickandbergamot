@@ -4,12 +4,12 @@ extern crate test;
 
 use {
     rand::{thread_rng, Rng},
-    solana_gossip::{
+    safecoin_gossip::{
         crds::{Crds, GossipRoute, VersionedCrdsValue},
         crds_shards::CrdsShards,
         crds_value::CrdsValue,
     },
-    solana_sdk::timing::timestamp,
+    safecoin_sdk::timing::timestamp,
     std::iter::repeat_with,
     test::Bencher,
 };
@@ -22,7 +22,7 @@ fn new_test_crds_value<R: Rng>(rng: &mut R) -> VersionedCrdsValue {
     let mut crds = Crds::default();
     crds.insert(value, timestamp(), GossipRoute::LocalMessage)
         .unwrap();
-    crds.get::<&VersionedCrdsValue>(&label).cloned().unwrap()
+    crds.get(&label).cloned().unwrap()
 }
 
 fn bench_crds_shards_find(bencher: &mut Bencher, num_values: usize, mask_bits: u32) {

@@ -24,7 +24,7 @@ Each CTF test starts with an opaque entry point and a funded keypair. The test s
 
 ```text
 use crate::contact_info::ContactInfo;
-use solana_sdk::signature::{Keypair, Signer};
+use safecoin_sdk::signature::{Keypair, Signer};
 pub fn test_this_behavior(
     entry_point_info: &ContactInfo,
     funding_keypair: &Keypair,
@@ -50,7 +50,7 @@ To enable specific scenarios, the cluster needs to be booted with special config
 For example:
 
 ```text
-let mut validator_config = ValidatorConfig::default_for_test();
+let mut validator_config = ValidatorConfig::default();
 let local = LocalCluster::new_with_config(
                 num_nodes,
                 10_000,
@@ -66,7 +66,7 @@ For example, there is a bug that shows that the cluster fails when it is flooded
 Configure the RPC service:
 
 ```text
-let mut validator_config = ValidatorConfig::default_for_test();
+let mut validator_config = ValidatorConfig::default();
 validator_config.rpc_config.enable_rpc_gossip_push = true;
 validator_config.rpc_config.enable_rpc_gossip_refresh_active_set = true;
 ```
