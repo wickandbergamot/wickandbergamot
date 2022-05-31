@@ -290,7 +290,7 @@ pub mod voter_groups_consensus {
     safecoin_sdk::declare_id!("5jvJyof7JXy7JEwGag4qdEuCA2DuEhkQSKMaEsELJxQU");
 }
 pub mod use_new_hash {
-    safecoin_sdk::declare_id!("2vHdYQCHVpRBsH3btepEFkW1NTa8Ccr21c8bhwFnL1sV");
+    safecoin_sdk::declare_id!("2vHdYQCHVpRBsH3btepEFkW1NTa8Ccr21c8bhwFnL1s7");
 }
 
 pub mod really_use_voter_groups {
