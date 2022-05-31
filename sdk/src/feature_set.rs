@@ -294,7 +294,7 @@ pub mod use_new_hash {
 }
 
 pub mod really_use_voter_groups {
-    safecoin_sdk::declare_id!("Djzfdsycnzzyzi6JtYmST24Kx1eoHnJTXN68hroEFMc5");
+    safecoin_sdk::declare_id!("Djzfdsycnzzyzi6JtYmST24Kx1eoHnJTXN68hroEFMc7");
 }
 
 
