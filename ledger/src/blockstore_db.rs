@@ -101,6 +101,8 @@ pub enum BlockstoreError {
     ProtobufDecodeError(#[from] prost::DecodeError),
     ParentEntriesUnavailable,
     SlotUnavailable,
+    UnsupportedTransactionVersion,
+    MissingTransactionMetadata,
 }
 pub type Result<T> = std::result::Result<T, BlockstoreError>;
 
@@ -786,14 +788,6 @@ impl ColumnName for columns::TransactionStatusIndex {
     const NAME: &'static str = TRANSACTION_STATUS_INDEX_CF;
 }
 
-impl SlotColumn for columns::BankHash {}
-impl ColumnName for columns::BankHash {
-    const NAME: &'static str = BANK_HASH_CF;
-}
-impl TypedColumn for columns::BankHash {
-    type Type = blockstore_meta::FrozenHashVersioned;
-}
-
 impl SlotColumn for columns::Rewards {}
 impl ColumnName for columns::Rewards {
     const NAME: &'static str = REWARDS_CF;
@@ -944,6 +938,14 @@ impl ColumnName for columns::Orphans {
 }
 impl TypedColumn for columns::Orphans {
     type Type = bool;
+}
+
+impl SlotColumn for columns::BankHash {}
+impl ColumnName for columns::BankHash {
+    const NAME: &'static str = BANK_HASH_CF;
+}
+impl TypedColumn for columns::BankHash {
+    type Type = blockstore_meta::FrozenHashVersioned;
 }
 
 impl SlotColumn for columns::Root {}
