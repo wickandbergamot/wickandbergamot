@@ -91,7 +91,6 @@ mod tests {
             path::PathBuf,
             sync::{
                 atomic::{AtomicBool, Ordering},
-                mpsc::channel,
                 Arc, RwLock,
             },
             time::Duration,
@@ -176,7 +175,7 @@ mod tests {
 
         let check_hash_calculation = false;
         let full_snapshot_archive_path = snapshot_utils::build_full_snapshot_archive_path(
-            snapshot_archives_dir.to_path_buf(),
+            snapshot_archives_dir,
             old_last_bank.slot(),
             &old_last_bank.get_accounts_hash(),
             ArchiveFormat::TarBzip2,
@@ -209,7 +208,7 @@ mod tests {
         .unwrap();
 
         let bank = old_bank_forks.get(deserialized_bank.slot()).unwrap();
-        assert_eq!(*bank, deserialized_bank);
+        assert_eq!(bank.as_ref(), &deserialized_bank);
 
         let bank_snapshots = snapshot_utils::get_bank_snapshots(&snapshot_path);
 
@@ -245,7 +244,7 @@ mod tests {
         let mint_keypair = &snapshot_test_config.genesis_config_info.mint_keypair;
 
         let (s, snapshot_request_receiver) = unbounded();
-        let (accounts_package_sender, _r) = channel();
+        let (accounts_package_sender, _r) = unbounded();
         let request_sender = AbsRequestSender::new(Some(s));
         let snapshot_request_handler = SnapshotRequestHandler {
             snapshot_config: snapshot_test_config.snapshot_config.clone(),
@@ -365,8 +364,8 @@ mod tests {
             .unwrap();
 
         // Set up snapshotting channels
-        let (sender, receiver) = channel();
-        let (fake_sender, _fake_receiver) = channel();
+        let (sender, receiver) = unbounded();
+        let (fake_sender, _fake_receiver) = unbounded();
 
         // Create next MAX_CACHE_ENTRIES + 2 banks and snapshots. Every bank will get snapshotted
         // and the snapshot purging logic will run on every snapshot taken. This means the three
@@ -430,7 +429,7 @@ mod tests {
                 // Only save off the files returned by `get_snapshot_storages`. This is because
                 // some of the storage entries in the accounts directory may be filtered out by
                 // `get_snapshot_storages()` and will not be included in the snapshot. Ultimately,
-                // this means copying naitvely everything in `accounts_dir` to the `saved_accounts_dir`
+                // this means copying natively everything in `accounts_dir` to the `saved_accounts_dir`
                 // will lead to test failure by mismatch when `saved_accounts_dir` is compared to
                 // the unpacked snapshot later in this test's call to `verify_snapshot_archive()`.
                 for file in snapshot_storage_files {
@@ -459,7 +458,7 @@ mod tests {
                 fs_extra::dir::copy(&last_snapshot_path, &saved_snapshots_dir, &options).unwrap();
 
                 saved_archive_path = Some(snapshot_utils::build_full_snapshot_archive_path(
-                    snapshot_archives_dir.to_path_buf(),
+                    snapshot_archives_dir,
                     slot,
                     &accounts_hash,
                     ArchiveFormat::TarBzip2,
@@ -542,7 +541,7 @@ mod tests {
         snapshot_utils::serialize_snapshot_data_file(
             &saved_snapshots_dir
                 .path()
-                .join(snapshot_utils::SNAPSHOT_STATUS_CACHE_FILE_NAME),
+                .join(snapshot_utils::SNAPSHOT_STATUS_CACHE_FILENAME),
             |stream| {
                 serialize_into(stream, &[] as &[BankSlotDelta])?;
                 Ok(())
@@ -668,7 +667,7 @@ mod tests {
         let mint_keypair = &snapshot_test_config.genesis_config_info.mint_keypair;
 
         let (snapshot_request_sender, snapshot_request_receiver) = unbounded();
-        let (accounts_package_sender, _accounts_package_receiver) = channel();
+        let (accounts_package_sender, _accounts_package_receiver) = unbounded();
         let request_sender = AbsRequestSender::new(Some(snapshot_request_sender));
         let snapshot_request_handler = SnapshotRequestHandler {
             snapshot_config: snapshot_test_config.snapshot_config.clone(),
@@ -892,7 +891,7 @@ mod tests {
 
         let (pruned_banks_sender, pruned_banks_receiver) = unbounded();
         let (snapshot_request_sender, snapshot_request_receiver) = unbounded();
-        let (accounts_package_sender, accounts_package_receiver) = channel();
+        let (accounts_package_sender, accounts_package_receiver) = unbounded();
         let pending_snapshot_package = PendingSnapshotPackage::default();
 
         let bank_forks = Arc::new(RwLock::new(snapshot_test_config.bank_forks));

@@ -24,6 +24,25 @@ pub fn bootstrap_validator_stake_lamports() -> u64 {
     StakeState::get_rent_exempt_reserve(&Rent::default())
 }
 
+// Number of lamports automatically used for genesis accounts
+pub const fn genesis_sysvar_and_builtin_program_lamports() -> u64 {
+    const NUM_BUILTIN_PROGRAMS: u64 = 4;
+    const FEES_SYSVAR_MIN_BALANCE: u64 = 946_560;
+    const STAKE_HISTORY_MIN_BALANCE: u64 = 114_979_200;
+    const CLOCK_SYSVAR_MIN_BALANCE: u64 = 1_169_280;
+    const RENT_SYSVAR_MIN_BALANCE: u64 = 1_009_200;
+    const EPOCH_SCHEDULE_SYSVAR_MIN_BALANCE: u64 = 1_120_560;
+    const RECENT_BLOCKHASHES_SYSVAR_MIN_BALANCE: u64 = 42_706_560;
+
+    FEES_SYSVAR_MIN_BALANCE
+        + STAKE_HISTORY_MIN_BALANCE
+        + CLOCK_SYSVAR_MIN_BALANCE
+        + RENT_SYSVAR_MIN_BALANCE
+        + EPOCH_SCHEDULE_SYSVAR_MIN_BALANCE
+        + RECENT_BLOCKHASHES_SYSVAR_MIN_BALANCE
+        + NUM_BUILTIN_PROGRAMS
+}
+
 pub struct ValidatorVoteKeypairs {
     pub node_keypair: Keypair,
     pub vote_keypair: Keypair,
@@ -169,16 +188,20 @@ pub fn create_genesis_config_with_leader(
 pub fn activate_all_features(genesis_config: &mut GenesisConfig) {
     // Activate all features at genesis in development mode
     for feature_id in FeatureSet::default().inactive {
-        genesis_config.accounts.insert(
-            feature_id,
-            Account::from(feature::create_account(
-                &Feature {
-                    activated_at: Some(0),
-                },
-                std::cmp::max(genesis_config.rent.minimum_balance(Feature::size_of()), 1),
-            )),
-        );
+        activate_feature(genesis_config, feature_id);
     }
+}
+
+pub fn activate_feature(genesis_config: &mut GenesisConfig, feature_id: Pubkey) {
+    genesis_config.accounts.insert(
+        feature_id,
+        Account::from(feature::create_account(
+            &Feature {
+                activated_at: Some(0),
+            },
+            std::cmp::max(genesis_config.rent.minimum_balance(Feature::size_of()), 1),
+        )),
+    );
 }
 
 #[allow(clippy::too_many_arguments)]

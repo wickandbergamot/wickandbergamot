@@ -20,7 +20,7 @@
     "access": "public"
   },
   "browser": {
-    "./lib/index.cjs.js": "./lib/index.browser.esm.js",
+    "./lib/index.cjs.js": "./lib/index.browser.cjs.js",
     "./lib/index.esm.js": "./lib/index.browser.esm.js"
   },
   "main": "lib/index.cjs.js",
@@ -62,7 +62,7 @@
     "@ethersproject/sha2": "^5.5.0",
     "@solana/buffer-layout": "^3.0.0",
     "bn.js": "^5.0.0",
-    "borsh": "^0.4.0",
+    "borsh": "^0.7.0",
     "bs58": "^4.0.1",
     "buffer": "6.0.1",
     "cross-fetch": "^3.1.4",

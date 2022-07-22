@@ -82,7 +82,7 @@ pub enum ParsePubkeyError {
 
 impl From<Infallible> for ParsePubkeyError {
     fn from(_: Infallible) -> Self {
-        unreachable!("Infallible unihnabited");
+        unreachable!("Infallible uninhabited");
     }
 }
 
@@ -346,22 +346,24 @@ impl Pubkey {
     ///
     /// The client program:
     ///
-    /// ```ignore
-    /// # // NB: This example depends on safecoin_sdk and safecoin_client, and adding
-    /// # // those as dev-dependencies would create an unpublishable circular
-    /// # // dependency, hence it is ignored.
-    /// #
+    /// ```
     /// # use borsh::{BorshSerialize, BorshDeserialize};
-    /// # use safecoin_program::pubkey::Pubkey;
-    /// # use safecoin_program::instruction::Instruction;
-    /// # use safecoin_program::hash::Hash;
-    /// # use safecoin_program::instruction::AccountMeta;
-    /// # use safecoin_program::system_program;
-    /// # use safecoin_sdk::signature::Keypair;
-    /// # use safecoin_sdk::signature::{Signer, Signature};
-    /// # use safecoin_sdk::transaction::Transaction;
+    /// # use safecoin_program::example_mocks::{safecoin_sdk, safecoin_client};
+    /// # use safecoin_program::{
+    /// #     pubkey::Pubkey,
+    /// #     instruction::Instruction,
+    /// #     hash::Hash,
+    /// #     instruction::AccountMeta,
+    /// #     system_program,
+    /// # };
+    /// # use safecoin_sdk::{
+    /// #     signature::Keypair,
+    /// #     signature::{Signer, Signature},
+    /// #     transaction::Transaction,
+    /// # };
     /// # use safecoin_client::rpc_client::RpcClient;
     /// # use std::convert::TryFrom;
+    /// # use anyhow::Result;
     /// #
     /// # #[derive(BorshSerialize, BorshDeserialize, Debug)]
     /// # struct InstructionData {
@@ -370,52 +372,63 @@ impl Pubkey {
     /// # }
     /// #
     /// # pub static VAULT_ACCOUNT_SIZE: u64 = 1024;
+    /// #
+    /// fn create_vault_account(
+    ///     client: &RpcClient,
+    ///     program_id: Pubkey,
+    ///     payer: &Keypair,
+    /// ) -> Result<()> {
+    ///     // Derive the PDA from the payer account, a string representing the unique
+    ///     // purpose of the account ("vault"), and the address of our on-chain program.
+    ///     let (vault_pubkey, vault_bump_seed) = Pubkey::find_program_address(
+    ///         &[b"vault", payer.pubkey().as_ref()],
+    ///         &program_id
+    ///     );
+    ///
+    ///     // Get the amount of lamports needed to pay for the vault's rent
+    ///     let vault_account_size = usize::try_from(VAULT_ACCOUNT_SIZE)?;
+    ///     let lamports = client.get_minimum_balance_for_rent_exemption(vault_account_size)?;
+    ///
+    ///     // The on-chain program's instruction data, imported from that program's crate.
+    ///     let instr_data = InstructionData {
+    ///         vault_bump_seed,
+    ///         lamports,
+    ///     };
+    ///
+    ///     // The accounts required by both our on-chain program and the system program's
+    ///     // `create_account` instruction, including the vault's address.
+    ///     let accounts = vec![
+    ///         AccountMeta::new(payer.pubkey(), true),
+    ///         AccountMeta::new(vault_pubkey, false),
+    ///         AccountMeta::new(system_program::ID, false),
+    ///     ];
+    ///
+    ///     // Create the instruction by serializing our instruction data via borsh
+    ///     let instruction = Instruction::new_with_borsh(
+    ///         program_id,
+    ///         &instr_data,
+    ///         accounts,
+    ///     );
+    ///
+    ///     let blockhash = client.get_latest_blockhash()?;
+    ///
+    ///     let transaction = Transaction::new_signed_with_payer(
+    ///         &[instruction],
+    ///         Some(&payer.pubkey()),
+    ///         &[payer],
+    ///         blockhash,
+    ///     );
+    ///
+    ///     client.send_and_confirm_transaction(&transaction)?;
+    ///
+    ///     Ok(())
+    /// }
     /// # let program_id = Pubkey::new_unique();
     /// # let payer = Keypair::new();
-    /// # let rpc_client = RpcClient::new("no-run".to_string());
+    /// # let client = RpcClient::new(String::new());
     /// #
-    /// // Derive the PDA from the payer account, a string representing the unique
-    /// // purpose of the account ("vault"), and the address of our on-chain program.
-    /// let (vault_pubkey, vault_bump_seed) = Pubkey::find_program_address(
-    ///     &[b"vault", payer.pubkey().as_ref()],
-    ///     &program_id
-    /// );
-    ///
-    /// // Get the amount of lamports needed to pay for the vault's rent
-    /// let vault_account_size = usize::try_from(VAULT_ACCOUNT_SIZE)?;
-    /// let lamports = rpc_client.get_minimum_balance_for_rent_exemption(vault_account_size)?;
-    ///
-    /// // The on-chain program's instruction data, imported from that program's crate.
-    /// let instr_data = InstructionData {
-    ///     vault_bump_seed,
-    ///     lamports,
-    /// };
-    ///
-    /// // The accounts required by both our on-chain program and the system program's
-    /// // `create_account` instruction, including the vault's address.
-    /// let accounts = vec![
-    ///     AccountMeta::new(payer.pubkey(), true),
-    ///     AccountMeta::new(vault_pubkey, false),
-    ///     AccountMeta::new(system_program::ID, false),
-    /// ];
-    ///
-    /// // Create the instruction by serializing our instruction data via borsh
-    /// let instruction = Instruction::new_with_borsh(
-    ///     program_id,
-    ///     &instr_data,
-    ///     accounts,
-    /// );
-    ///
-    /// let blockhash = rpc_client.get_latest_blockhash()?;
-    ///
-    /// let transaction = Transaction::new_signed_with_payer(
-    ///     &[instruction],
-    ///     Some(&payer.pubkey()),
-    ///     &[&payer],
-    ///     blockhash,
-    /// );
-    ///
-    /// rpc_client.send_and_confirm_transaction(&transaction)?;
+    /// # create_vault_account(&client, program_id, &payer)?;
+    /// #
     /// # Ok::<(), anyhow::Error>(())
     /// ```
     pub fn find_program_address(seeds: &[&[u8]], program_id: &Pubkey) -> (Pubkey, u8) {

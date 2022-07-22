@@ -94,7 +94,7 @@ Alternatively use the Github UI.
     ```
 1. Confirm that your freshly cut release branch is shown as `BETA_CHANNEL` and the previous release branch as `STABLE_CHANNEL`:
     ```
-    ci/channel_info.sh
+    ci/channel-info.sh
     ```
 
 ## Steps to Create a Release
@@ -152,5 +152,5 @@ appearing.  To check for progress:
 [Crates.io](https://crates.io/crates/solana) should have an updated Safecoin version.  This can take 2-3 hours, and sometimes fails in the `solana-secondary` job.
 If this happens and the error is non-fatal, click "Retry" on the "publish crate" job
 
-### Update software on devnet.safecoin.org/testnet.safecoin.org/mainnet-beta.safecoin.org
-See the documentation at https://github.com/solana-labs/cluster-ops/
+### Update software on testnet.safecoin.org
+See the documentation at https://github.com/solana-labs/cluster-ops/. devnet.safecoin.org and mainnet-beta.safecoin.org run stable releases that have been tested on testnet. Do not update devnet or mainnet-beta with a beta release.

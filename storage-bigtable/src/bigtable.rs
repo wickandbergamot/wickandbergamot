@@ -4,7 +4,7 @@ use {
     crate::{
         access_token::{AccessToken, Scope},
         compression::{compress_best, decompress},
-        root_ca_certificate,
+        root_ca_certificate, CredentialType,
     },
     backoff::{future::retry, ExponentialBackoff},
     log::*,
@@ -109,6 +109,7 @@ pub struct BigTableConnection {
     access_token: Option<AccessToken>,
     channel: tonic::transport::Channel,
     table_prefix: String,
+    app_profile_id: String,
     timeout: Option<Duration>,
 }
 
@@ -121,11 +122,15 @@ impl BigTableConnection {
     ///
     /// The BIGTABLE_EMULATOR_HOST environment variable is also respected.
     ///
+    /// The BIGTABLE_PROXY environment variable is used to configure the gRPC connection through a
+    /// forward proxy (see HTTP_PROXY).
+    ///
     pub async fn new(
         instance_name: &str,
+        app_profile_id: &str,
         read_only: bool,
         timeout: Option<Duration>,
-        credential_path: Option<String>,
+        credential_type: CredentialType,
     ) -> Result<Self> {
         match std::env::var("BIGTABLE_EMULATOR_HOST") {
             Ok(endpoint) => {
@@ -137,6 +142,7 @@ impl BigTableConnection {
                         .map_err(|err| Error::InvalidUri(endpoint, err.to_string()))?
                         .connect_lazy(),
                     table_prefix: format!("projects/emulator/instances/{}/tables/", instance_name),
+                    app_profile_id: app_profile_id.to_string(),
                     timeout,
                 })
             }
@@ -148,7 +154,7 @@ impl BigTableConnection {
                     } else {
                         Scope::BigTableData
                     },
-                    credential_path,
+                    credential_type,
                 )
                 .await
                 .map_err(Error::AccessToken)?;
@@ -177,10 +183,30 @@ impl BigTableConnection {
                     }
                 };
 
+                let mut http = hyper::client::HttpConnector::new();
+                http.enforce_http(false);
+                let channel = match std::env::var("BIGTABLE_PROXY") {
+                    Ok(proxy_uri) => {
+                        let proxy = hyper_proxy::Proxy::new(
+                            hyper_proxy::Intercept::All,
+                            proxy_uri
+                                .parse::<http::Uri>()
+                                .map_err(|err| Error::InvalidUri(proxy_uri, err.to_string()))?,
+                        );
+                        let mut proxy_connector =
+                            hyper_proxy::ProxyConnector::from_proxy(http, proxy)?;
+                        // tonic handles TLS as a separate layer
+                        proxy_connector.set_tls(None);
+                        endpoint.connect_with_connector_lazy(proxy_connector)
+                    }
+                    _ => endpoint.connect_with_connector_lazy(http),
+                };
+
                 Ok(Self {
                     access_token: Some(access_token),
-                    channel: endpoint.connect_lazy(),
+                    channel,
                     table_prefix,
+                    app_profile_id: app_profile_id.to_string(),
                     timeout,
                 })
             }
@@ -214,6 +240,7 @@ impl BigTableConnection {
             access_token: self.access_token.clone(),
             client,
             table_prefix: self.table_prefix.clone(),
+            app_profile_id: self.app_profile_id.clone(),
             timeout: self.timeout,
         }
     }
@@ -276,6 +303,7 @@ pub struct BigTable<F: FnMut(Request<()>) -> InterceptedRequestResult> {
     access_token: Option<AccessToken>,
     client: bigtable_client::BigtableClient<InterceptedService<tonic::transport::Channel, F>>,
     table_prefix: String,
+    app_profile_id: String,
     timeout: Option<Duration>,
 }
 
@@ -387,6 +415,7 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
             .client
             .read_rows(ReadRowsRequest {
                 table_name: format!("{}{}", self.table_prefix, table_name),
+                app_profile_id: self.app_profile_id.clone(),
                 rows_limit,
                 rows: Some(RowSet {
                     row_keys: vec![],
@@ -416,7 +445,6 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
                         ],
                     })),
                 }),
-                ..ReadRowsRequest::default()
             })
             .await?
             .into_inner();
@@ -450,6 +478,7 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
             .client
             .read_rows(ReadRowsRequest {
                 table_name: format!("{}{}", self.table_prefix, table_name),
+                app_profile_id: self.app_profile_id.clone(),
                 rows_limit,
                 rows: Some(RowSet {
                     row_keys: vec![],
@@ -465,7 +494,6 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
                     // Only return the latest version of each cell
                     filter: Some(row_filter::Filter::CellsPerColumnLimitFilter(1)),
                 }),
-                ..ReadRowsRequest::default()
             })
             .await?
             .into_inner();
@@ -485,6 +513,7 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
             .client
             .read_rows(ReadRowsRequest {
                 table_name: format!("{}{}", self.table_prefix, table_name),
+                app_profile_id: self.app_profile_id.clone(),
                 rows_limit: 0, // return all keys
                 rows: Some(RowSet {
                     row_keys: row_keys
@@ -497,7 +526,6 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
                     // Only return the latest version of each cell
                     filter: Some(row_filter::Filter::CellsPerColumnLimitFilter(1)),
                 }),
-                ..ReadRowsRequest::default()
             })
             .await?
             .into_inner();
@@ -521,6 +549,7 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
             .client
             .read_rows(ReadRowsRequest {
                 table_name: format!("{}{}", self.table_prefix, table_name),
+                app_profile_id: self.app_profile_id.clone(),
                 rows_limit: 1,
                 rows: Some(RowSet {
                     row_keys: vec![row_key.into_bytes()],
@@ -530,7 +559,6 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
                     // Only return the latest version of each cell
                     filter: Some(row_filter::Filter::CellsPerColumnLimitFilter(1)),
                 }),
-                ..ReadRowsRequest::default()
             })
             .await?
             .into_inner();
@@ -562,8 +590,8 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
             .client
             .mutate_rows(MutateRowsRequest {
                 table_name: format!("{}{}", self.table_prefix, table_name),
+                app_profile_id: self.app_profile_id.clone(),
                 entries,
-                ..MutateRowsRequest::default()
             })
             .await?
             .into_inner();
@@ -616,8 +644,8 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
             .client
             .mutate_rows(MutateRowsRequest {
                 table_name: format!("{}{}", self.table_prefix, table_name),
+                app_profile_id: self.app_profile_id.clone(),
                 entries,
-                ..MutateRowsRequest::default()
             })
             .await?
             .into_inner();
@@ -680,7 +708,6 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
         deserialize_protobuf_or_bincode_cell_data(&row_data, table, key)
     }
 
-    #[allow(clippy::needless_lifetimes)]
     pub async fn get_protobuf_or_bincode_cells<'a, B, P>(
         &mut self,
         table: &'a str,
@@ -816,11 +843,14 @@ mod tests {
         super::*,
         crate::StoredConfirmedBlock,
         prost::Message,
-        safecoin_sdk::{hash::Hash, signature::Keypair, system_transaction},
+        safecoin_sdk::{
+            hash::Hash, message::v0::LoadedAddresses, signature::Keypair, system_transaction,
+            transaction::VersionedTransaction,
+        },
         solana_storage_proto::convert::generated,
         safecoin_transaction_status::{
-            ConfirmedBlock, ConfirmedBlockWithOptionalMetadata, TransactionStatusMeta,
-            TransactionWithMetadata,
+            ConfirmedBlock, TransactionStatusMeta, TransactionWithStatusMeta,
+            VersionedTransactionWithStatusMeta,
         },
         std::convert::TryInto,
     };
@@ -840,7 +870,7 @@ mod tests {
             previous_blockhash,
             blockhash,
             parent_slot,
-            transactions: transactions.into_iter().map(Into::into).collect(),
+            transactions: transactions.into_iter().map(|tx| tx.into()).collect(),
             rewards: rewards.into_iter().map(|r| r.into()).collect(),
             block_time: block_time.map(|timestamp| generated::UnixTimestamp { timestamp }),
             block_height: block_height.map(|block_height| generated::BlockHeight { block_height }),
@@ -852,8 +882,8 @@ mod tests {
         let from = Keypair::new();
         let recipient = safecoin_sdk::pubkey::new_rand();
         let transaction = system_transaction::transfer(&from, &recipient, 42, Hash::default());
-        let with_meta = TransactionWithMetadata {
-            transaction,
+        let with_meta = TransactionWithStatusMeta::Complete(VersionedTransactionWithStatusMeta {
+            transaction: VersionedTransaction::from(transaction),
             meta: TransactionStatusMeta {
                 status: Ok(()),
                 fee: 1,
@@ -864,8 +894,9 @@ mod tests {
                 pre_token_balances: Some(vec![]),
                 post_token_balances: Some(vec![]),
                 rewards: Some(vec![]),
+                loaded_addresses: LoadedAddresses::default(),
             },
-        };
+        });
         let expected_block = ConfirmedBlock {
             transactions: vec![with_meta],
             parent_slot: 1,
@@ -876,10 +907,7 @@ mod tests {
             block_height: Some(1),
         };
         let bincode_block = compress_best(
-            &bincode::serialize::<StoredConfirmedBlock>(
-                &ConfirmedBlockWithOptionalMetadata::from(expected_block.clone()).into(),
-            )
-            .unwrap(),
+            &bincode::serialize::<StoredConfirmedBlock>(&expected_block.clone().into()).unwrap(),
         )
         .unwrap();
 
@@ -898,10 +926,7 @@ mod tests {
         )
         .unwrap();
         if let CellData::Protobuf(protobuf_block) = deserialized {
-            assert_eq!(
-                ConfirmedBlockWithOptionalMetadata::from(expected_block.clone()),
-                protobuf_block.try_into().unwrap(),
-            );
+            assert_eq!(expected_block, protobuf_block.try_into().unwrap());
         } else {
             panic!("deserialization should produce CellData::Protobuf");
         }
@@ -917,18 +942,18 @@ mod tests {
         .unwrap();
         if let CellData::Bincode(bincode_block) = deserialized {
             let mut block = expected_block;
+            if let TransactionWithStatusMeta::Complete(VersionedTransactionWithStatusMeta {
+                meta,
+                ..
+            }) = &mut block.transactions[0]
             {
-                let mut meta = &mut block.transactions[0].meta;
                 meta.inner_instructions = None; // Legacy bincode implementation does not support inner_instructions
                 meta.log_messages = None; // Legacy bincode implementation does not support log_messages
                 meta.pre_token_balances = None; // Legacy bincode implementation does not support token balances
                 meta.post_token_balances = None; // Legacy bincode implementation does not support token balances
                 meta.rewards = None; // Legacy bincode implementation does not support rewards
             }
-            assert_eq!(
-                ConfirmedBlockWithOptionalMetadata::from(block),
-                ConfirmedBlockWithOptionalMetadata::from(bincode_block)
-            );
+            assert_eq!(block, bincode_block.into());
         } else {
             panic!("deserialization should produce CellData::Bincode");
         }

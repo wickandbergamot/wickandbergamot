@@ -71,7 +71,6 @@ pub struct FeeRateGovernor {
 pub const DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE: u64 = 25_000;
 pub const DEFAULT_TARGET_SIGNATURES_PER_SLOT: u64 = 25 * DEFAULT_MS_PER_SLOT;
 
-
 // Percentage of tx fees to burn
 pub const DEFAULT_BURN_PERCENT: u8 = 50;
 
@@ -161,6 +160,13 @@ impl FeeRateGovernor {
             me.lamports_per_signature
         );
         me
+    }
+
+    pub fn clone_with_lamports_per_signature(&self, lamports_per_signature: u64) -> Self {
+        Self {
+            lamports_per_signature,
+            ..*self
+        }
     }
 
     /// calculate unburned fee from a fee total, returns (unburned, burned)

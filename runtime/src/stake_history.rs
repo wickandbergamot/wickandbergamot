@@ -27,8 +27,7 @@ type StakeHistoryInner = safecoin_sdk::stake_history::StakeHistory;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use safecoin_sdk::stake_history::StakeHistoryEntry;
+    use {super::*, safecoin_sdk::stake_history::StakeHistoryEntry};
 
     fn rand_stake_history_entry() -> StakeHistoryEntry {
         StakeHistoryEntry {

@@ -1,6 +1,6 @@
 [package]
 name = "safecoin-vote-program"
-version = "1.9.29"
+version = "1.10.32"
 description = "Safecoin Vote program"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 repository = "https://github.com/fair-exchange/safecoin"
@@ -14,15 +14,17 @@ bincode = "1.3.3"
 log = "0.4.14"
 num-derive = "0.3"
 num-traits = "0.2"
-serde = "1.0.130"
+serde = "1.0.136"
 serde_derive = "1.0.103"
-safecoin-frozen-abi = { path = "../../frozen-abi", version = "=1.9.29" }
-safecoin-frozen-abi-macro = { path = "../../frozen-abi/macro", version = "=1.9.29" }
-safecoin-logger = { path = "../../logger", version = "=1.9.29" }
-safecoin-metrics = { path = "../../metrics", version = "=1.9.29" }
-safecoin-program-runtime = { path = "../../program-runtime", version = "=1.9.29" }
-safecoin-sdk = { path = "../../sdk", version = "=1.9.29" }
+safecoin-frozen-abi = { path = "../../frozen-abi", version = "=1.10.32" }
+safecoin-frozen-abi-macro = { path = "../../frozen-abi/macro", version = "=1.10.32" }
+safecoin-metrics = { path = "../../metrics", version = "=1.10.32" }
+safecoin-program-runtime = { path = "../../program-runtime", version = "=1.10.32" }
+safecoin-sdk = { path = "../../sdk", version = "=1.10.32" }
 thiserror = "1.0"
+
+[dev-dependencies]
+safecoin-logger = { path = "../../logger", version = "=1.10.32" }
 
 [build-dependencies]
 rustc_version = "0.4"

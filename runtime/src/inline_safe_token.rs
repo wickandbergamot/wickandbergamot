@@ -3,7 +3,7 @@ use safecoin_sdk::pubkey::{Pubkey, PUBKEY_BYTES};
 
 safecoin_sdk::declare_id!("ToKLx75MGim1d1jRusuVX8xvdvvbSDESVaNXpRA9PHN");
 
-pub(crate) mod new_token_program {
+pub(crate) mod program_v3_4_0 {
     safecoin_sdk::declare_id!("NToWZEGXbb8dvy6qbKHb3ZTL8jf9UpZo3VDzm9fkwHr");
 }
 

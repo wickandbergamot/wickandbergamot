@@ -3,7 +3,6 @@
 extern crate safecoin_program;
 use safecoin_program::{
     account_info::AccountInfo,
-    entrypoint,
     entrypoint::ProgramResult,
     instruction::{AccountMeta, Instruction},
     msg,
@@ -12,7 +11,7 @@ use safecoin_program::{
     pubkey::Pubkey,
 };
 
-entrypoint!(process_instruction);
+safecoin_program::entrypoint!(process_instruction);
 fn process_instruction(
     program_id: &Pubkey,
     accounts: &[AccountInfo],

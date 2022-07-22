@@ -113,6 +113,7 @@ args=(
   --snapshot-compression none
   --require-tower
   --no-wait-for-vote-to-start-leader
+  --no-os-network-limits-test
 )
 # shellcheck disable=SC2086
 safecoin-validator "${args[@]}" $SAFECOIN_RUN_SH_VALIDATOR_ARGS &

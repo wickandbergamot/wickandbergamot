@@ -1,16 +1,19 @@
 use {
     crate::{
         args::{DistributeTokensArgs, SafeTokenArgs},
-        commands::{Allocation, Error, FundingSource},
+        commands::{get_fees_for_messages, Allocation, Error, FundingSource},
     },
     console::style,
+    std::str::FromStr,
     safecoin_account_decoder::parse_token::{
         pubkey_from_safe_token, real_number_string, real_number_string_trimmed, safe_token_pubkey,
     },
     safecoin_client::rpc_client::RpcClient,
-    safecoin_sdk::{instruction::Instruction, message::Message, native_token::lamports_to_sol},
+    safecoin_sdk::{instruction::Instruction, message::Message, native_token::lamports_to_sol, pubkey::Pubkey},
     safecoin_transaction_status::parse_token::safe_token_instruction,
-    safe_associated_token_account::{create_associated_token_account, get_associated_token_address},
+    safe_associated_token_account::{
+        get_associated_token_address, instruction::create_associated_token_account,
+    },
     safe_token::{
         safecoin_program::program_pack::Pack,
         state::{Account as SafeTokenAccount, Mint},
@@ -61,6 +64,7 @@ pub fn build_safe_token_instructions(
             &safe_token_pubkey(&args.fee_payer.pubkey()),
             &wallet_address,
             &safe_token_pubkey(&safe_token_args.mint),
+            &Pubkey::from_str("ToKLx75MGim1d1jRusuVX8xvdvvbSDESVaNXpRA9PHN").unwrap()
         );
         instructions.push(safe_token_instruction(
             create_associated_token_account_instruction,
@@ -93,14 +97,7 @@ pub fn check_safe_token_balances(
         .as_ref()
         .expect("safe_token_args must be some");
     let allocation_amount: u64 = allocations.iter().map(|x| x.amount).sum();
-
-    let fees: u64 = messages
-        .iter()
-        .map(|message| client.get_fee_for_message(message))
-        .collect::<Result<Vec<_>, _>>()
-        .unwrap()
-        .iter()
-        .sum();
+    let fees = get_fees_for_messages(messages, client)?;
 
     let token_account_rent_exempt_balance =
         client.get_minimum_balance_for_rent_exemption(SafeTokenAccount::LEN)?;

@@ -3,6 +3,7 @@ use {
         cluster_slots::ClusterSlots,
         duplicate_repair_status::{DeadSlotAncestorRequestStatus, DuplicateAncestorDecision},
         outstanding_requests::OutstandingRequests,
+        packet_threshold::DynamicPacketToProcessThreshold,
         repair_response::{self},
         repair_service::{DuplicateSlotsResetSender, RepairInfo, RepairStatsGroup},
         replay_stage::DUPLICATE_THRESHOLD,
@@ -12,7 +13,6 @@ use {
     crossbeam_channel::{unbounded, Receiver, Sender},
     dashmap::{mapref::entry::Entry::Occupied, DashMap},
     solana_ledger::{blockstore::Blockstore, shred::SIZE_OF_NONCE},
-    safecoin_measure::measure::Measure,
     solana_perf::{
         packet::{Packet, PacketBatch},
         recycler::Recycler,
@@ -29,7 +29,6 @@ use {
         net::UdpSocket,
         sync::{
             atomic::{AtomicBool, Ordering},
-            mpsc::channel,
             Arc, RwLock,
         },
         thread::{self, sleep, Builder, JoinHandle},
@@ -147,7 +146,7 @@ impl AncestorHashesService {
     ) -> Self {
         let outstanding_requests: Arc<RwLock<OutstandingAncestorHashesRepairs>> =
             Arc::new(RwLock::new(OutstandingAncestorHashesRepairs::default()));
-        let (response_sender, response_receiver) = channel();
+        let (response_sender, response_receiver) = unbounded();
         let t_receiver = streamer::receiver(
             ancestor_hashes_request_socket.clone(),
             exit.clone(),
@@ -212,7 +211,7 @@ impl AncestorHashesService {
             .spawn(move || {
                 let mut last_stats_report = Instant::now();
                 let mut stats = AncestorHashesResponsesStats::default();
-                let mut max_packets = 1024;
+                let mut packet_threshold = DynamicPacketToProcessThreshold::default();
                 loop {
                     let result = Self::process_new_packets_from_channel(
                         &ancestor_hashes_request_statuses,
@@ -220,13 +219,13 @@ impl AncestorHashesService {
                         &blockstore,
                         &outstanding_requests,
                         &mut stats,
-                        &mut max_packets,
+                        &mut packet_threshold,
                         &duplicate_slots_reset_sender,
                         &retryable_slots_sender,
                     );
                     match result {
                         Err(Error::RecvTimeout(_)) | Ok(_) => {}
-                        Err(err) => info!("ancestors hashes reponses listener error: {:?}", err),
+                        Err(err) => info!("ancestors hashes responses listener error: {:?}", err),
                     };
                     if exit.load(Ordering::Relaxed) {
                         return;
@@ -247,29 +246,28 @@ impl AncestorHashesService {
         blockstore: &Blockstore,
         outstanding_requests: &RwLock<OutstandingAncestorHashesRepairs>,
         stats: &mut AncestorHashesResponsesStats,
-        max_packets: &mut usize,
+        packet_threshold: &mut DynamicPacketToProcessThreshold,
         duplicate_slots_reset_sender: &DuplicateSlotsResetSender,
         retryable_slots_sender: &RetryableSlotsSender,
     ) -> Result<()> {
         let timeout = Duration::new(1, 0);
         let mut packet_batches = vec![response_receiver.recv_timeout(timeout)?];
-        let mut total_packets = packet_batches[0].packets.len();
+        let mut total_packets = packet_batches[0].len();
 
         let mut dropped_packets = 0;
         while let Ok(batch) = response_receiver.try_recv() {
-            total_packets += batch.packets.len();
-            if total_packets < *max_packets {
-                // Drop the rest in the channel in case of DOS
-                packet_batches.push(batch);
+            total_packets += batch.len();
+            if packet_threshold.should_drop(total_packets) {
+                dropped_packets += batch.len();
             } else {
-                dropped_packets += batch.packets.len();
+                packet_batches.push(batch);
             }
         }
 
         stats.dropped_packets += dropped_packets;
         stats.total_packets += total_packets;
 
-        let mut time = Measure::start("ancestor_hashes::handle_packets");
+        let timer = Instant::now();
         for packet_batch in packet_batches {
             Self::process_packet_batch(
                 ancestor_hashes_request_statuses,
@@ -281,14 +279,7 @@ impl AncestorHashesService {
                 retryable_slots_sender,
             );
         }
-        time.stop();
-        if total_packets >= *max_packets {
-            if time.as_ms() > 1000 {
-                *max_packets = (*max_packets * 9) / 10;
-            } else {
-                *max_packets = (*max_packets * 10) / 9;
-            }
-        }
+        packet_threshold.update(total_packets, timer.elapsed());
         Ok(())
     }
 
@@ -301,7 +292,7 @@ impl AncestorHashesService {
         duplicate_slots_reset_sender: &DuplicateSlotsResetSender,
         retryable_slots_sender: &RetryableSlotsSender,
     ) {
-        packet_batch.packets.iter().for_each(|packet| {
+        packet_batch.iter().for_each(|packet| {
             let decision = Self::verify_and_process_ancestor_response(
                 packet,
                 ancestor_hashes_request_statuses,
@@ -330,7 +321,7 @@ impl AncestorHashesService {
         outstanding_requests: &RwLock<OutstandingAncestorHashesRepairs>,
         blockstore: &Blockstore,
     ) -> Option<(Slot, DuplicateAncestorDecision)> {
-        let from_addr = packet.meta.addr();
+        let from_addr = packet.meta.socket_addr();
         let ancestor_hashes_response = packet
             .deserialize_slice(..packet.meta.size.saturating_sub(SIZE_OF_NONCE))
             .ok()?;
@@ -705,7 +696,7 @@ mod test {
         solana_runtime::{accounts_background_service::AbsRequestSender, bank_forks::BankForks},
         safecoin_sdk::{hash::Hash, signature::Keypair},
         solana_streamer::socket::SocketAddrSpace,
-        std::{collections::HashMap, sync::mpsc::channel},
+        std::collections::HashMap,
         trees::tr,
     };
 
@@ -898,8 +889,8 @@ mod test {
             // Set up thread to give us responses
             let ledger_path = get_tmp_ledger_path!();
             let exit = Arc::new(AtomicBool::new(false));
-            let (requests_sender, requests_receiver) = channel();
-            let (response_sender, response_receiver) = channel();
+            let (requests_sender, requests_receiver) = unbounded();
+            let (response_sender, response_receiver) = unbounded();
 
             // Set up blockstore for responses
             let blockstore = Arc::new(Blockstore::open(&ledger_path).unwrap());
@@ -1124,8 +1115,8 @@ mod test {
         let mut response_packet = response_receiver
             .recv_timeout(Duration::from_millis(10_000))
             .unwrap();
-        let packet = &mut response_packet.packets[0];
-        packet.meta.set_addr(&responder_info.serve_repair);
+        let packet = &mut response_packet[0];
+        packet.meta.set_socket_addr(&responder_info.serve_repair);
         let decision = AncestorHashesService::verify_and_process_ancestor_response(
             packet,
             &ancestor_hashes_request_statuses,
@@ -1485,8 +1476,8 @@ mod test {
         let mut response_packet = response_receiver
             .recv_timeout(Duration::from_millis(10_000))
             .unwrap();
-        let packet = &mut response_packet.packets[0];
-        packet.meta.set_addr(&responder_info.serve_repair);
+        let packet = &mut response_packet[0];
+        packet.meta.set_socket_addr(&responder_info.serve_repair);
         let decision = AncestorHashesService::verify_and_process_ancestor_response(
             packet,
             &ancestor_hashes_request_statuses,

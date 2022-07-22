@@ -5,6 +5,7 @@ use {
     },
     clap::{value_t, value_t_or_exit, App, AppSettings, Arg, ArgMatches, SubCommand},
     console::style,
+    crossbeam_channel::unbounded,
     serde::{Deserialize, Serialize},
     safecoin_clap_utils::{
         input_parsers::*,
@@ -38,6 +39,7 @@ use {
         account_utils::StateMut,
         clock::{self, Clock, Slot},
         commitment_config::CommitmentConfig,
+        compute_budget::ComputeBudgetInstruction,
         epoch_schedule::Epoch,
         hash::Hash,
         message::Message,
@@ -268,6 +270,13 @@ impl ClusterQuerySubCommands for App<'_, '_> {
                         .default_value("15")
                         .help("Wait up to timeout seconds for transaction confirmation"),
                 )
+                .arg(
+                    Arg::with_name("compute_unit_price")
+                        .long("compute-unit-price")
+                        .value_name("MICRO-LAMPORTS")
+                        .takes_value(true)
+                        .help("Set the price in micro-lamports of each transaction compute unit"),
+                )
                 .arg(blockhash_arg()),
         )
         .subcommand(
@@ -319,6 +328,12 @@ impl ClusterQuerySubCommands for App<'_, '_> {
             SubCommand::with_name("stakes")
                 .about("Show stake account information")
                 .arg(
+                    Arg::with_name("lamports")
+                        .long("lamports")
+                        .takes_value(false)
+                        .help("Display balance in lamports instead of SAFE"),
+                )
+                .arg(
                     pubkey!(Arg::with_name("vote_account_pubkeys")
                         .index(1)
                         .value_name("VOTE_ACCOUNT_PUBKEYS")
@@ -326,10 +341,10 @@ impl ClusterQuerySubCommands for App<'_, '_> {
                         "Only show stake accounts delegated to the provided vote accounts. "),
                 )
                 .arg(
-                    Arg::with_name("lamports")
-                        .long("lamports")
-                        .takes_value(false)
-                        .help("Display balance in lamports instead of SAFE"),
+                    pubkey!(Arg::with_name("withdraw_authority")
+                    .value_name("PUBKEY")
+                    .long("withdraw-authority"),
+                    "Only show stake accounts with the provided withdraw authority. "),
                 ),
         )
         .subcommand(
@@ -513,6 +528,7 @@ pub fn parse_cluster_ping(
     let timeout = Duration::from_secs(value_t_or_exit!(matches, "timeout", u64));
     let blockhash = value_of(matches, BLOCKHASH_ARG.name);
     let print_timestamp = matches.is_present("print_timestamp");
+    let compute_unit_price = value_of(matches, "compute_unit_price");
     Ok(CliCommandInfo {
         command: CliCommand::Ping {
             interval,
@@ -520,6 +536,7 @@ pub fn parse_cluster_ping(
             timeout,
             blockhash,
             print_timestamp,
+            compute_unit_price,
         },
         signers: vec![default_signer.signer_from_path(matches, wallet_manager)?],
     })
@@ -612,11 +629,12 @@ pub fn parse_show_stakes(
     let use_lamports_unit = matches.is_present("lamports");
     let vote_account_pubkeys =
         pubkeys_of_multiple_signers(matches, "vote_account_pubkeys", wallet_manager)?;
-
+    let withdraw_authority = pubkey_of(matches, "withdraw_authority");
     Ok(CliCommandInfo {
         command: CliCommand::ShowStakes {
             use_lamports_unit,
             vote_account_pubkeys,
+            withdraw_authority,
         },
         signers: vec![],
     })
@@ -1048,6 +1066,7 @@ pub fn process_get_block(
             RpcBlockConfig {
                 encoding: Some(UiTransactionEncoding::Base64),
                 commitment: Some(CommitmentConfig::confirmed()),
+                max_supported_transaction_version: Some(0),
                 ..RpcBlockConfig::default()
             },
         )?
@@ -1081,27 +1100,49 @@ pub fn process_get_epoch(rpc_client: &RpcClient, _config: &CliConfig) -> Process
 
 pub fn process_get_epoch_info(rpc_client: &RpcClient, config: &CliConfig) -> ProcessResult {
     let epoch_info = rpc_client.get_epoch_info()?;
-    let average_slot_time_ms = rpc_client
-        .get_recent_performance_samples(Some(60))
-        .ok()
-        .and_then(|samples| {
-            let (slots, secs) = samples.iter().fold((0, 0), |(slots, secs), sample| {
-                (slots + sample.num_slots, secs + sample.sample_period_secs)
-            });
-            (secs as u64).saturating_mul(1000).checked_div(slots)
-        })
-        .unwrap_or(clock::DEFAULT_MS_PER_SLOT);
-    let start_block_time = rpc_client
-        .get_block_time(epoch_info.absolute_slot - epoch_info.slot_index)
-        .ok();
-    let current_block_time = rpc_client.get_block_time(epoch_info.absolute_slot).ok();
-    let epoch_info = CliEpochInfo {
+    let mut cli_epoch_info = CliEpochInfo {
         epoch_info,
-        average_slot_time_ms,
-        start_block_time,
-        current_block_time,
+        average_slot_time_ms: 0,
+        start_block_time: None,
+        current_block_time: None,
     };
-    Ok(config.output_format.formatted_string(&epoch_info))
+    match config.output_format {
+        OutputFormat::Json | OutputFormat::JsonCompact => {}
+        _ => {
+            let epoch_info = cli_epoch_info.epoch_info.clone();
+            let average_slot_time_ms = rpc_client
+                .get_recent_performance_samples(Some(60))
+                .ok()
+                .and_then(|samples| {
+                    let (slots, secs) = samples.iter().fold((0, 0), |(slots, secs), sample| {
+                        (slots + sample.num_slots, secs + sample.sample_period_secs)
+                    });
+                    (secs as u64).saturating_mul(1000).checked_div(slots)
+                })
+                .unwrap_or(clock::DEFAULT_MS_PER_SLOT);
+            let epoch_expected_start_slot = epoch_info.absolute_slot - epoch_info.slot_index;
+            let first_block_in_epoch = rpc_client
+                .get_blocks_with_limit(epoch_expected_start_slot, 1)
+                .ok()
+                .and_then(|slot_vec| slot_vec.get(0).cloned())
+                .unwrap_or(epoch_expected_start_slot);
+            let start_block_time =
+                rpc_client
+                    .get_block_time(first_block_in_epoch)
+                    .ok()
+                    .map(|time| {
+                        time + (((first_block_in_epoch - epoch_expected_start_slot)
+                            * average_slot_time_ms)
+                            / 1000) as i64
+                    });
+            let current_block_time = rpc_client.get_block_time(epoch_info.absolute_slot).ok();
+
+            cli_epoch_info.average_slot_time_ms = average_slot_time_ms;
+            cli_epoch_info.start_block_time = start_block_time;
+            cli_epoch_info.current_block_time = current_block_time;
+        }
+    }
+    Ok(config.output_format.formatted_string(&cli_epoch_info))
 }
 
 pub fn process_get_genesis_hash(rpc_client: &RpcClient) -> ProcessResult {
@@ -1351,8 +1392,9 @@ pub fn process_ping(
     timeout: &Duration,
     fixed_blockhash: &Option<Hash>,
     print_timestamp: bool,
+    compute_unit_price: &Option<u64>,
 ) -> ProcessResult {
-    let (signal_sender, signal_receiver) = std::sync::mpsc::channel();
+    let (signal_sender, signal_receiver) = unbounded();
     ctrlc::set_handler(move || {
         let _ = signal_sender.send(());
     })
@@ -1375,6 +1417,7 @@ pub fn process_ping(
             blockhash_from_cluster = true;
         }
     }
+
     'mainloop: for seq in 0..count.unwrap_or(std::u64::MAX) {
         let now = Instant::now();
         if fixed_blockhash.is_none() && now.duration_since(blockhash_acquired).as_secs() > 60 {
@@ -1389,8 +1432,17 @@ pub fn process_ping(
         lamports += 1;
 
         let build_message = |lamports| {
-            let ix = system_instruction::transfer(&config.signers[0].pubkey(), &to, lamports);
-            Message::new(&[ix], Some(&config.signers[0].pubkey()))
+            let mut ixs = vec![system_instruction::transfer(
+                &config.signers[0].pubkey(),
+                &to,
+                lamports,
+            )];
+            if let Some(compute_unit_price) = compute_unit_price {
+                ixs.push(ComputeBudgetInstruction::set_compute_unit_price(
+                    *compute_unit_price,
+                ));
+            }
+            Message::new(&ixs, Some(&config.signers[0].pubkey()))
         };
         let (message, _) = resolve_spend_tx_and_check_account_balance(
             rpc_client,
@@ -1703,6 +1755,7 @@ pub fn process_show_stakes(
     config: &CliConfig,
     use_lamports_unit: bool,
     vote_account_pubkeys: Option<&[Pubkey]>,
+    withdraw_authority_pubkey: Option<&Pubkey>,
 ) -> ProcessResult {
     use crate::stake::build_stake_state;
 
@@ -1740,6 +1793,19 @@ pub fn process_show_stakes(
             ]);
         }
     }
+
+    if let Some(withdraw_authority_pubkey) = withdraw_authority_pubkey {
+        // withdrawer filter
+        let withdrawer_filter = rpc_filter::RpcFilterType::Memcmp(rpc_filter::Memcmp {
+            offset: 44,
+            bytes: rpc_filter::MemcmpEncodedBytes::Base58(withdraw_authority_pubkey.to_string()),
+            encoding: Some(rpc_filter::MemcmpEncoding::Binary),
+        });
+
+        let filters = program_accounts_config.filters.get_or_insert(vec![]);
+        filters.push(withdrawer_filter);
+    }
+
     let all_stake_accounts = rpc_client
         .get_program_accounts_with_config(&stake::program::id(), program_accounts_config)?;
     let stake_history_account = rpc_client.get_account(&stake_history::id())?;
@@ -2020,6 +2086,7 @@ pub fn process_transaction_history(
                     RpcTransactionConfig {
                         encoding: Some(UiTransactionEncoding::Base64),
                         commitment: Some(CommitmentConfig::confirmed()),
+                        max_supported_transaction_version: Some(0),
                     },
                 ) {
                     Ok(confirmed_transaction) => {
@@ -2029,7 +2096,7 @@ pub fn process_transaction_history(
                                 .transaction
                                 .decode()
                                 .expect("Successful decode"),
-                            &confirmed_transaction.transaction.meta,
+                            confirmed_transaction.transaction.meta.as_ref(),
                             "  ",
                             None,
                             None,
@@ -2313,6 +2380,7 @@ mod tests {
                         Hash::from_str("4CCNp28j6AhGq7PkjPDP4wbQWBS8LLbQin2xV5n8frKX").unwrap()
                     ),
                     print_timestamp: true,
+                    compute_unit_price: None,
                 },
                 signers: vec![default_keypair.into()],
             }

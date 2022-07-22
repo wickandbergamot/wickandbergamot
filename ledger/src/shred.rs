@@ -49,6 +49,7 @@
 //! So, given a) - c), we must restrict data shred's payload length such that the entire coding
 //! payload can fit into one coding shred / packet.
 
+pub use crate::shred_stats::{ProcessShredsStats, ShredFetchStats};
 use {
     crate::{blockstore::MAX_DATA_SHREDS_PER_SLOT, erasure::Session},
     bincode::config::Options,
@@ -59,10 +60,8 @@ use {
     safecoin_measure::measure::Measure,
     solana_perf::packet::Packet,
     safecoin_rayon_threadlimit::get_thread_count,
-    solana_runtime::bank::Bank,
     safecoin_sdk::{
         clock::Slot,
-        feature_set,
         hash::{hashv, Hash},
         packet::PACKET_DATA_SIZE,
         pubkey::Pubkey,
@@ -71,34 +70,6 @@ use {
     std::{cell::RefCell, mem::size_of},
     thiserror::Error,
 };
-
-#[derive(Default, Clone)]
-pub struct ProcessShredsStats {
-    // Per-slot elapsed time
-    pub shredding_elapsed: u64,
-    pub receive_elapsed: u64,
-    pub serialize_elapsed: u64,
-    pub gen_data_elapsed: u64,
-    pub gen_coding_elapsed: u64,
-    pub sign_coding_elapsed: u64,
-    pub coding_send_elapsed: u64,
-    pub get_leader_schedule_elapsed: u64,
-}
-impl ProcessShredsStats {
-    pub fn update(&mut self, new_stats: &ProcessShredsStats) {
-        self.shredding_elapsed += new_stats.shredding_elapsed;
-        self.receive_elapsed += new_stats.receive_elapsed;
-        self.serialize_elapsed += new_stats.serialize_elapsed;
-        self.gen_data_elapsed += new_stats.gen_data_elapsed;
-        self.gen_coding_elapsed += new_stats.gen_coding_elapsed;
-        self.sign_coding_elapsed += new_stats.sign_coding_elapsed;
-        self.coding_send_elapsed += new_stats.gen_coding_elapsed;
-        self.get_leader_schedule_elapsed += new_stats.get_leader_schedule_elapsed;
-    }
-    pub fn reset(&mut self) {
-        *self = Self::default();
-    }
-}
 
 pub type Nonce = u32;
 
@@ -284,9 +255,9 @@ impl Shred {
     }
 
     pub fn copy_to_packet(&self, packet: &mut Packet) {
-        let len = self.payload.len();
-        packet.data[..len].copy_from_slice(&self.payload[..]);
-        packet.meta.size = len;
+        let size = self.payload.len();
+        packet.buffer_mut()[..size].copy_from_slice(&self.payload[..]);
+        packet.meta.size = size;
     }
 
     pub fn new_from_data(
@@ -566,7 +537,7 @@ impl Shred {
                 block.resize(size, 0u8);
             }
             ShredType::Code => {
-                // SIZE_OF_CODING_SHRED_HEADERS bytes at the begining of the
+                // SIZE_OF_CODING_SHRED_HEADERS bytes at the beginning of the
                 // coding shreds contains the header and is not part of erasure
                 // coding.
                 let offset = SIZE_OF_CODING_SHRED_HEADERS.min(block.len());
@@ -602,21 +573,13 @@ impl Shred {
         self.common_header.signature
     }
 
-    pub fn seed(&self, leader_pubkey: Pubkey, root_bank: &Bank) -> [u8; 32] {
-        if add_shred_type_to_shred_seed(self.slot(), root_bank) {
-            hashv(&[
-                &self.slot().to_le_bytes(),
-                &u8::from(self.shred_type()).to_le_bytes(),
-                &self.index().to_le_bytes(),
-                &leader_pubkey.to_bytes(),
-            ])
-        } else {
-            hashv(&[
-                &self.slot().to_le_bytes(),
-                &self.index().to_le_bytes(),
-                &leader_pubkey.to_bytes(),
-            ])
-        }
+    pub fn seed(&self, leader_pubkey: Pubkey) -> [u8; 32] {
+        hashv(&[
+            &self.slot().to_le_bytes(),
+            &u8::from(self.shred_type()).to_le_bytes(),
+            &self.index().to_le_bytes(),
+            &leader_pubkey.to_bytes(),
+        ])
         .to_bytes()
     }
 
@@ -707,7 +670,6 @@ pub struct Shredder {
     pub slot: Slot,
     pub parent_slot: Slot,
     version: u16,
-    pub signing_coding_time: u128,
     reference_tick: u8,
 }
 
@@ -719,7 +681,6 @@ impl Shredder {
             Ok(Self {
                 slot,
                 parent_slot,
-                signing_coding_time: 0,
                 reference_tick,
                 version,
             })
@@ -784,6 +745,8 @@ impl Shredder {
 
         let mut gen_data_time = Measure::start("shred_gen_data_time");
         let payload_capacity = SIZE_OF_DATA_SHRED_PAYLOAD;
+        process_stats.data_buffer_residual +=
+            (payload_capacity - serialized_shreds.len() % payload_capacity) % payload_capacity;
         // Integer division to ensure we have enough shreds to fit all the data
         let num_shreds = (serialized_shreds.len() + payload_capacity - 1) / payload_capacity;
         let last_shred_index = next_shred_index + num_shreds as u32 - 1;
@@ -823,6 +786,7 @@ impl Shredder {
 
         process_stats.serialize_elapsed += serialize_time.as_us();
         process_stats.gen_data_elapsed += gen_data_time.as_us();
+        process_stats.record_num_residual_data_shreds(data_shreds.len());
 
         data_shreds
     }
@@ -1099,18 +1063,6 @@ impl Shredder {
     }
 }
 
-#[derive(Default, Debug, Eq, PartialEq)]
-pub struct ShredFetchStats {
-    pub index_overrun: usize,
-    pub shred_count: usize,
-    pub index_bad_deserialize: usize,
-    pub index_out_of_bounds: usize,
-    pub slot_bad_deserialize: usize,
-    pub duplicate_shred: usize,
-    pub slot_out_of_range: usize,
-    pub bad_shred_type: usize,
-}
-
 // Get slot, index, and type from a packet with partial deserialize
 pub fn get_shred_slot_index_type(
     p: &Packet,
@@ -1150,7 +1102,7 @@ pub fn get_shred_slot_index_type(
         }
     };
 
-    let shred_type = match ShredType::try_from(p.data[OFFSET_OF_SHRED_TYPE]) {
+    let shred_type = match ShredType::try_from(*p.data(OFFSET_OF_SHRED_TYPE)?) {
         Err(_) => {
             stats.bad_shred_type += 1;
             return None;
@@ -1203,21 +1155,6 @@ pub fn verify_test_data_shred(
         assert!(shred.data_complete());
     } else {
         assert!(!shred.data_complete());
-    }
-}
-
-fn add_shred_type_to_shred_seed(shred_slot: Slot, bank: &Bank) -> bool {
-    let feature_slot = bank
-        .feature_set
-        .activated_slot(&feature_set::add_shred_type_to_shred_seed::id());
-    match feature_slot {
-        None => false,
-        Some(feature_slot) => {
-            let epoch_schedule = bank.epoch_schedule();
-            let feature_epoch = epoch_schedule.get_epoch(feature_slot);
-            let shred_epoch = epoch_schedule.get_epoch(shred_slot);
-            feature_epoch < shred_epoch
-        }
     }
 }
 
@@ -1883,13 +1820,13 @@ pub mod tests {
         );
         let max_per_block = MAX_DATA_SHREDS_PER_FEC_BLOCK as usize;
         data_shreds.iter().enumerate().for_each(|(i, s)| {
-            let expected_fec_set_index = start_index + ((i / max_per_block) * max_per_block) as u32;
+            let expected_fec_set_index = start_index + (i - i % max_per_block) as u32;
             assert_eq!(s.fec_set_index(), expected_fec_set_index);
         });
 
         coding_shreds.iter().enumerate().for_each(|(i, s)| {
             let mut expected_fec_set_index = start_index + (i - i % max_per_block) as u32;
-            while expected_fec_set_index as usize > data_shreds.len() {
+            while expected_fec_set_index as usize - start_index as usize > data_shreds.len() {
                 expected_fec_set_index -= max_per_block as u32;
             }
             assert_eq!(s.fec_set_index(), expected_fec_set_index);
@@ -1982,7 +1919,7 @@ pub mod tests {
         let shred = Shred::new_from_data(10, 0, 1000, Some(&[1, 2, 3]), false, false, 0, 1, 0);
         let mut packet = Packet::default();
         shred.copy_to_packet(&mut packet);
-        let shred_res = Shred::new_from_serialized_shred(packet.data.to_vec());
+        let shred_res = Shred::new_from_serialized_shred(packet.data(..).unwrap().to_vec());
         assert_matches!(
             shred.parent(),
             Err(ShredError::InvalidParentOffset {
@@ -2058,7 +1995,7 @@ pub mod tests {
         );
         let shred = Shred::new_empty_from_header(header, DataShredHeader::default(), coding_header);
         shred.copy_to_packet(&mut packet);
-        packet.data[OFFSET_OF_SHRED_TYPE] = u8::MAX;
+        packet.buffer_mut()[OFFSET_OF_SHRED_TYPE] = u8::MAX;
 
         assert_eq!(None, get_shred_slot_index_type(&packet, &mut stats));
         assert_eq!(1, stats.bad_shred_type);

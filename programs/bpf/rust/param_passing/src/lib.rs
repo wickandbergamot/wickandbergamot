@@ -1,8 +1,10 @@
 //! Example Rust-based BPF program tests loop iteration
 
 extern crate safecoin_program;
-use solana_bpf_rust_param_passing_dep::{Data, TestDep};
-use safecoin_program::{custom_panic_default, entrypoint::SUCCESS, log::sol_log_64};
+use {
+    solana_bpf_rust_param_passing_dep::{Data, TestDep},
+    safecoin_program::{custom_panic_default, entrypoint::SUCCESS, log::sol_log_64},
+};
 
 #[no_mangle]
 pub extern "C" fn entrypoint(_input: *mut u8) -> u64 {

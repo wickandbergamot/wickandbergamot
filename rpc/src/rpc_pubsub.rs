@@ -412,12 +412,17 @@ impl RpcSafePubSubInternal for RpcSafePubSubImpl {
         pubkey_str: String,
         config: Option<RpcAccountInfoConfig>,
     ) -> Result<SubscriptionId> {
-        let config = config.unwrap_or_default();
+        let RpcAccountInfoConfig {
+            encoding,
+            data_slice,
+            commitment,
+            min_context_slot: _, // ignored
+        } = config.unwrap_or_default();
         let params = AccountSubscriptionParams {
             pubkey: param::<Pubkey>(&pubkey_str, "pubkey")?,
-            commitment: config.commitment.unwrap_or_default(),
-            data_slice: config.data_slice,
-            encoding: config.encoding.unwrap_or(UiAccountEncoding::Binary),
+            commitment: commitment.unwrap_or_default(),
+            data_slice,
+            encoding: encoding.unwrap_or(UiAccountEncoding::Binary),
         };
         self.subscribe(SubscriptionParams::Account(params))
     }
@@ -538,6 +543,7 @@ impl RpcSafePubSubInternal for RpcSafePubSubImpl {
             },
             transaction_details: config.transaction_details.unwrap_or_default(),
             show_rewards: config.show_rewards.unwrap_or_default(),
+            max_supported_transaction_version: config.max_supported_transaction_version,
         };
         self.subscribe(SubscriptionParams::Block(params))
     }
@@ -594,6 +600,7 @@ mod tests {
                 create_genesis_config, create_genesis_config_with_vote_accounts, GenesisConfigInfo,
                 ValidatorVoteKeypairs,
             },
+            vote_transaction::VoteTransaction,
         },
         safecoin_sdk::{
             account::ReadableAccount,
@@ -807,7 +814,7 @@ mod tests {
         let expected: Response = serde_json::from_str(expected).unwrap();
 
         let result: Response = serde_json::from_str(&res.unwrap()).unwrap();
-        assert_eq!(expected, result);
+        assert_eq!(result, expected);
 
         // Test bad parameter
         let req = r#"{"jsonrpc":"2.0","id":1,"method":"signatureUnsubscribe","params":[1]}"#;
@@ -816,7 +823,7 @@ mod tests {
         let expected: Response = serde_json::from_str(expected).unwrap();
 
         let result: Response = serde_json::from_str(&res.unwrap()).unwrap();
-        assert_eq!(expected, result);
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -860,6 +867,7 @@ mod tests {
                 commitment: Some(CommitmentConfig::processed()),
                 encoding: Some(encoding),
                 data_slice: None,
+                min_context_slot: None,
             }),
         )
         .unwrap();
@@ -976,6 +984,7 @@ mod tests {
                 commitment: Some(CommitmentConfig::processed()),
                 encoding: Some(UiAccountEncoding::JsonParsed),
                 data_slice: None,
+                min_context_slot: None,
             }),
         )
         .unwrap();
@@ -1070,7 +1079,7 @@ mod tests {
         let expected: Response = serde_json::from_str(expected).unwrap();
 
         let result: Response = serde_json::from_str(&res.unwrap()).unwrap();
-        assert_eq!(expected, result);
+        assert_eq!(result, expected);
 
         // Test bad parameter
         let req = r#"{"jsonrpc":"2.0","id":1,"method":"accountUnsubscribe","params":[1]}"#;
@@ -1079,7 +1088,7 @@ mod tests {
         let expected: Response = serde_json::from_str(expected).unwrap();
 
         let result: Response = serde_json::from_str(&res.unwrap()).unwrap();
-        assert_eq!(expected, result);
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -1113,6 +1122,7 @@ mod tests {
                 commitment: Some(CommitmentConfig::finalized()),
                 encoding: None,
                 data_slice: None,
+                min_context_slot: None,
             }),
         )
         .unwrap();
@@ -1165,6 +1175,7 @@ mod tests {
                 commitment: Some(CommitmentConfig::finalized()),
                 encoding: None,
                 data_slice: None,
+                min_context_slot: None,
             }),
         )
         .unwrap();
@@ -1315,12 +1326,16 @@ mod tests {
             hash: Hash::default(),
             timestamp: None,
         };
-        subscriptions.notify_vote(Pubkey::default(), &vote);
+        subscriptions.notify_vote(
+            Pubkey::default(),
+            VoteTransaction::from(vote),
+            Signature::default(),
+        );
 
         let response = receiver.recv();
         assert_eq!(
             response,
-            r#"{"jsonrpc":"2.0","method":"voteNotification","params":{"result":{"votePubkey":"11111111111111111111111111111111","slots":[1,2],"hash":"11111111111111111111111111111111","timestamp":null},"subscription":0}}"#
+            r#"{"jsonrpc":"2.0","method":"voteNotification","params":{"result":{"votePubkey":"11111111111111111111111111111111","slots":[1,2],"hash":"11111111111111111111111111111111","timestamp":null,"signature":"1111111111111111111111111111111111111111111111111111111111111111"},"subscription":0}}"#
         );
     }
 

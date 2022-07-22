@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import {
-  init,
+  safecoin_program_init,
   Pubkey,
   Keypair,
   Hash,
@@ -8,7 +8,7 @@ import {
   Instructions,
   Transaction,
 } from "crate";
-init();
+safecoin_program_init();
 
 describe("Transaction", function () {
   it("SystemInstruction::Transfer", () => {

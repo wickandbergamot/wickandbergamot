@@ -58,35 +58,29 @@ sudo $(command -v safecoin-sys-tuner) --user $(whoami) > sys-tuner.log 2>&1 &
 If you would prefer to manage system settings on your own, you may do so with
 the following commands.
 
-##### **Increase UDP buffers**
+##### **Optimize sysctl knobs**
 
 ```bash
-sudo bash -c "cat >/etc/sysctl.d/20-solana-udp-buffers.conf <<EOF
-# Increase UDP buffer size
+sudo bash -c "cat >/etc/sysctl.d/21-safecoin-validator.conf <<EOF
+# Increase UDP buffer sizes
 net.core.rmem_default = 134217728
 net.core.rmem_max = 134217728
 net.core.wmem_default = 134217728
 net.core.wmem_max = 134217728
-EOF"
-```
 
-```bash
-sudo sysctl -p /etc/sysctl.d/20-solana-udp-buffers.conf
-```
-
-##### **Increased memory mapped files limit**
-
-```bash
-sudo bash -c "cat >/etc/sysctl.d/20-solana-mmaps.conf <<EOF
 # Increase memory mapped files limit
 vm.max_map_count = 1000000
+
+# Increase number of allowed open file descriptors
+fs.nr_open = 1000000
 EOF"
 ```
 
 ```bash
-sudo sysctl -p /etc/sysctl.d/20-solana-mmaps.conf
+sudo sysctl -p /etc/sysctl.d/21-safecoin-validator.conf
 ```
 
+##### **Increase systemd and session file limits**
 Add
 
 ```
@@ -336,7 +330,7 @@ less disk usage may be requested by adding an argument to `--limit-ledger-size`
 if desired. Check `safecoin-validator --help` for the default limit value used by
 `--limit-ledger-size`. More information about
 selecting a custom limit value is [available
-here](https://github.com/fair-exchange/safecoin/blob/583cec922b6107e0f85c7e14cb5e642bc7dfb340/core/src/ledger_cleanup_service.rs#L15-L26).
+here](https://github.com/fair-exchange/safecoin/blob/36167b032c03fc7d1d8c288bb621920aaf903311/core/src/ledger_cleanup_service.rs#L23-L34).
 
 ### Systemd Unit
 

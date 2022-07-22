@@ -58,7 +58,7 @@ To sign a transaction offline, pass the following arguments on the command line
 Command
 
 ```bash
-solana@offline$ safecoin pay --sign-only --blockhash 5Tx8F3jgSHx21CbtjwmdaKPLM5tWmreWAnPrbqHomSJF \
+solana@offline$ safecoin transfer --sign-only --blockhash 5Tx8F3jgSHx21CbtjwmdaKPLM5tWmreWAnPrbqHomSJF \
     recipient-keypair.json 1
 ```
 
@@ -88,7 +88,7 @@ following arguments on the command line
 Command
 
 ```bash
-solana@online$ safecoin pay --blockhash 5Tx8F3jgSHx21CbtjwmdaKPLM5tWmreWAnPrbqHomSJF \
+solana@online$ safecoin transfer --blockhash 5Tx8F3jgSHx21CbtjwmdaKPLM5tWmreWAnPrbqHomSJF \
     --signer FhtzLVsmcV7S5XqGD79ErgoseCLhZYmEZnz9kQg1Rp7j=4vC38p4bz7XyiXrk6HtaooUqwxTWKocf45cstASGtmrD398biNJnmTcUCVEojE7wVQvgdYbjHJqRFZPpzfCQpmUN
     recipient-keypair.json 1
 ```

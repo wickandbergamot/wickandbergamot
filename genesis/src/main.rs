@@ -13,7 +13,7 @@ use {
     },
     solana_entry::poh::compute_hashes_per_tick,
     safecoin_genesis::{genesis_accounts::add_genesis_accounts, Base64Account},
-    solana_ledger::{blockstore::create_new_ledger, blockstore_db::AccessType},
+    solana_ledger::{blockstore::create_new_ledger, blockstore_db::LedgerColumnOptions},
     solana_runtime::hardened_unpack::MAX_GENESIS_ARCHIVE_UNPACKED_SIZE,
     safecoin_sdk::{
         account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
@@ -60,7 +60,7 @@ fn pubkey_from_str(key_str: &str) -> Result<Pubkey, Box<dyn error::Error>> {
 
 pub fn load_genesis_accounts(file: &str, genesis_config: &mut GenesisConfig) -> io::Result<u64> {
     let mut lamports = 0;
-    let accounts_file = File::open(file.to_string())?;
+    let accounts_file = File::open(file)?;
 
     let genesis_accounts: HashMap<String, Base64Account> =
         serde_yaml::from_reader(accounts_file)
@@ -629,7 +629,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         &ledger_path,
         &genesis_config,
         max_genesis_archive_unpacked_size,
-        AccessType::PrimaryOnly,
+        LedgerColumnOptions::default(),
     )?;
 
     println!("{}", genesis_config);

@@ -5,7 +5,6 @@ extern crate safecoin_program;
 use safecoin_program::sysvar::recent_blockhashes::RecentBlockhashes;
 use safecoin_program::{
     account_info::AccountInfo,
-    entrypoint,
     entrypoint::ProgramResult,
     instruction::{AccountMeta, Instruction},
     msg,
@@ -17,7 +16,7 @@ use safecoin_program::{
     },
 };
 
-entrypoint!(process_instruction);
+safecoin_program::entrypoint!(process_instruction);
 #[allow(clippy::unnecessary_wraps)]
 pub fn process_instruction(
     program_id: &Pubkey,

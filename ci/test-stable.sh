@@ -21,15 +21,16 @@ export RUST_BACKTRACE=1
 export RUSTFLAGS="-D warnings"
 source scripts/ulimit-n.sh
 
-# Limit compiler jobs to reduce memory usage
-# on machines with 2gb/thread of memory
+# limit jobs to 4gb/thread
+JOBS=$(grep MemTotal /proc/meminfo | awk '{printf "%.0f", ($2 / (4 * 1024 * 1024))}')
 NPROC=$(nproc)
-NPROC=$((NPROC>14 ? 14 : NPROC))
+JOBS=$((JOBS>NPROC ? NPROC : JOBS))
+
 
 echo "Executing $testName"
 case $testName in
 test-stable)
-  _ "$cargo" stable test --jobs "$NPROC" --all --exclude solana-local-cluster ${V:+--verbose} -- --nocapture
+  _ "$cargo" stable test --jobs "$JOBS" --all --tests --exclude solana-local-cluster ${V:+--verbose} -- --nocapture
   ;;
 test-stable-bpf)
   # Clear the C dependency files, if dependency moves these files are not regenerated
@@ -64,6 +65,9 @@ test-stable-bpf)
       popd
     fi
   done
+
+  # bpf-tools version
+  "$cargo_build_bpf" -V
 
   # BPF program instruction count assertion
   bpf_target_path=programs/bpf/target
@@ -108,9 +112,14 @@ test-local-cluster-flakey)
   _ "$cargo" stable test --release --package solana-local-cluster --test local_cluster_flakey ${V:+--verbose} -- --nocapture --test-threads=1
   exit 0
   ;;
-test-local-cluster-slow)
+test-local-cluster-slow-1)
   _ "$cargo" stable build --release --bins ${V:+--verbose}
-  _ "$cargo" stable test --release --package solana-local-cluster --test local_cluster_slow ${V:+--verbose} -- --nocapture --test-threads=1
+  _ "$cargo" stable test --release --package solana-local-cluster --test local_cluster_slow_1 ${V:+--verbose} -- --nocapture --test-threads=1
+  exit 0
+  ;;
+test-local-cluster-slow-2)
+  _ "$cargo" stable build --release --bins ${V:+--verbose}
+  _ "$cargo" stable test --release --package solana-local-cluster --test local_cluster_slow_2 ${V:+--verbose} -- --nocapture --test-threads=1
   exit 0
   ;;
 test-wasm)
@@ -124,6 +133,10 @@ test-wasm)
       popd
     fi
   done
+  exit 0
+  ;;
+test-docs)
+  _ "$cargo" stable test --jobs "$JOBS" --all --doc --exclude solana-local-cluster ${V:+--verbose} -- --nocapture
   exit 0
   ;;
 *)

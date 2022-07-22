@@ -1,7 +1,9 @@
-use solana_bpf_rust_mem::entrypoint::process_instruction;
-use safecoin_program_test::*;
-use safecoin_sdk::{
-    instruction::Instruction, pubkey::Pubkey, signature::Signer, transaction::Transaction,
+use {
+    solana_bpf_rust_mem::entrypoint::process_instruction,
+    safecoin_program_test::*,
+    safecoin_sdk::{
+        instruction::Instruction, pubkey::Pubkey, signature::Signer, transaction::Transaction,
+    },
 };
 
 #[tokio::test]

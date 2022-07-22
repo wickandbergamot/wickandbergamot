@@ -13,7 +13,7 @@ use {
         account::{AccountSharedData, ReadableAccount},
         pubkey::Pubkey,
     },
-    safe_token::{safecoin_program::program_pack::Pack, state::Mint},
+    safe_token_2022::{extension::StateWithExtensions, state::Mint},
     std::{collections::HashMap, sync::Arc},
 };
 
@@ -91,9 +91,9 @@ pub fn get_mint_owner_and_decimals(bank: &Arc<Bank>, mint: &Pubkey) -> Result<(P
 }
 
 fn get_mint_decimals(data: &[u8]) -> Result<u8> {
-    Mint::unpack(data)
+    StateWithExtensions::<Mint>::unpack(data)
         .map_err(|_| {
             Error::invalid_params("Invalid param: Token mint could not be unpacked".to_string())
         })
-        .map(|mint| mint.decimals)
+        .map(|mint| mint.base.decimals)
 }

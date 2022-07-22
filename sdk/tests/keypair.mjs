@@ -1,6 +1,6 @@
 import { expect } from "chai";
-import { init, Keypair } from "crate";
-init();
+import { safecoin_program_init, Keypair } from "crate";
+safecoin_program_init();
 
 describe("Keypair", function () {
   it("works", () => {

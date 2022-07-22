@@ -2,23 +2,18 @@
 
 use {
     crate::packet_hasher::PacketHasher,
+    crossbeam_channel::{unbounded, Sender},
     lru::LruCache,
     solana_ledger::shred::{get_shred_slot_index_type, ShredFetchStats},
-    solana_perf::{
-        cuda_runtime::PinnedVec,
-        packet::{Packet, PacketBatchRecycler, PacketFlags},
-        recycler::Recycler,
-    },
+    solana_perf::packet::{Packet, PacketBatch, PacketBatchRecycler, PacketFlags},
     solana_runtime::bank_forks::BankForks,
     safecoin_sdk::clock::{Slot, DEFAULT_MS_PER_SLOT},
-    solana_streamer::streamer::{
-        self, PacketBatchReceiver, PacketBatchSender, StreamerReceiveStats,
-    },
+    solana_streamer::streamer::{self, PacketBatchReceiver, StreamerReceiveStats},
     std::{
         net::UdpSocket,
-        sync::{atomic::AtomicBool, mpsc::channel, Arc, RwLock},
+        sync::{atomic::AtomicBool, Arc, RwLock},
         thread::{self, Builder, JoinHandle},
-        time::Instant,
+        time::{Duration, Instant},
     },
 };
 
@@ -66,13 +61,14 @@ impl ShredFetchStage {
     // updates packets received on a channel and sends them on another channel
     fn modify_packets<F>(
         recvr: PacketBatchReceiver,
-        sendr: PacketBatchSender,
+        sendr: Sender<Vec<PacketBatch>>,
         bank_forks: Option<Arc<RwLock<BankForks>>>,
         name: &'static str,
         modify: F,
     ) where
         F: Fn(&mut Packet),
     {
+        const STATS_SUBMIT_CADENCE: Duration = Duration::from_secs(1);
         let mut shreds_received = LruCache::new(DEFAULT_LRU_SIZE);
         let mut last_updated = Instant::now();
 
@@ -81,7 +77,6 @@ impl ShredFetchStage {
         let mut last_slot = std::u64::MAX;
         let mut slots_per_epoch = 0;
 
-        let mut last_stats = Instant::now();
         let mut stats = ShredFetchStats::default();
         let mut packet_hasher = PacketHasher::default();
 
@@ -99,8 +94,8 @@ impl ShredFetchStage {
                     slots_per_epoch = root_bank.get_slots_in_epoch(root_bank.epoch());
                 }
             }
-            stats.shred_count += packet_batch.packets.len();
-            packet_batch.packets.iter_mut().for_each(|packet| {
+            stats.shred_count += packet_batch.len();
+            packet_batch.iter_mut().for_each(|packet| {
                 Self::process_packet(
                     packet,
                     &mut shreds_received,
@@ -112,21 +107,8 @@ impl ShredFetchStage {
                     &packet_hasher,
                 );
             });
-            if last_stats.elapsed().as_millis() > 1000 {
-                datapoint_info!(
-                    name,
-                    ("index_overrun", stats.index_overrun, i64),
-                    ("shred_count", stats.shred_count, i64),
-                    ("slot_bad_deserialize", stats.slot_bad_deserialize, i64),
-                    ("index_bad_deserialize", stats.index_bad_deserialize, i64),
-                    ("index_out_of_bounds", stats.index_out_of_bounds, i64),
-                    ("slot_out_of_range", stats.slot_out_of_range, i64),
-                    ("duplicate_shred", stats.duplicate_shred, i64),
-                );
-                stats = ShredFetchStats::default();
-                last_stats = Instant::now();
-            }
-            if sendr.send(packet_batch).is_err() {
+            stats.maybe_submit(name, STATS_SUBMIT_CADENCE);
+            if sendr.send(vec![packet_batch]).is_err() {
                 break;
             }
         }
@@ -135,8 +117,8 @@ impl ShredFetchStage {
     fn packet_modifier<F>(
         sockets: Vec<Arc<UdpSocket>>,
         exit: &Arc<AtomicBool>,
-        sender: PacketBatchSender,
-        recycler: Recycler<PinnedVec<Packet>>,
+        sender: Sender<Vec<PacketBatch>>,
+        recycler: PacketBatchRecycler,
         bank_forks: Option<Arc<RwLock<BankForks>>>,
         name: &'static str,
         modify: F,
@@ -144,7 +126,7 @@ impl ShredFetchStage {
     where
         F: Fn(&mut Packet) + Send + 'static,
     {
-        let (packet_sender, packet_receiver) = channel();
+        let (packet_sender, packet_receiver) = unbounded();
         let streamers = sockets
             .into_iter()
             .map(|s| {
@@ -172,11 +154,11 @@ impl ShredFetchStage {
         sockets: Vec<Arc<UdpSocket>>,
         forward_sockets: Vec<Arc<UdpSocket>>,
         repair_socket: Arc<UdpSocket>,
-        sender: &PacketBatchSender,
+        sender: &Sender<Vec<PacketBatch>>,
         bank_forks: Option<Arc<RwLock<BankForks>>>,
         exit: &Arc<AtomicBool>,
     ) -> Self {
-        let recycler: PacketBatchRecycler = Recycler::warmed(100, 1024);
+        let recycler = PacketBatchRecycler::warmed(100, 1024);
 
         let (mut tvu_threads, tvu_filter) = Self::packet_modifier(
             sockets,

@@ -11,7 +11,10 @@ use {
     inflector::Inflector,
     serde_json::Value,
     safecoin_account_decoder::parse_token::safe_token_ids,
-    safecoin_sdk::{instruction::CompiledInstruction, pubkey::Pubkey, stake, system_program},
+    safecoin_sdk::{
+        instruction::CompiledInstruction, message::AccountKeys, pubkey::Pubkey, stake,
+        system_program,
+    },
     std::{
         collections::HashMap,
         str::{from_utf8, Utf8Error},
@@ -99,7 +102,7 @@ pub enum ParsableProgram {
 pub fn parse(
     program_id: &Pubkey,
     instruction: &CompiledInstruction,
-    account_keys: &[Pubkey],
+    account_keys: &AccountKeys,
 ) -> Result<ParsedInstruction, ParseInstructionError> {
     let program_name = PARSABLE_PROGRAM_IDS
         .get(program_id)
@@ -157,13 +160,14 @@ mod test {
 
     #[test]
     fn test_parse() {
+        let no_keys = AccountKeys::new(&[], None);
         let memo_instruction = CompiledInstruction {
             program_id_index: 0,
             accounts: vec![],
             data: vec![240, 159, 166, 150],
         };
         assert_eq!(
-            parse(&MEMO_V1_PROGRAM_ID, &memo_instruction, &[]).unwrap(),
+            parse(&MEMO_V1_PROGRAM_ID, &memo_instruction, &no_keys).unwrap(),
             ParsedInstruction {
                 program: "safe-memo".to_string(),
                 program_id: MEMO_V1_PROGRAM_ID.to_string(),
@@ -171,7 +175,7 @@ mod test {
             }
         );
         assert_eq!(
-            parse(&MEMO_V3_PROGRAM_ID, &memo_instruction, &[]).unwrap(),
+            parse(&MEMO_V3_PROGRAM_ID, &memo_instruction, &no_keys).unwrap(),
             ParsedInstruction {
                 program: "safe-memo".to_string(),
                 program_id: MEMO_V3_PROGRAM_ID.to_string(),
@@ -180,7 +184,7 @@ mod test {
         );
 
         let non_parsable_program_id = Pubkey::new(&[1; 32]);
-        assert!(parse(&non_parsable_program_id, &memo_instruction, &[]).is_err());
+        assert!(parse(&non_parsable_program_id, &memo_instruction, &no_keys).is_err());
     }
 
     #[test]

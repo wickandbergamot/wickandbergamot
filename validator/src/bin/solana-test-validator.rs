@@ -1,5 +1,6 @@
 use {
     clap::{crate_name, value_t, value_t_or_exit, values_t_or_exit, App, Arg},
+    crossbeam_channel::unbounded,
     log::*,
     safecoin_clap_utils::{
         input_parsers::{pubkey_of, pubkeys_of, value_of},
@@ -11,7 +12,10 @@ use {
     safecoin_client::rpc_client::RpcClient,
     solana_core::tower_storage::FileTowerStorage,
     safecoin_faucet::faucet::{run_local_faucet_with_port, FAUCET_PORT},
-    solana_rpc::{rpc::JsonRpcConfig, rpc_pubsub_service::PubSubConfig},
+    solana_rpc::{
+        rpc::{JsonRpcConfig, RpcBigtableConfig},
+        rpc_pubsub_service::PubSubConfig,
+    },
     safecoin_sdk::{
         account::AccountSharedData,
         clock::Slot,
@@ -35,7 +39,7 @@ use {
         net::{IpAddr, Ipv4Addr, SocketAddr},
         path::{Path, PathBuf},
         process::exit,
-        sync::{mpsc::channel, Arc, RwLock},
+        sync::{Arc, RwLock},
         time::{Duration, SystemTime, UNIX_EPOCH},
     },
 };
@@ -153,6 +157,32 @@ fn main() {
                 .default_value(&default_rpc_port)
                 .validator(safecoin_validator::port_validator)
                 .help("Enable JSON RPC on this port, and the next port for the RPC websocket"),
+        )
+        .arg(
+            Arg::with_name("enable_rpc_bigtable_ledger_storage")
+                .long("enable-rpc-bigtable-ledger-storage")
+                .takes_value(false)
+                .hidden(true)
+                .help("Fetch historical transaction info from a BigTable instance \
+                       as a fallback to local ledger data"),
+        )
+        .arg(
+            Arg::with_name("rpc_bigtable_instance")
+                .long("rpc-bigtable-instance")
+                .value_name("INSTANCE_NAME")
+                .takes_value(true)
+                .hidden(true)
+                .default_value("safecoin-ledger")
+                .help("Name of BigTable instance to target"),
+        )
+        .arg(
+            Arg::with_name("rpc_bigtable_app_profile_id")
+                .long("rpc-bigtable-app-profile-id")
+                .value_name("APP_PROFILE_ID")
+                .takes_value(true)
+                .hidden(true)
+                .default_value(solana_storage_bigtable::DEFAULT_APP_PROFILE_ID)
+                .help("Application profile id to use in Bigtable requests")
         )
         .arg(
             Arg::with_name("rpc_pubsub_enable_vote_subscription")
@@ -276,6 +306,20 @@ fn main() {
                 ),
         )
         .arg(
+            Arg::with_name("maybe_clone_account")
+                .long("maybe-clone")
+                .value_name("ADDRESS")
+                .takes_value(true)
+                .validator(is_pubkey_or_keypair)
+                .multiple(true)
+                .requires("json_rpc_url")
+                .help(
+                    "Copy an account from the cluster referenced by the --url argument, \
+                     skipping it if it doesn't exist. \
+                     If the ledger already exists then this parameter is silently ignored",
+                ),
+        )
+        .arg(
             Arg::with_name("warp_slot")
                 .required(false)
                 .long("warp-slot")
@@ -317,7 +361,6 @@ fn main() {
                 .value_name("FILE")
                 .takes_value(true)
                 .multiple(true)
-                .hidden(true)
                 .help("Specify the configuration file for the Geyser plugin."),
         )
         .arg(
@@ -504,6 +547,10 @@ fn main() {
         .map(|v| v.into_iter().collect())
         .unwrap_or_default();
 
+    let accounts_to_maybe_clone: HashSet<_> = pubkeys_of(&matches, "maybe_clone_account")
+        .map(|v| v.into_iter().collect())
+        .unwrap_or_default();
+
     let warp_slot = if matches.is_present("warp_slot") {
         Some(match matches.value_of("warp_slot") {
             Some(_) => value_t_or_exit!(matches, "warp_slot", Slot),
@@ -550,7 +597,7 @@ fn main() {
     let faucet_pubkey = faucet_keypair.pubkey();
 
     if let Some(faucet_addr) = &faucet_addr {
-        let (sender, receiver) = channel();
+        let (sender, receiver) = unbounded();
         run_local_faucet_with_port(faucet_keypair, sender, None, faucet_addr.port());
         let _ = receiver.recv().expect("run faucet").unwrap_or_else(|err| {
             println!("Error: failed to start faucet: {}", err);
@@ -618,6 +665,21 @@ fn main() {
         None
     };
 
+    let rpc_bigtable_config = if matches.is_present("enable_rpc_bigtable_ledger_storage") {
+        Some(RpcBigtableConfig {
+            enable_bigtable_ledger_upload: false,
+            bigtable_instance_name: value_t_or_exit!(matches, "rpc_bigtable_instance", String),
+            bigtable_app_profile_id: value_t_or_exit!(
+                matches,
+                "rpc_bigtable_app_profile_id",
+                String
+            ),
+            timeout: None,
+        })
+    } else {
+        None
+    };
+
     genesis
         .ledger_path(&ledger_path)
         .tower_storage(tower_storage)
@@ -628,6 +690,7 @@ fn main() {
         .rpc_config(JsonRpcConfig {
             enable_rpc_transaction_history: true,
             enable_cpi_and_log_storage: true,
+            rpc_bigtable_config,
             faucet_addr,
             ..JsonRpcConfig::default_for_test()
         })
@@ -647,6 +710,17 @@ fn main() {
             cluster_rpc_client
                 .as_ref()
                 .expect("bug: --url argument missing?"),
+            false,
+        );
+    }
+
+    if !accounts_to_maybe_clone.is_empty() {
+        genesis.clone_accounts(
+            accounts_to_maybe_clone,
+            cluster_rpc_client
+                .as_ref()
+                .expect("bug: --url argument missing?"),
+            true,
         );
     }
 

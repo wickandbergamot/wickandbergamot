@@ -2,8 +2,10 @@ use {
     crate::parse_instruction::{
         check_num_accounts, ParsableProgram, ParseInstructionError, ParsedInstructionEnum,
     },
+    borsh::BorshDeserialize,
     serde_json::json,
-    safecoin_sdk::{instruction::CompiledInstruction, pubkey::Pubkey},
+    safecoin_sdk::{instruction::CompiledInstruction, message::AccountKeys, pubkey::Pubkey},
+    safe_associated_token_account::instruction::AssociatedTokenAccountInstruction,
 };
 
 // A helper function to convert safe_associated_token_account::id() as spl_sdk::pubkey::Pubkey
@@ -14,7 +16,7 @@ pub fn spl_associated_token_id() -> Pubkey {
 
 pub fn parse_associated_token(
     instruction: &CompiledInstruction,
-    account_keys: &[Pubkey],
+    account_keys: &AccountKeys,
 ) -> Result<ParsedInstructionEnum, ParseInstructionError> {
     match instruction.accounts.iter().max() {
         Some(index) if (*index as usize) < account_keys.len() => {}
@@ -25,20 +27,45 @@ pub fn parse_associated_token(
             ));
         }
     }
-    check_num_associated_token_accounts(&instruction.accounts, 7)?;
-    Ok(ParsedInstructionEnum {
-        instruction_type: "create".to_string(),
-        info: json!({
-            "source": account_keys[instruction.accounts[0] as usize].to_string(),
-            "account": account_keys[instruction.accounts[1] as usize].to_string(),
-            "wallet": account_keys[instruction.accounts[2] as usize].to_string(),
-            "mint": account_keys[instruction.accounts[3] as usize].to_string(),
-            "systemProgram": account_keys[instruction.accounts[4] as usize].to_string(),
-            "tokenProgram": account_keys[instruction.accounts[5] as usize].to_string(),
-            "rentSysvar": account_keys[instruction.accounts[6] as usize].to_string(),
-        }),
-    })
+    if instruction.data.is_empty() {
+        check_num_associated_token_accounts(&instruction.accounts, 7)?;
+        Ok(ParsedInstructionEnum {
+            instruction_type: "create".to_string(),
+            info: json!({
+                "source": account_keys[instruction.accounts[0] as usize].to_string(),
+                "account": account_keys[instruction.accounts[1] as usize].to_string(),
+                "wallet": account_keys[instruction.accounts[2] as usize].to_string(),
+                "mint": account_keys[instruction.accounts[3] as usize].to_string(),
+                "systemProgram": account_keys[instruction.accounts[4] as usize].to_string(),
+                "tokenProgram": account_keys[instruction.accounts[5] as usize].to_string(),
+                "rentSysvar": account_keys[instruction.accounts[6] as usize].to_string(),
+            }),
+        })
+    } else {
+        let ata_instruction = AssociatedTokenAccountInstruction::try_from_slice(&instruction.data)
+            .map_err(|_| {
+                ParseInstructionError::InstructionNotParsable(ParsableProgram::SafeToken)
+            })?;
+        match ata_instruction {
+            AssociatedTokenAccountInstruction::Create => {
+                check_num_associated_token_accounts(&instruction.accounts, 6)?;
+                Ok(ParsedInstructionEnum {
+                    instruction_type: "create".to_string(),
+                    info: json!({
+                        "source": account_keys[instruction.accounts[0] as usize].to_string(),
+                        "account": account_keys[instruction.accounts[1] as usize].to_string(),
+                        "wallet": account_keys[instruction.accounts[2] as usize].to_string(),
+                        "mint": account_keys[instruction.accounts[3] as usize].to_string(),
+                        "systemProgram": account_keys[instruction.accounts[4] as usize].to_string(),
+                        "tokenProgram": account_keys[instruction.accounts[5] as usize].to_string(),
+                    }),
+                })
+            }
+	    _ => todo!()
+        }
+    }
 }
+
 
 fn check_num_associated_token_accounts(
     accounts: &[u8],
@@ -49,13 +76,17 @@ fn check_num_associated_token_accounts(
 
 #[cfg(test)]
 mod test {
+    #[allow(deprecated)]
+    use safe_associated_token_account::create_associated_token_account as create_associated_token_account_deprecated;
     use {
         super::*,
+        safecoin_account_decoder::parse_token::pubkey_from_safe_token,
         safe_associated_token_account::{
-            create_associated_token_account,
+            get_associated_token_address,
+            instruction::create_associated_token_account,
             safecoin_program::{
                 instruction::CompiledInstruction as SplAssociatedTokenCompiledInstruction,
-                message::Message, pubkey::Pubkey as SplAssociatedTokenPubkey,
+                message::Message, pubkey::Pubkey as SplAssociatedTokenPubkey, sysvar,
             },
         },
     };
@@ -74,34 +105,93 @@ mod test {
         }
     }
 
-    #[test]
-    fn test_parse_associated_token() {
-        let mut keys: Vec<Pubkey> = vec![];
-        for _ in 0..7 {
-            keys.push(safecoin_sdk::pubkey::new_rand());
-        }
+    fn convert_account_keys(message: &Message) -> Vec<Pubkey> {
+        message
+            .account_keys
+            .iter()
+            .map(pubkey_from_safe_token)
+            .collect()
+    }
 
-        let create_ix = create_associated_token_account(
-            &convert_pubkey(keys[0]),
-            &convert_pubkey(keys[1]),
-            &convert_pubkey(keys[2]),
+    #[test]
+    fn test_parse_associated_token_deprecated() {
+        let funder = Pubkey::new_unique();
+        let wallet_address = Pubkey::new_unique();
+        let mint = Pubkey::new_unique();
+        let associated_account_address =
+            get_associated_token_address(&convert_pubkey(wallet_address), &convert_pubkey(mint));
+        #[allow(deprecated)]
+        let create_ix = create_associated_token_account_deprecated(
+            &convert_pubkey(funder),
+            &convert_pubkey(wallet_address),
+            &convert_pubkey(mint),
         );
         let message = Message::new(&[create_ix], None);
-        let compiled_instruction = convert_compiled_instruction(&message.instructions[0]);
+        let mut compiled_instruction = convert_compiled_instruction(&message.instructions[0]);
         assert_eq!(
-            parse_associated_token(&compiled_instruction, &keys).unwrap(),
+            parse_associated_token(
+                &compiled_instruction,
+                &AccountKeys::new(&convert_account_keys(&message), None)
+            )
+            .unwrap(),
             ParsedInstructionEnum {
                 instruction_type: "create".to_string(),
                 info: json!({
-                    "source": keys[0].to_string(),
-                    "account": keys[1].to_string(),
-                    "wallet": keys[2].to_string(),
-                    "mint": keys[3].to_string(),
-                    "systemProgram": keys[4].to_string(),
-                    "tokenProgram": keys[5].to_string(),
-                    "rentSysvar": keys[6].to_string(),
+                    "source": funder.to_string(),
+                    "account": associated_account_address.to_string(),
+                    "wallet": wallet_address.to_string(),
+                    "mint": mint.to_string(),
+                    "systemProgram": safecoin_sdk::system_program::id().to_string(),
+                    "tokenProgram": safe_token::id().to_string(),
+                    "rentSysvar": sysvar::rent::id().to_string(),
                 })
             }
         );
+        compiled_instruction.accounts.pop();
+        assert!(parse_associated_token(
+            &compiled_instruction,
+            &AccountKeys::new(&convert_account_keys(&message), None)
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn test_parse_associated_token() {
+        let funder = Pubkey::new_unique();
+        let wallet_address = Pubkey::new_unique();
+        let mint = Pubkey::new_unique();
+        let associated_account_address =
+            get_associated_token_address(&convert_pubkey(wallet_address), &convert_pubkey(mint));
+        let create_ix = create_associated_token_account(
+            &convert_pubkey(funder),
+            &convert_pubkey(wallet_address),
+            &convert_pubkey(mint),
+        );
+        let message = Message::new(&[create_ix], None);
+        let mut compiled_instruction = convert_compiled_instruction(&message.instructions[0]);
+        assert_eq!(
+            parse_associated_token(
+                &compiled_instruction,
+                &AccountKeys::new(&convert_account_keys(&message), None)
+            )
+            .unwrap(),
+            ParsedInstructionEnum {
+                instruction_type: "create".to_string(),
+                info: json!({
+                    "source": funder.to_string(),
+                    "account": associated_account_address.to_string(),
+                    "wallet": wallet_address.to_string(),
+                    "mint": mint.to_string(),
+                    "systemProgram": safecoin_sdk::system_program::id().to_string(),
+                    "tokenProgram": safe_token::id().to_string(),
+                })
+            }
+        );
+        compiled_instruction.accounts.pop();
+        assert!(parse_associated_token(
+            &compiled_instruction,
+            &AccountKeys::new(&convert_account_keys(&message), None)
+        )
+        .is_err());
     }
 }

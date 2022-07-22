@@ -142,22 +142,4 @@ for file in "${TARBALL_BASENAME}"-$TARGET.tar.bz2 "${TARBALL_BASENAME}"-$TARGET.
   fi
 done
 
-
-# Create install wrapper for release.solana.com
-if [[ -n $DO_NOT_PUBLISH_TAR ]]; then
-  echo "Skipping publishing install wrapper"
-elif [[ -n $BUILDKITE ]]; then
-  cat > release.solana.com-install <<EOF
-SAFECOIN_RELEASE=$CHANNEL_OR_TAG
-SAFECOIN_INSTALL_INIT_ARGS=$CHANNEL_OR_TAG
-SAFECOIN_DOWNLOAD_ROOT=https://release.solana.com
-EOF
-  cat install/safecoin-install-init.sh >> release.solana.com-install
-
-  echo --- AWS S3 Store: "install"
-  $DRYRUN upload-s3-artifact "/solana/release.solana.com-install" "s3://release.solana.com/$CHANNEL_OR_TAG/install"
-  echo Published to:
-  $DRYRUN ci/format-url.sh https://release.solana.com/"$CHANNEL_OR_TAG"/install
-fi
-
 echo --- ok

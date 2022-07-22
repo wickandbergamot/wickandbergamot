@@ -1,5 +1,6 @@
 use {
     crate::bank::Bank,
+    crossbeam_channel::{unbounded, Receiver, Sender},
     safecoin_sdk::{
         account::Account,
         client::{AsyncClient, Client, SyncClient},
@@ -19,10 +20,7 @@ use {
     std::{
         convert::TryFrom,
         io,
-        sync::{
-            mpsc::{channel, Receiver, Sender},
-            Arc, Mutex,
-        },
+        sync::{Arc, Mutex},
         thread::{sleep, Builder},
         time::{Duration, Instant},
     },
@@ -45,6 +43,13 @@ impl AsyncClient for BankClient {
         let transaction_sender = self.transaction_sender.lock().unwrap();
         transaction_sender.send(transaction).unwrap();
         Ok(signature)
+    }
+
+    fn async_send_batch(&self, transactions: Vec<Transaction>) -> Result<()> {
+        for t in transactions {
+            self.async_send_transaction(t)?;
+        }
+        Ok(())
     }
 
     fn async_send_message<T: Signers>(
@@ -317,8 +322,7 @@ impl SyncClient for BankClient {
     fn get_fee_for_message(&self, message: &Message) -> Result<u64> {
         SanitizedMessage::try_from(message.clone())
             .ok()
-            .map(|sanitized_message| self.bank.get_fee_for_message(&sanitized_message))
-            .flatten()
+            .and_then(|sanitized_message| self.bank.get_fee_for_message(&sanitized_message))
             .ok_or_else(|| {
                 TransportError::IoError(io::Error::new(
                     io::ErrorKind::Other,
@@ -340,7 +344,7 @@ impl BankClient {
     }
 
     pub fn new_shared(bank: &Arc<Bank>) -> Self {
-        let (transaction_sender, transaction_receiver) = channel();
+        let (transaction_sender, transaction_receiver) = unbounded();
         let transaction_sender = Mutex::new(transaction_sender);
         let thread_bank = bank.clone();
         let bank = bank.clone();

@@ -29,10 +29,10 @@ EOF
 useEnv=false
 delete=false
 createWithoutConfig=false
-host="https://metrics.safecoin.org:10016"
-while getopts "hdec:" opt; do
+host="https://internal-metrics.safecoin.org:10016"
+while getopts ":hdec:" opt; do
   case $opt in
-  h|\?)
+  h)
     usage
     exit 0
     ;;
@@ -47,7 +47,7 @@ while getopts "hdec:" opt; do
     useEnv=true
     ;;
   *)
-    usage "unhandled option: $opt"
+    usage "unhandled option: $OPTARG"
     ;;
   esac
 done

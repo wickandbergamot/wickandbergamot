@@ -135,10 +135,19 @@ pub fn instruction_to_nonce_error(
     }
 }
 
-/// maximum permitted size of data: 10 MB
+/// Maximum permitted size of data: 10 MiB
 pub const MAX_PERMITTED_DATA_LENGTH: u64 = 10 * 1024 * 1024;
 
-#[frozen_abi(digest = "2xnDcizcPKKR7b624FeuuPd1zj5bmnkmVsBWgoKPTh4w")]
+// SBF program entrypoint assumes that the max account data length
+// will fit inside a u32. If this constant no longer fits in a u32,
+// the entrypoint deserialization code in the SDK must be updated.
+#[cfg(test)]
+static_assertions::const_assert!(MAX_PERMITTED_DATA_LENGTH <= u32::MAX as u64);
+
+#[cfg(test)]
+static_assertions::const_assert_eq!(MAX_PERMITTED_DATA_LENGTH, 10_485_760);
+
+#[frozen_abi(digest = "5e22s2kFu9Do77hdcCyxyhuKHD8ThAB6Q6dNaLTCjL5M")]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, AbiExample, AbiEnumVisitor)]
 pub enum SystemInstruction {
     /// Create a new account
@@ -303,6 +312,13 @@ pub enum SystemInstruction {
         /// Owner to use to derive the funding account address
         from_owner: Pubkey,
     },
+
+    /// One-time idempotent upgrade of legacy nonce versions in order to bump
+    /// them out of chain blockhash domain.
+    ///
+    /// # Account references
+    ///   0. `[WRITE]` Nonce account
+    UpgradeNonceAccount,
 }
 
 pub fn create_account(
@@ -568,6 +584,17 @@ pub fn authorize_nonce_account(
     Instruction::new_with_bincode(
         system_program::id(),
         &SystemInstruction::AuthorizeNonceAccount(*new_authority),
+        account_metas,
+    )
+}
+
+/// One-time idempotent upgrade of legacy nonce versions in order to bump
+/// them out of chain blockhash domain.
+pub fn upgrade_nonce_account(nonce_pubkey: Pubkey) -> Instruction {
+    let account_metas = vec![AccountMeta::new(nonce_pubkey, /*is_signer:*/ false)];
+    Instruction::new_with_bincode(
+        system_program::id(),
+        &SystemInstruction::UpgradeNonceAccount,
         account_metas,
     )
 }

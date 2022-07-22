@@ -2,12 +2,12 @@ const endpoint = {
   http: {
     devnet: 'http://api.devnet.safecoin.org',
     testnet: 'http://api.testnet.safecoin.org',
-    'mainnet-beta': 'http://api.mainnet-beta.safecoin.org',
+    'mainnet-beta': 'http://api.mainnet-beta.safecoin.org/',
   },
   https: {
     devnet: 'https://api.devnet.safecoin.org',
     testnet: 'https://api.testnet.safecoin.org',
-    'mainnet-beta': 'https://api.mainnet-beta.safecoin.org',
+    'mainnet-beta': 'https://api.mainnet-beta.safecoin.org/',
   },
 };
 

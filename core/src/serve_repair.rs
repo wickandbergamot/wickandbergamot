@@ -2,6 +2,7 @@ use {
     crate::{
         cluster_slots::ClusterSlots,
         duplicate_repair_status::ANCESTOR_HASH_REPAIR_SAMPLE_SIZE,
+        packet_threshold::DynamicPacketToProcessThreshold,
         repair_response,
         repair_service::{OutstandingShredRepairs, RepairStats},
         request_response::RequestResponse,
@@ -16,14 +17,13 @@ use {
     safecoin_gossip::{
         cluster_info::{ClusterInfo, ClusterInfoError},
         contact_info::ContactInfo,
-        weighted_shuffle::{weighted_best, weighted_shuffle},
+        weighted_shuffle::WeightedShuffle,
     },
     solana_ledger::{
         ancestor_iterator::{AncestorIterator, AncestorIteratorWithHash},
         blockstore::Blockstore,
         shred::{Nonce, Shred, SIZE_OF_NONCE},
     },
-    safecoin_measure::measure::Measure,
     solana_metrics::inc_new_counter_debug,
     solana_perf::packet::{PacketBatch, PacketBatchRecycler},
     safecoin_sdk::{
@@ -142,8 +142,9 @@ impl RequestResponse for AncestorHashesRepairType {
 
 #[derive(Default)]
 pub struct ServeRepairStats {
-    pub total_packets: usize,
-    pub dropped_packets: usize,
+    pub total_requests: usize,
+    pub dropped_requests: usize,
+    pub total_response_packets: usize,
     pub processed: usize,
     pub self_repair: usize,
     pub window_index: usize,
@@ -322,39 +323,31 @@ impl ServeRepair {
         requests_receiver: &PacketBatchReceiver,
         response_sender: &PacketBatchSender,
         stats: &mut ServeRepairStats,
-        max_packets: &mut usize,
+        packet_threshold: &mut DynamicPacketToProcessThreshold,
     ) -> Result<()> {
         //TODO cache connections
         let timeout = Duration::new(1, 0);
         let mut reqs_v = vec![requests_receiver.recv_timeout(timeout)?];
-        let mut total_packets = reqs_v[0].packets.len();
+        let mut total_requests = reqs_v[0].len();
 
-        let mut dropped_packets = 0;
+        let mut dropped_requests = 0;
         while let Ok(more) = requests_receiver.try_recv() {
-            total_packets += more.packets.len();
-            if total_packets < *max_packets {
-                // Drop the rest in the channel in case of dos
-                reqs_v.push(more);
+            total_requests += more.len();
+            if packet_threshold.should_drop(total_requests) {
+                dropped_requests += more.len();
             } else {
-                dropped_packets += more.packets.len();
+                reqs_v.push(more);
             }
         }
 
-        stats.dropped_packets += dropped_packets;
-        stats.total_packets += total_packets;
+        stats.dropped_requests += dropped_requests;
+        stats.total_requests += total_requests;
 
-        let mut time = Measure::start("repair::handle_packets");
+        let timer = Instant::now();
         for reqs in reqs_v {
             Self::handle_packets(obj, recycler, blockstore, reqs, response_sender, stats);
         }
-        time.stop();
-        if total_packets >= *max_packets {
-            if time.as_ms() > 1000 {
-                *max_packets = (*max_packets * 9) / 10;
-            } else {
-                *max_packets = (*max_packets * 10) / 9;
-            }
-        }
+        packet_threshold.update(total_requests, timer.elapsed());
         Ok(())
     }
 
@@ -368,24 +361,26 @@ impl ServeRepair {
             inc_new_counter_debug!("serve_repair-handle-repair--eq", stats.self_repair);
         }
 
-        inc_new_counter_info!("serve_repair-total_packets", stats.total_packets);
-        inc_new_counter_info!("serve_repair-dropped_packets", stats.dropped_packets);
-
-        debug!(
-            "repair_listener: total_packets: {} passed: {}",
-            stats.total_packets, stats.processed
+        datapoint_info!(
+            "serve_repair-requests_received",
+            ("total_requests", stats.total_requests, i64),
+            ("dropped_requests", stats.dropped_requests, i64),
+            ("total_response_packets", stats.total_response_packets, i64),
+            ("self_repair", stats.self_repair, i64),
+            ("window_index", stats.window_index, i64),
+            (
+                "request-highest-window-index",
+                stats.highest_window_index,
+                i64
+            ),
+            ("orphan", stats.orphan, i64),
+            (
+                "serve_repair-request-ancestor-hashes",
+                stats.ancestor_hashes,
+                i64
+            ),
         );
 
-        inc_new_counter_debug!("serve_repair-request-window-index", stats.window_index);
-        inc_new_counter_debug!(
-            "serve_repair-request-highest-window-index",
-            stats.highest_window_index
-        );
-        inc_new_counter_debug!("serve_repair-request-orphan", stats.orphan);
-        inc_new_counter_debug!(
-            "serve_repair-request-ancestor-hashes",
-            stats.ancestor_hashes
-        );
         *stats = ServeRepairStats::default();
     }
 
@@ -403,7 +398,7 @@ impl ServeRepair {
             .spawn(move || {
                 let mut last_print = Instant::now();
                 let mut stats = ServeRepairStats::default();
-                let mut max_packets = 1024;
+                let mut packet_threshold = DynamicPacketToProcessThreshold::default();
                 loop {
                     let result = Self::run_listen(
                         &me,
@@ -412,7 +407,7 @@ impl ServeRepair {
                         &requests_receiver,
                         &response_sender,
                         &mut stats,
-                        &mut max_packets,
+                        &mut packet_threshold,
                     );
                     match result {
                         Err(Error::RecvTimeout(_)) | Ok(_) => {}
@@ -438,11 +433,12 @@ impl ServeRepair {
         response_sender: &PacketBatchSender,
         stats: &mut ServeRepairStats,
     ) {
-        packet_batch.packets.iter().for_each(|packet| {
+        packet_batch.iter().for_each(|packet| {
             if let Ok(request) = packet.deserialize_slice(..) {
                 stats.processed += 1;
-                let from_addr = packet.meta.addr();
+                let from_addr = packet.meta.socket_addr();
                 let rsp = Self::handle_repair(me, recycler, &from_addr, blockstore, request, stats);
+                stats.total_response_packets += rsp.as_ref().map(PacketBatch::len).unwrap_or(0);
                 if let Some(rsp) = rsp {
                     let _ignore_disconnect = response_sender.send(rsp);
                 }
@@ -529,16 +525,17 @@ impl ServeRepair {
         if repair_peers.is_empty() {
             return Err(ClusterInfoError::NoPeers.into());
         }
-        let weights = cluster_slots.compute_weights_exclude_nonfrozen(slot, &repair_peers);
-        let mut sampled_validators = weighted_shuffle(
-            weights.into_iter().map(|(stake, _i)| stake),
-            safecoin_sdk::pubkey::new_rand().to_bytes(),
-        );
-        sampled_validators.truncate(ANCESTOR_HASH_REPAIR_SAMPLE_SIZE);
-        Ok(sampled_validators
+        let (weights, index): (Vec<_>, Vec<_>) = cluster_slots
+            .compute_weights_exclude_nonfrozen(slot, &repair_peers)
             .into_iter()
+            .unzip();
+        let peers = WeightedShuffle::new("repair_request_ancestor_hashes", &weights)
+            .shuffle(&mut rand::thread_rng())
+            .take(ANCESTOR_HASH_REPAIR_SAMPLE_SIZE)
+            .map(|i| index[i])
             .map(|i| (repair_peers[i].id, repair_peers[i].serve_repair))
-            .collect())
+            .collect();
+        Ok(peers)
     }
 
     pub fn repair_request_duplicate_compute_best_peer(
@@ -551,8 +548,12 @@ impl ServeRepair {
         if repair_peers.is_empty() {
             return Err(ClusterInfoError::NoPeers.into());
         }
-        let weights = cluster_slots.compute_weights_exclude_nonfrozen(slot, &repair_peers);
-        let n = weighted_best(&weights, safecoin_sdk::pubkey::new_rand().to_bytes());
+        let (weights, index): (Vec<_>, Vec<_>) = cluster_slots
+            .compute_weights_exclude_nonfrozen(slot, &repair_peers)
+            .into_iter()
+            .unzip();
+        let k = WeightedIndex::new(weights)?.sample(&mut rand::thread_rng());
+        let n = index[k];
         Ok((repair_peers[n].id, repair_peers[n].serve_repair))
     }
 
@@ -698,11 +699,12 @@ impl ServeRepair {
                     nonce,
                 );
                 if let Some(packet) = packet {
-                    res.packets.push(packet);
+                    res.push(packet);
                 } else {
                     break;
                 }
-                if meta.parent_slot.is_some() && res.packets.len() <= max_responses {
+
+                if meta.parent_slot.is_some() && res.len() <= max_responses {
                     slot = meta.parent_slot.unwrap();
                 } else {
                     break;
@@ -808,14 +810,13 @@ mod tests {
             )
             .expect("packets");
             let request = ShredRepairType::HighestShred(slot, index);
-            verify_responses(&request, rv.packets.iter());
+            verify_responses(&request, rv.iter());
 
             let rv: Vec<Shred> = rv
-                .packets
                 .into_iter()
                 .filter_map(|p| {
                     assert_eq!(repair_response::nonce(p).unwrap(), nonce);
-                    Shred::new_from_serialized_shred(p.data.to_vec()).ok()
+                    Shred::new_from_serialized_shred(p.data(..).unwrap().to_vec()).ok()
                 })
                 .collect();
             assert!(!rv.is_empty());
@@ -894,13 +895,12 @@ mod tests {
             )
             .expect("packets");
             let request = ShredRepairType::Shred(slot, index);
-            verify_responses(&request, rv.packets.iter());
+            verify_responses(&request, rv.iter());
             let rv: Vec<Shred> = rv
-                .packets
                 .into_iter()
                 .filter_map(|p| {
                     assert_eq!(repair_response::nonce(p).unwrap(), nonce);
-                    Shred::new_from_serialized_shred(p.data.to_vec()).ok()
+                    Shred::new_from_serialized_shred(p.data(..).unwrap().to_vec()).ok()
                 })
                 .collect();
             assert_eq!(rv[0].index(), 1);
@@ -1056,7 +1056,6 @@ mod tests {
                 nonce,
             )
             .expect("run_orphan packets")
-            .packets
             .iter()
             .cloned()
             .collect();
@@ -1125,7 +1124,6 @@ mod tests {
                 nonce,
             )
             .expect("run_orphan packets")
-            .packets
             .iter()
             .cloned()
             .collect();
@@ -1172,8 +1170,7 @@ mod tests {
                 slot + num_slots,
                 nonce,
             )
-            .expect("run_ancestor_hashes packets")
-            .packets;
+            .expect("run_ancestor_hashes packets");
             assert_eq!(rv.len(), 1);
             let packet = &rv[0];
             let ancestor_hashes_response: AncestorHashesResponseVersion = packet
@@ -1190,8 +1187,7 @@ mod tests {
                 slot + num_slots - 1,
                 nonce,
             )
-            .expect("run_ancestor_hashes packets")
-            .packets;
+            .expect("run_ancestor_hashes packets");
             assert_eq!(rv.len(), 1);
             let packet = &rv[0];
             let ancestor_hashes_response: AncestorHashesResponseVersion = packet
@@ -1215,8 +1211,7 @@ mod tests {
                 slot + num_slots - 1,
                 nonce,
             )
-            .expect("run_ancestor_hashes packets")
-            .packets;
+            .expect("run_ancestor_hashes packets");
             assert_eq!(rv.len(), 1);
             let packet = &rv[0];
             let ancestor_hashes_response: AncestorHashesResponseVersion = packet
@@ -1357,7 +1352,7 @@ mod tests {
 
     fn verify_responses<'a>(request: &ShredRepairType, packets: impl Iterator<Item = &'a Packet>) {
         for packet in packets {
-            let shred_payload = packet.data.to_vec();
+            let shred_payload = packet.data(..).unwrap().to_vec();
             let shred = Shred::new_from_serialized_shred(shred_payload).unwrap();
             request.verify_response(&shred);
         }

@@ -2711,7 +2711,8 @@ mod test {
                 stake
             );
         }
-        for slot in &[17] {
+        {
+            let slot = &17;
             assert_eq!(
                 tree1
                     .stake_voted_subtree(&(*slot, Hash::default()))

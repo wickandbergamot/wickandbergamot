@@ -62,14 +62,12 @@ pub fn collect_token_balances(
     let mut collect_time = Measure::start("collect_token_balances");
 
     for transaction in batch.sanitized_transactions() {
-        let has_token_program = transaction
-            .message()
-            .account_keys_iter()
-            .any(is_known_safe_token_id);
+        let account_keys = transaction.message().account_keys();
+        let has_token_program = account_keys.iter().any(is_known_safe_token_id);
 
         let mut transaction_balances: Vec<TransactionTokenBalance> = vec![];
         if has_token_program {
-            for (index, account_id) in transaction.message().account_keys_iter().enumerate() {
+            for (index, account_id) in account_keys.iter().enumerate() {
                 if transaction.message().is_invoked(index) || is_known_safe_token_id(account_id) {
                     continue;
                 }
@@ -78,6 +76,7 @@ pub fn collect_token_balances(
                     mint,
                     ui_token_amount,
                     owner,
+                    program_id,
                 }) = collect_token_balance_from_account(bank, account_id, mint_decimals)
                 {
                     transaction_balances.push(TransactionTokenBalance {
@@ -85,6 +84,7 @@ pub fn collect_token_balances(
                         mint,
                         ui_token_amount,
                         owner,
+                        program_id,
                     });
                 }
             }
@@ -104,6 +104,7 @@ struct TokenBalanceData {
     mint: String,
     owner: String,
     ui_token_amount: UiTokenAmount,
+    program_id: String,
 }
 
 fn collect_token_balance_from_account(
@@ -130,6 +131,7 @@ fn collect_token_balance_from_account(
         mint: token_account.mint.to_string(),
         owner: token_account.owner.to_string(),
         ui_token_amount: token_amount_to_ui_amount(token_account.amount, decimals),
+        program_id: account.owner().to_string(),
     })
 }
 
@@ -268,7 +270,8 @@ mod test {
                     decimals: 2,
                     amount: "42".to_string(),
                     ui_amount_string: "0.42".to_string(),
-                }
+                },
+                program_id: safe_token::id().to_string(),
             })
         );
 

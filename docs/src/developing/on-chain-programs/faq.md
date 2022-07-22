@@ -6,8 +6,7 @@ When writing or interacting with Safecoin programs, there are common questions o
 challenges that often come up. Below are resources to help answer these
 questions.
 
-If not addressed here, the Safecoin [#developers](https://discord.gg/RxeGBH)
-Discord channel is a great resource.
+If not addressed here, ask on [StackOverflow](https://stackoverflow.com/questions/tagged/solana) with the `solana` tag or check out the Safecoin [#developer-support](https://discord.gg/RxeGBH)
 
 ## `CallDepth` error
 

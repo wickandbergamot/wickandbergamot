@@ -51,56 +51,11 @@ export const isMangoInstruction = (instruction: TransactionInstruction) => {
     .includes(instruction.programId.toBase58());
 };
 
-export const INSTRUCTION_LOOKUP: { [key: number]: string } = {
-  0: "InitMangoGroup",
-  1: "InitMangoAccount",
-  2: "Deposit",
-  3: "Withdraw",
-  4: "AddSpotMarket",
-  5: "AddToBasket",
-  6: "Borrow",
-  7: "CachePrices",
-  8: "CacheRootBanks",
-  9: "PlaceSpotOrder",
-  10: "AddOracle",
-  11: "AddPerpMarket",
-  12: "PlacePerpOrder",
-  13: "CancelPerpOrderByClientId",
-  14: "CancelPerpOrder",
-  15: "ConsumeEvents",
-  16: "CachePerpMarkets",
-  17: "UpdateFunding",
-  18: "SetOracle",
-  19: "SettleFunds",
-  20: "CancelSpotOrder",
-  21: "UpdateRootBank",
-  22: "SettlePnl",
-  23: "SettleBorrow",
-  24: "ForceCancelSpotOrders",
-  25: "ForceCancelPerpOrders",
-  26: "LiquidateTokenAndToken",
-  27: "LiquidateTokenAndPerp",
-  28: "LiquidatePerpMarket",
-  29: "SettleFees",
-  30: "ResolvePerpBankruptcy",
-  31: "ResolveTokenBankruptcy",
-  32: "InitSpotOpenOrders",
-  33: "RedeemMngo",
-  34: "AddMangoAccountInfo",
-  35: "DepositMsrm",
-  36: "WithdrawMsrm",
-  37: "ChangePerpMarketParams",
-};
-
 export const parseMangoInstructionTitle = (
   instruction: TransactionInstruction
 ): string => {
-  const code = instruction.data[0];
-
-  if (!(code in INSTRUCTION_LOOKUP)) {
-    throw new Error(`Unrecognized Mango instruction code: ${code}`);
-  }
-  return INSTRUCTION_LOOKUP[code];
+  let decodedInstruction = MangoInstructionLayout.decode(instruction.data, 0);
+  return Object.keys(decodedInstruction)[0];
 };
 
 export type Deposit = {
@@ -209,6 +164,33 @@ export const decodePlacePerpOrder = (
   };
 
   return placePerpOrder;
+};
+
+export type PlacePerpOrder2 = {
+  price: number;
+  maxBaseQuantity: number;
+  clientOrderId: String;
+  side: String;
+  orderType: String;
+  reduceOnly: String;
+  expiryTimestamp: number;
+};
+
+export const decodePlacePerpOrder2 = (
+  ix: TransactionInstruction
+): PlacePerpOrder2 => {
+  const decoded = MangoInstructionLayout.decode(ix.data, 0);
+  const placePerpOrder2: PlacePerpOrder2 = {
+    price: decoded.PlacePerpOrder2.price.toNumber(),
+    maxBaseQuantity: decoded.PlacePerpOrder2.maxBaseQuantity.toNumber(),
+    clientOrderId: decoded.PlacePerpOrder2.clientOrderId.toString(),
+    side: decoded.PlacePerpOrder2.side.toString(),
+    orderType: decoded.PlacePerpOrder2.orderType.toString(),
+    reduceOnly: decoded.PlacePerpOrder2.reduceOnly.toString(),
+    expiryTimestamp: decoded.PlacePerpOrder2.expiryTimestamp.toNumber(),
+  };
+
+  return placePerpOrder2;
 };
 
 export type CancelPerpOrder = {

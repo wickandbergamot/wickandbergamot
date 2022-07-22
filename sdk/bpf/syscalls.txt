@@ -10,6 +10,11 @@ sol_sha256
 sol_keccak256
 sol_secp256k1_recover
 sol_blake3
+sol_zk_token_elgamal_op
+sol_zk_token_elgamal_op_with_lo_hi
+sol_zk_token_elgamal_op_with_scalar
+sol_curve_validate_point
+sol_curve_group_op
 sol_get_clock_sysvar
 sol_get_epoch_schedule_sysvar
 sol_get_fees_sysvar

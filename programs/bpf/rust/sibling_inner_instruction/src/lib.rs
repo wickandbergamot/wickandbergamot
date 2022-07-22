@@ -4,7 +4,6 @@
 
 use safecoin_program::{
     account_info::AccountInfo,
-    entrypoint,
     entrypoint::ProgramResult,
     instruction::{
         get_processed_sibling_instruction, get_stack_height, AccountMeta, Instruction,
@@ -14,7 +13,7 @@ use safecoin_program::{
     pubkey::Pubkey,
 };
 
-entrypoint!(process_instruction);
+safecoin_program::entrypoint!(process_instruction);
 fn process_instruction(
     _program_id: &Pubkey,
     accounts: &[AccountInfo],

@@ -1,12 +1,14 @@
 #![cfg(feature = "test-bpf")]
 
-use solana_bpf_rust_sanity::process_instruction;
-use safecoin_program_test::*;
-use safecoin_sdk::{
-    instruction::{AccountMeta, Instruction},
-    pubkey::Pubkey,
-    signature::{Keypair, Signer},
-    transaction::Transaction,
+use {
+    solana_bpf_rust_sanity::process_instruction,
+    safecoin_program_test::*,
+    safecoin_sdk::{
+        instruction::{AccountMeta, Instruction},
+        pubkey::Pubkey,
+        signature::{Keypair, Signer},
+        transaction::Transaction,
+    },
 };
 
 #[tokio::test]

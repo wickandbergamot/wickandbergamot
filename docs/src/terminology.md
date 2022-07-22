@@ -217,7 +217,7 @@ The public key of the [account](#account) containing a [program](#program).
 
 ## proof of history (PoH)
 
-A stack of proofs, each which proves that some data existed before the proof was created and that a precise duration of time passed before the previous proof. Like a [VDF](#verifiable-delay-function-vdf), a Proof of History can be verified in less time than it took to produce.
+A stack of proofs, each of which proves that some data existed before the proof was created and that a precise duration of time passed before the previous proof. Like a [VDF](#verifiable-delay-function-vdf), a Proof of History can be verified in less time than it took to produce.
 
 ## public key (pubkey)
 
@@ -267,7 +267,7 @@ The [native token](#native-token) of a Safecoin [cluster](#cluster).
 
 ## Safecoin Program Library (SPL)
 
-A library of programs on Safecoin such as safe-token that facilitates tasks such as creating and using tokens
+A [library of programs](https://spl.solana.com/) on Safecoin such as safe-token that facilitates tasks such as creating and using tokens.
 
 ## stake
 
