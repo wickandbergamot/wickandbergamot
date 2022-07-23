@@ -27,8 +27,8 @@ safecoin-remote-wallet = { path = "../remote-wallet", version = "=1.10.34" }
 safecoin-sdk = { path = "../sdk", version = "=1.10.34" }
 safecoin-transaction-status = { path = "../transaction-status", version = "=1.10.34" }
 safecoin-version = { path = "../version", version = "=1.10.34" }
-safe-associated-token-account = { version = "=1.0.12", path = "../../safecoin-program-library/associated-token-account/program" }
-safe-token = { version = "=3.3.3", path = "../../safecoin-program-library/token/program" , features = ["no-entrypoint"] }
+safe-associated-token-account = { version = "=1.0.12" }
+safe-token = { version = "=3.3.3", features = ["no-entrypoint"] }
 tempfile = "3.3.0"
 thiserror = "1.0"
 

@@ -64,7 +64,7 @@ pub fn build_safe_token_instructions(
             &safe_token_pubkey(&args.fee_payer.pubkey()),
             &wallet_address,
             &safe_token_pubkey(&safe_token_args.mint),
-            &Pubkey::from_str("ToKLx75MGim1d1jRusuVX8xvdvvbSDESVaNXpRA9PHN").unwrap()
+            &safe_token_pubkey(&Pubkey::from_str("ToKLx75MGim1d1jRusuVX8xvdvvbSDESVaNXpRA9PHN").unwrap())
         );
         instructions.push(safe_token_instruction(
             create_associated_token_account_instruction,
