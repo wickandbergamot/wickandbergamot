@@ -4099,7 +4099,7 @@ dependencies = [
  "borsh",
  "num-derive",
  "num-traits",
- "safe-token 3.3.0",
+ "safe-token 3.3.1",
  "safe-token-2022",
  "safecoin-program 1.10.32",
  "thiserror",
@@ -4112,7 +4112,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6584715882ec56b16915ee035a38290d5827df24a6545c0c9df28e9a89ccd756"
 dependencies = [
  "borsh",
- "safe-token 3.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "safe-token 3.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "safecoin-program 1.10.32 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -4134,7 +4134,7 @@ dependencies = [
 
 [[package]]
 name = "safe-token"
-version = "3.3.0"
+version = "3.3.1"
 dependencies = [
  "arrayref",
  "bytemuck",
@@ -4147,9 +4147,9 @@ dependencies = [
 
 [[package]]
 name = "safe-token"
-version = "3.3.0"
+version = "3.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0005f7f48968f7f6fd8aa97a6bdc07f7f5d5e5437666dc9d52e0f00493f3da28"
+checksum = "379006a6735c52f29ce35f6ed92bd72bd0af7be99ae88989995f7dd4dd0720fd"
 dependencies = [
  "arrayref",
  "bytemuck",
@@ -4170,7 +4170,7 @@ dependencies = [
  "num-traits",
  "num_enum",
  "safe-memo 3.0.7",
- "safe-token 3.3.0",
+ "safe-token 3.3.1",
  "safe-zk-token-sdk",
  "safecoin-program 1.10.32",
  "thiserror",
@@ -4227,7 +4227,7 @@ dependencies = [
  "bs58",
  "bv",
  "lazy_static",
- "safe-token 3.3.0",
+ "safe-token 3.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "safe-token-2022",
  "safecoin-config-program",
  "safecoin-sdk",
@@ -5669,7 +5669,7 @@ dependencies = [
  "indicatif",
  "pickledb",
  "safe-associated-token-account 1.0.11",
- "safe-token 3.3.0",
+ "safe-token 3.3.1",
  "safecoin-account-decoder",
  "safecoin-clap-utils",
  "safecoin-cli-config",
@@ -5699,7 +5699,7 @@ dependencies = [
  "log",
  "safe-associated-token-account 1.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "safe-memo 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "safe-token 3.3.0",
+ "safe-token 3.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "safe-token-2022",
  "safecoin-account-decoder",
  "safecoin-measure",
@@ -6278,7 +6278,7 @@ dependencies = [
  "log",
  "rand 0.7.3",
  "rayon",
- "safe-token 3.3.0",
+ "safe-token 3.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "safecoin-account-decoder",
  "safecoin-clap-utils",
  "safecoin-client",
@@ -6519,7 +6519,7 @@ dependencies = [
  "log",
  "rayon",
  "regex",
- "safe-token 3.3.0",
+ "safe-token 3.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "safe-token-2022",
  "safecoin-account-decoder",
  "safecoin-address-lookup-table-program",
