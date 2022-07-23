@@ -74,7 +74,7 @@ sha3 = { version = "0.10.1", optional = true }
 safecoin-frozen-abi = { path = "../frozen-abi", version = "=1.10.32" }
 safecoin-frozen-abi-macro = { path = "../frozen-abi/macro", version = "=1.10.32" }
 safecoin-logger = { path = "../logger", version = "=1.10.32", optional = true }
-safecoin-program = { path = "program", version = "=1.10.32" }
+safecoin-program = { path = "program", version = "=1.10.33" }
 safecoin-sdk-macro = { path = "macro", version = "=1.10.32" }
 thiserror = "1.0"
 uriparse = "0.6.3"

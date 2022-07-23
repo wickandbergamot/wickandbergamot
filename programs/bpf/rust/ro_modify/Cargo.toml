@@ -10,7 +10,7 @@ documentation = "https://docs.rs/solana-bpf-rust-ro-modify"
 edition = "2021"
 
 [dependencies]
-safecoin-program = { path = "../../../../sdk/program", version = "=1.10.32" }
+safecoin-program = { path = "../../../../sdk/program", version = "=1.10.33" }
 
 [lib]
 crate-type = ["cdylib"]

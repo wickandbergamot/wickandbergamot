@@ -1,6 +1,6 @@
 [package]
 name = "safecoin-program"
-version = "1.10.32"
+version = "1.10.33"
 description = "Safecoin Program"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 repository = "https://github.com/fair-exchange/safecoin"
