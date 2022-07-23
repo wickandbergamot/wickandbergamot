@@ -1,6 +1,6 @@
 [package]
 name = "safecoin-faucet"
-version = "1.10.32"
+version = "1.10.34"
 description = "Safecoin Faucet"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 repository = "https://github.com/fair-exchange/safecoin"
@@ -17,13 +17,13 @@ crossbeam-channel = "0.5"
 log = "0.4.14"
 serde = "1.0.136"
 serde_derive = "1.0.103"
-safecoin-clap-utils = { path = "../clap-utils", version = "=1.10.32" }
-safecoin-cli-config = { path = "../cli-config", version = "=1.10.32" }
-safecoin-logger = { path = "../logger", version = "=1.10.32" }
-safecoin-metrics = { path = "../metrics", version = "=1.10.32" }
-safecoin-sdk = { path = "../sdk", version = "=1.10.32" }
-safecoin-version = { path = "../version", version = "=1.10.32" }
-safe-memo = {  version = "=3.0.7", features = ["no-entrypoint"] }
+safecoin-clap-utils = { path = "../clap-utils", version = "=1.10.34" }
+safecoin-cli-config = { path = "../cli-config", version = "=1.10.34" }
+safecoin-logger = { path = "../logger", version = "=1.10.34" }
+safecoin-metrics = { path = "../metrics", version = "=1.10.34" }
+safecoin-sdk = { path = "../sdk", version = "=1.10.34" }
+safecoin-version = { path = "../version", version = "=1.10.34" }
+safe-memo = {  version = "=3.0.8", path = "../../safecoin-program-library/memo/program", features = ["no-entrypoint"] }
 thiserror = "1.0"
 tokio = { version = "~1.14.1", features = ["full"] }
 

@@ -4042,7 +4042,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-account-decoder"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "Inflector",
  "base64 0.13.0",
@@ -4064,7 +4064,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-address-lookup-table-program"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bincode",
  "bytemuck",
@@ -4083,7 +4083,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-banks-client"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "borsh",
  "futures 0.3.21",
@@ -4098,7 +4098,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-banks-interface"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "serde",
  "safecoin-sdk 1.10.32",
@@ -4107,7 +4107,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-banks-server"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bincode",
  "crossbeam-channel",
@@ -4125,7 +4125,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-bloom"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bv",
  "fnv",
@@ -4142,7 +4142,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-bpf-loader-program"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bincode",
  "byteorder 1.4.3",
@@ -4159,7 +4159,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-bpf-programs"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bincode",
  "byteorder 1.4.3",
@@ -4186,7 +4186,7 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-128bit"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "solana-bpf-rust-128bit-dep",
  "safecoin-program 1.10.32",
@@ -4194,35 +4194,35 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-128bit-dep"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-alloc"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-call-depth"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-caller-access"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-curve25519"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
  "safe-zk-token-sdk 1.10.32",
@@ -4230,14 +4230,14 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-custom-heap"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-dep-crate"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "byteorder 1.4.3",
  "safecoin-address-lookup-table-program",
@@ -4246,21 +4246,21 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-deprecated-loader"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-dup-accounts"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-error-handling"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "num-derive",
  "num-traits",
@@ -4270,28 +4270,28 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-external-spend"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-finalize"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-instruction-introspection"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-invoke"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "solana-bpf-rust-invoked",
  "safecoin-program 1.10.32",
@@ -4299,49 +4299,49 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-invoke-and-error"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-invoke-and-ok"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-invoke-and-return"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-invoked"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-iter"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-log-data"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-many-args"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "solana-bpf-rust-many-args-dep",
  "safecoin-program 1.10.32",
@@ -4349,14 +4349,14 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-many-args-dep"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-mem"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
  "safecoin-program-runtime",
@@ -4366,7 +4366,7 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-membuiltins"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "solana-bpf-rust-mem",
  "safecoin-program 1.10.32",
@@ -4374,21 +4374,21 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-noop"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-panic"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-param-passing"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "solana-bpf-rust-param-passing-dep",
  "safecoin-program 1.10.32",
@@ -4396,14 +4396,14 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-param-passing-dep"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-rand"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "getrandom 0.1.14",
  "rand 0.7.3",
@@ -4412,14 +4412,14 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-realloc"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-realloc-invoke"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "solana-bpf-rust-realloc",
  "safecoin-program 1.10.32",
@@ -4427,21 +4427,21 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-ro-account_modify"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-ro-modify"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-sanity"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
  "safecoin-program-runtime",
@@ -4451,14 +4451,14 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-secp256k1-recover"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-sha"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "blake3",
  "safecoin-program 1.10.32",
@@ -4466,21 +4466,21 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-sibling-instructions"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-sibling_inner-instructions"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-simulation"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-logger 1.10.32",
  "safecoin-program 1.10.32",
@@ -4491,21 +4491,21 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-spoof1"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-spoof1-system"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-sysvar"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
  "safecoin-program-runtime",
@@ -4515,21 +4515,21 @@ dependencies = [
 
 [[package]]
 name = "solana-bpf-rust-upgradeable"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-upgraded"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
 ]
 
 [[package]]
 name = "solana-bpf-rust-zk_token_elgamal"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program 1.10.32",
  "safe-zk-token-sdk 1.10.32",
@@ -4537,7 +4537,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-bucket-map"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "log",
  "memmap2",
@@ -4550,7 +4550,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-clap-utils"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "chrono",
  "clap",
@@ -4566,7 +4566,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-cli-config"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "dirs-next",
  "lazy_static",
@@ -4580,7 +4580,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-cli-output"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "Inflector",
  "base64 0.13.0",
@@ -4604,7 +4604,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-client"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "async-mutex",
  "async-trait",
@@ -4657,7 +4657,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-compute-budget-program"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-program-runtime",
  "safecoin-sdk 1.10.32",
@@ -4665,7 +4665,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-config-program"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bincode",
  "chrono",
@@ -4677,7 +4677,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-core"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "ahash",
  "base64 0.13.0",
@@ -4735,7 +4735,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-download-utils"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "console",
  "indicatif",
@@ -4747,7 +4747,7 @@ dependencies = [
 
 [[package]]
 name = "solana-entry"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bincode",
  "crossbeam-channel",
@@ -4767,7 +4767,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-faucet"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bincode",
  "byteorder 1.4.3",
@@ -4811,7 +4811,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-frozen-abi"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bs58",
  "bv",
@@ -4843,7 +4843,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-frozen-abi-macro"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "proc-macro2 1.0.36",
  "quote 1.0.6",
@@ -4853,7 +4853,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-genesis-utils"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "safecoin-download-utils",
  "safecoin-runtime",
@@ -4862,7 +4862,7 @@ dependencies = [
 
 [[package]]
 name = "solana-geyser-plugin-interface"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "log",
  "safecoin-sdk 1.10.32",
@@ -4872,7 +4872,7 @@ dependencies = [
 
 [[package]]
 name = "solana-geyser-plugin-manager"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bs58",
  "crossbeam-channel",
@@ -4892,7 +4892,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-gossip"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bincode",
  "bv",
@@ -4935,7 +4935,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-ledger"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bincode",
  "bitflags",
@@ -4997,7 +4997,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-logger"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "env_logger",
  "lazy_static",
@@ -5006,7 +5006,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-measure"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "log",
  "safecoin-sdk 1.10.32",
@@ -5014,7 +5014,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-merkle-tree"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "fast-math",
  "matches",
@@ -5023,7 +5023,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-metrics"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "crossbeam-channel",
  "gethostname",
@@ -5035,7 +5035,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-net-utils"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bincode",
  "clap",
@@ -5055,7 +5055,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-perf"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "ahash",
  "bincode",
@@ -5080,7 +5080,7 @@ dependencies = [
 
 [[package]]
 name = "solana-poh"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "core_affinity",
  "crossbeam-channel",
@@ -5139,7 +5139,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-program"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "base64 0.13.0",
  "bincode",
@@ -5179,7 +5179,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-program-runtime"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "base64 0.13.0",
  "bincode",
@@ -5201,7 +5201,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-program-test"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "async-trait",
  "base64 0.13.0",
@@ -5223,7 +5223,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-rayon-threadlimit"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "lazy_static",
  "num_cpus",
@@ -5231,7 +5231,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-remote-wallet"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "console",
  "dialoguer",
@@ -5248,7 +5248,7 @@ dependencies = [
 
 [[package]]
 name = "solana-replica-lib"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "crossbeam-channel",
  "futures-util",
@@ -5264,7 +5264,7 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "base64 0.13.0",
  "bincode",
@@ -5314,7 +5314,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-runtime"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "arrayref",
  "bincode",
@@ -5422,7 +5422,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-sdk"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "assert_matches",
  "base64 0.13.0",
@@ -5484,7 +5484,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-sdk-macro"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bs58",
  "proc-macro2 1.0.36",
@@ -5495,7 +5495,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-send-transaction-service"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "crossbeam-channel",
  "log",
@@ -5508,7 +5508,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-stake-program"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bincode",
  "log",
@@ -5529,7 +5529,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-storage-bigtable"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "backoff",
  "bincode",
@@ -5561,7 +5561,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-storage-proto"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bincode",
  "bs58",
@@ -5575,7 +5575,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-streamer"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "crossbeam-channel",
  "futures-util",
@@ -5602,7 +5602,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-sys-tuner"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "clap",
  "libc",
@@ -5617,7 +5617,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-test-validator"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "base64 0.13.0",
  "log",
@@ -5640,7 +5640,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-transaction-status"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "Inflector",
  "base64 0.13.0",
@@ -5667,7 +5667,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-validator"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "chrono",
  "clap",
@@ -5719,7 +5719,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-version"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "log",
  "rustc_version 0.4.0",
@@ -5733,7 +5733,7 @@ dependencies = [
 
 [[package]]
 name = "safecoin-vote-program"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bincode",
  "log",
@@ -5752,7 +5752,7 @@ dependencies = [
 
 [[package]]
 name = "safe-zk-token-proof-program"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "bytemuck",
  "getrandom 0.1.14",
@@ -5795,7 +5795,7 @@ dependencies = [
 
 [[package]]
 name = "safe-zk-token-sdk"
-version = "1.10.32"
+version = "1.10.34"
 dependencies = [
  "aes-gcm-siv",
  "arrayref",
