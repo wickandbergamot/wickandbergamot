@@ -27,7 +27,7 @@ safecoin-runtime = { path = "../runtime", version = "=1.10.34" }
 safecoin-sdk = { path = "../sdk", version = "=1.10.34" }
 safecoin-streamer = { path = "../streamer", version = "=1.10.34" }
 safecoin-transaction-status = { path = "../transaction-status", version = "=1.10.34" }
-safecoin-version = { path = "../version", version = "=1.10.34" }
+safecoin-version = { path = "../version", version = "=1.10.35" }
 
 [dev-dependencies]
 solana-local-cluster = { path = "../local-cluster", version = "=1.10.34" }

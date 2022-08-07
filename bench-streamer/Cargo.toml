@@ -13,7 +13,7 @@ clap = "2.33.1"
 crossbeam-channel = "0.5"
 safecoin-net-utils = { path = "../net-utils", version = "=1.10.34" }
 safecoin-streamer = { path = "../streamer", version = "=1.10.34" }
-safecoin-version = { path = "../version", version = "=1.10.34" }
+safecoin-version = { path = "../version", version = "=1.10.35" }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]

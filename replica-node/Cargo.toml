@@ -29,7 +29,7 @@ safecoin-sdk = { path = "../sdk", version = "=1.10.34" }
 safecoin-send-transaction-service = { path = "../send-transaction-service", version = "=1.10.34" }
 safecoin-streamer = { path = "../streamer", version = "=1.10.34" }
 safecoin-validator = { path = "../validator", version = "=1.10.34" }
-safecoin-version = { path = "../version", version = "=1.10.34" }
+safecoin-version = { path = "../version", version = "=1.10.35" }
 
 [dev-dependencies]
 serial_test = "0.6.0"

@@ -51,7 +51,7 @@ safecoin-send-transaction-service = { path = "../send-transaction-service", vers
 safecoin-storage-bigtable = { path = "../storage-bigtable", version = "=1.10.34" }
 safecoin-streamer = { path = "../streamer", version = "=1.10.34" }
 safecoin-test-validator = { path = "../test-validator", version = "=1.10.34" }
-safecoin-version = { path = "../version", version = "=1.10.34" }
+safecoin-version = { path = "../version", version = "=1.10.35" }
 safecoin-vote-program = { path = "../programs/vote", version = "=1.10.34" }
 symlink = "0.1.0"
 

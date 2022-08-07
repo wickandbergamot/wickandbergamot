@@ -16,7 +16,7 @@ safecoin-logger = { path = "../logger", version = "=1.10.34" }
 safecoin-measure = { path = "../measure", version = "=1.10.34" }
 safecoin-runtime = { path = "../runtime", version = "=1.10.34" }
 safecoin-sdk = { path = "../sdk", version = "=1.10.34" }
-safecoin-version = { path = "../version", version = "=1.10.34" }
+safecoin-version = { path = "../version", version = "=1.10.35" }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]

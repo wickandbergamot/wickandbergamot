@@ -30,7 +30,7 @@ solana-rpc = { path = "../rpc", version = "=1.10.34" }
 safecoin-runtime = { path = "../runtime", version = "=1.10.34" }
 safecoin-sdk = { path = "../sdk", version = "=1.10.34" }
 safecoin-streamer = { path = "../streamer", version = "=1.10.34" }
-safecoin-version = { path = "../version", version = "=1.10.34" }
+safecoin-version = { path = "../version", version = "=1.10.35" }
 thiserror = "1.0"
 
 [dev-dependencies]

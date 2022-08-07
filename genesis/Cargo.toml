@@ -23,7 +23,7 @@ safecoin-logger = { path = "../logger", version = "=1.10.34" }
 safecoin-runtime = { path = "../runtime", version = "=1.10.34" }
 safecoin-sdk = { path = "../sdk", version = "=1.10.34" }
 safecoin-stake-program = { path = "../programs/stake", version = "=1.10.34" }
-safecoin-version = { path = "../version", version = "=1.10.34" }
+safecoin-version = { path = "../version", version = "=1.10.35" }
 safecoin-vote-program = { path = "../programs/vote", version = "=1.10.34" }
 tempfile = "3.3.0"
 

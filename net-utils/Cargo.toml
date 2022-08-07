@@ -21,7 +21,7 @@ serde_derive = "1.0.103"
 socket2 = "0.4.4"
 safecoin-logger = { path = "../logger", version = "=1.10.34" }
 safecoin-sdk = { path = "../sdk", version = "=1.10.34" }
-safecoin-version = { path = "../version", version = "=1.10.34" }
+safecoin-version = { path = "../version", version = "=1.10.35" }
 tokio = { version = "~1.14.1", features = ["full"] }
 url = "2.2.2"
 
