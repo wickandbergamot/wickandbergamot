@@ -146,11 +146,11 @@ pub mod gate_large_block {
 }
 
 pub mod zk_token_sdk_enabled {
-    safecoin_sdk::declare_id!("zk1snxsc6Fh3wsGNbbHAJNHiJoYgF29mMnTSusGx5EJ");
+    safecoin_sdk::declare_id!("LtC5sq6KbLrLiyYceekkCYKbqHYjXt2RMjeWVYqh9za");
 }
 
 pub mod curve25519_syscall_enabled {
-    safecoin_sdk::declare_id!("7rcw5UtqgDTBBv2EcynNfYckgdAaH1MAsCjKgXMkN7Ri");
+    safecoin_sdk::declare_id!("AbUw25egriAS7t3uHCtdJFjuzXRJdsihEMSLCmEfSWum");
 }
 
 pub mod versioned_tx_message_enabled {
@@ -162,7 +162,7 @@ pub mod libsecp256k1_fail_on_bad_count {
 }
 
 pub mod libsecp256k1_fail_on_bad_count2 {
-    safecoin_sdk::declare_id!("54KAoNiUERNoWWUhTWWwXgym94gzoXFVnHyQwPA18V9A");
+    safecoin_sdk::declare_id!("57hm6ERNDfJLmgXj2jM9qsxUzNSDK3MtTrbTdDrN6wd8");
 }
 
 pub mod instructions_sysvar_owned_by_sysvar {
@@ -276,7 +276,7 @@ pub mod require_rent_exempt_accounts {
 }
 
 pub mod filter_votes_outside_slot_hashes {
-    safecoin_sdk::declare_id!("3gtZPqvPpsbXZVCx6hceMfWxtsmrjMzmg8C7PLKSxS2d");
+    safecoin_sdk::declare_id!("FZZFGwVXMN6r94Ugcrvpd1tukiSFygdcM9FwcrsaTVY2");
 }
 
 pub mod update_syscall_base_costs {
@@ -312,7 +312,7 @@ pub mod disable_bpf_unresolved_symbols_at_runtime {
 }
 
 pub mod record_instruction_in_transaction_context_push {
-    safecoin_sdk::declare_id!("3aJdcZqxoLpSBxgeYGjPwaYS1zzcByxUDqJkbzWAH1Zb");
+    safecoin_sdk::declare_id!("Fc7KWisNu1RwAsRwrdvEQpcwvBw8EFgX8tXurT16L96J");
 }
 
 pub mod syscall_saturated_math {
@@ -324,7 +324,7 @@ pub mod check_physical_overlapping {
 }
 
 pub mod limit_secp256k1_recovery_id {
-    safecoin_sdk::declare_id!("7g9EUwj4j7CS21Yx1wvgWLjSZeh5aPq8x9kpoPwXM8n8");
+    safecoin_sdk::declare_id!("Acois5V3T9jv2hdFJXuVeKQzcHonJWACG5cewknQredH");
 }
 
 pub mod disable_deprecated_loader {
@@ -356,11 +356,11 @@ pub mod require_static_program_ids_in_transaction {
 }
 
 pub mod add_set_compute_unit_price_ix {
-    safecoin_sdk::declare_id!("98std1NSHqXi9WYvFShfVepRdCoq1qvsp8fsR2XZtG8g");
+    safecoin_sdk::declare_id!("G4o7bAuRYtxChqR3bD2XhEqh9HE7TDJHdaxiQyegy3TY");
 }
 
 pub mod include_account_index_in_rent_error {
-    safecoin_sdk::declare_id!("2R72wpcQ7qV7aTJWUumdn8u5wmmTyXbK7qzEy7YSAgyY");
+    safecoin_sdk::declare_id!("FrYss5jrBWh6S2NTAmurKd2LEn9Bm4h9idwqvBZ3tTng");
 }
 
 pub mod add_shred_type_to_shred_seed {
