@@ -513,6 +513,7 @@ lazy_static! {
         (cap_accounts_data_size_per_block::id(), "cap the accounts data size per block #25517"),
         (preserve_rent_epoch_for_rent_exempt_accounts::id(), "preserve rent epoch for rent exempt accounts #26479"),
         (prevent_crediting_accounts_that_end_rent_paying::id(), "prevent crediting rent paying accounts #26606"),
+        (efficient_consensus::id(), "More efficient consensus"),
         /*************** ADD NEW FEATURES HERE ***************/
     ]
     .iter()
