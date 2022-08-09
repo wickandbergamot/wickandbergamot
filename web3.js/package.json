@@ -60,7 +60,7 @@
   "dependencies": {
     "@babel/runtime": "^7.12.5",
     "@ethersproject/sha2": "^5.5.0",
-    "@safecoin/buffer-layout": "^3.0.0",
+    "@safecoin/buffer-layout": "^4.0.0",
     "bn.js": "^5.0.0",
     "borsh": "^0.7.0",
     "bs58": "^4.0.1",
@@ -89,7 +89,7 @@
     "@rollup/plugin-multi-entry": "^4.0.0",
     "@rollup/plugin-node-resolve": "^13.0.0",
     "@rollup/plugin-replace": "^3.0.0",
-    "@safecoin/safe-token": "^0.1.2",
+    "@safecoin/safe-token": "^0.2.0",
     "@types/bn.js": "^5.1.0",
     "@types/bs58": "^4.0.1",
     "@types/chai": "^4.2.15",
