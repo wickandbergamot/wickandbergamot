@@ -1,6 +1,6 @@
 {
   "name": "@safecoin/web3.js",
-  "version": "1.44.1",
+  "version": "1.44.3",
   "description": "Safecoin Javascript API",
   "keywords": [
     "api",
