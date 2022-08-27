@@ -1,4 +1,4 @@
-import * as BufferLayout from '@safecoin/buffer-layout';
+import * as BufferLayout from '@solana/buffer-layout';
 import type {Buffer} from 'buffer';
 
 import * as Layout from './layout';

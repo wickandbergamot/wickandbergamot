@@ -340,7 +340,7 @@ pub mod safe_token_v3_4_0 {
 }
 
 pub mod safe_associated_token_account_v1_1_0 {
-    safecoin_sdk::declare_id!("FaTa17gVKoqbh38HcfiQonPsAaQViyDCCSg71AubYZw8");
+    safecoin_sdk::declare_id!("3dbt1wqFxD9uSLoZ1bRfkaETTbvVUWqDPGmgFXixitCE");
 }
 
 pub mod default_units_per_instruction {
