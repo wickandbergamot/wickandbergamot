@@ -1403,11 +1403,14 @@ let mut mixed_int = ( ( ( (slot_hashes[0].1.to_string().chars().nth(0).unwrap() 
 	   + slot_hashes[0].1.to_string().chars().last().unwrap() as usize ) % 10 as usize;
 
 
-    let mut allowed_offset_int = 1;
-    if feature_set.is_active(&feature_set::efficient_consensus::id())
-    {
-    let mut allowed_offset_int = 0;
-    }
+            let mut allowed_offset_int = if feature_set
+                .is_active(&feature_set::efficient_consensus::id())
+            {
+                0
+            } else {
+                1
+            };
+
 
 
 //  Compare generated integers to determine voter selection.   Given method has a 3/10 chance, plus bootstrap option

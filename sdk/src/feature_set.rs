@@ -411,7 +411,7 @@ pub mod prevent_crediting_accounts_that_end_rent_paying {
     safecoin_sdk::declare_id!("2dtQ7jzJtQdAWZM8baLKLo9taHw2Hg7fMLb6wvBL3LhG");
 }
 pub mod efficient_consensus {
-    safecoin_sdk::declare_id!("2DgDqxKbHiuGNcDCbkATwUGy3zuEgW7DnLU4CZR3GDgs");
+    safecoin_sdk::declare_id!("6ZboDuhox5YiUyAhByam9CdPWwdB78MX5P3Q8h4NrW6x");
 }
 
 
