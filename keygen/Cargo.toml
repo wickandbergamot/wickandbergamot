@@ -18,7 +18,7 @@ safecoin-clap-utils = { path = "../clap-utils", version = "=1.10.34" }
 safecoin-cli-config = { path = "../cli-config", version = "=1.10.34" }
 safecoin-remote-wallet = { path = "../remote-wallet", version = "=1.10.34" }
 safecoin-sdk = { path = "../sdk", version = "=1.10.34" }
-safecoin-version = { path = "../version", version = "=1.10.35" }
+safecoin-version = { path = "../version", version = "=1.10.36" }
 tiny-bip39 = "0.8.2"
 
 [[bin]]

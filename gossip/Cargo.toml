@@ -43,7 +43,7 @@ safecoin-rayon-threadlimit = { path = "../rayon-threadlimit", version = "=1.10.3
 safecoin-runtime = { path = "../runtime", version = "=1.10.34" }
 safecoin-sdk = { path = "../sdk", version = "=1.10.34" }
 safecoin-streamer = { path = "../streamer", version = "=1.10.34" }
-safecoin-version = { path = "../version", version = "=1.10.35" }
+safecoin-version = { path = "../version", version = "=1.10.36" }
 safecoin-vote-program = { path = "../programs/vote", version = "=1.10.34" }
 thiserror = "1.0"
 

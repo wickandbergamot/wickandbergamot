@@ -31,7 +31,7 @@ safecoin-client = { path = "../client", version = "=1.10.34" }
 safecoin-config-program = { path = "../programs/config", version = "=1.10.34" }
 safecoin-logger = { path = "../logger", version = "=1.10.34" }
 safecoin-sdk = { path = "../sdk", version = "=1.10.34" }
-safecoin-version = { path = "../version", version = "=1.10.35" }
+safecoin-version = { path = "../version", version = "=1.10.36" }
 tar = "0.4.38"
 tempfile = "3.3.0"
 url = "2.2.2"

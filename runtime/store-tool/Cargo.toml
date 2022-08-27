@@ -14,7 +14,7 @@ clap = "2.33.1"
 log = { version = "0.4.14" }
 safecoin-logger = { path = "../../logger", version = "=1.10.34" }
 safecoin-runtime = { path = "..", version = "=1.10.34" }
-safecoin-version = { path = "../../version", version = "=1.10.35" }
+safecoin-version = { path = "../../version", version = "=1.10.36" }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
