@@ -316,11 +316,11 @@ pub mod record_instruction_in_transaction_context_push {
 }
 
 pub mod syscall_saturated_math {
-    safecoin_sdk::declare_id!("HyrbKftCdJ5CrUfEti6x26Cj7rZLNe32weugk7tLcWb8");
+    safecoin_sdk::declare_id!("CPuuztV5gCNKSdDTnfGKgDTo9cNZVPYsVbZUv1UhmR7h");
 }
 
 pub mod check_physical_overlapping {
-    safecoin_sdk::declare_id!("nWBqjr3gpETbiaVj3CBJ3HFC5TMdnJDGt21hnvSTvVZ");
+    safecoin_sdk::declare_id!("EVhbxh9zEjkfHEx4kjkx9TvadV6F6WkaaxUKdTxwdiV3");
 }
 
 pub mod limit_secp256k1_recovery_id {
@@ -336,7 +336,7 @@ pub mod drop_redundant_turbine_path {
 }
 
 pub mod safe_token_v3_4_0 {
-    safecoin_sdk::declare_id!("Ftok4njE8b7tDffYkC5bAbCaQv5sL6jispYrprzatUwN");
+    safecoin_sdk::declare_id!("GqQz6K1Rj99MbzLL8iVee9sSZH6b8XRd6N5r4gAn3Sff");
 }
 
 pub mod safe_associated_token_account_v1_1_0 {
