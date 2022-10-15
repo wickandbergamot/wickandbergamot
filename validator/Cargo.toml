@@ -34,7 +34,7 @@ safecoin-client = { path = "../client", version = "=1.14.3" }
 safecoin-core = { path = "../core", version = "=1.14.3" }
 safecoin-download-utils = { path = "../download-utils", version = "=1.14.3" }
 solana-entry = { path = "../entry", version = "=1.14.3" }
-safecoin-faucet = { path = "../faucet", version = "=1.14.3" }
+safecoin-faucet = { path = "../faucet", version = "=1.14.4" }
 safecoin-genesis-utils = { path = "../genesis-utils", version = "=1.14.3" }
 safecoin-gossip = { path = "../gossip", version = "=1.14.3" }
 safecoin-ledger = { path = "../ledger", version = "=1.14.3" }
