@@ -1,6 +1,6 @@
 [package]
 name = "safecoin-faucet"
-version = "1.14.3"
+version = "1.14.4"
 description = "Safecoin Faucet"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 repository = "https://github.com/fair-exchange/safecoin"
