@@ -43,7 +43,7 @@ safecoin-transaction-status = { path = "../transaction-status", version = "=1.14
 safecoin-version = { path = "../version", version = "=1.14.3" }
 safecoin-vote-program = { path = "../programs/vote", version = "=1.14.3" }
 solana_rbpf = "=0.2.31"
-safe-memo = { version = "=3.0.5", features = ["no-entrypoint"] }
+safe-memo = { version = "=3.0.8", features = ["no-entrypoint"] }
 thiserror = "1.0.31"
 tiny-bip39 = "0.8.2"
 
