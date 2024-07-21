@@ -2052,15 +2052,19 @@ impl ReplayStage {
 	       	 + authorized_voter_pubkey.to_string().chars().last().unwrap() as usize
 	       	 + vote.hash().to_string().chars().last().unwrap() as usize ) % 10 as usize;
 
-let allowed_offset_int = 10;
+let allowed_offset_int = 1000000;
 
 //  Compare generated integers to determine voter selection.   Given method has	a 3/10 chance, plus bootstrap option
 if (slot_hash_int > (mixed_int + allowed_offset_int) ||  slot_hash_int < (mixed_int - allowed_offset_int))
                 &&  authorized_voter_pubkey.to_string() != "83E5RMejo6d98FV1EAXTx5t4bvoDMoxE4DboDee3VJsu" {   //bootstrap validator for early stability
    		warn!(
-                   "Vote account {} not randomly selected for slot {}.",
+                   "Vote account {} not randomly selected for slot {}. Vote hash {} Authorized pubkey {} Slot Hash int {} Mixed int {}",
                     vote_account_pubkey,
-                    bank.slot()
+                    bank.slot(),
+                    vote.hash().to_string(),
+                    authorized_voter_pubkey.to_string(),
+                    slot_hash_int,
+                    mixed_int
 		);
                 return None;
 		}
