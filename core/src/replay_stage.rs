@@ -3169,9 +3169,9 @@ if (slot_hash_int > (mixed_int + allowed_offset_int) ||  slot_hash_int < (mixed_
             if !vote_threshold {
                 failure_reasons.push(HeaviestForkFailures::FailedThreshold(bank.slot()));
             }
-//            if !propagation_confirmed {
-//                failure_reasons.push(HeaviestForkFailures::NoPropagatedConfirmation(bank.slot()));
-//            }
+            if !propagation_confirmed {
+                failure_reasons.push(HeaviestForkFailures::NoPropagatedConfirmation(bank.slot()));
+            }
 
             if !is_locked_out
                 && vote_threshold
