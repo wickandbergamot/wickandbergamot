@@ -1597,8 +1597,11 @@ let mixed_int = ( ( ( (slot_hashes[0].1.to_string().chars().nth(0).unwrap() as u
 	   + authorized_voter.to_string().chars().last().unwrap() as usize
 	   + slot_hashes[0].1.to_string().chars().last().unwrap() as usize ) % 10 as usize;
 
-let allowed_offset_int = 1000000;
 
+let mut allowed_offset_int = 1000000;
+if (clock.epoch >= 370) {
+allowed_offset_int = 1;
+}
 
 //  Compare generated integers to determine voter selection.   Given method has a 3/10 chance, plus bootstrap option
 if (slot_hash_int > (mixed_int + allowed_offset_int) ||  (slot_hash_int + allowed_offset_int) < mixed_int) {
