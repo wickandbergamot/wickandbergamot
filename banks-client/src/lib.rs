@@ -507,7 +507,7 @@ pub async fn start_tcp_client<T: ToSocketAddrs>(addr: T) -> Result<BanksClient, 
 mod tests {
     use {
         super::*,
-        safecoin_banks_server::banks_server::start_local_server,
+        wickandbergamot_banks_server::banks_server::start_local_server,
         solana_runtime::{
             bank::Bank, bank_forks::BankForks, commitment::BlockCommitmentCache,
             genesis_utils::create_genesis_config,
