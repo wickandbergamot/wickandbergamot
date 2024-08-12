@@ -6,7 +6,7 @@ use {
         parse_nonce::parse_nonce,
         parse_stake::parse_stake,
         parse_sysvar::parse_sysvar,
-        parse_token::{parse_token, safe_token_2022_id, safe_token_id},
+        parse_token::{parse_token, wickandbergamot_token_2024_id, wickandbergamot_token_id},
         parse_vote::parse_vote,
     },
     inflector::Inflector,
@@ -36,8 +36,8 @@ lazy_static! {
         );
         m.insert(*CONFIG_PROGRAM_ID, ParsableAccount::Config);
         m.insert(*SYSTEM_PROGRAM_ID, ParsableAccount::Nonce);
-        m.insert(safe_token_id(), ParsableAccount::SafeToken);
-        m.insert(safe_token_2022_id(), ParsableAccount::SafeToken2022);
+        m.insert(wickandbergamot_token_id(), ParsableAccount::wickandbergamotToken);
+        m.insert(wickandbergamot_token_2024_id(), ParsableAccount::wickandbergamotToken2024);
         m.insert(*STAKE_PROGRAM_ID, ParsableAccount::Stake);
         m.insert(*SYSVAR_PROGRAM_ID, ParsableAccount::Sysvar);
         m.insert(*VOTE_PROGRAM_ID, ParsableAccount::Vote);
@@ -78,8 +78,8 @@ pub enum ParsableAccount {
     BpfUpgradeableLoader,
     Config,
     Nonce,
-    SafeToken,
-    SafeToken2022,
+    wickandbergamotToken,
+    wickandbergamotToken2024,
     Stake,
     Sysvar,
     Vote,
@@ -87,7 +87,7 @@ pub enum ParsableAccount {
 
 #[derive(Default)]
 pub struct AccountAdditionalData {
-    pub safe_token_decimals: Option<u8>,
+    pub wickandbergamot_token_decimals: Option<u8>,
 }
 
 pub fn parse_account_data(
@@ -109,8 +109,8 @@ pub fn parse_account_data(
         }
         ParsableAccount::Config => serde_json::to_value(parse_config(data, pubkey)?)?,
         ParsableAccount::Nonce => serde_json::to_value(parse_nonce(data)?)?,
-        ParsableAccount::SafeToken | ParsableAccount::SafeToken2022 => {
-            serde_json::to_value(parse_token(data, additional_data.safe_token_decimals)?)?
+        ParsableAccount::wickandbergamotToken | ParsableAccount::wickandbergamotToken2024 => {
+            serde_json::to_value(parse_token(data, additional_data.wickandbergamot_token_decimals)?)?
         }
         ParsableAccount::Stake => serde_json::to_value(parse_stake(data)?)?,
         ParsableAccount::Sysvar => serde_json::to_value(parse_sysvar(data, pubkey)?)?,
