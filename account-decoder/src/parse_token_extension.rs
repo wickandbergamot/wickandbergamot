@@ -1,7 +1,7 @@
 use {
     crate::parse_token::UiAccountState,
     solana_sdk::clock::UnixTimestamp,
-    safe_token_2022::{
+    wickandbergamot_token_2024::{
         extension::{self, BaseState, BaseStateWithExtensions, ExtensionType, StateWithExtensions},
         solana_program::pubkey::Pubkey,
     },
@@ -163,7 +163,7 @@ pub struct UiDefaultAccountState {
 impl From<extension::default_account_state::DefaultAccountState> for UiDefaultAccountState {
     fn from(default_account_state: extension::default_account_state::DefaultAccountState) -> Self {
         let account_state =
-            safe_token_2022::state::AccountState::try_from(default_account_state.state)
+            wickandbergamot_token_2024::state::AccountState::try_from(default_account_state.state)
                 .unwrap_or_default();
         Self {
             account_state: account_state.into(),
