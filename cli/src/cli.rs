@@ -7,12 +7,12 @@ use {
     log::*,
     num_traits::FromPrimitive,
     serde_json::{self, Value},
-    safecoin_clap_utils::{self, input_parsers::*, keypair::*},
-    safecoin_cli_config::ConfigInput,
-    safecoin_cli_output::{
+    wickandbergamot_clap_utils::{self, input_parsers::*, keypair::*},
+    wickandbergamot_cli_config::ConfigInput,
+    wickandbergamot_cli_output::{
         display::println_name_value, CliSignature, CliValidatorsSortOrder, OutputFormat,
     },
-    safecoin_client::{
+    wickandbergamot_client::{
         blockhash_query::BlockhashQuery,
         client_error::{ClientError, Result as ClientResult},
         nonce_utils,
@@ -21,7 +21,7 @@ use {
             RpcLargestAccountsFilter, RpcSendTransactionConfig, RpcTransactionLogsFilter,
         },
     },
-    safecoin_remote_wallet::remote_wallet::RemoteWalletManager,
+    wickandbergamot_remote_wallet::remote_wallet::RemoteWalletManager,
     solana_sdk::{
         clock::{Epoch, Slot},
         commitment_config::CommitmentConfig,
@@ -458,11 +458,11 @@ pub enum CliError {
     ClientError(#[from] ClientError),
     #[error("Command not recognized: {0}")]
     CommandNotRecognized(String),
-    #[error("Account {1} has insufficient funds for fee ({0} SAFE)")]
+    #[error("Account {1} has insufficient funds for fee ({0} WICKANDBERGAMOT)")]
     InsufficientFundsForFee(f64, Pubkey),
-    #[error("Account {1} has insufficient funds for spend ({0} SAFE)")]
+    #[error("Account {1} has insufficient funds for spend ({0} WICKANDBERGAMOT)")]
     InsufficientFundsForSpend(f64, Pubkey),
-    #[error("Account {2} has insufficient funds for spend ({0} SAFE) + fee ({1} SAFE)")]
+    #[error("Account {2} has insufficient funds for spend ({0} WICKANDBERGAMOT) + fee ({1} WICKANDBERGAMOT)")]
     InsufficientFundsForSpendAndFee(f64, f64, Pubkey),
     #[error(transparent)]
     InvalidNonce(nonce_utils::Error),
@@ -568,14 +568,14 @@ pub fn parse_command(
                 Some("zsh") => Shell::Zsh,
                 Some("powershell") => Shell::PowerShell,
                 Some("elvish") => Shell::Elvish,
-                // This is safe, since we assign default_value and possible_values
+                // This is WICKANDBERGAMOT, since we assign default_value and possible_values
                 // are restricted
                 _ => unreachable!(),
             };
             get_clap_app(
                 crate_name!(),
                 crate_description!(),
-                safecoin_version::version!(),
+                wickandbergamot_version::version!(),
             )
             .gen_completions_to("solana", shell_choice, &mut stdout());
             std::process::exit(0);
@@ -863,7 +863,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
         // Cluster Query Commands
         // Get address of this client
         CliCommand::Address => Ok(format!("{}", config.pubkey()?)),
-        // Return software version of safecoin-cli and cluster entrypoint node
+        // Return software version of wickandbergamot-cli and cluster entrypoint node
         CliCommand::Catchup {
             node_pubkey,
             node_json_rpc_url,
@@ -1571,7 +1571,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
 
         // Wallet Commands
 
-        // Request an airdrop from Safecoin Faucet;
+        // Request an airdrop from wickandbergamot Faucet;
         CliCommand::Airdrop { pubkey, lamports } => {
             process_airdrop(&rpc_client, config, pubkey, *lamports)
         }
@@ -1711,7 +1711,7 @@ mod tests {
     use {
         super::*,
         serde_json::{json, Value},
-        safecoin_client::{
+        wickandbergamot_client::{
             blockhash_query,
             mock_sender_for_cli::SIGNATURE,
             rpc_request::RpcRequest,
@@ -1725,7 +1725,7 @@ mod tests {
             stake, system_program,
             transaction::TransactionError,
         },
-        safecoin_transaction_status::TransactionConfirmationStatus,
+        wickandbergamot_transaction_status::TransactionConfirmationStatus,
         std::path::PathBuf,
     };
 
@@ -2055,7 +2055,7 @@ mod tests {
             pubkey: None,
             use_lamports_unit: false,
         };
-        assert_eq!(process_command(&config).unwrap(), "0.00000005 SAFE");
+        assert_eq!(process_command(&config).unwrap(), "0.00000005 WICKANDBERGAMOT");
 
         let good_signature = Signature::new(&bs58::decode(SIGNATURE).into_vec().unwrap());
         config.command = CliCommand::Confirm(good_signature);
@@ -2441,7 +2441,7 @@ mod tests {
         write_keypair_file(&default_keypair, &default_keypair_file).unwrap();
         let default_signer = DefaultSigner::new("", &default_keypair_file);
 
-        //Test Transfer Subcommand, SAFE
+        //Test Transfer Subcommand, WICKANDBERGAMOT
         let from_keypair = keypair_from_seed(&[0u8; 32]).unwrap();
         let from_pubkey = from_keypair.pubkey();
         let from_string = from_pubkey.to_string();
