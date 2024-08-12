@@ -2,7 +2,7 @@
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 edition = "2021"
 name = "wickandbergamot-cli-output"
-description = "wickandbergamot: Enterprise Security for the Community by the Community"
+description = "Wickandbergamot: Enterprise Pawn"
 version = "1.14.17"
 repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
