@@ -1,13 +1,13 @@
 [package]
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 edition = "2021"
-name = "safecoin-cli-config"
-description = "Safecoin: Enterprise Security for the Community by the Community"
+name = "wickandbergamot-cli-config"
+description = "Wickandbergamot: Enterprise Security for the Community by the Community"
 version = "1.14.17"
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/fair-exchange/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-cli-config"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-cli-config"
 
 [dependencies]
 dirs-next = "2.0.0"
@@ -15,8 +15,8 @@ lazy_static = "1.4.0"
 serde = "1.0.138"
 serde_derive = "1.0.103"
 serde_yaml = "0.8.26"
-safecoin-clap-utils = { path = "../clap-utils", version = "=1.14.17" }
-safecoin-sdk = { path = "../sdk", version = "=1.14.17" }
+wickandbergamot-clap-utils = { path = "../clap-utils", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../sdk", version = "=1.14.17" }
 url = "2.2.2"
 
 [dev-dependencies]
