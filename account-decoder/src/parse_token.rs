@@ -9,7 +9,7 @@ use {
         extension::{BaseStateWithExtensions, StateWithExtensions},
         generic_token_account::GenericTokenAccount,
         solana_program::{
-            program_option::COption, program_pack::Pack, pubkey::Pubkey as wickandbergamotTokenPubkey,
+            program_option::COption, program_pack::Pack, pubkey::Pubkey as WickandbergamotTokenPubkey,
         },
         state::{Account, AccountState, Mint, Multisig},
     },
@@ -50,12 +50,12 @@ pub fn wickandbergamot_token_native_mint_program_id() -> Pubkey {
 }
 
 // A helper function to convert a solana_sdk::pubkey::Pubkey to spl_sdk::pubkey::Pubkey
-pub fn wickandbergamot_token_pubkey(pubkey: &Pubkey) -> wickandbergamotTokenPubkey {
-    wickandbergamotTokenPubkey::new_from_array(pubkey.to_bytes())
+pub fn wickandbergamot_token_pubkey(pubkey: &Pubkey) -> WickandbergamotTokenPubkey {
+    WickandbergamotTokenPubkey::new_from_array(pubkey.to_bytes())
 }
 
 // A helper function to convert a spl_sdk::pubkey::Pubkey to solana_sdk::pubkey::Pubkey
-pub fn pubkey_from_wickandbergamot_token(pubkey: &wickandbergamotTokenPubkey) -> Pubkey {
+pub fn pubkey_from_wickandbergamot_token(pubkey: &WickandbergamotTokenPubkey) -> Pubkey {
     Pubkey::new_from_array(pubkey.to_bytes())
 }
 
@@ -126,7 +126,7 @@ pub fn parse_token(
     }
     if data.len() == Multisig::get_packed_len() {
         let multisig = Multisig::unpack(data)
-            .map_err(|_| ParseAccountError::AccountNotParsable(ParsableAccount::wickandbergamotToken))?;
+            .map_err(|_| ParseAccountError::AccountNotParsable(ParsableAccount::WickandbergamotToken))?;
         Ok(TokenAccountType::Multisig(UiMultisig {
             num_required_signers: multisig.m,
             num_valid_signers: multisig.n,
@@ -135,7 +135,7 @@ pub fn parse_token(
                 .signers
                 .iter()
                 .filter_map(|pubkey| {
-                    if pubkey != &wickandbergamotTokenPubkey::default() {
+                    if pubkey != &WickandbergamotTokenPubkey::default() {
                         Some(pubkey.to_string())
                     } else {
                         None
@@ -145,7 +145,7 @@ pub fn parse_token(
         }))
     } else {
         Err(ParseAccountError::AccountNotParsable(
-            ParsableAccount::wickandbergamotToken,
+            ParsableAccount::WickandbergamotToken,
         ))
     }
 }
@@ -303,8 +303,8 @@ mod test {
 
     #[test]
     fn test_parse_token() {
-        let mint_pubkey = wickandbergamotTokenPubkey::new(&[2; 32]);
-        let owner_pubkey = wickandbergamotTokenPubkey::new(&[3; 32]);
+        let mint_pubkey = WickandbergamotTokenPubkey::new(&[2; 32]);
+        let owner_pubkey = WickandbergamotTokenPubkey::new(&[3; 32]);
         let mut account_data = vec![0; Account::get_packed_len()];
         let mut account = Account::unpack_unchecked(&account_data).unwrap();
         account.mint = mint_pubkey;
@@ -358,11 +358,11 @@ mod test {
             }),
         );
 
-        let signer1 = wickandbergamotTokenPubkey::new(&[1; 32]);
-        let signer2 = wickandbergamotTokenPubkey::new(&[2; 32]);
-        let signer3 = wickandbergamotTokenPubkey::new(&[3; 32]);
+        let signer1 = WickandbergamotTokenPubkey::new(&[1; 32]);
+        let signer2 = WickandbergamotTokenPubkey::new(&[2; 32]);
+        let signer3 = WickandbergamotTokenPubkey::new(&[3; 32]);
         let mut multisig_data = vec![0; Multisig::get_packed_len()];
-        let mut signers = [wickandbergamotTokenPubkey::default(); 11];
+        let mut signers = [WickandbergamotTokenPubkey::default(); 11];
         signers[0] = signer1;
         signers[1] = signer2;
         signers[2] = signer3;
@@ -393,7 +393,7 @@ mod test {
 
     #[test]
     fn test_get_token_account_mint() {
-        let mint_pubkey = wickandbergamotTokenPubkey::new(&[2; 32]);
+        let mint_pubkey = WickandbergamotTokenPubkey::new(&[2; 32]);
         let mut account_data = vec![0; Account::get_packed_len()];
         let mut account = Account::unpack_unchecked(&account_data).unwrap();
         account.mint = mint_pubkey;
@@ -495,8 +495,8 @@ mod test {
 
     #[test]
     fn test_parse_token_account_with_extensions() {
-        let mint_pubkey = wickandbergamotTokenPubkey::new(&[2; 32]);
-        let owner_pubkey = wickandbergamotTokenPubkey::new(&[3; 32]);
+        let mint_pubkey = WickandbergamotTokenPubkey::new(&[2; 32]);
+        let owner_pubkey = WickandbergamotTokenPubkey::new(&[3; 32]);
 
         let account_base = Account {
             mint: mint_pubkey,
@@ -586,7 +586,7 @@ mod test {
 
     #[test]
     fn test_parse_token_mint_with_extensions() {
-        let owner_pubkey = wickandbergamotTokenPubkey::new(&[3; 32]);
+        let owner_pubkey = WickandbergamotTokenPubkey::new(&[3; 32]);
         let mint_size =
             ExtensionType::get_account_len::<Mint>(&[ExtensionType::MintCloseAuthority]);
         let mint_base = Mint {
