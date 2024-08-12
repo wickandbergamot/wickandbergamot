@@ -6,7 +6,7 @@ use {
         Banks, BanksRequest, BanksResponse, BanksTransactionResultWithSimulation,
         TransactionConfirmationStatus, TransactionSimulationDetails, TransactionStatus,
     },
-    safecoin_client::connection_cache::ConnectionCache,
+    wickandbergamot_client::connection_cache::ConnectionCache,
     solana_runtime::{
         bank::{Bank, TransactionSimulationResult},
         bank_forks::BankForks,
@@ -24,7 +24,7 @@ use {
         signature::Signature,
         transaction::{self, SanitizedTransaction, Transaction},
     },
-    safecoin_send_transaction_service::{
+    wickandbergamot_send_transaction_service::{
         send_transaction_service::{SendTransactionService, TransactionInfo},
         tpu_info::NullTpuInfo,
     },
