@@ -3,7 +3,7 @@ use {
     log::*,
     rayon::prelude::*,
     solana_core::gen_keys::GenKeys,
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_sdk::{
         commitment_config::CommitmentConfig,
         hash::Hash,
