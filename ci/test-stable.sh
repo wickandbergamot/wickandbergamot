@@ -62,10 +62,10 @@ echo "Executing $testName"
 case $testName in
 test-stable)
   if need_to_generate_test_result; then
-    _ "$cargo" stable test --jobs "$JOBS" --all --tests --exclude safecoin-local-cluster ${V:+--verbose} -- -Z unstable-options --format json --report-time | tee results.json
+    _ "$cargo" stable test --jobs "$JOBS" --all --tests --exclude wickandbergamot-local-cluster ${V:+--verbose} -- -Z unstable-options --format json --report-time | tee results.json
     exit_if_error "${PIPESTATUS[0]}"
   else
-    _ "$cargo" stable test --jobs "$JOBS" --all --tests --exclude safecoin-local-cluster ${V:+--verbose} -- --nocapture
+    _ "$cargo" stable test --jobs "$JOBS" --all --tests --exclude wickandbergamot-local-cluster ${V:+--verbose} -- --nocapture
   fi
   ;;
 test-stable-bpf)
@@ -76,14 +76,14 @@ test-stable-bpf)
   # rustfilt required for dumping BPF assembly listings
   "$cargo" install rustfilt
 
-  # safecoin-keygen required when building C programs
+  # wickandbergamot-keygen required when building C programs
   _ "$cargo" build --manifest-path=keygen/Cargo.toml
 
   export PATH="$PWD/target/debug":$PATH
   cargo_build_bpf="$(realpath ./cargo-build-bpf)"
   cargo_test_bpf="$(realpath ./cargo-test-bpf)"
 
-  # BPF safecoin-sdk legacy compile test
+  # BPF wickandbergamot-sdk legacy compile test
   "$cargo_build_bpf" --manifest-path sdk/Cargo.toml
 
   # BPF C program system tests
@@ -110,18 +110,18 @@ test-stable-bpf)
   done |& tee cargo.log
   # Save the output of cargo building the bpf tests so we can analyze
   # the number of redundant rebuilds of dependency crates. The
-  # expected number of safecoin-program crate compilations is 4. There
-  # should be 3 builds of safecoin-program while 128bit crate is
+  # expected number of wickandbergamot-program crate compilations is 4. There
+  # should be 3 builds of wickandbergamot-program while 128bit crate is
   # built. These compilations are not redundant because the crate is
   # built for different target each time. An additional compilation of
-  # safecoin-program is performed when simulation crate is built. This
-  # last compiled safecoin-program is of different version, normally the
+  # wickandbergamot-program is performed when simulation crate is built. This
+  # last compiled wickandbergamot-program is of different version, normally the
   # latest mainbeta release version.
-  solana_program_count=$(grep -c 'safecoin-program v' cargo.log)
+  solana_program_count=$(grep -c 'wickandbergamot-program v' cargo.log)
   rm -f cargo.log
   if ((solana_program_count > 10)); then
       echo "Regression of build redundancy ${solana_program_count}."
-      echo "Review dependency features that trigger redundant rebuilds of safecoin-program."
+      echo "Review dependency features that trigger redundant rebuilds of wickandbergamot-program."
       exit 1
   fi
 
@@ -158,59 +158,59 @@ test-stable-perf)
     rm -rf target/perf-libs
     ./fetch-perf-libs.sh
 
-    # Force CUDA for safecoin-core unit tests
+    # Force CUDA for wickandbergamot-core unit tests
     export TEST_PERF_LIBS_CUDA=1
 
     # Force CUDA in ci/localnet-sanity.sh
-    export SAFECOIN_CUDA=1
+    export WICKANDBERGAMOT_CUDA=1
   fi
 
   _ "$cargo" stable build --bins ${V:+--verbose}
   if need_to_generate_test_result; then
-    _ "$cargo" stable test --package safecoin-perf --package safecoin-ledger --package safecoin-core --lib ${V:+--verbose} -- -Z unstable-options --format json --report-time | tee results.json
+    _ "$cargo" stable test --package wickandbergamot-perf --package wickandbergamot-ledger --package wickandbergamot-core --lib ${V:+--verbose} -- -Z unstable-options --format json --report-time | tee results.json
     exit_if_error "${PIPESTATUS[0]}"
   else
-    _ "$cargo" stable test --package safecoin-perf --package safecoin-ledger --package safecoin-core --lib ${V:+--verbose} -- --nocapture
+    _ "$cargo" stable test --package wickandbergamot-perf --package wickandbergamot-ledger --package wickandbergamot-core --lib ${V:+--verbose} -- --nocapture
   fi
   _ "$cargo" stable run --manifest-path poh-bench/Cargo.toml ${V:+--verbose} -- --hashes-per-tick 10
   ;;
 test-local-cluster)
   _ "$cargo" stable build --release --bins ${V:+--verbose}
   if need_to_generate_test_result; then
-    _ "$cargo" stable test --release --package safecoin-local-cluster --test local_cluster ${V:+--verbose} -- --test-threads=1 -Z unstable-options --format json --report-time | tee results.json
+    _ "$cargo" stable test --release --package wickandbergamot-local-cluster --test local_cluster ${V:+--verbose} -- --test-threads=1 -Z unstable-options --format json --report-time | tee results.json
     exit_if_error "${PIPESTATUS[0]}"
   else
-    _ "$cargo" stable test --release --package safecoin-local-cluster --test local_cluster ${V:+--verbose} -- --nocapture --test-threads=1
+    _ "$cargo" stable test --release --package wickandbergamot-local-cluster --test local_cluster ${V:+--verbose} -- --nocapture --test-threads=1
   fi
   exit 0
   ;;
 test-local-cluster-flakey)
   _ "$cargo" stable build --release --bins ${V:+--verbose}
   if need_to_generate_test_result; then
-    _ "$cargo" stable test --release --package safecoin-local-cluster --test local_cluster_flakey ${V:+--verbose} -- --test-threads=1 -Z unstable-options --format json --report-time | tee results.json
+    _ "$cargo" stable test --release --package wickandbergamot-local-cluster --test local_cluster_flakey ${V:+--verbose} -- --test-threads=1 -Z unstable-options --format json --report-time | tee results.json
     exit_if_error "${PIPESTATUS[0]}"
   else
-    _ "$cargo" stable test --release --package safecoin-local-cluster --test local_cluster_flakey ${V:+--verbose} -- --nocapture --test-threads=1
+    _ "$cargo" stable test --release --package wickandbergamot-local-cluster --test local_cluster_flakey ${V:+--verbose} -- --nocapture --test-threads=1
   fi
   exit 0
   ;;
 test-local-cluster-slow-1)
   _ "$cargo" stable build --release --bins ${V:+--verbose}
   if need_to_generate_test_result; then
-    _ "$cargo" stable test --release --package safecoin-local-cluster --test local_cluster_slow_1 ${V:+--verbose} -- --test-threads=1 -Z unstable-options --format json --report-time | tee results.json
+    _ "$cargo" stable test --release --package wickandbergamot-local-cluster --test local_cluster_slow_1 ${V:+--verbose} -- --test-threads=1 -Z unstable-options --format json --report-time | tee results.json
     exit_if_error "${PIPESTATUS[0]}"
   else
-    _ "$cargo" stable test --release --package safecoin-local-cluster --test local_cluster_slow_1 ${V:+--verbose} -- --nocapture --test-threads=1
+    _ "$cargo" stable test --release --package wickandbergamot-local-cluster --test local_cluster_slow_1 ${V:+--verbose} -- --nocapture --test-threads=1
   fi
   exit 0
   ;;
 test-local-cluster-slow-2)
   _ "$cargo" stable build --release --bins ${V:+--verbose}
   if need_to_generate_test_result; then
-    _ "$cargo" stable test --release --package safecoin-local-cluster --test local_cluster_slow_2 ${V:+--verbose} -- --test-threads=1 -Z unstable-options --format json --report-time | tee results.json
+    _ "$cargo" stable test --release --package wickandbergamot-local-cluster --test local_cluster_slow_2 ${V:+--verbose} -- --test-threads=1 -Z unstable-options --format json --report-time | tee results.json
     exit_if_error "${PIPESTATUS[0]}"
   else
-    _ "$cargo" stable test --release --package safecoin-local-cluster --test local_cluster_slow_2 ${V:+--verbose} -- --nocapture --test-threads=1
+    _ "$cargo" stable test --release --package wickandbergamot-local-cluster --test local_cluster_slow_2 ${V:+--verbose} -- --nocapture --test-threads=1
   fi
   exit 0
   ;;
@@ -229,10 +229,10 @@ test-wasm)
   ;;
 test-docs)
   if need_to_generate_test_result; then
-    _ "$cargo" stable test --jobs "$JOBS" --all --doc --exclude safecoin-local-cluster ${V:+--verbose} -- -Z unstable-options --format json --report-time | tee results.json
+    _ "$cargo" stable test --jobs "$JOBS" --all --doc --exclude wickandbergamot-local-cluster ${V:+--verbose} -- -Z unstable-options --format json --report-time | tee results.json
     exit "${PIPESTATUS[0]}"
   else
-    _ "$cargo" stable test --jobs "$JOBS" --all --doc --exclude safecoin-local-cluster ${V:+--verbose} -- --nocapture
+    _ "$cargo" stable test --jobs "$JOBS" --all --doc --exclude wickandbergamot-local-cluster ${V:+--verbose} -- --nocapture
     exit 0
   fi
   ;;
