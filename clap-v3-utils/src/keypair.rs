@@ -1,12 +1,12 @@
 //! Loading signers and keypairs from the command line.
 //!
 //! This module contains utilities for loading [Signer]s and [Keypair]s from
-//! standard signing sources, from the command line, as in the Safecoin CLI.
+//! standard signing sources, from the command line, as in the Wickandbergamot CLI.
 //!
 //! The key function here is [`signer_from_path`], which loads a `Signer` from
 //! one of several possible sources by interpreting a "path" command line
 //! argument. Its documentation includes a description of all possible signing
-//! sources supported by the Safecoin CLI. Many other functions here are
+//! sources supported by the Wickandbergamot CLI. Many other functions here are
 //! variations on, or delegate to, `signer_from_path`.
 
 use {
@@ -18,7 +18,7 @@ use {
     bip39::{Language, Mnemonic, Seed},
     clap::ArgMatches,
     rpassword::prompt_password,
-    safecoin_remote_wallet::{
+    wickandbergamot_remote_wallet::{
         locator::{Locator as RemoteWalletLocator, LocatorError as RemoteWalletLocatorError},
         remote_keypair::generate_remote_keypair,
         remote_wallet::{maybe_wallet_manager, RemoteWalletError, RemoteWalletManager},
@@ -135,8 +135,8 @@ impl DefaultSigner {
     ///
     /// ```no_run
     /// use clap::{Arg, Command};
-    /// use safecoin_clap_v3_utils::keypair::DefaultSigner;
-    /// use safecoin_clap_v3_utils::offline::OfflineArgs;
+    /// use wickandbergamot_clap_v3_utils::keypair::DefaultSigner;
+    /// use wickandbergamot_clap_v3_utils::offline::OfflineArgs;
     ///
     /// let clap_app = Command::new("my-program")
     ///     // The argument we'll parse as a signer "path"
@@ -177,7 +177,7 @@ impl DefaultSigner {
                     std::io::Error::new(
                         std::io::ErrorKind::Other,
                         format!(
-                        "No default signer found, run \"safecoin-keygen new -o {}\" to create a new one",
+                        "No default signer found, run \"wickandbergamot-keygen new -o {}\" to create a new one",
                         self.path
                     ),
                     )
@@ -205,8 +205,8 @@ impl DefaultSigner {
     ///
     /// ```no_run
     /// use clap::{Arg, Command};
-    /// use safecoin_clap_v3_utils::keypair::{DefaultSigner, signer_from_path};
-    /// use safecoin_clap_v3_utils::offline::OfflineArgs;
+    /// use wickandbergamot_clap_v3_utils::keypair::{DefaultSigner, signer_from_path};
+    /// use wickandbergamot_clap_v3_utils::offline::OfflineArgs;
     /// use solana_sdk::signer::Signer;
     ///
     /// let clap_app = Command::new("my-program")
@@ -280,8 +280,8 @@ impl DefaultSigner {
     ///
     /// ```no_run
     /// use clap::{Arg, Command};
-    /// use safecoin_clap_v3_utils::keypair::DefaultSigner;
-    /// use safecoin_clap_v3_utils::offline::OfflineArgs;
+    /// use wickandbergamot_clap_v3_utils::keypair::DefaultSigner;
+    /// use wickandbergamot_clap_v3_utils::offline::OfflineArgs;
     ///
     /// let clap_app = Command::new("my-program")
     ///     // The argument we'll parse as a signer "path"
@@ -327,8 +327,8 @@ impl DefaultSigner {
     ///
     /// ```no_run
     /// use clap::{Arg, Command};
-    /// use safecoin_clap_v3_utils::keypair::{SignerFromPathConfig, DefaultSigner};
-    /// use safecoin_clap_v3_utils::offline::OfflineArgs;
+    /// use wickandbergamot_clap_v3_utils::keypair::{SignerFromPathConfig, DefaultSigner};
+    /// use wickandbergamot_clap_v3_utils::offline::OfflineArgs;
     ///
     /// let clap_app = Command::new("my-program")
     ///     // The argument we'll parse as a signer "path"
@@ -661,8 +661,8 @@ pub struct SignerFromPathConfig {
 ///
 /// ```no_run
 /// use clap::{Arg, Command};
-/// use safecoin_clap_v3_utils::keypair::signer_from_path;
-/// use safecoin_clap_v3_utils::offline::OfflineArgs;
+/// use wickandbergamot_clap_v3_utils::keypair::signer_from_path;
+/// use wickandbergamot_clap_v3_utils::offline::OfflineArgs;
 ///
 /// let clap_app = Command::new("my-program")
 ///     // The argument we'll parse as a signer "path"
@@ -721,8 +721,8 @@ pub fn signer_from_path(
 ///
 /// ```no_run
 /// use clap::{Arg, Command};
-/// use safecoin_clap_v3_utils::keypair::{signer_from_path_with_config, SignerFromPathConfig};
-/// use safecoin_clap_v3_utils::offline::OfflineArgs;
+/// use wickandbergamot_clap_v3_utils::keypair::{signer_from_path_with_config, SignerFromPathConfig};
+/// use wickandbergamot_clap_v3_utils::offline::OfflineArgs;
 ///
 /// let clap_app = Command::new("my-program")
 ///     // The argument we'll parse as a signer "path"
@@ -775,7 +775,7 @@ pub fn signer_from_path_with_config(
         SignerSourceKind::Filepath(path) => match read_keypair_file(&path) {
             Err(e) => Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
-                format!("could not read keypair file \"{}\". Run \"safecoin-keygen new\" to create a keypair file: {}", path, e),
+                format!("could not read keypair file \"{}\". Run \"wickandbergamot-keygen new\" to create a keypair file: {}", path, e),
             )
             .into()),
             Ok(file) => Ok(Box::new(file)),
@@ -837,7 +837,7 @@ pub fn signer_from_path_with_config(
 ///
 /// ```no_run
 /// use clap::{Arg, Command};
-/// use safecoin_clap_v3_utils::keypair::pubkey_from_path;
+/// use wickandbergamot_clap_v3_utils::keypair::pubkey_from_path;
 ///
 /// let clap_app = Command::new("my-program")
 ///     // The argument we'll parse as a signer "path"
@@ -899,7 +899,7 @@ pub fn resolve_signer_from_path(
                 std::io::ErrorKind::Other,
                 format!(
                     "could not read keypair file \"{}\". \
-                    Run \"safecoin-keygen new\" to create a keypair file: {}",
+                    Run \"wickandbergamot-keygen new\" to create a keypair file: {}",
                     path, e
                 ),
             )
@@ -976,7 +976,7 @@ pub fn prompt_passphrase(prompt: &str) -> Result<String, Box<dyn error::Error>> 
 ///
 /// ```no_run
 /// use clap::{Arg, Command};
-/// use safecoin_clap_v3_utils::keypair::keypair_from_path;
+/// use wickandbergamot_clap_v3_utils::keypair::keypair_from_path;
 ///
 /// let clap_app = Command::new("my-program")
 ///     // The argument we'll parse as a signer "path"
@@ -1022,7 +1022,7 @@ pub fn keypair_from_path(
                 std::io::ErrorKind::Other,
                 format!(
                     "could not read keypair file \"{}\". \
-                    Run \"safecoin-keygen new\" to create a keypair file: {}",
+                    Run \"wickandbergamot-keygen new\" to create a keypair file: {}",
                     path, e
                 ),
             )
@@ -1127,7 +1127,7 @@ mod tests {
         super::*,
         crate::offline::OfflineArgs,
         clap::{Arg, Command},
-        safecoin_remote_wallet::{locator::Manufacturer, remote_wallet::initialize_wallet_manager},
+        wickandbergamot_remote_wallet::{locator::Manufacturer, remote_wallet::initialize_wallet_manager},
         solana_sdk::{signer::keypair::write_keypair_file, system_instruction},
         tempfile::{NamedTempFile, TempDir},
     };
