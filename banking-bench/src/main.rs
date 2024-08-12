@@ -5,18 +5,18 @@ use {
     log::*,
     rand::{thread_rng, Rng},
     rayon::prelude::*,
-    safecoin_client::connection_cache::{ConnectionCache, DEFAULT_TPU_CONNECTION_POOL_SIZE},
+    wickandbergamot_client::connection_cache::{ConnectionCache, DEFAULT_TPU_CONNECTION_POOL_SIZE},
     solana_core::banking_stage::BankingStage,
-    safecoin_gossip::cluster_info::{ClusterInfo, Node},
+    wickandbergamot_gossip::cluster_info::{ClusterInfo, Node},
     solana_ledger::{
         blockstore::Blockstore,
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
         get_tmp_ledger_path,
         leader_schedule_cache::LeaderScheduleCache,
     },
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_perf::packet::{to_packet_batches, PacketBatch},
-    safecoin_poh::poh_recorder::{create_test_recorder, PohRecorder, WorkingBankEntry},
+    wickandbergamot_poh::poh_recorder::{create_test_recorder, PohRecorder, WorkingBankEntry},
     solana_runtime::{
         accounts_background_service::AbsRequestSender, bank::Bank, bank_forks::BankForks,
         cost_model::CostModel,
@@ -167,7 +167,7 @@ fn main() {
 
     let matches = Command::new(crate_name!())
         .about(crate_description!())
-        .version(safecoin_version::version!())
+        .version(wickandbergamot_version::version!())
         .arg(
             Arg::new("iterations")
                 .long("iterations")
