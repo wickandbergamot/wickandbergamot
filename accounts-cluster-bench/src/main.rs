@@ -4,12 +4,12 @@ use {
     log::*,
     rand::{thread_rng, Rng},
     rayon::prelude::*,
-    safecoin_account_decoder::parse_token::safe_token_pubkey,
-    safecoin_clap_utils::input_parsers::pubkey_of,
-    safecoin_client::{rpc_client::RpcClient, transaction_executor::TransactionExecutor},
-    safecoin_faucet::faucet::{request_airdrop_transaction, FAUCET_PORT},
-    safecoin_gossip::gossip_service::discover,
-    solana_runtime::inline_safe_token,
+    wickandbergamot_account_decoder::parse_token::wickandbergamot_token_pubkey,
+    wickandbergamot_clap_utils::input_parsers::pubkey_of,
+    wickandbergamot_client::{rpc_client::RpcClient, transaction_executor::TransactionExecutor},
+    wickandbergamot_faucet::faucet::{request_airdrop_transaction, FAUCET_PORT},
+    wickandbergamot_gossip::gossip_service::discover,
+    solana_runtime::inline_wickandbergamot_token,
     solana_sdk::{
         commitment_config::CommitmentConfig,
         instruction::{AccountMeta, Instruction},
@@ -21,7 +21,7 @@ use {
         transaction::Transaction,
     },
     solana_streamer::socket::SocketAddrSpace,
-    safecoin_transaction_status::parse_token::safe_token_instruction,
+    wickandbergamot_transaction_status::parse_token::wickandbergamot_token_instruction,
     std::{
         cmp::min,
         net::SocketAddr,
@@ -118,7 +118,7 @@ fn make_create_message(
         .into_iter()
         .flat_map(|_| {
             let program_id = if mint.is_some() {
-                inline_safe_token::id()
+                inline_wickandbergamot_token::id()
             } else {
                 system_program::id()
             };
@@ -135,12 +135,12 @@ fn make_create_message(
                 &program_id,
             )];
             if let Some(mint_address) = mint {
-                instructions.push(safe_token_instruction(
-                    safe_token::instruction::initialize_account(
-                        &safe_token::id(),
-                        &safe_token_pubkey(&to_pubkey),
-                        &safe_token_pubkey(&mint_address),
-                        &safe_token_pubkey(&base_keypair.pubkey()),
+                instructions.push(wickandbergamot_token_instruction(
+                    wickandbergamot_token::instruction::initialize_account(
+                        &wickandbergamot_token::id(),
+                        &wickandbergamot_token_pubkey(&to_pubkey),
+                        &wickandbergamot_token_pubkey(&mint_address),
+                        &wickandbergamot_token_pubkey(&base_keypair.pubkey()),
                     )
                     .unwrap(),
                 ));
@@ -160,13 +160,13 @@ fn make_close_message(
     max_closed: Arc<AtomicU64>,
     num_instructions: usize,
     balance: u64,
-    safe_token: bool,
+    wickandbergamot_token: bool,
 ) -> Message {
     let instructions: Vec<_> = (0..num_instructions)
         .into_iter()
         .filter_map(|_| {
-            let program_id = if safe_token {
-                inline_safe_token::id()
+            let program_id = if wickandbergamot_token {
+                inline_wickandbergamot_token::id()
             } else {
                 system_program::id()
             };
@@ -178,13 +178,13 @@ fn make_close_message(
             let seed = max_closed.fetch_add(1, Ordering::Relaxed).to_string();
             let address =
                 Pubkey::create_with_seed(&base_keypair.pubkey(), &seed, &program_id).unwrap();
-            if safe_token {
-                Some(safe_token_instruction(
-                    safe_token::instruction::close_account(
-                        &safe_token::id(),
-                        &safe_token_pubkey(&address),
-                        &safe_token_pubkey(&keypair.pubkey()),
-                        &safe_token_pubkey(&base_keypair.pubkey()),
+            if wickandbergamot_token {
+                Some(wickandbergamot_token_instruction(
+                    wickandbergamot_token::instruction::close_account(
+                        &wickandbergamot_token::id(),
+                        &wickandbergamot_token_pubkey(&address),
+                        &wickandbergamot_token_pubkey(&keypair.pubkey()),
+                        &wickandbergamot_token_pubkey(&base_keypair.pubkey()),
                         &[],
                     )
                     .unwrap(),
@@ -478,7 +478,7 @@ fn main() {
     solana_logger::setup_with_default("solana=info");
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(safecoin_version::version!())
+        .version(wickandbergamot_version::version!())
         .arg(
             Arg::with_name("entrypoint")
                 .long("entrypoint")
@@ -573,14 +573,14 @@ fn main() {
     let port = if skip_gossip { DEFAULT_RPC_PORT } else { 10015 };
     let mut entrypoint_addr = SocketAddr::from(([127, 0, 0, 1], port));
     if let Some(addr) = matches.value_of("entrypoint") {
-        entrypoint_addr = safecoin_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
+        entrypoint_addr = wickandbergamot_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
             eprintln!("failed to parse entrypoint address: {}", e);
             exit(1)
         });
     }
     let mut faucet_addr = SocketAddr::from(([127, 0, 0, 1], FAUCET_PORT));
     if let Some(addr) = matches.value_of("faucet_addr") {
-        faucet_addr = safecoin_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
+        faucet_addr = wickandbergamot_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
             eprintln!("failed to parse entrypoint address: {}", e);
             exit(1)
         });
@@ -656,15 +656,15 @@ pub mod test {
     use {
         super::*,
         solana_core::validator::ValidatorConfig,
-        safecoin_faucet::faucet::run_local_faucet,
-        safecoin_local_cluster::{
+        wickandbergamot_faucet::faucet::run_local_faucet,
+        wickandbergamot_local_cluster::{
             local_cluster::{ClusterConfig, LocalCluster},
             validator_configs::make_identical_validator_configs,
         },
-        safecoin_measure::measure::Measure,
+        wickandbergamot_measure::measure::Measure,
         solana_sdk::{native_token::sol_to_lamports, poh_config::PohConfig},
-        safecoin_test_validator::TestValidator,
-        safe_token::{
+        wickandbergamot_test_validator::TestValidator,
+        wickandbergamot_token::{
             solana_program::program_pack::Pack,
             state::{Account, Mint},
         },
@@ -710,7 +710,7 @@ pub mod test {
     }
 
     #[test]
-    fn test_create_then_reclaim_safe_token_accounts() {
+    fn test_create_then_reclaim_wickandbergamot_token_accounts() {
         solana_logger::setup();
         let mint_keypair = Keypair::new();
         let mint_pubkey = mint_keypair.pubkey();
@@ -755,13 +755,13 @@ pub mod test {
                     &spl_mint_keypair.pubkey(),
                     spl_mint_rent,
                     spl_mint_len as u64,
-                    &inline_safe_token::id(),
+                    &inline_wickandbergamot_token::id(),
                 ),
-                safe_token_instruction(
-                    safe_token::instruction::initialize_mint(
-                        &safe_token::id(),
-                        &safe_token_pubkey(&spl_mint_keypair.pubkey()),
-                        &safe_token_pubkey(&spl_mint_keypair.pubkey()),
+                wickandbergamot_token_instruction(
+                    wickandbergamot_token::instruction::initialize_mint(
+                        &wickandbergamot_token::id(),
+                        &wickandbergamot_token_pubkey(&spl_mint_keypair.pubkey()),
+                        &wickandbergamot_token_pubkey(&spl_mint_keypair.pubkey()),
                         None,
                         2,
                     )
