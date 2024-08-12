@@ -26,7 +26,7 @@ wickandbergamot-sdk = { path = "../sdk", version = "=1.14.17" }
 wickandbergamot-streamer = { path = "../streamer", version = "=1.14.17" }
 wickandbergamot-transaction-status = { path = "../transaction-status", version = "=1.14.17" }
 wickandbergamot-version = { path = "../version", version = "=1.14.17" }
-safe-token = { version = "=3.5.1",  features = ["no-entrypoint"] }
+wickandbergamot-token = { version = "=3.5.1",  features = ["no-entrypoint"] }
 
 [dev-dependencies]
 wickandbergamot-core = { path = "../core", version = "=1.14.17" }
