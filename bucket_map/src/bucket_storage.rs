@@ -2,7 +2,7 @@ use {
     crate::{bucket_stats::BucketStats, MaxSearch},
     memmap2::MmapMut,
     rand::{thread_rng, Rng},
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     std::{
         fs::{remove_file, OpenOptions},
         io::{Seek, SeekFrom, Write},
