@@ -4,7 +4,7 @@ extern crate log;
 use {
     clap::{crate_description, crate_name, value_t, App, Arg},
     rayon::prelude::*,
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_runtime::{
         accounts::{
             test_utils::{create_test_accounts, update_accounts_bench},
@@ -26,7 +26,7 @@ fn main() {
 
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(safecoin_version::version!())
+        .version(wickandbergamot_version::version!())
         .arg(
             Arg::with_name("num_slots")
                 .long("num_slots")
