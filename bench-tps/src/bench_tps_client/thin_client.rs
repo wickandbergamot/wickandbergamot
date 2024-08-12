@@ -1,6 +1,6 @@
 use {
     crate::bench_tps_client::{BenchTpsClient, Result},
-    safecoin_client::thin_client::ThinClient,
+    wickandbergamot_client::thin_client::ThinClient,
     solana_sdk::{
         account::Account,
         client::{AsyncClient, Client, SyncClient},
