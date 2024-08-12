@@ -35,7 +35,7 @@ cargo_audit_ignores=(
 
   # chrono: Potential segfault in `localtime_r` invocations
   #
-  # Blocked due to no safe upgrade
+  # Blocked due to no wickandbergamot upgrade
   # https://github.com/chronotope/chrono/issues/499
   --ignore RUSTSEC-2020-0159
 
