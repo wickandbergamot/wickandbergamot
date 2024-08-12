@@ -8,7 +8,7 @@ use {
         MaxSearch, RefCount,
     },
     rand::{thread_rng, Rng},
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_sdk::pubkey::Pubkey,
     std::{
         collections::hash_map::DefaultHasher,
