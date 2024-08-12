@@ -1,6 +1,6 @@
 use {
     crate::bench_tps_client::{BenchTpsClient, Result},
-    safecoin_client::tpu_client::TpuClient,
+    wickandbergamot_client::tpu_client::TpuClient,
     solana_sdk::{
         account::Account, commitment_config::CommitmentConfig, epoch_info::EpochInfo, hash::Hash,
         message::Message, pubkey::Pubkey, signature::Signature, transaction::Transaction,
