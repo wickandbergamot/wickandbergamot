@@ -7,7 +7,7 @@ use {
     },
     log::*,
     rayon::prelude::*,
-    safecoin_client::nonce_utils,
+    wickandbergamot_client::nonce_utils,
     solana_metrics::{self, datapoint_info},
     solana_sdk::{
         clock::{DEFAULT_MS_PER_SLOT, DEFAULT_S_PER_SLOT, MAX_PROCESSING_AGE},
@@ -202,7 +202,7 @@ where
     let maxes = maxes.clone();
     let client = client.clone();
     Builder::new()
-        .name("safecoin-client-sample".to_string())
+        .name("wickandbergamot-client-sample".to_string())
         .spawn(move || {
             sample_txs(&exit_signal, &maxes, sample_period, &client);
         })
@@ -274,7 +274,7 @@ where
             let total_tx_sent_count = total_tx_sent_count.clone();
             let client = client.clone();
             Builder::new()
-                .name("safecoin-client-sender".to_string())
+                .name("wickandbergamot-client-sender".to_string())
                 .spawn(move || {
                     do_tx_transfers(
                         &exit_signal,
@@ -763,7 +763,7 @@ pub fn fund_keypairs<T: 'static + BenchTpsClient + Send + Sync>(
     let rent = client.get_minimum_balance_for_rent_exemption(0)?;
     info!("Get lamports...");
 
-    // Sample the first keypair, to prevent lamport loss on repeated safecoin-bench-tps executions
+    // Sample the first keypair, to prevent lamport loss on repeated wickandbergamot-bench-tps executions
     let first_key = keypairs[0].pubkey();
     let first_keypair_balance = client.get_balance(&first_key).unwrap_or(0);
 
