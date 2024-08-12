@@ -1,21 +1,21 @@
 [package]
-name = "safecoin-clap-v3-utils"
+name = "wickandbergamot-clap-v3-utils"
 version = "1.14.17"
-description = "Safecoin utilities for the clap v3"
+description = "wickandbergamot utilities for the clap v3"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-clap-utils"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-clap-utils"
 edition = "2021"
 
 [dependencies]
 chrono = "0.4"
 clap = { version = "3.1.5", features = ["cargo"] }
 rpassword = "6.0"
-safecoin-perf = { path = "../perf", version = "=1.14.17" }
-safecoin-remote-wallet = { path = "../remote-wallet", version = "=1.14.17", default-features = false }
-safecoin-sdk = { path = "../sdk", version = "=1.14.17" }
+wickandbergamot-perf = { path = "../perf", version = "=1.14.17" }
+wickandbergamot-remote-wallet = { path = "../remote-wallet", version = "=1.14.17", default-features = false }
+wickandbergamot-sdk = { path = "../sdk", version = "=1.14.17" }
 thiserror = "1.0.31"
 tiny-bip39 = "0.8.2"
 uriparse = "0.6.4"
@@ -25,7 +25,7 @@ url = "2.2.2"
 tempfile = "3.3.0"
 
 [lib]
-name = "safecoin_clap_v3_utils"
+name = "wickandbergamot_clap_v3_utils"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
