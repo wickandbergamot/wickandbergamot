@@ -2,20 +2,20 @@
 use {
     clap::value_t,
     log::*,
-    safecoin_bench_tps::{
+    wickandbergamot_bench_tps::{
         bench::do_bench_tps,
         cli::{self, ExternalClientType},
         keypairs::get_keypairs,
         send_batch::generate_keypairs,
     },
-    safecoin_client::{
+    wickandbergamot_client::{
         connection_cache::ConnectionCache,
         rpc_client::RpcClient,
         thin_client::ThinClient,
         tpu_client::{TpuClient, TpuClientConfig},
     },
-    safecoin_genesis::Base64Account,
-    safecoin_gossip::gossip_service::{discover_cluster, get_client, get_multi_client},
+    wickandbergamot_genesis::Base64Account,
+    wickandbergamot_gossip::gossip_service::{discover_cluster, get_client, get_multi_client},
     solana_sdk::{
         commitment_config::CommitmentConfig, fee_calculator::FeeRateGovernor, system_program,
     },
@@ -30,7 +30,7 @@ fn main() {
     solana_logger::setup_with_default("solana=info");
     solana_metrics::set_panic_hook("bench-tps", /*version:*/ None);
 
-    let matches = cli::build_args(safecoin_version::version!()).get_matches();
+    let matches = cli::build_args(wickandbergamot_version::version!()).get_matches();
     let cli_config = cli::extract_args(&matches);
 
     let cli::Config {
