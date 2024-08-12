@@ -175,7 +175,7 @@ startNodes() {
 
       (
         set -x
-        $safecoin_cli --keypair config/bootstrap-validator/identity.json \
+        $wickandbergamot_cli --keypair config/bootstrap-validator/identity.json \
           --url http://127.0.0.1:8328 genesis-hash
       ) | tee genesis-hash.log
       maybeExpectedGenesisHash="--expected-genesis-hash $(tail -n1 genesis-hash.log)"
@@ -202,8 +202,8 @@ killNodes() {
   # Try to use the RPC exit API to cleanly exit the first two nodes
   # (dynamic nodes, -x, are just killed)
   echo "--- RPC exit"
-  $safecoin_validator --ledger "$SAFECOIN_CONFIG_DIR"/bootstrap-validator exit --force || true
-  $safecoin_validator --ledger "$SAFECOIN_CONFIG_DIR"/validator exit --force || true
+  $wickandbergamot_validator --ledger "$WICKANDBERGAMOT_CONFIG_DIR"/bootstrap-validator exit --force || true
+  $wickandbergamot_validator --ledger "$WICKANDBERGAMOT_CONFIG_DIR"/validator exit --force || true
 
   # Give the nodes a splash of time to cleanly exit before killing them
   sleep 2
@@ -271,7 +271,7 @@ verifyLedger() {
     echo "--- $ledger ledger verification"
     (
       set -x
-      $safecoin_ledger_tool --ledger "$SAFECOIN_CONFIG_DIR"/$ledger verify
+      $wickandbergamot_ledger_tool --ledger "$WICKANDBERGAMOT_CONFIG_DIR"/$ledger verify
     ) || flag_error
   done
 }
@@ -304,7 +304,7 @@ flag_error() {
 }
 
 if ! $skipSetup; then
-  clear_config_dir "$SAFECOIN_CONFIG_DIR"
+  clear_config_dir "$WICKANDBERGAMOT_CONFIG_DIR"
   multinode-demo/setup.sh --hashes-per-tick sleep
 else
   verifyLedger
@@ -317,7 +317,7 @@ while [[ $iteration -le $iterations ]]; do
     set -x
     client_keypair=/tmp/client-id.json-$$
     $solana_keygen new --no-passphrase -fso $client_keypair || exit $?
-    $safecoin_gossip spy -n 127.0.0.1:10015 --num-nodes-exactly $numNodes || exit $?
+    $wickandbergamot_gossip spy -n 127.0.0.1:10015 --num-nodes-exactly $numNodes || exit $?
     rm -rf $client_keypair
   ) || flag_error
 
