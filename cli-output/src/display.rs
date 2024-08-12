@@ -3,7 +3,7 @@ use {
     chrono::{DateTime, Local, NaiveDateTime, SecondsFormat, TimeZone, Utc},
     console::style,
     indicatif::{ProgressBar, ProgressStyle},
-    safecoin_cli_config::SettingType,
+    wickandbergamot_cli_config::SettingType,
     solana_sdk::{
         clock::UnixTimestamp,
         hash::Hash,
@@ -16,10 +16,10 @@ use {
         stake,
         transaction::{TransactionError, TransactionVersion, VersionedTransaction},
     },
-    safecoin_transaction_status::{
+    wickandbergamot_transaction_status::{
         Rewards, UiReturnDataEncoding, UiTransactionReturnData, UiTransactionStatusMeta,
     },
-    safe_memo::{id as safe_memo_id, v1::id as safe_memo_v1_id},
+    wickandbergamot_memo::{id as wickandbergamot_memo_id, v1::id as wickandbergamot_memo_v1_id},
     std::{collections::HashMap, fmt, io},
 };
 
@@ -42,7 +42,7 @@ impl Default for BuildBalanceMessageConfig {
 
 fn is_memo_program(k: &Pubkey) -> bool {
     let k_str = k.to_string();
-    (k_str == safe_memo_v1_id().to_string()) || (k_str == safe_memo_id().to_string())
+    (k_str == wickandbergamot_memo_v1_id().to_string()) || (k_str == wickandbergamot_memo_id().to_string())
 }
 
 pub fn build_balance_message_with_config(
@@ -68,7 +68,7 @@ pub fn build_balance_message_with_config(
             let ess = if lamports == 1 { "" } else { "s" };
             format!(" lamport{}", ess)
         } else {
-            " SAFE".to_string()
+            " wickandbergamot".to_string()
         }
     } else {
         "".to_string()
@@ -737,7 +737,7 @@ mod test {
             transaction::Transaction,
             transaction_context::TransactionReturnData,
         },
-        safecoin_transaction_status::{Reward, RewardType, TransactionStatusMeta},
+        wickandbergamot_transaction_status::{Reward, RewardType, TransactionStatusMeta},
         std::io::BufWriter,
     };
 
