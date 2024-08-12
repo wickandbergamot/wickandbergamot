@@ -1,29 +1,29 @@
 #![allow(clippy::integer_arithmetic)]
 use {
     serial_test::serial,
-    safecoin_bench_tps::{
+    wickandbergamot_bench_tps::{
         bench::{do_bench_tps, generate_and_fund_keypairs},
         cli::Config,
     },
-    safecoin_client::{
+    wickandbergamot_client::{
         connection_cache::ConnectionCache,
         rpc_client::RpcClient,
         thin_client::ThinClient,
         tpu_client::{TpuClient, TpuClientConfig},
     },
     solana_core::validator::ValidatorConfig,
-    safecoin_faucet::faucet::run_local_faucet,
-    safecoin_local_cluster::{
+    wickandbergamot_faucet::faucet::run_local_faucet,
+    wickandbergamot_local_cluster::{
         local_cluster::{ClusterConfig, LocalCluster},
         validator_configs::make_identical_validator_configs,
     },
-    safecoin_rpc::rpc::JsonRpcConfig,
+    wickandbergamot_rpc::rpc::JsonRpcConfig,
     solana_sdk::{
         commitment_config::CommitmentConfig,
         signature::{Keypair, Signer},
     },
     solana_streamer::socket::SocketAddrSpace,
-    safecoin_test_validator::TestValidator,
+    wickandbergamot_test_validator::TestValidator,
     std::{sync::Arc, time::Duration},
 };
 
