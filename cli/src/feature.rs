@@ -6,12 +6,12 @@ use {
     clap::{App, AppSettings, Arg, ArgMatches, SubCommand},
     console::style,
     serde::{Deserialize, Serialize},
-    safecoin_clap_utils::{input_parsers::*, input_validators::*, keypair::*},
-    safecoin_cli_output::{cli_version::CliVersion, QuietDisplay, VerboseDisplay},
-    safecoin_client::{
+    wickandbergamot_clap_utils::{input_parsers::*, input_validators::*, keypair::*},
+    wickandbergamot_cli_output::{cli_version::CliVersion, QuietDisplay, VerboseDisplay},
+    wickandbergamot_client::{
         client_error::ClientError, rpc_client::RpcClient, rpc_request::MAX_MULTIPLE_ACCOUNTS,
     },
-    safecoin_remote_wallet::remote_wallet::RemoteWalletManager,
+    wickandbergamot_remote_wallet::remote_wallet::RemoteWalletManager,
     solana_sdk::{
         account::Account,
         clock::Slot,
@@ -678,7 +678,7 @@ fn feature_activation_allowed(
     let cluster_info_stats = cluster_info_stats(rpc_client)?;
     let feature_set_stats = cluster_info_stats.aggregate_by_feature_set();
 
-    let tool_version = safecoin_version::Version::default();
+    let tool_version = wickandbergamot_version::Version::default();
     let tool_feature_set = tool_version.feature_set;
     let tool_software_version = CliVersion::from(semver::Version::new(
         tool_version.major as u64,
