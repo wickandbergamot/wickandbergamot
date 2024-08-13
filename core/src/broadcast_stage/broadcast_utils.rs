@@ -2,9 +2,9 @@ use {
     crate::result::Result,
     bincode::serialized_size,
     crossbeam_channel::Receiver,
-    safecoin_entry::entry::Entry,
+    wickandbergamot_entry::entry::Entry,
     solana_ledger::shred::ShredData,
-    safecoin_poh::poh_recorder::WorkingBankEntry,
+    wickandbergamot_poh::poh_recorder::WorkingBankEntry,
     solana_runtime::bank::Bank,
     solana_sdk::clock::Slot,
     std::{
