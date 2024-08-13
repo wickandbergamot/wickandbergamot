@@ -5,8 +5,8 @@
 // set and halt the node if a mismatch is detected.
 
 use {
-    safecoin_gossip::cluster_info::{ClusterInfo, MAX_SNAPSHOT_HASHES},
-    safecoin_measure::measure::Measure,
+    wickandbergamot_gossip::cluster_info::{ClusterInfo, MAX_SNAPSHOT_HASHES},
+    wickandbergamot_measure::measure::Measure,
     solana_runtime::{
         accounts_hash::{CalcAccountsHashConfig, HashStats},
         snapshot_config::SnapshotConfig,
@@ -334,7 +334,7 @@ impl AccountsHashVerifier {
 mod tests {
     use {
         super::*,
-        safecoin_gossip::{
+        wickandbergamot_gossip::{
             cluster_info::make_accounts_hashes_message,
             legacy_contact_info::LegacyContactInfo as ContactInfo,
         },
