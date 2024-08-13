@@ -8,15 +8,15 @@ use {
     log::*,
     rand::{thread_rng, Rng},
     rayon::prelude::*,
-    safecoin_client::connection_cache::ConnectionCache,
+    wickandbergamot_client::connection_cache::ConnectionCache,
     solana_core::{
         banking_stage::{BankingStage, BankingStageStats},
         leader_slot_banking_stage_metrics::LeaderSlotMetricsTracker,
         qos_service::QosService,
         unprocessed_packet_batches::*,
     },
-    safecoin_entry::entry::{next_hash, Entry},
-    safecoin_gossip::cluster_info::{ClusterInfo, Node},
+    wickandbergamot_entry::entry::{next_hash, Entry},
+    wickandbergamot_gossip::cluster_info::{ClusterInfo, Node},
     solana_ledger::{
         blockstore::Blockstore,
         blockstore_processor::process_entries_for_tests,
@@ -24,7 +24,7 @@ use {
         get_tmp_ledger_path,
     },
     solana_perf::{packet::to_packet_batches, test_tx::test_tx},
-    safecoin_poh::poh_recorder::{create_test_recorder, WorkingBankEntry},
+    wickandbergamot_poh::poh_recorder::{create_test_recorder, WorkingBankEntry},
     solana_runtime::{bank::Bank, bank_forks::BankForks, cost_model::CostModel},
     solana_sdk::{
         genesis_config::GenesisConfig,
