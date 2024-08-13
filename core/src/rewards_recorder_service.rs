@@ -3,7 +3,7 @@ use {
     solana_ledger::blockstore::Blockstore,
     solana_runtime::bank::RewardInfo,
     solana_sdk::{clock::Slot, pubkey::Pubkey},
-    safecoin_transaction_status::Reward,
+    wickandbergamot_transaction_status::Reward,
     std::{
         sync::{
             atomic::{AtomicBool, Ordering},
