@@ -2,7 +2,7 @@ pub use reqwest;
 use {
     crate::{nonblocking::quic_client::QuicError, rpc_request, rpc_response},
     quinn::ConnectError,
-    safecoin_faucet::faucet::FaucetError,
+    wickandbergamot_faucet::faucet::FaucetError,
     solana_sdk::{
         signature::SignerError, transaction::TransactionError, transport::TransportError,
     },
