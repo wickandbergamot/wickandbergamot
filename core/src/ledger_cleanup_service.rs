@@ -11,7 +11,7 @@ use {
         blockstore::{Blockstore, PurgeType},
         blockstore_db::Result as BlockstoreResult,
     },
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_sdk::clock::{Slot, DEFAULT_TICKS_PER_SLOT, TICKS_PER_DAY},
     std::{
         string::ToString,
