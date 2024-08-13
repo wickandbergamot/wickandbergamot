@@ -10,8 +10,8 @@ use {
         spend_utils::{resolve_spend_tx_and_check_account_balances, SpendAmount},
     },
     clap::{value_t_or_exit, App, Arg, ArgMatches, SubCommand},
-    safecoin_account_decoder::{UiAccount, UiAccountEncoding},
-    safecoin_clap_utils::{
+    wickandbergamot_account_decoder::{UiAccount, UiAccountEncoding},
+    wickandbergamot_clap_utils::{
         compute_unit_price::{compute_unit_price_arg, COMPUTE_UNIT_PRICE_ARG},
         fee_payer::*,
         input_parsers::*,
@@ -21,16 +21,16 @@ use {
         nonce::*,
         offline::*,
     },
-    safecoin_cli_output::{
+    wickandbergamot_cli_output::{
         display::{build_balance_message, BuildBalanceMessageConfig},
         return_signers_with_config, CliAccount, CliBalance, CliSignatureVerificationStatus,
         CliTransaction, CliTransactionConfirmation, OutputFormat, ReturnSignersConfig,
     },
-    safecoin_client::{
+    wickandbergamot_client::{
         blockhash_query::BlockhashQuery, nonce_utils, rpc_client::RpcClient,
         rpc_config::RpcTransactionConfig, rpc_response::RpcKeyedAccount,
     },
-    safecoin_remote_wallet::remote_wallet::RemoteWalletManager,
+    _remote_wallet::remote_wallet::RemoteWalletManager,
     solana_sdk::{
         commitment_config::CommitmentConfig,
         message::Message,
@@ -41,7 +41,7 @@ use {
         system_program,
         transaction::{Transaction, VersionedTransaction},
     },
-    safecoin_transaction_status::{
+    _transaction_status::{
         EncodableWithMeta, EncodedConfirmedTransactionWithStatusMeta, EncodedTransaction,
         TransactionBinaryEncoding, UiTransactionEncoding,
     },
@@ -77,7 +77,7 @@ impl WalletSubCommands for App<'_, '_> {
                     Arg::with_name("lamports")
                         .long("lamports")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SAFE"),
+                        .help("Display balance in lamports instead of WICKANDBERGAMOT"),
                 ),
         )
         .subcommand(
@@ -92,7 +92,7 @@ impl WalletSubCommands for App<'_, '_> {
         )
         .subcommand(
             SubCommand::with_name("airdrop")
-                .about("Request SAFE from a faucet")
+                .about("Request WICKANDBERGAMOT from a faucet")
                 .arg(
                     Arg::with_name("amount")
                         .index(1)
@@ -100,7 +100,7 @@ impl WalletSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .validator(is_amount)
                         .required(true)
-                        .help("The airdrop amount to request, in SAFE"),
+                        .help("The airdrop amount to request, in WICKANDBERGAMOT"),
                 )
                 .arg(
                     pubkey!(Arg::with_name("to")
@@ -122,7 +122,7 @@ impl WalletSubCommands for App<'_, '_> {
                     Arg::with_name("lamports")
                         .long("lamports")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SAFE"),
+                        .help("Display balance in lamports instead of WICKANDBERGAMOT"),
                 ),
         )
         .subcommand(
@@ -232,7 +232,7 @@ impl WalletSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .validator(is_amount_or_all)
                         .required(true)
-                        .help("The amount to send, in SAFE; accepts keyword ALL"),
+                        .help("The amount to send, in WICKANDBERGAMOT; accepts keyword ALL"),
                 )
                 .arg(
                     pubkey!(Arg::with_name("from")
@@ -526,7 +526,7 @@ pub fn process_airdrop(
 
         if current_balance < pre_balance.saturating_add(lamports) {
             println!("Balance unchanged");
-            println!("Run `safecoin confirm -v {:?}` for more info", signature);
+            println!("Run `wickandbergamot confirm -v {:?}` for more info", signature);
             Ok("".to_string())
         } else {
             Ok(build_balance_message(current_balance, false, true))
