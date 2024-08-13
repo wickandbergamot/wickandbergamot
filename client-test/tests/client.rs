@@ -2,7 +2,7 @@ use {
     futures_util::StreamExt,
     serde_json::{json, Value},
     serial_test::serial,
-    safecoin_client::{
+    wickandbergamot_client::{
         nonblocking,
         pubsub_client::PubsubClient,
         rpc_client::RpcClient,
@@ -13,7 +13,7 @@ use {
         rpc_response::SlotInfo,
     },
     solana_ledger::{blockstore::Blockstore, get_tmp_ledger_path},
-    safecoin_rpc::{
+    wickandbergamot_rpc::{
         optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank,
         rpc::{create_test_transaction_entries, populate_blockstore_for_tests},
         rpc_pubsub_service::{PubSubConfig, PubSubService},
@@ -35,8 +35,8 @@ use {
         system_program, system_transaction,
     },
     solana_streamer::socket::SocketAddrSpace,
-    safecoin_test_validator::TestValidator,
-    safecoin_transaction_status::{
+    wickandbergamot_test_validator::TestValidator,
+    wickandbergamot_transaction_status::{
         BlockEncodingOptions, ConfirmedBlock, TransactionDetails, UiTransactionEncoding,
     },
     std::{
@@ -66,7 +66,7 @@ fn test_rpc_client() {
 
     assert_eq!(
         client.get_version().unwrap().solana_core,
-        safecoin_version::semver!()
+        wickandbergamot_version::semver!()
     );
 
     assert!(client.get_account(&bob_pubkey).is_err());
