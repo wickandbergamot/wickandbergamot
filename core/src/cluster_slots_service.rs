@@ -1,9 +1,9 @@
 use {
     crate::cluster_slots::ClusterSlots,
     crossbeam_channel::{Receiver, RecvTimeoutError, Sender},
-    safecoin_gossip::cluster_info::ClusterInfo,
+    wickandbergamot_gossip::cluster_info::ClusterInfo,
     solana_ledger::blockstore::Blockstore,
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_runtime::bank_forks::BankForks,
     solana_sdk::clock::Slot,
     std::{
@@ -181,7 +181,7 @@ impl ClusterSlotsService {
 mod test {
     use {
         super::*,
-        safecoin_gossip::{cluster_info::Node, crds_value::LowestSlot},
+        wickandbergamot_gossip::{cluster_info::Node, crds_value::LowestSlot},
         solana_sdk::{pubkey::Pubkey, signature::Keypair},
         solana_streamer::socket::SocketAddrSpace,
     };
