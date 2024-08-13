@@ -12,16 +12,16 @@ use {
     },
     crossbeam_channel::{unbounded, Receiver, RecvTimeoutError, Select, Sender},
     log::*,
-    safecoin_gossip::{
+    wickandbergamot_gossip::{
         cluster_info::{ClusterInfo, GOSSIP_SLEEP_MILLIS},
         crds::Cursor,
     },
     solana_ledger::blockstore::Blockstore,
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_metrics::inc_new_counter_debug,
     solana_perf::packet,
-    safecoin_poh::poh_recorder::PohRecorder,
-    safecoin_rpc::{
+    wickandbergamot_poh::poh_recorder::PohRecorder,
+    wickandbergamot_rpc::{
         optimistically_confirmed_bank_tracker::{BankNotification, BankNotificationSender},
         rpc_subscriptions::RpcSubscriptions,
     },
@@ -872,7 +872,7 @@ mod tests {
     use {
         super::*,
         solana_perf::packet,
-        safecoin_rpc::optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank,
+        wickandbergamot_rpc::optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank,
         solana_runtime::{
             bank::Bank,
             commitment::BlockCommitmentCache,
