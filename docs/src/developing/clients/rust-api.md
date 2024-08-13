@@ -2,7 +2,7 @@
 title: Rust API
 ---
 
-Safecoin's Rust crates are [published to crates.io][crates.io] and can be found
+Wickandbergamot's Rust crates are [published to crates.io][crates.io] and can be found
 [on docs.rs with the "solana-" prefix][docs.rs].
 
 [crates.io]: https://crates.io/search?q=solana-
@@ -10,27 +10,27 @@ Safecoin's Rust crates are [published to crates.io][crates.io] and can be found
 
 Some important crates:
 
-- [`safecoin-program`] &mdash; Imported by programs running on Safecoin, compiled
+- [`wickandbergamot-program`] &mdash; Imported by programs running on wickandbergamot, compiled
   to BPF. This crate contains many fundamental data types and is re-exported from
-  [`safecoin-sdk`], which cannot be imported from a Safecoin program.
+  [`wickandbergamot-sdk`], which cannot be imported from a Wickandbergamot program.
 
-- [`safecoin-sdk`] &mdash; The basic off-chain SDK, it re-exports
-  [`safecoin-program`] and adds more APIs on top of that. Most Safecoin programs
+- [`wickandbergamot-sdk`] &mdash; The basic off-chain SDK, it re-exports
+  [`wickandbergamot-program`] and adds more APIs on top of that. Most Wickandbergamot programs
   that do not run on-chain will import this.
 
-- [`safecoin-client`] &mdash; For interacting with a Safecoin node via the
+- [`wickandbergamot-client`] &mdash; For interacting with a Wickandbergamot node via the
   [JSON RPC API](jsonrpc-api).
 
-- [`safecoin-cli-config`] &mdash; Loading and saving the Safecoin CLI configuration
+- [`wickandbergamot-cli-config`] &mdash; Loading and saving the Wickandbergamot CLI configuration
   file.
 
-- [`safecoin-clap-utils`] &mdash; Routines for setting up a CLI, using [`clap`],
-  as used by the main Safecoin CLI. Includes functions for loading all types of
+- [`wickandbergamot-clap-utils`] &mdash; Routines for setting up a CLI, using [`clap`],
+  as used by the main Wickandbergamot CLI. Includes functions for loading all types of
   signers supported by the CLI.
 
-[`safecoin-program`]: https://docs.rs/safecoin-program
-[`safecoin-sdk`]: https://docs.rs/safecoin-sdk
-[`safecoin-client`]: https://docs.rs/safecoin-client
-[`safecoin-cli-config`]: https://docs.rs/safecoin-cli-config
-[`safecoin-clap-utils`]: https://docs.rs/safecoin-clap-utils
+[`wickandbergamot-program`]: https://docs.rs/wickandbergamot-program
+[`wickandbergamot-sdk`]: https://docs.rs/wickandbergamot-sdk
+[`wickandbergamot-client`]: https://docs.rs/wickandbergamot-client
+[`wickandbergamot-cli-config`]: https://docs.rs/wickandbergamot-cli-config
+[`wickandbergamot-clap-utils`]: https://docs.rs/wickandbergamot-clap-utils
 [`clap`]: https://docs.rs/clap
