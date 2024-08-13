@@ -10,7 +10,7 @@ use {
         },
         cluster_nodes::ClusterNodesCache,
     },
-    safecoin_gossip::{
+    wickandbergamot_gossip::{
         cluster_info::{ClusterInfo, Node},
         legacy_contact_info::LegacyContactInfo as ContactInfo,
     },
