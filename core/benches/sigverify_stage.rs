@@ -15,7 +15,7 @@ use {
         sigverify::TransactionSigVerifier,
         sigverify_stage::{SigVerifier, SigVerifyStage},
     },
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_perf::{
         packet::{to_packet_batches, PacketBatch},
         test_tx::test_tx,
