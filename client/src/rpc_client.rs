@@ -1,7 +1,7 @@
-//! Communication with a Safecoin node over RPC.
+//! Communication with a Wickandbergamot node over RPC.
 //!
-//! Software that interacts with the Safecoin blockchain, whether querying its
-//! state or submitting transactions, communicates with a Safecoin node over
+//! Software that interacts with the Wickandbergamot blockchain, whether querying its
+//! state or submitting transactions, communicates with a Wickandbergamot node over
 //! [JSON-RPC], using the [`RpcClient`] type.
 //!
 //! [JSON-RPC]: https://www.jsonrpc.org/specification
@@ -22,7 +22,7 @@ use {
     },
     serde::Serialize,
     serde_json::Value,
-    safecoin_account_decoder::{
+    wickandbergamot_account_decoder::{
         parse_token::{UiTokenAccount, UiTokenAmount},
         UiAccount, UiAccountEncoding,
     },
@@ -39,7 +39,7 @@ use {
         signature::Signature,
         transaction::{self, uses_durable_nonce, Transaction, VersionedTransaction},
     },
-    safecoin_transaction_status::{
+    wickandbergamot_transaction_status::{
         EncodedConfirmedBlock, EncodedConfirmedTransactionWithStatusMeta, TransactionStatus,
         UiConfirmedBlock, UiTransactionEncoding,
     },
@@ -105,10 +105,10 @@ pub struct GetConfirmedSignaturesForAddress2Config {
     pub commitment: Option<CommitmentConfig>,
 }
 
-/// A client of a remote Safecoin node.
+/// A client of a remote wickandbergamot node.
 ///
-/// `RpcClient` communicates with a Safecoin node over [JSON-RPC], with the
-/// [Safecoin JSON-RPC protocol][jsonprot]. It is the primary Rust interface for
+/// `RpcClient` communicates with a wickandbergamot node over [JSON-RPC], with the
+/// [wickandbergamot JSON-RPC protocol][jsonprot]. It is the primary Rust interface for
 /// querying and transacting with the network from external programs.
 ///
 /// This type builds on the underlying RPC protocol, adding extra features such
@@ -162,8 +162,8 @@ pub struct GetConfirmedSignaturesForAddress2Config {
 ///
 /// ```
 /// # use solana_sdk::system_transaction;
-/// # use safecoin_client::rpc_client::RpcClient;
-/// # use safecoin_client::client_error::ClientError;
+/// # use wickandbergamot_client::rpc_client::RpcClient;
+/// # use wickandbergamot_client::client_error::ClientError;
 /// # use solana_sdk::signature::{Keypair, Signer};
 /// # use solana_sdk::hash::Hash;
 /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
@@ -236,7 +236,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::rpc_client::RpcClient;
+    /// # use wickandbergamot_client::rpc_client::RpcClient;
     /// let url = "http://localhost:8328".to_string();
     /// let client = RpcClient::new(url);
     /// ```
@@ -260,7 +260,7 @@ impl RpcClient {
     ///
     /// ```
     /// # use solana_sdk::commitment_config::CommitmentConfig;
-    /// # use safecoin_client::rpc_client::RpcClient;
+    /// # use wickandbergamot_client::rpc_client::RpcClient;
     /// let url = "http://localhost:8328".to_string();
     /// let commitment_config = CommitmentConfig::processed();
     /// let client = RpcClient::new_with_commitment(url, commitment_config);
@@ -287,7 +287,7 @@ impl RpcClient {
     ///
     /// ```
     /// # use std::time::Duration;
-    /// # use safecoin_client::rpc_client::RpcClient;
+    /// # use wickandbergamot_client::rpc_client::RpcClient;
     /// let url = "http://localhost::8328".to_string();
     /// let timeout = Duration::from_secs(1);
     /// let client = RpcClient::new_with_timeout(url, timeout);
@@ -310,7 +310,7 @@ impl RpcClient {
     ///
     /// ```
     /// # use std::time::Duration;
-    /// # use safecoin_client::rpc_client::RpcClient;
+    /// # use wickandbergamot_client::rpc_client::RpcClient;
     /// # use solana_sdk::commitment_config::CommitmentConfig;
     /// let url = "http://localhost::8328".to_string();
     /// let timeout = Duration::from_secs(1);
@@ -351,7 +351,7 @@ impl RpcClient {
     ///
     /// ```
     /// # use std::time::Duration;
-    /// # use safecoin_client::rpc_client::RpcClient;
+    /// # use wickandbergamot_client::rpc_client::RpcClient;
     /// # use solana_sdk::commitment_config::CommitmentConfig;
     /// let url = "http://localhost::8328".to_string();
     /// let timeout = Duration::from_secs(1);
@@ -386,7 +386,7 @@ impl RpcClient {
     /// tests.
     ///
     /// It is primarily for internal use, with limited customizability, and
-    /// behaviors determined by internal Safecoin test cases. New users should
+    /// behaviors determined by internal wickandbergamot test cases. New users should
     /// consider implementing `RpcSender` themselves and constructing
     /// `RpcClient` with [`RpcClient::new_sender`] to get mock behavior.
     ///
@@ -413,14 +413,14 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::rpc_client::RpcClient;
+    /// # use wickandbergamot_client::rpc_client::RpcClient;
     /// // Create an `RpcClient` that always succeeds
     /// let url = "succeeds".to_string();
     /// let successful_client = RpcClient::new_mock(url);
     /// ```
     ///
     /// ```
-    /// # use safecoin_client::rpc_client::RpcClient;
+    /// # use wickandbergamot_client::rpc_client::RpcClient;
     /// // Create an `RpcClient` that always fails
     /// let url = "fails".to_string();
     /// let successful_client = RpcClient::new_mock(url);
@@ -439,7 +439,7 @@ impl RpcClient {
     /// tests.
     ///
     /// It is primarily for internal use, with limited customizability, and
-    /// behaviors determined by internal Safecoin test cases. New users should
+    /// behaviors determined by internal wickandbergamot test cases. New users should
     /// consider implementing `RpcSender` themselves and constructing
     /// `RpcClient` with [`RpcClient::new_sender`] to get mock behavior.
     ///
@@ -475,7 +475,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     rpc_request::RpcRequest,
     /// #     rpc_response::{Response, RpcResponseContext},
@@ -513,7 +513,7 @@ impl RpcClient {
     ///
     /// ```
     /// # use std::net::SocketAddr;
-    /// # use safecoin_client::rpc_client::RpcClient;
+    /// # use wickandbergamot_client::rpc_client::RpcClient;
     /// let addr = SocketAddr::from(([127, 0, 0, 1], 8328));
     /// let client = RpcClient::new_socket(addr);
     /// ```
@@ -534,7 +534,7 @@ impl RpcClient {
     ///
     /// ```
     /// # use std::net::SocketAddr;
-    /// # use safecoin_client::rpc_client::RpcClient;
+    /// # use wickandbergamot_client::rpc_client::RpcClient;
     /// # use solana_sdk::commitment_config::CommitmentConfig;
     /// let addr = SocketAddr::from(([127, 0, 0, 1], 8328));
     /// let commitment_config = CommitmentConfig::processed();
@@ -562,7 +562,7 @@ impl RpcClient {
     /// ```
     /// # use std::net::SocketAddr;
     /// # use std::time::Duration;
-    /// # use safecoin_client::rpc_client::RpcClient;
+    /// # use wickandbergamot_client::rpc_client::RpcClient;
     /// let addr = SocketAddr::from(([127, 0, 0, 1], 8328));
     /// let timeout = Duration::from_secs(1);
     /// let client = RpcClient::new_socket_with_timeout(addr, timeout);
@@ -638,7 +638,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -750,7 +750,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -828,7 +828,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// #     rpc_config::RpcSendTransactionConfig,
@@ -900,7 +900,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -955,7 +955,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -1040,7 +1040,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// #     rpc_response::RpcSimulateTransactionResult,
@@ -1110,7 +1110,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// #     rpc_config::RpcSimulateTransactionConfig,
@@ -1165,7 +1165,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1219,7 +1219,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1286,7 +1286,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1363,7 +1363,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1429,7 +1429,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1494,7 +1494,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1550,7 +1550,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1575,7 +1575,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1605,7 +1605,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1630,7 +1630,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1663,7 +1663,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1689,7 +1689,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1712,7 +1712,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// #     rpc_config::RpcBlockProductionConfig,
@@ -1764,7 +1764,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// #     rpc_response::StakeActivationState,
@@ -1843,7 +1843,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1866,7 +1866,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1897,7 +1897,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// #     rpc_config::RpcLargestAccountsConfig,
@@ -1937,7 +1937,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1964,7 +1964,7 @@ impl RpcClient {
     ///
     /// ```
     /// # use solana_sdk::commitment_config::CommitmentConfig;
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1999,7 +1999,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// #     rpc_config::RpcGetVoteAccountsConfig,
@@ -2054,7 +2054,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2085,7 +2085,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2109,8 +2109,8 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_transaction_status::UiTransactionEncoding;
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_transaction_status::UiTransactionEncoding;
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2142,11 +2142,11 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_transaction_status::{
+    /// # use wickandbergamot_transaction_status::{
     /// #     TransactionDetails,
     /// #     UiTransactionEncoding,
     /// # };
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     rpc_config::RpcBlockConfig,
     /// #     client_error::ClientError,
@@ -2246,7 +2246,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2300,7 +2300,7 @@ impl RpcClient {
     ///
     /// ```
     /// # use solana_sdk::commitment_config::CommitmentConfig;
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2353,7 +2353,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2393,7 +2393,7 @@ impl RpcClient {
     ///
     /// ```
     /// # use solana_sdk::commitment_config::CommitmentConfig;
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2508,7 +2508,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -2553,7 +2553,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// #     rpc_client::GetConfirmedSignaturesForAddress2Config,
@@ -2644,7 +2644,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -2654,7 +2654,7 @@ impl RpcClient {
     /// #     signer::keypair::Keypair,
     /// #     system_transaction,
     /// # };
-    /// # use safecoin_transaction_status::UiTransactionEncoding;
+    /// # use wickandbergamot_transaction_status::UiTransactionEncoding;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
@@ -2698,7 +2698,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// #     rpc_config::RpcTransactionConfig,
@@ -2710,7 +2710,7 @@ impl RpcClient {
     /// #     system_transaction,
     /// #     commitment_config::CommitmentConfig,
     /// # };
-    /// # use safecoin_transaction_status::UiTransactionEncoding;
+    /// # use wickandbergamot_transaction_status::UiTransactionEncoding;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
@@ -2783,7 +2783,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -2812,7 +2812,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -2835,7 +2835,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -2872,7 +2872,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -2902,7 +2902,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -2938,11 +2938,11 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
-    /// # use safecoin_client::rpc_config::RpcLeaderScheduleConfig;
+    /// # use wickandbergamot_client::rpc_config::RpcLeaderScheduleConfig;
     /// # use solana_sdk::commitment_config::CommitmentConfig;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let slot = rpc_client.get_slot()?;
@@ -2979,7 +2979,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3005,7 +3005,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3039,7 +3039,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3071,7 +3071,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3100,7 +3100,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3123,7 +3123,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3150,7 +3150,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3175,7 +3175,7 @@ impl RpcClient {
         self.invoke(self.rpc_client.get_inflation_reward(addresses, epoch))
     }
 
-    /// Returns the current safecoin version running on the node.
+    /// Returns the current wickandbergamot version running on the node.
     ///
     /// # RPC Reference
     ///
@@ -3186,7 +3186,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3217,7 +3217,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3257,7 +3257,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::{self, RpcClient},
     /// #     client_error::ClientError,
     /// # };
@@ -3294,7 +3294,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::{self, RpcClient},
     /// #     client_error::ClientError,
     /// # };
@@ -3344,7 +3344,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::{self, RpcClient},
     /// #     rpc_config::RpcAccountInfoConfig,
     /// #     client_error::ClientError,
@@ -3355,7 +3355,7 @@ impl RpcClient {
     /// #     pubkey::Pubkey,
     /// #     commitment_config::CommitmentConfig,
     /// # };
-    /// # use safecoin_account_decoder::UiAccountEncoding;
+    /// # use wickandbergamot_account_decoder::UiAccountEncoding;
     /// # use std::str::FromStr;
     /// # let mocks = rpc_client::create_rpc_client_mocks();
     /// # let rpc_client = RpcClient::new_mock_with_mocks("succeeds".to_string(), mocks);
@@ -3393,7 +3393,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -3416,7 +3416,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -3442,7 +3442,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -3472,7 +3472,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -3514,7 +3514,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     rpc_config::RpcAccountInfoConfig,
     /// #     client_error::ClientError,
@@ -3524,7 +3524,7 @@ impl RpcClient {
     /// #     signer::keypair::Keypair,
     /// #     commitment_config::CommitmentConfig,
     /// # };
-    /// # use safecoin_account_decoder::UiAccountEncoding;
+    /// # use wickandbergamot_account_decoder::UiAccountEncoding;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
@@ -3569,7 +3569,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::{self, RpcClient},
     /// #     client_error::ClientError,
     /// # };
@@ -3601,7 +3601,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -3632,7 +3632,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -3660,7 +3660,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -3705,7 +3705,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -3733,7 +3733,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// #     rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
@@ -3744,7 +3744,7 @@ impl RpcClient {
     /// #     signer::keypair::Keypair,
     /// #     commitment_config::CommitmentConfig,
     /// # };
-    /// # use safecoin_account_decoder::{UiDataSliceConfig, UiAccountEncoding};
+    /// # use wickandbergamot_account_decoder::{UiDataSliceConfig, UiAccountEncoding};
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let alice = Keypair::new();
     /// # let base64_bytes = "\
@@ -3800,7 +3800,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -3823,7 +3823,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use safecoin_client::{
+    /// # use wickandbergamot_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
