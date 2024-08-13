@@ -1,6 +1,6 @@
 use {
     crossbeam_channel::{Receiver, RecvTimeoutError, SendError, Sender},
-    safecoin_gossip::cluster_info::ClusterInfo,
+    wickandbergamot_gossip::cluster_info::ClusterInfo,
     solana_ledger::{
         leader_schedule_cache::LeaderScheduleCache, shred, sigverify_shreds::verify_shreds_gpu,
     },
