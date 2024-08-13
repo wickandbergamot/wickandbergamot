@@ -1,15 +1,15 @@
 #![allow(clippy::integer_arithmetic)]
 use {
-    safecoin_cli::cli::{process_command, CliCommand, CliConfig},
-    safecoin_client::rpc_client::RpcClient,
-    safecoin_faucet::faucet::run_local_faucet,
+    wickandbergamot_cli::cli::{process_command, CliCommand, CliConfig},
+    wickandbergamot_client::rpc_client::RpcClient,
+    wickandbergamot_faucet::faucet::run_local_faucet,
     solana_sdk::{
         commitment_config::CommitmentConfig,
         native_token::sol_to_lamports,
         signature::{Keypair, Signer},
     },
     solana_streamer::socket::SocketAddrSpace,
-    safecoin_test_validator::TestValidator,
+    wickandbergamot_test_validator::TestValidator,
 };
 
 #[test]
