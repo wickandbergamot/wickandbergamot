@@ -2,11 +2,11 @@
 title: Web3 JavaScript API
 ---
 
-## What is Safecoin-Web3.js?
+## What is Wickandbergamot-Web3.js?
 
-The Safecoin-Web3.js library aims to provide complete coverage of Safecoin. The library was built on top of the [Safecoin JSON RPC API](../clients/jsonrpc-api.md).
+The Wickandbergamot-Web3.js library aims to provide complete coverage of Wickandbergamot. The library was built on top of the [Wickandbergamot JSON RPC API](../clients/jsonrpc-api.md).
 
-You can find the full documentation for the `@safecoin/web3.js` library [here](https://solana-labs.github.io/solana-web3.js/).
+You can find the full documentation for the `@wickandbergamot/web3.js` library [here](https://solana-labs.github.io/solana-web3.js/).
 
 ## Common Terminology
 
@@ -16,7 +16,7 @@ You can find the full documentation for the `@safecoin/web3.js` library [here](h
 | Instruction | The smallest unit of a program that a client can include in a transaction. Within its processing code, an instruction may contain one or more cross-program invocations. |
 | Transaction | One or more instructions signed by the client using one or more Keypairs and executed atomically with only two possible outcomes: success or failure.                    |
 
-For the full list of terms, see [Safecoin terminology](../../terminology#cross-program-invocation)
+For the full list of terms, see [Wickandbergamot terminology](../../terminology#cross-program-invocation)
 
 ## Getting Started
 
@@ -25,23 +25,23 @@ For the full list of terms, see [Safecoin terminology](../../terminology#cross-p
 #### yarn
 
 ```bash
-$ yarn add @safecoin/web3.js
+$ yarn add @wickandbergamot/web3.js
 ```
 
 #### npm
 
 ```bash
-$ npm install --save @safecoin/web3.js
+$ npm install --save @wickandbergamot/web3.js
 ```
 
 #### Bundle
 
 ```html
 <!-- Development (un-minified) -->
-<script src="https://unpkg.com/@safecoin/web3.js@latest/lib/index.iife.js"></script>
+<script src="https://unpkg.com/@wickandbergamot/web3.js@latest/lib/index.iife.js"></script>
 
 <!-- Production (minified) -->
-<script src="https://unpkg.com/@safecoin/web3.js@latest/lib/index.iife.min.js"></script>
+<script src="https://unpkg.com/@wickandbergamot/web3.js@latest/lib/index.iife.min.js"></script>
 ```
 
 ### Usage
@@ -49,14 +49,14 @@ $ npm install --save @safecoin/web3.js
 #### Javascript
 
 ```javascript
-const solanaWeb3 = require("@safecoin/web3.js");
+const solanaWeb3 = require("@wickandbergamot/web3.js");
 console.log(solanaWeb3);
 ```
 
 #### ES6
 
 ```javascript
-import * as solanaWeb3 from "@safecoin/web3.js";
+import * as solanaWeb3 from "@wickandbergamot/web3.js";
 console.log(solanaWeb3);
 ```
 
@@ -71,7 +71,7 @@ console.log(solanaWeb3);
 
 ### Connecting to a Wallet
 
-To allow users to use your dApp or application on Safecoin, they will need to get access to their Keypair. A Keypair is a private key with a matching public key, used to sign transactions.
+To allow users to use your dApp or application on Wickandbergamot, they will need to get access to their Keypair. A Keypair is a private key with a matching public key, used to sign transactions.
 
 There are two ways to obtain a Keypair:
 
@@ -81,7 +81,7 @@ There are two ways to obtain a Keypair:
 You can obtain a new Keypair with the following:
 
 ```javascript
-const { Keypair } = require("@safecoin/web3.js");
+const { Keypair } = require("@wickandbergamot/web3.js");
 
 let keypair = Keypair.generate();
 ```
@@ -91,7 +91,7 @@ This will generate a brand new Keypair for a user to fund and use within your ap
 You can allow entry of the secretKey using a textbox, and obtain the Keypair with `Keypair.fromSecretKey(secretKey)`.
 
 ```javascript
-const { Keypair } = require("@safecoin/web3.js");
+const { Keypair } = require("@wickandbergamot/web3.js");
 
 let secretKey = Uint8Array.from([
   202, 171, 192, 129, 150, 189, 204, 241, 142, 71, 205, 2, 81, 97, 2, 176, 48,
@@ -107,9 +107,9 @@ Many wallets today allow users to bring their Keypair using a variety of extensi
 
 ### Creating and Sending Transactions
 
-To interact with programs on Safecoin, you create, sign, and send transactions to the network. Transactions are collections of instructions with signatures. The order that instructions exist in a transaction determines the order they are executed.
+To interact with programs on Wickandbergamot, you create, sign, and send transactions to the network. Transactions are collections of instructions with signatures. The order that instructions exist in a transaction determines the order they are executed.
 
-A transaction in Safecoin-Web3.js is created using the [`Transaction`](javascript-api.md#Transaction) object and adding desired messages, addresses, or instructions.
+A transaction in Wickandbergamot-Web3.js is created using the [`Transaction`](javascript-api.md#Transaction) object and adding desired messages, addresses, or instructions.
 
 Take the example of a transfer transaction:
 
@@ -118,8 +118,8 @@ const {
   Keypair,
   Transaction,
   SystemProgram,
-  LAMPORTS_PER_SAFE,
-} = require("@safecoin/web3.js");
+  LAMPORTS_PER_WICKANDBERGAMOT,
+} = require("@wickandbergamot/web3.js");
 
 let fromKeypair = Keypair.generate();
 let toKeypair = Keypair.generate();
@@ -129,7 +129,7 @@ transaction.add(
   SystemProgram.transfer({
     fromPubkey: fromKeypair.publicKey,
     toPubkey: toKeypair.publicKey,
-    lamports: LAMPORTS_PER_SAFE,
+    lamports: LAMPORTS_PER_WICKANDBERGAMOT,
   }),
 );
 ```
@@ -143,7 +143,7 @@ const {
   sendAndConfirmTransaction,
   clusterApiUrl,
   Connection,
-} = require("@safecoin/web3.js");
+} = require("@wickandbergamot/web3.js");
 
 let keypair = Keypair.generate();
 let connection = new Connection(clusterApiUrl("testnet"));
@@ -151,13 +151,13 @@ let connection = new Connection(clusterApiUrl("testnet"));
 sendAndConfirmTransaction(connection, transaction, [keypair]);
 ```
 
-The above code takes in a `TransactionInstruction` using `SystemProgram`, creates a `Transaction`, and sends it over the network. You use `Connection` in order to define which Safecoin network you are connecting to, namely `mainnet-beta`, `testnet`, or `devnet`.
+The above code takes in a `TransactionInstruction` using `SystemProgram`, creates a `Transaction`, and sends it over the network. You use `Connection` in order to define which Wickandbergamot network you are connecting to, namely `mainnet-beta`, `testnet`, or `devnet`.
 
 ### Interacting with Custom Programs
 
-The previous section visits sending basic transactions. In Safecoin everything you do interacts with different programs, including the previous section's transfer transaction. At the time of writing programs on Safecoin are either written in Rust or C.
+The previous section visits sending basic transactions. In Wickandbergamot everything you do interacts with different programs, including the previous section's transfer transaction. At the time of writing programs on Wickandbergamot are either written in Rust or C.
 
-Let's look at the `SystemProgram`. The method signature for allocating space in your account on Safecoin in Rust looks like this:
+Let's look at the `SystemProgram`. The method signature for allocating space in your account on Wickandbergamot in Rust looks like this:
 
 ```rust
 pub fn allocate(
@@ -166,7 +166,7 @@ pub fn allocate(
 ) -> Instruction
 ```
 
-In Safecoin when you want to interact with a program you must first know all the accounts you will be interacting with.
+In Wickandbergamot when you want to interact with a program you must first know all the accounts you will be interacting with.
 
 You must always provide every account that the program will be interacting within the instruction. Not only that, but you must provide whether or not the account is `isSigner` or `isWritable`.
 
@@ -181,7 +181,7 @@ let connection = new web3.Connection(web3.clusterApiUrl("testnet"));
 
 let airdropSignature = await connection.requestAirdrop(
   payer.publicKey,
-  web3.LAMPORTS_PER_SAFE,
+  web3.LAMPORTS_PER_WICKANDBERGAMOT,
 );
 
 await connection.confirmTransaction({ signature: airdropSignature });
@@ -206,7 +206,7 @@ let allocateStruct = {
 };
 ```
 
-The above is created using `u32` and `ns64` from `@solana/buffer-layout` to facilitate the payload creation. The `allocate` function takes in the parameter `space`. To interact with the function we must provide the data as a Buffer format. The `buffer-layout` library helps with allocating the buffer and encoding it correctly for Rust programs on Safecoin to interpret.
+The above is created using `u32` and `ns64` from `@solana/buffer-layout` to facilitate the payload creation. The `allocate` function takes in the parameter `space`. To interact with the function we must provide the data as a Buffer format. The `buffer-layout` library helps with allocating the buffer and encoding it correctly for Rust programs on Wickandbergamot to interpret.
 
 Let's break down this struct.
 
@@ -223,7 +223,7 @@ Let's break down this struct.
 `index` is set to 8 because the function `allocate` is in the 8th position in the instruction enum for `SystemProgram`.
 
 ```rust
-/* https://github.com/fair-exchange/safecoin/blob/21bc43ed58c63c827ba4db30426965ef3e807180/sdk/program/src/system_instruction.rs#L142-L305 */
+/* https://github.com/wickandbergamot/wickandbergamot/blob/21bc43ed58c63c827ba4db30426965ef3e807180/sdk/program/src/system_instruction.rs#L142-L305 */
 pub enum SystemInstruction {
     /** 0 **/CreateAccount {/**/},
     /** 1 **/Assign {/**/},
@@ -297,7 +297,7 @@ The full code can be found below.
 ```javascript
 const { struct, u32, ns64 } = require("@solana/buffer-layout");
 const { Buffer } = require("buffer");
-const web3 = require("@safecoin/web3.js");
+const web3 = require("@wickandbergamot/web3.js");
 
 let keypair = web3.Keypair.generate();
 let payer = web3.Keypair.generate();
@@ -306,7 +306,7 @@ let connection = new web3.Connection(web3.clusterApiUrl("testnet"));
 
 let airdropSignature = await connection.requestAirdrop(
   payer.publicKey,
-  web3.LAMPORTS_PER_SAFE,
+  web3.LAMPORTS_PER_WICKANDBERGAMOT,
 );
 
 await connection.confirmTransaction({ signature: airdropSignature });
