@@ -10,17 +10,17 @@ use {
     itertools::{izip, Itertools},
     lru::LruCache,
     rayon::{prelude::*, ThreadPool, ThreadPoolBuilder},
-    safecoin_client::rpc_response::SlotUpdate,
-    safecoin_gossip::{
+    wickandbergamot_client::rpc_response::SlotUpdate,
+    wickandbergamot_gossip::{
         cluster_info::ClusterInfo, legacy_contact_info::LegacyContactInfo as ContactInfo,
     },
     solana_ledger::{
         leader_schedule_cache::LeaderScheduleCache,
         shred::{self, ShredId},
     },
-    safecoin_measure::measure::Measure,
-    safecoin_rayon_threadlimit::get_thread_count,
-    safecoin_rpc::{max_slots::MaxSlots, rpc_subscriptions::RpcSubscriptions},
+    wickandbergamot_measure::measure::Measure,
+    wickandbergamot_rayon_threadlimit::get_thread_count,
+    wickandbergamot_rpc::{max_slots::MaxSlots, rpc_subscriptions::RpcSubscriptions},
     solana_runtime::{bank::Bank, bank_forks::BankForks},
     solana_sdk::{clock::Slot, pubkey::Pubkey, timing::timestamp},
     solana_streamer::{
