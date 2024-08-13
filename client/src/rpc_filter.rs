@@ -2,7 +2,7 @@
 use {
     crate::version_req::VersionReq,
     solana_sdk::account::{AccountSharedData, ReadableAccount},
-    safe_token_2022::{generic_token_account::GenericTokenAccount, state::Account},
+    wickandbergamot_token_2024::{generic_token_account::GenericTokenAccount, state::Account},
     std::borrow::Cow,
     thiserror::Error,
 };
