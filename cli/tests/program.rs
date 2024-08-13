@@ -2,13 +2,13 @@
 
 use {
     serde_json::Value,
-    safecoin_cli::{
+    wickandbergamot_cli::{
         cli::{process_command, CliCommand, CliConfig},
         program::{ProgramCliCommand, CLOSE_PROGRAM_WARNING},
     },
-    safecoin_cli_output::OutputFormat,
-    safecoin_client::rpc_client::RpcClient,
-    safecoin_faucet::faucet::run_local_faucet,
+    wickandbergamot_cli_output::OutputFormat,
+    wickandbergamot_client::rpc_client::RpcClient,
+    wickandbergamot_faucet::faucet::run_local_faucet,
     solana_sdk::{
         account_utils::StateMut,
         bpf_loader,
@@ -18,7 +18,7 @@ use {
         signature::{Keypair, Signer},
     },
     solana_streamer::socket::SocketAddrSpace,
-    safecoin_test_validator::TestValidator,
+    wickandbergamot_test_validator::TestValidator,
     std::{env, fs::File, io::Read, path::PathBuf, str::FromStr},
 };
 
