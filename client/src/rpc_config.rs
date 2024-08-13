@@ -1,11 +1,11 @@
 use {
     crate::rpc_filter::RpcFilterType,
-    safecoin_account_decoder::{UiAccountEncoding, UiDataSliceConfig},
+    wickandbergamot_account_decoder::{UiAccountEncoding, UiDataSliceConfig},
     solana_sdk::{
         clock::{Epoch, Slot},
         commitment_config::{CommitmentConfig, CommitmentLevel},
     },
-    safecoin_transaction_status::{TransactionDetails, UiTransactionEncoding},
+    wickandbergamot_transaction_status::{TransactionDetails, UiTransactionEncoding},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
