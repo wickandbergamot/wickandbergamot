@@ -3,7 +3,7 @@ use {
     crate::rpc_response::RpcSimulateTransactionResult,
     jsonrpc_core::{Error, ErrorCode},
     solana_sdk::clock::Slot,
-    safecoin_transaction_status::EncodeError,
+    wickandbergamot_transaction_status::EncodeError,
     thiserror::Error,
 };
 
