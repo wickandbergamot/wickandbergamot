@@ -19,7 +19,7 @@ use {
         value::Value::{Number, Object},
         Map, Value,
     },
-    safecoin_account_decoder::UiAccount,
+    wickandbergamot_account_decoder::UiAccount,
     solana_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature},
     std::{
         marker::PhantomData,
@@ -144,7 +144,7 @@ where
         let json_msg: Map<String, Value> = serde_json::from_str(message_text)?;
 
         if let Some(Object(version_map)) = json_msg.get("result") {
-            if let Some(node_version) = version_map.get("safecoin-core") {
+            if let Some(node_version) = version_map.get("wickandbergamot-core") {
                 let node_version = semver::Version::parse(
                     node_version.as_str().unwrap_or_default(),
                 )
