@@ -1,6 +1,6 @@
 ---
 title: Commitment Status
-description: "Processed, confirmed, and finalized. Learn the differences between the different commitment statuses on the Safecoin blockchain."
+description: "Processed, confirmed, and finalized. Learn the differences between the different commitment statuses on the Wickandbergamot blockchain."
 keywords:
   - processed
   - confirmed
