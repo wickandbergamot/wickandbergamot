@@ -2,8 +2,8 @@ use {
     super::*,
     crate::cluster_nodes::ClusterNodesCache,
     itertools::Itertools,
-    safecoin_entry::entry::Entry,
-    safecoin_gossip::legacy_contact_info::LegacyContactInfo as ContactInfo,
+    wickandbergamot_entry::entry::Entry,
+    wickandbergamot_gossip::legacy_contact_info::LegacyContactInfo as ContactInfo,
     solana_ledger::shred::{ProcessShredsStats, ReedSolomonCache, Shredder},
     solana_sdk::{
         hash::Hash,
