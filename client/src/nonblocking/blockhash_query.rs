@@ -1,7 +1,7 @@
 use {
     crate::nonblocking::{nonce_utils, rpc_client::RpcClient},
     clap::ArgMatches,
-    safecoin_clap_utils::{
+    wickandbergamot_clap_utils::{
         input_parsers::{pubkey_of, value_of},
         nonce::*,
         offline::*,
@@ -122,7 +122,7 @@ mod tests {
         },
         clap::App,
         serde_json::{self, json},
-        safecoin_account_decoder::{UiAccount, UiAccountEncoding},
+        wickandbergamot_account_decoder::{UiAccount, UiAccountEncoding},
         solana_sdk::{
             account::Account,
             fee_calculator::FeeCalculator,
