@@ -1,23 +1,23 @@
 #![allow(clippy::integer_arithmetic)]
 use {
-    safecoin_cli::{
+    wickandbergamot_cli::{
         check_balance,
         cli::{process_command, request_and_confirm_airdrop, CliCommand, CliConfig},
         spend_utils::SpendAmount,
     },
-    safecoin_cli_output::{parse_sign_only_reply_string, OutputFormat},
-    safecoin_client::{
+    wickandbergamot_cli_output::{parse_sign_only_reply_string, OutputFormat},
+    wickandbergamot_client::{
         blockhash_query::{self, BlockhashQuery},
         rpc_client::RpcClient,
     },
-    safecoin_faucet::faucet::run_local_faucet,
+    wickandbergamot_faucet::faucet::run_local_faucet,
     solana_sdk::{
         account_utils::StateMut,
         commitment_config::CommitmentConfig,
         signature::{Keypair, NullSigner, Signer},
     },
     solana_streamer::socket::SocketAddrSpace,
-    safecoin_test_validator::TestValidator,
+    wickandbergamot_test_validator::TestValidator,
     solana_vote_program::vote_state::{VoteAuthorize, VoteState, VoteStateVersions},
 };
 
