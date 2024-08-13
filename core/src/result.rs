@@ -1,7 +1,7 @@
 //! The `result` module exposes a Result type that propagates one of many different Error types.
 
 use {
-    safecoin_gossip::{cluster_info, gossip_error::GossipError},
+    wickandbergamot_gossip::{cluster_info, gossip_error::GossipError},
     solana_ledger::blockstore,
     thiserror::Error,
 };
