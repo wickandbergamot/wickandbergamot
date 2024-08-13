@@ -1,41 +1,41 @@
 ---
-title: Install the Safecoin Tool Suite
+title: Install the Wickandbergamot Tool Suite
 ---
 
-There are multiple ways to install the Safecoin tools on your computer
+There are multiple ways to install the Wickandbergamot tools on your computer
 depending on your preferred workflow:
 
-- [Use Safecoin's Install Tool (Simplest option)](#use-solanas-install-tool)
+- [Use Wickandbergamot's Install Tool (Simplest option)](#use-solanas-install-tool)
 - [Download Prebuilt Binaries](#download-prebuilt-binaries)
 - [Build from Source](#build-from-source)
 - [Use Homebrew](#use-homebrew)
 
-## Use Safecoin's Install Tool
+## Use Wickandbergamot's Install Tool
 
 ### MacOS & Linux
 
 - Open your favorite Terminal application
 
-- Install the Safecoin release
-  [LATEST_SAFECOIN_RELEASE_VERSION](https://github.com/fair-exchange/safecoin/releases/tag/LATEST_SAFECOIN_RELEASE_VERSION) on your
+- Install the Wickandbergamot release
+  [LATEST_WICKANDBERGAMOT_RELEASE_VERSION](https://github.com/wickandbergamot/wickandbergamot/releases/tag/LATEST_WICKANDBERGAMOT_RELEASE_VERSION) on your
   machine by running:
 
 ```bash
-sh -c "$(curl -sSfL https://release.solana.com/LATEST_SAFECOIN_RELEASE_VERSION/install)"
+sh -c "$(curl -sSfL https://release.solana.com/LATEST_WICKANDBERGAMOT_RELEASE_VERSION/install)"
 ```
 
-- You can replace `LATEST_SAFECOIN_RELEASE_VERSION` with the release tag matching
+- You can replace `LATEST_WICKANDBERGAMOT_RELEASE_VERSION` with the release tag matching
   the software version of your desired release, or use one of the three symbolic
   channel names: `stable`, `beta`, or `edge`.
 
 - The following output indicates a successful update:
 
 ```text
-downloading LATEST_SAFECOIN_RELEASE_VERSION installer
+downloading LATEST_WICKANDBERGAMOT_RELEASE_VERSION installer
 Configuration: /home/solana/.config/solana/install/config.yml
 Active release directory: /home/solana/.local/share/solana/install/active_release
-* Release version: LATEST_SAFECOIN_RELEASE_VERSION
-* Release URL: https://github.com/fair-exchange/safecoin/releases/download/LATEST_SAFECOIN_RELEASE_VERSION/solana-release-x86_64-unknown-linux-gnu.tar.bz2
+* Release version: LATEST_WICKANDBERGAMOT_RELEASE_VERSION
+* Release URL: https://github.com/wickandbergamot/wickandbergamot/releases/download/LATEST_WICKANDBERGAMOT_RELEASE_VERSION/solana-release-x86_64-unknown-linux-gnu.tar.bz2
 Update successful
 ```
 
@@ -43,7 +43,7 @@ Update successful
   to
 
 ```bash
-Please update your PATH environment variable to include the safecoin programs:
+Please update your PATH environment variable to include the WICKANDBERGAMOT programs:
 ```
 
 - If you get the above message, copy and paste the recommended command below
@@ -51,11 +51,11 @@ Please update your PATH environment variable to include the safecoin programs:
 - Confirm you have the desired version of `solana` installed by running:
 
 ```bash
-safecoin --version
+wickandbergamot --version
 ```
 
-- After a successful install, `safecoin-install update` may be used to easily
-  update the Safecoin software to a newer version at any time.
+- After a successful install, `wickandbergamot-install update` may be used to easily
+  update the WICKANDBERGAMOT software to a newer version at any time.
 
 ---
 
@@ -68,19 +68,19 @@ safecoin --version
     If you are prompted by a pop-up window asking “Do you want to allow this app to
     make changes to your device?”, click Yes.
 
-- Copy and paste the following command, then press Enter to download the Safecoin
+- Copy and paste the following command, then press Enter to download the WICKANDBERGAMOT
   installer into a temporary directory:
 
 ```bash
-curl https://release.solana.com/LATEST_SAFECOIN_RELEASE_VERSION/safecoin-install-init-x86_64-pc-windows-msvc.exe --output C:\safecoin-install-tmp\safecoin-install-init.exe --create-dirs
+curl https://release.solana.com/LATEST_WICKANDBERGAMOT_RELEASE_VERSION/WICKANDBERGAMOT-install-init-x86_64-pc-windows-msvc.exe --output C:\WICKANDBERGAMOT-install-tmp\WICKANDBERGAMOT-install-init.exe --create-dirs
 ```
 
 - Copy and paste the following command, then press Enter to install the latest
-  version of Safecoin. If you see a security pop-up by your system, please select
+  version of WICKANDBERGAMOT. If you see a security pop-up by your system, please select
   to allow the program to run.
 
 ```bash
-C:\safecoin-install-tmp\safecoin-install-init.exe LATEST_SAFECOIN_RELEASE_VERSION
+C:\WICKANDBERGAMOT-install-tmp\WICKANDBERGAMOT-install-init.exe LATEST_WICKANDBERGAMOT_RELEASE_VERSION
 ```
 
 - When the installer is finished, press Enter.
@@ -92,21 +92,21 @@ C:\safecoin-install-tmp\safecoin-install-init.exe LATEST_SAFECOIN_RELEASE_VERSIO
 - Confirm you have the desired version of `solana` installed by entering:
 
 ```bash
-safecoin --version
+wickandbergamot --version
 ```
 
-- After a successful install, `safecoin-install update` may be used to easily
-  update the Safecoin software to a newer version at any time.
+- After a successful install, `wickandbergamot-install update` may be used to easily
+  update the WICKANDBERGAMOT software to a newer version at any time.
 
 ## Download Prebuilt Binaries
 
-If you would rather not use `safecoin-install` to manage the install, you can
+If you would rather not use `wickandbergamot-install` to manage the install, you can
 manually download and install the binaries.
 
 ### Linux
 
 Download the binaries by navigating to
-[https://github.com/fair-exchange/safecoin/releases/latest](https://github.com/fair-exchange/safecoin/releases/latest),
+[https://github.com/wickandbergamot/wickandbergamot/releases/latest](https://github.com/wickandbergamot/wickandbergamot/releases/latest),
 download **solana-release-x86_64-unknown-linux-msvc.tar.bz2**, then extract the
 archive:
 
@@ -119,7 +119,7 @@ export PATH=$PWD/bin:$PATH
 ### MacOS
 
 Download the binaries by navigating to
-[https://github.com/fair-exchange/safecoin/releases/latest](https://github.com/fair-exchange/safecoin/releases/latest),
+[https://github.com/wickandbergamot/wickandbergamot/releases/latest](https://github.com/wickandbergamot/wickandbergamot/releases/latest),
 download **solana-release-x86_64-apple-darwin.tar.bz2**, then extract the
 archive:
 
@@ -132,7 +132,7 @@ export PATH=$PWD/bin:$PATH
 ### Windows
 
 - Download the binaries by navigating to
-  [https://github.com/fair-exchange/safecoin/releases/latest](https://github.com/fair-exchange/safecoin/releases/latest),
+  [https://github.com/wickandbergamot/wickandbergamot/releases/latest](https://github.com/wickandbergamot/wickandbergamot/releases/latest),
   download **solana-release-x86_64-pc-windows-msvc.tar.bz2**, then extract the
   archive using WinZip or similar.
 
@@ -148,7 +148,7 @@ set PATH=%cd%/bin;%PATH%
 
 If you are unable to use the prebuilt binaries or prefer to build it yourself
 from source, navigate to
-[https://github.com/fair-exchange/safecoin/releases/latest](https://github.com/fair-exchange/safecoin/releases/latest),
+[https://github.com/wickandbergamot/wickandbergamot/releases/latest](https://github.com/wickandbergamot/wickandbergamot/releases/latest),
 and download the **Source Code** archive. Extract the code and build the
 binaries with:
 
@@ -161,7 +161,7 @@ You can then run the following command to obtain the same result as with
 prebuilt binaries:
 
 ```bash
-safecoin-install init
+wickandbergamot-install init
 ```
 
 ## Use Homebrew
@@ -179,5 +179,5 @@ the Homebrew version is outdated.
 - Confirm you have the desired version of `solana` installed by entering:
 
 ```bash
-safecoin --version
+wickandbergamot --version
 ```
