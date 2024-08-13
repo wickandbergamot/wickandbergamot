@@ -13,7 +13,7 @@ use {
         distributions::{Distribution, WeightedError, WeightedIndex},
         Rng,
     },
-    safecoin_gossip::{
+    wickandbergamot_gossip::{
         cluster_info::{ClusterInfo, ClusterInfoError},
         legacy_contact_info::{LegacyContactInfo as ContactInfo, LegacyContactInfo},
         ping_pong::{self, PingCache, Pong},
@@ -1199,7 +1199,7 @@ mod tests {
     use {
         super::*,
         crate::{repair_response, result::Error},
-        safecoin_gossip::{socketaddr, socketaddr_any},
+        wickandbergamot_gossip::{socketaddr, socketaddr_any},
         solana_ledger::{
             blockstore::make_many_slot_entries,
             blockstore_processor::fill_blockstore_slot_with_ticks,
