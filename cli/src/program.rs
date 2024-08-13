@@ -9,15 +9,15 @@ use {
     bip39::{Language, Mnemonic, MnemonicType, Seed},
     clap::{App, AppSettings, Arg, ArgMatches, SubCommand},
     log::*,
-    safecoin_account_decoder::{UiAccountEncoding, UiDataSliceConfig},
+    wickandbergamot_account_decoder::{UiAccountEncoding, UiDataSliceConfig},
     solana_bpf_loader_program::{syscalls::register_syscalls, BpfError, ThisInstructionMeter},
-    safecoin_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*},
-    safecoin_cli_output::{
+    wickandbergamot_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*},
+    wickandbergamot_cli_output::{
         CliProgram, CliProgramAccountType, CliProgramAuthority, CliProgramBuffer, CliProgramId,
         CliUpgradeableBuffer, CliUpgradeableBuffers, CliUpgradeableProgram,
         CliUpgradeableProgramClosed, CliUpgradeablePrograms,
     },
-    safecoin_client::{
+    wickandbergamot_client::{
         client_error::ClientErrorKind,
         connection_cache::ConnectionCache,
         rpc_client::RpcClient,
@@ -31,7 +31,7 @@ use {
         verifier::RequisiteVerifier,
         vm::{Config, VerifiedExecutable},
     },
-    safecoin_remote_wallet::remote_wallet::RemoteWalletManager,
+    wickandbergamot_remote_wallet::remote_wallet::RemoteWalletManager,
     solana_sdk::{
         account::Account,
         account_utils::StateMut,
@@ -40,7 +40,7 @@ use {
         instruction::{Instruction, InstructionError},
         loader_instruction,
         message::Message,
-        native_token::Safe,
+        native_token::Wickandbergamot,
         packet::PACKET_DATA_SIZE,
         pubkey::Pubkey,
         signature::{keypair_from_seed, read_keypair_file, Keypair, Signature, Signer},
@@ -187,7 +187,7 @@ impl ProgramSubCommands for App<'_, '_> {
                             Arg::with_name("allow_excessive_balance")
                                 .long("allow-excessive-deploy-account-balance")
                                 .takes_value(false)
-                                .help("Use the designated program id even if the account already holds a large balance of SAFE")
+                                .help("Use the designated program id even if the account already holds a large balance of WICKANDBERGAMOT")
                         ),
                 )
                 .subcommand(
@@ -331,7 +331,7 @@ impl ProgramSubCommands for App<'_, '_> {
                             Arg::with_name("lamports")
                                 .long("lamports")
                                 .takes_value(false)
-                                .help("Display balance in lamports instead of SAFE"),
+                                .help("Display balance in lamports instead of WICKANDBERGAMOT"),
                         ),
                 )
                 .subcommand(
@@ -391,7 +391,7 @@ impl ProgramSubCommands for App<'_, '_> {
                             Arg::with_name("lamports")
                                 .long("lamports")
                                 .takes_value(false)
-                                .help("Display balance in lamports instead of SAFE"),
+                                .help("Display balance in lamports instead of WICKANDBERGAMOT"),
                         )
                         .arg(
                             Arg::with_name("bypass_warning")
@@ -403,7 +403,7 @@ impl ProgramSubCommands for App<'_, '_> {
         )
         .subcommand(
             SubCommand::with_name("deploy")
-                .about("Deploy a non-upgradeable program. Use `safecoin program deploy` instead to deploy upgradeable programs")
+                .about("Deploy a non-upgradeable program. Use `wickandbergamot program deploy` instead to deploy upgradeable programs")
                 .setting(AppSettings::Hidden)
                 .arg(
                     Arg::with_name("program_location")
@@ -432,7 +432,7 @@ impl ProgramSubCommands for App<'_, '_> {
                     Arg::with_name("allow_excessive_balance")
                         .long("allow-excessive-deploy-account-balance")
                         .takes_value(false)
-                        .help("Use the designated program id, even if the account already holds a large balance of SAFE")
+                        .help("Use the designated program id, even if the account already holds a large balance of WICKANDBERGAMOT")
                 )
                 .arg(
                     Arg::with_name("skip_fee_check")
@@ -2147,7 +2147,7 @@ fn complete_partial_program_init(
         {
             return Err(format!(
                 "Buffer account has a balance: {:?}; it may already be in use",
-                Safe(account.lamports)
+                WICKANDBERGAMOT(account.lamports)
             )
             .into());
         }
@@ -2296,15 +2296,15 @@ fn report_ephemeral_mnemonic(words: usize, mnemonic: bip39::Mnemonic) {
         divider
     );
     eprintln!(
-        "`safecoin-keygen recover` and the following {}-word seed phrase:",
+        "`wickandbergamot-keygen recover` and the following {}-word seed phrase:",
         words
     );
     eprintln!("{}\n{}\n{}", divider, phrase, divider);
     eprintln!("To resume a deploy, pass the recovered keypair as the");
-    eprintln!("[BUFFER_SIGNER] to `safecoin program deploy` or `safecoin program write-buffer'.");
+    eprintln!("[BUFFER_SIGNER] to `wickandbergamot program deploy` or `wickandbergamot program write-buffer'.");
     eprintln!("Or to recover the account's lamports, pass it as the");
     eprintln!(
-        "[BUFFER_ACCOUNT_ADDRESS] argument to `safecoin program close`.\n{}",
+        "[BUFFER_ACCOUNT_ADDRESS] argument to `wickandbergamot program close`.\n{}",
         divider
     );
 }
@@ -2318,7 +2318,7 @@ mod tests {
             cli::{parse_command, process_command},
         },
         serde_json::Value,
-        safecoin_cli_output::OutputFormat,
+        wickandbergamot_cli_output::OutputFormat,
         solana_sdk::signature::write_keypair_file,
     };
 
