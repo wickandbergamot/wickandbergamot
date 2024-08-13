@@ -1,22 +1,22 @@
 use {
     clap::{crate_description, crate_name, value_t_or_exit, ArgMatches},
     console::style,
-    safecoin_clap_utils::{
+    wickandbergamot_clap_utils::{
         input_validators::normalize_to_url_if_moniker,
         keypair::{CliSigners, DefaultSigner},
         DisplayError,
     },
-    safecoin_cli::{
+    wickandbergamot_cli::{
         clap_app::get_clap_app,
         cli::{parse_command, process_command, CliCommandInfo, CliConfig},
     },
-    safecoin_cli_config::{Config, ConfigInput},
-    safecoin_cli_output::{
+    wickandbergamot_cli_config::{Config, ConfigInput},
+    wickandbergamot_cli_output::{
         display::{println_name_value, println_name_value_or},
         OutputFormat,
     },
-    safecoin_client::rpc_config::RpcSendTransactionConfig,
-    safecoin_remote_wallet::remote_wallet::RemoteWalletManager,
+    wickandbergamot_client::rpc_config::RpcSendTransactionConfig,
+    wickandbergamot_remote_wallet::remote_wallet::RemoteWalletManager,
     std::{collections::HashMap, error, path::PathBuf, sync::Arc, time::Duration},
 };
 
@@ -230,7 +230,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     let matches = get_clap_app(
         crate_name!(),
         crate_description!(),
-        safecoin_version::version!(),
+        wickandbergamot_version::version!(),
     )
     .get_matches();
 
