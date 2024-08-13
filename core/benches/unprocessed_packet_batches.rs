@@ -9,7 +9,7 @@ use {
         banking_stage::*, forward_packet_batches_by_accounts::ForwardPacketBatchesByAccounts,
         unprocessed_packet_batches::*,
     },
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_perf::packet::{Packet, PacketBatch},
     solana_runtime::{
         bank::Bank,
