@@ -97,7 +97,7 @@ pub fn account_identity_ok<T: ReadableAccount>(account: &T) -> Result<(), Error>
 /// Determine if a nonce account is initialized:
 ///
 /// ```no_run
-/// use safecoin_client::nonblocking::{
+/// use wickandbergamot_client::nonblocking::{
 ///     rpc_client::RpcClient,
 ///     nonce_utils,
 /// };
@@ -149,7 +149,7 @@ pub fn state_from_account<T: ReadableAccount + StateMut<Versions>>(
 /// Create and sign a transaction with a durable nonce:
 ///
 /// ```no_run
-/// use safecoin_client::nonblocking::{
+/// use wickandbergamot_client::nonblocking::{
 ///     rpc_client::RpcClient,
 ///     nonce_utils,
 /// };
