@@ -14,14 +14,14 @@ use {
     },
     crossbeam_channel::{unbounded, Receiver, RecvError, RecvTimeoutError, Sender},
     itertools::Itertools,
-    safecoin_gossip::{
+    wickandbergamot_gossip::{
         cluster_info::{ClusterInfo, ClusterInfoError},
         legacy_contact_info::LegacyContactInfo as ContactInfo,
     },
     solana_ledger::{blockstore::Blockstore, shred::Shred},
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_metrics::{inc_new_counter_error, inc_new_counter_info},
-    safecoin_poh::poh_recorder::WorkingBankEntry,
+    wickandbergamot_poh::poh_recorder::WorkingBankEntry,
     solana_runtime::bank_forks::BankForks,
     solana_sdk::{
         clock::Slot,
@@ -437,8 +437,8 @@ pub mod test {
     use {
         super::*,
         crossbeam_channel::unbounded,
-        safecoin_entry::entry::create_ticks,
-        safecoin_gossip::cluster_info::{ClusterInfo, Node},
+        wickandbergamot_entry::entry::create_ticks,
+        wickandbergamot_gossip::cluster_info::{ClusterInfo, Node},
         solana_ledger::{
             blockstore::Blockstore,
             genesis_utils::{create_genesis_config, GenesisConfigInfo},
