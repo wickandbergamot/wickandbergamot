@@ -3,9 +3,9 @@
 
 use {
     rand::{thread_rng, Rng},
-    safecoin_client::{connection_cache::ConnectionCache, tpu_connection::TpuConnection},
-    safecoin_gossip::cluster_info::ClusterInfo,
-    safecoin_poh::poh_recorder::PohRecorder,
+    wickandbergamot_client::{connection_cache::ConnectionCache, tpu_connection::TpuConnection},
+    wickandbergamot_gossip::cluster_info::ClusterInfo,
+    wickandbergamot_poh::poh_recorder::PohRecorder,
     std::{
         sync::{
             atomic::{AtomicBool, Ordering},
