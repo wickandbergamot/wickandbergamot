@@ -294,7 +294,7 @@ pub mod test {
                     // `is_orphan == true`
                     .and_then(|parent| blockhashes.get(&parent))
                     .unwrap_or(&starting_hash);
-                let entries = safecoin_entry::entry::create_ticks(
+                let entries = wickandbergamot_entry::entry::create_ticks(
                     num_ticks * (std::cmp::max(1, slot - parent.unwrap_or(slot))),
                     0,
                     *parent_hash,
