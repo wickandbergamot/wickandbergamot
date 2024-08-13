@@ -25,10 +25,10 @@ use {
     },
     crossbeam_channel::{bounded, unbounded, Receiver},
     rand::{thread_rng, Rng},
-    safecoin_client::connection_cache::ConnectionCache,
-    safecoin_entry::poh::compute_hash_time_ns,
-    safecoin_geyser_plugin_manager::geyser_plugin_service::GeyserPluginService,
-    safecoin_gossip::{
+    wickandbergamot_client::connection_cache::ConnectionCache,
+    wickandbergamot_entry::poh::compute_hash_time_ns,
+    wickandbergamot_geyser_plugin_manager::geyser_plugin_service::GeyserPluginService,
+    wickandbergamot_gossip::{
         cluster_info::{
             ClusterInfo, Node, DEFAULT_CONTACT_DEBUG_INTERVAL_MILLIS,
             DEFAULT_CONTACT_SAVE_INTERVAL_MILLIS,
@@ -47,13 +47,13 @@ use {
         leader_schedule::FixedSchedule,
         leader_schedule_cache::LeaderScheduleCache,
     },
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_metrics::{datapoint_info, poh_timing_point::PohTimingSender},
-    safecoin_poh::{
+    wickandbergamot_poh::{
         poh_recorder::PohRecorder,
         poh_service::{self, PohService},
     },
-    safecoin_rpc::{
+    wickandbergamot_rpc::{
         max_slots::MaxSlots,
         optimistically_confirmed_bank_tracker::{
             OptimisticallyConfirmedBank, OptimisticallyConfirmedBankTracker,
@@ -98,7 +98,7 @@ use {
         signature::{Keypair, Signer},
         timing::timestamp,
     },
-    safecoin_send_transaction_service::send_transaction_service,
+    wickandbergamot_send_transaction_service::send_transaction_service,
     solana_streamer::{socket::SocketAddrSpace, streamer::StakedNodes},
     solana_vote_program::vote_state::VoteState,
     std::{
@@ -354,7 +354,7 @@ pub struct Validator {
     poh_service: PohService,
     tpu: Tpu,
     tvu: Tvu,
-    ip_echo_server: Option<safecoin_net_utils::IpEchoServer>,
+    ip_echo_server: Option<wickandbergamot_net_utils::IpEchoServer>,
     pub cluster_info: Arc<ClusterInfo>,
     pub bank_forks: Arc<RwLock<BankForks>>,
     pub blockstore: Arc<Blockstore>,
@@ -892,7 +892,7 @@ impl Validator {
         }
         let ip_echo_server = match node.sockets.ip_echo {
             None => None,
-            Some(tcp_listener) => Some(safecoin_net_utils::ip_echo_server(
+            Some(tcp_listener) => Some(wickandbergamot_net_utils::ip_echo_server(
                 tcp_listener,
                 Some(node.info.shred_version),
             )),
@@ -1063,7 +1063,7 @@ impl Validator {
         datapoint_info!(
             "validator-new",
             ("id", id.to_string(), String),
-            ("version", safecoin_version::version!(), String)
+            ("version", wickandbergamot_version::version!(), String)
         );
 
         *start_progress.write().unwrap() = ValidatorStartProgress::Running;
@@ -2092,7 +2092,7 @@ mod tests {
     use {
         super::*,
         crossbeam_channel::{bounded, RecvTimeoutError},
-        safecoin_client::connection_cache::{
+        wickandbergamot_client::connection_cache::{
             DEFAULT_TPU_CONNECTION_POOL_SIZE, DEFAULT_TPU_ENABLE_UDP, DEFAULT_TPU_USE_QUIC,
         },
         solana_ledger::{create_new_tmp_ledger, genesis_utils::create_genesis_config_with_leader},
@@ -2148,7 +2148,7 @@ mod tests {
         use std::time::Instant;
         solana_logger::setup();
         use {
-            safecoin_entry::entry,
+            wickandbergamot_entry::entry,
             solana_ledger::{blockstore, get_tmp_ledger_path},
         };
         let blockstore_path = get_tmp_ledger_path!();
