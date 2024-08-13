@@ -6,10 +6,10 @@ use {
         result::{Error, Result},
     },
     crossbeam_channel::{unbounded, RecvTimeoutError},
-    safecoin_client::connection_cache::DEFAULT_TPU_ENABLE_UDP,
+    wickandbergamot_client::connection_cache::DEFAULT_TPU_ENABLE_UDP,
     solana_metrics::{inc_new_counter_debug, inc_new_counter_info},
     solana_perf::{packet::PacketBatchRecycler, recycler::Recycler},
-    safecoin_poh::poh_recorder::PohRecorder,
+    wickandbergamot_poh::poh_recorder::PohRecorder,
     solana_sdk::{
         clock::DEFAULT_TICKS_PER_SLOT,
         packet::{Packet, PacketFlags},
