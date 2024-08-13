@@ -17,7 +17,7 @@ use {
     },
     async_trait::async_trait,
     serde_json::{json, Number, Value},
-    safecoin_account_decoder::{UiAccount, UiAccountEncoding},
+    wickandbergamot_account_decoder::{UiAccount, UiAccountEncoding},
     solana_sdk::{
         account::Account,
         clock::{Slot, UnixTimestamp},
@@ -30,14 +30,14 @@ use {
         sysvar::epoch_schedule::EpochSchedule,
         transaction::{self, Transaction, TransactionError, TransactionVersion},
     },
-    safecoin_transaction_status::{
+    wickandbergamot_transaction_status::{
         option_serializer::OptionSerializer, EncodedConfirmedBlock,
         EncodedConfirmedTransactionWithStatusMeta, EncodedTransaction,
         EncodedTransactionWithStatusMeta, Rewards, TransactionBinaryEncoding,
         TransactionConfirmationStatus, TransactionStatus, UiCompiledInstruction, UiMessage,
         UiRawMessage, UiTransaction, UiTransactionStatusMeta,
     },
-    safecoin_version::Version,
+    wickandbergamot_version::Version,
     std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::RwLock},
 };
 
