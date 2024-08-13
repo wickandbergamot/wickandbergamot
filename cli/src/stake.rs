@@ -11,7 +11,7 @@ use {
         spend_utils::{resolve_spend_tx_and_check_account_balances, SpendAmount},
     },
     clap::{value_t, App, Arg, ArgGroup, ArgMatches, SubCommand},
-    safecoin_clap_utils::{
+    wickandbergamot_clap_utils::{
         compute_unit_price::{compute_unit_price_arg, COMPUTE_UNIT_PRICE_ARG},
         fee_payer::{fee_payer_arg, FEE_PAYER_ARG},
         input_parsers::*,
@@ -22,16 +22,16 @@ use {
         offline::*,
         ArgConstant,
     },
-    safecoin_cli_output::{
+    wickandbergamot_cli_output::{
         self, display::BuildBalanceMessageConfig, return_signers_with_config, CliBalance,
         CliEpochReward, CliStakeHistory, CliStakeHistoryEntry, CliStakeState, CliStakeType,
         OutputFormat, ReturnSignersConfig,
     },
-    safecoin_client::{
+    wickandbergamot_client::{
         blockhash_query::BlockhashQuery, nonce_utils, rpc_client::RpcClient,
         rpc_request::DELINQUENT_VALIDATOR_SLOT_DISTANCE, rpc_response::RpcInflationReward,
     },
-    safecoin_remote_wallet::remote_wallet::RemoteWalletManager,
+    wickandbergamot_remote_wallet::remote_wallet::RemoteWalletManager,
     solana_sdk::{
         account::from_account,
         account_utils::StateMut,
@@ -2671,7 +2671,7 @@ mod tests {
     use {
         super::*,
         crate::{clap_app::get_clap_app, cli::parse_command},
-        safecoin_client::blockhash_query,
+        wickandbergamot_client::blockhash_query,
         solana_sdk::{
             hash::Hash,
             signature::{
