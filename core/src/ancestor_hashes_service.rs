@@ -14,7 +14,7 @@ use {
     bincode::serialize,
     crossbeam_channel::{unbounded, Receiver, Sender},
     dashmap::{mapref::entry::Entry::Occupied, DashMap},
-    safecoin_gossip::{cluster_info::ClusterInfo, ping_pong::Pong},
+    wickandbergamot_gossip::{cluster_info::ClusterInfo, ping_pong::Pong},
     solana_ledger::blockstore::Blockstore,
     solana_perf::{
         packet::{deserialize_from_with_limit, Packet, PacketBatch},
@@ -769,7 +769,7 @@ mod test {
             serve_repair::MAX_ANCESTOR_RESPONSES,
             vote_simulator::VoteSimulator,
         },
-        safecoin_gossip::{
+        wickandbergamot_gossip::{
             cluster_info::{ClusterInfo, Node},
             legacy_contact_info::LegacyContactInfo as ContactInfo,
         },
