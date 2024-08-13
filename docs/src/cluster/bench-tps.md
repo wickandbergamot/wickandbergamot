@@ -2,20 +2,20 @@
 title: Benchmark a Cluster
 ---
 
-The Safecoin git repository contains all the scripts you might need to spin up your own local testnet. Depending on what you're looking to achieve, you may want to run a different variation, as the full-fledged, performance-enhanced multinode testnet is considerably more complex to set up than a Rust-only, singlenode testnode. If you are looking to develop high-level features, such as experimenting with smart contracts, save yourself some setup headaches and stick to the Rust-only singlenode demo. If you're doing performance optimization of the transaction pipeline, consider the enhanced singlenode demo. If you're doing consensus work, you'll need at least a Rust-only multinode demo. If you want to reproduce our TPS metrics, run the enhanced multinode demo.
+The wickandbergamot git repository contains all the scripts you might need to spin up your own local testnet. Depending on what you're looking to achieve, you may want to run a different variation, as the full-fledged, performance-enhanced multinode testnet is considerably more complex to set up than a Rust-only, singlenode testnode. If you are looking to develop high-level features, such as experimenting with smart contracts, save yourself some setup headaches and stick to the Rust-only singlenode demo. If you're doing performance optimization of the transaction pipeline, consider the enhanced singlenode demo. If you're doing consensus work, you'll need at least a Rust-only multinode demo. If you want to reproduce our TPS metrics, run the enhanced multinode demo.
 
-For all four variations, you'd need the latest Rust toolchain and the Safecoin source code:
+For all four variations, you'd need the latest Rust toolchain and the wickandbergamot source code:
 
-First, setup Rust, Cargo and system packages as described in the Safecoin [README](https://github.com/fair-exchange/safecoin#1-install-rustc-cargo-and-rustfmt)
+First, setup Rust, Cargo and system packages as described in the wickandbergamot [README](https://github.com/wickandbergamot/wickandbergamot#1-install-rustc-cargo-and-rustfmt)
 
 Now checkout the code from github:
 
 ```bash
-git clone https://github.com/fair-exchange/safecoin.git
+git clone https://github.com/wickandbergamot/wickandbergamot.git
 cd solana
 ```
 
-The demo code is sometimes broken between releases as we add new low-level features, so if this is your first time running the demo, you'll improve your odds of success if you check out the [latest release](https://github.com/fair-exchange/safecoin/releases) before proceeding:
+The demo code is sometimes broken between releases as we add new low-level features, so if this is your first time running the demo, you'll improve your odds of success if you check out the [latest release](https://github.com/fair-exchange/wickandbergamot/releases) before proceeding:
 
 ```bash
 TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
@@ -71,8 +71,8 @@ To run a performance-enhanced validator on Linux, [CUDA 10.0](https://developer.
 
 ```bash
 ./fetch-perf-libs.sh
-NDEBUG=1 SAFECOIN_CUDA=1 ./multinode-demo/bootstrap-validator.sh
-NDEBUG=1 SAFECOIN_CUDA=1 ./multinode-demo/validator.sh
+NDEBUG=1 WICKANDBERGAMOT_CUDA=1 ./multinode-demo/bootstrap-validator.sh
+NDEBUG=1 WICKANDBERGAMOT_CUDA=1 ./multinode-demo/validator.sh
 ```
 
 ### Testnet Client Demo
@@ -107,7 +107,7 @@ For example
 
 Generally we are using `debug` for infrequent debug messages, `trace` for potentially frequent messages and `info` for performance-related logging.
 
-You can also attach to a running process with GDB. The leader's process is named _safecoin-validator_:
+You can also attach to a running process with GDB. The leader's process is named _wickandbergamot-validator_:
 
 ```bash
 sudo gdb
@@ -123,7 +123,7 @@ This will dump all the threads stack traces into gdb.txt
 In this example the client connects to our public testnet. To run validators on the testnet you would need to open udp ports `8000-10000`.
 
 ```bash
-NDEBUG=1 ./multinode-demo/bench-tps.sh --entrypoint entrypoint.devnet.safecoin.org:10015 --faucet api.devnet.safecoin.org:9900 --duration 60 --tx_count 50
+NDEBUG=1 ./multinode-demo/bench-tps.sh --entrypoint entrypoint.devnet.wickandbergamot.org:10015 --faucet api.devnet.wickandbergamot.org:9900 --duration 60 --tx_count 50
 ```
 
-You can observe the effects of your client's transactions on our [metrics dashboard](https://metrics.safecoin.org:3000/d/monitor/cluster-telemetry?var-testnet=devnet)
+You can observe the effects of your client's transactions on our [metrics dashboard](https://metrics.wickandbergamot.org:3000/d/monitor/cluster-telemetry?var-testnet=devnet)
