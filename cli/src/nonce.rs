@@ -11,7 +11,7 @@ use {
         spend_utils::{resolve_spend_tx_and_check_account_balance, SpendAmount},
     },
     clap::{App, Arg, ArgMatches, SubCommand},
-    safecoin_clap_utils::{
+    wickandbergamot_clap_utils::{
         compute_unit_price::{compute_unit_price_arg, COMPUTE_UNIT_PRICE_ARG},
         input_parsers::*,
         input_validators::*,
@@ -19,9 +19,9 @@ use {
         memo::{memo_arg, MEMO_ARG},
         nonce::*,
     },
-    safecoin_cli_output::CliNonceAccount,
-    safecoin_client::{nonce_utils::*, rpc_client::RpcClient},
-    safecoin_remote_wallet::remote_wallet::RemoteWalletManager,
+    wickandbergamot_cli_output::CliNonceAccount,
+    wickandbergamot_client::{nonce_utils::*, rpc_client::RpcClient},
+    wickandbergamot_remote_wallet::remote_wallet::RemoteWalletManager,
     solana_sdk::{
         account::Account,
         feature_set::merge_nonce_error_into_system_error,
