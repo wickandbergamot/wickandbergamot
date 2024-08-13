@@ -12,16 +12,16 @@ use {
     },
     crossbeam_channel::{unbounded, Receiver, RecvTimeoutError, Sender},
     rayon::{prelude::*, ThreadPool},
-    safecoin_gossip::cluster_info::ClusterInfo,
+    wickandbergamot_gossip::cluster_info::ClusterInfo,
     solana_ledger::{
         blockstore::{Blockstore, BlockstoreInsertionMetrics},
         leader_schedule_cache::LeaderScheduleCache,
         shred::{self, Nonce, ReedSolomonCache, Shred},
     },
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_metrics::inc_new_counter_error,
     solana_perf::packet::{Packet, PacketBatch},
-    safecoin_rayon_threadlimit::get_thread_count,
+    wickandbergamot_rayon_threadlimit::get_thread_count,
     solana_sdk::clock::Slot,
     std::{
         cmp::Reverse,
@@ -482,8 +482,8 @@ impl WindowService {
 mod test {
     use {
         super::*,
-        safecoin_entry::entry::{create_ticks, Entry},
-        safecoin_gossip::legacy_contact_info::LegacyContactInfo as ContactInfo,
+        wickandbergamot_entry::entry::{create_ticks, Entry},
+        wickandbergamot_gossip::legacy_contact_info::LegacyContactInfo as ContactInfo,
         solana_ledger::{
             blockstore::{make_many_slot_entries, Blockstore},
             get_tmp_ledger_path,
