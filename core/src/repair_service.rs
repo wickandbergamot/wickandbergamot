@@ -5,7 +5,7 @@ use {
         ancestor_hashes_service::{AncestorHashesReplayUpdateReceiver, AncestorHashesService},
         cluster_info_vote_listener::VerifiedVoteReceiver,
         cluster_slots::ClusterSlots,
-        duplicate_repair_status::DuplicateSlotRepairStatus,
+        duplicate_repair_status::DuplicateSlotRepairStatus, 
         outstanding_requests::OutstandingRequests,
         repair_weight::RepairWeight,
         result::Result,
@@ -13,9 +13,9 @@ use {
     },
     crossbeam_channel::{Receiver as CrossbeamReceiver, Sender as CrossbeamSender},
     lru::LruCache,
-    safecoin_gossip::cluster_info::ClusterInfo,
+    wickandbergamot_gossip::cluster_info::ClusterInfo,
     solana_ledger::blockstore::{Blockstore, SlotMeta},
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_runtime::{bank_forks::BankForks, contains::Contains},
     solana_sdk::{
         clock::Slot, epoch_schedule::EpochSchedule, hash::Hash, pubkey::Pubkey,
@@ -727,7 +727,7 @@ impl RepairService {
 mod test {
     use {
         super::*,
-        safecoin_gossip::{
+        wickandbergamot_gossip::{
             cluster_info::Node, legacy_contact_info::LegacyContactInfo as ContactInfo,
         },
         solana_ledger::{
