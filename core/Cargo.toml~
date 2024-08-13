@@ -5,13 +5,13 @@ version = "1.14.17"
 homepage = "https://wickandbergamot.org/"
 documentation = "https://docs.rs/wickandbergamot-core"
 readme = "../README.md"
-repository = "https://wickandbergamot/fair-exchange/wickandbergamot"
+repository = "https://wickandbergamot/wickandbergamot/wickandbergamot"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 license = "Apache-2.0"
 edition = "2021"
 
 [badges]
-codecov = { repository = "fair-exchange/wickandbergamot", branch = "master", service = "github" }
+codecov = { repository = "wickandbergamot/wickandbergamot", branch = "master", service = "github" }
 
 [dependencies]
 ahash = "0.7.6"
