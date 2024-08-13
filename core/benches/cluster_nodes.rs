@@ -8,7 +8,7 @@ use {
         cluster_nodes::{make_test_cluster, new_cluster_nodes, ClusterNodes},
         retransmit_stage::RetransmitStage,
     },
-    safecoin_gossip::legacy_contact_info::LegacyContactInfo as ContactInfo,
+    wickandbergamot_gossip::legacy_contact_info::LegacyContactInfo as ContactInfo,
     solana_ledger::{
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
         shred::{Shred, ShredFlags},
@@ -53,7 +53,7 @@ fn get_retransmit_peers_deterministic(
             slot_leader,
             &shred.id(),
             root_bank,
-            safecoin_gossip::cluster_info::DATA_PLANE_FANOUT,
+            wickandbergamot_gossip::cluster_info::DATA_PLANE_FANOUT,
         );
     }
 }
