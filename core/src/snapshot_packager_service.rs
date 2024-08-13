@@ -1,5 +1,5 @@
 use {
-    safecoin_gossip::cluster_info::{
+    wickandbergamot_gossip::cluster_info::{
         ClusterInfo, MAX_INCREMENTAL_SNAPSHOT_HASHES, MAX_SNAPSHOT_HASHES,
     },
     solana_perf::thread::renice_this_thread,
