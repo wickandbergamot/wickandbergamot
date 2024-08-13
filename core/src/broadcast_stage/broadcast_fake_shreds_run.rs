@@ -1,6 +1,6 @@
 use {
     super::*,
-    safecoin_entry::entry::Entry,
+    wickandbergamot_entry::entry::Entry,
     solana_ledger::shred::{ProcessShredsStats, ReedSolomonCache, Shredder},
     solana_sdk::{hash::Hash, signature::Keypair},
 };
@@ -159,7 +159,7 @@ impl BroadcastRun for BroadcastFakeShredsRun {
 mod tests {
     use {
         super::*,
-        safecoin_gossip::legacy_contact_info::LegacyContactInfo as ContactInfo,
+        wickandbergamot_gossip::legacy_contact_info::LegacyContactInfo as ContactInfo,
         solana_streamer::socket::SocketAddrSpace,
         std::net::{IpAddr, Ipv4Addr, SocketAddr},
     };
