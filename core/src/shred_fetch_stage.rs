@@ -7,7 +7,7 @@ use {
     },
     crossbeam_channel::{unbounded, Sender},
     lru::LruCache,
-    safecoin_gossip::cluster_info::ClusterInfo,
+    wickandbergamot_gossip::cluster_info::ClusterInfo,
     solana_ledger::shred::{should_discard_shred, ShredFetchStats},
     solana_perf::packet::{Packet, PacketBatch, PacketBatchRecycler, PacketFlags},
     solana_runtime::{bank::Bank, bank_forks::BankForks},
