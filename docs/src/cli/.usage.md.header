@@ -2,7 +2,7 @@
 title: CLI Usage Reference
 ---
 
-The [safecoin-cli crate](https://crates.io/crates/safecoin-cli) provides a command-line interface tool for Safecoin
+The [wickandbergamot-cli crate](https://crates.io/crates/wickandbergamot-cli) provides a command-line interface tool for wickandbergamot
 
 ## Examples
 
@@ -10,37 +10,37 @@ The [safecoin-cli crate](https://crates.io/crates/safecoin-cli) provides a comma
 
 ```bash
 // Command
-$ safecoin-keygen pubkey
+$ wickandbergamot-keygen pubkey
 
 // Return
 <PUBKEY>
 ```
 
-### Airdrop SAFE/Lamports
+### Airdrop WICKANDBERGAMOT/Lamports
 
 ```bash
 // Command
-$ safecoin airdrop 1
+$ wickandbergamot airdrop 1
 
 // Return
-"1 SAFE"
+"1 WICKANDBERGAMOT"
 ```
 
 ### Get Balance
 
 ```bash
 // Command
-$ safecoin balance
+$ wickandbergamot balance
 
 // Return
-"3.00050001 SAFE"
+"3.00050001 WICKANDBERGAMOT"
 ```
 
 ### Confirm Transaction
 
 ```bash
 // Command
-$ safecoin confirm <TX_SIGNATURE>
+$ wickandbergamot confirm <TX_SIGNATURE>
 
 // Return
 "Confirmed" / "Not found" / "Transaction failed with error <ERR>"
@@ -50,7 +50,7 @@ $ safecoin confirm <TX_SIGNATURE>
 
 ```bash
 // Command
-$ safecoin program deploy <PATH>
+$ wickandbergamot program deploy <PATH>
 
 // Return
 <PROGRAM_ID>
