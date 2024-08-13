@@ -7,8 +7,8 @@ use {
     crossbeam_channel::unbounded,
     log::*,
     solana_core::retransmit_stage::retransmitter,
-    safecoin_entry::entry::Entry,
-    safecoin_gossip::{
+    wickandbergamot_entry::entry::Entry,
+    wickandbergamot_gossip::{
         cluster_info::{ClusterInfo, Node},
         legacy_contact_info::LegacyContactInfo as ContactInfo,
     },
@@ -17,7 +17,7 @@ use {
         leader_schedule_cache::LeaderScheduleCache,
         shred::{ProcessShredsStats, ReedSolomonCache, Shredder},
     },
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_runtime::{bank::Bank, bank_forks::BankForks},
     solana_sdk::{
         hash::Hash,
@@ -42,7 +42,7 @@ use {
 // TODO: The benchmark is ignored as it currently may indefinitely block.
 // The code incorrectly expects that the node receiving the shred on tvu socket
 // retransmits that to other nodes in its neighborhood. But that is no longer
-// the case since https://github.com/fair-exchange/safecoin/pull/17716.
+// the case since https://github.com/fair-exchange/wickandbergamot/pull/17716.
 // So depending on shred seed, peers may not receive packets and the receive
 // threads loop indefinitely.
 #[ignore]
@@ -119,7 +119,7 @@ fn bench_retransmitter(bencher: &mut Bencher) {
         leader_schedule_cache,
         cluster_info,
         shreds_receiver,
-        Arc::default(), // safecoin_rpc::max_slots::MaxSlots
+        Arc::default(), // wickandbergamot_rpc::max_slots::MaxSlots
         None,
     );
 
