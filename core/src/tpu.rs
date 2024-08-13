@@ -16,11 +16,11 @@ use {
         staked_nodes_updater_service::StakedNodesUpdaterService,
     },
     crossbeam_channel::{unbounded, Receiver},
-    safecoin_client::connection_cache::ConnectionCache,
-    safecoin_gossip::cluster_info::ClusterInfo,
+    wickandbergamot_client::connection_cache::ConnectionCache,
+    wickandbergamot_gossip::cluster_info::ClusterInfo,
     solana_ledger::{blockstore::Blockstore, blockstore_processor::TransactionStatusSender},
-    safecoin_poh::poh_recorder::{PohRecorder, WorkingBankEntry},
-    safecoin_rpc::{
+    wickandbergamot_poh::poh_recorder::{PohRecorder, WorkingBankEntry},
+    wickandbergamot_rpc::{
         optimistically_confirmed_bank_tracker::BankNotificationSender,
         rpc_subscriptions::RpcSubscriptions,
     },
