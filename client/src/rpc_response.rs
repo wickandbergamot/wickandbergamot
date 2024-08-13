@@ -1,7 +1,7 @@
 use {
     crate::client_error,
     serde::{Deserialize, Deserializer, Serialize, Serializer},
-    safecoin_account_decoder::{parse_token::UiTokenAmount, UiAccount},
+    wickandbergamot_account_decoder::{parse_token::UiTokenAmount, UiAccount},
     solana_sdk::{
         clock::{Epoch, Slot, UnixTimestamp},
         fee_calculator::{FeeCalculator, FeeRateGovernor},
@@ -9,7 +9,7 @@ use {
         inflation::Inflation,
         transaction::{Result, TransactionError},
     },
-    safecoin_transaction_status::{
+    wickandbergamot_transaction_status::{
         ConfirmedTransactionStatusWithSignature, TransactionConfirmationStatus, UiConfirmedBlock,
         UiTransactionReturnData,
     },
@@ -58,7 +58,7 @@ impl std::ops::Deref for RpcApiVersion {
 
 impl Default for RpcApiVersion {
     fn default() -> Self {
-        Self(safecoin_version::Version::default().as_semver_version())
+        Self(wickandbergamot_version::Version::default().as_semver_version())
     }
 }
 
@@ -327,7 +327,7 @@ pub struct RpcBlockProduction {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct RpcVersionInfo {
-    /// The current version of safecoin-core
+    /// The current version of wickandbergamot-core
     pub solana_core: String,
     /// first 4 bytes of the FeatureSet identifier
     pub feature_set: Option<u32>,
