@@ -7,18 +7,18 @@ use {
     clap::{App, AppSettings, Arg, ArgMatches, SubCommand},
     reqwest::blocking::Client,
     serde_json::{Map, Value},
-    safecoin_account_decoder::validator_info::{
+    wickandbergamot_account_decoder::validator_info::{
         self, ValidatorInfo, MAX_LONG_FIELD_LENGTH, MAX_SHORT_FIELD_LENGTH,
     },
-    safecoin_clap_utils::{
+    wickandbergamot_clap_utils::{
         input_parsers::pubkey_of,
         input_validators::{is_pubkey, is_url},
         keypair::DefaultSigner,
     },
-    safecoin_cli_output::{CliValidatorInfo, CliValidatorInfoVec},
-    safecoin_client::rpc_client::RpcClient,
+    wickandbergamot_cli_output::{CliValidatorInfo, CliValidatorInfoVec},
+    wickandbergamot_client::rpc_client::RpcClient,
     solana_config_program::{config_instruction, get_config_data, ConfigKeys, ConfigState},
-    safecoin_remote_wallet::remote_wallet::RemoteWalletManager,
+    wickandbergamot_remote_wallet::remote_wallet::RemoteWalletManager,
     solana_sdk::{
         account::Account,
         message::Message,
@@ -72,7 +72,7 @@ fn verify_keybase(
 ) -> Result<(), Box<dyn error::Error>> {
     if let Some(keybase_username) = keybase_username.as_str() {
         let url = format!(
-            "https://keybase.pub/{}/safecoin/validator-{:?}",
+            "https://keybase.pub/{}/wickandbergamot/validator-{:?}",
             keybase_username, validator_pubkey
         );
         let client = Client::new();
@@ -137,11 +137,11 @@ impl ValidatorInfoSubCommands for App<'_, '_> {
     fn validator_info_subcommands(self) -> Self {
         self.subcommand(
             SubCommand::with_name("validator-info")
-                .about("Publish/get Validator info on Safecoin")
+                .about("Publish/get Validator info on wickandbergamot")
                 .setting(AppSettings::SubcommandRequiredElseHelp)
                 .subcommand(
                     SubCommand::with_name("publish")
-                        .about("Publish Validator info on Safecoin")
+                        .about("Publish Validator info on wickandbergamot")
                         .arg(
                             Arg::with_name("info_pubkey")
                                 .short("p")
@@ -197,7 +197,7 @@ impl ValidatorInfoSubCommands for App<'_, '_> {
                 )
                 .subcommand(
                     SubCommand::with_name("get")
-                        .about("Get and parse Safecoin Validator info")
+                        .about("Get and parse Wickandbergamot Validator info")
                         .arg(
                             Arg::with_name("info_pubkey")
                                 .index(1)
