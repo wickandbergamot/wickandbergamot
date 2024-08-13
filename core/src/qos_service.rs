@@ -5,7 +5,7 @@
 use {
     crate::banking_stage::{BatchedTransactionDetails, CommitTransactionDetails},
     crossbeam_channel::{unbounded, Receiver, Sender},
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_runtime::{
         bank::Bank,
         cost_model::{CostModel, TransactionCost},
