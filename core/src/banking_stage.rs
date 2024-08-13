@@ -22,22 +22,22 @@ use {
     histogram::Histogram,
     itertools::Itertools,
     min_max_heap::MinMaxHeap,
-    safecoin_client::{connection_cache::ConnectionCache, tpu_connection::TpuConnection},
-    safecoin_entry::entry::hash_transactions,
-    safecoin_gossip::{
+    wickandbergamot_client::{connection_cache::ConnectionCache, tpu_connection::TpuConnection},
+    wickandbergamot_entry::entry::hash_transactions,
+    wickandbergamot_gossip::{
         cluster_info::ClusterInfo, legacy_contact_info::LegacyContactInfo as ContactInfo,
     },
     solana_ledger::{
         blockstore_processor::TransactionStatusSender, token_balances::collect_token_balances,
     },
-    safecoin_measure::{measure, measure::Measure},
+    wickandbergamot_measure::{measure, measure::Measure},
     solana_metrics::inc_new_counter_info,
     solana_perf::{
         data_budget::DataBudget,
         packet::{Packet, PacketBatch, PACKETS_PER_BATCH},
         perf_libs,
     },
-    safecoin_poh::poh_recorder::{BankStart, PohRecorder, PohRecorderError, TransactionRecorder},
+    wickandbergamot_poh::poh_recorder::{BankStart, PohRecorder, PohRecorderError, TransactionRecorder},
     solana_program_runtime::timings::ExecuteTimings,
     solana_runtime::{
         bank::{
@@ -63,7 +63,7 @@ use {
         transport::TransportError,
     },
     solana_streamer::sendmmsg::batch_send,
-    safecoin_transaction_status::token_balances::TransactionTokenBalancesSet,
+    wickandbergamot_transaction_status::token_balances::TransactionTokenBalancesSet,
     std::{
         cmp,
         collections::{HashMap, HashSet},
@@ -614,7 +614,7 @@ impl BankingStage {
             .collect();
 
         let packet_vec_len = packet_vec.len();
-        // TODO: see https://github.com/fair-exchange/safecoin/issues/23819
+        // TODO: see https://github.com/fair-exchange/wickandbergamot/issues/23819
         // fix this so returns the correct number of succeeded packets
         // when there's an error sending the batch. This was left as-is for now
         // in favor of shipping Quic support, which was considered higher-priority
@@ -1315,7 +1315,7 @@ impl BankingStage {
 
     pub fn num_threads() -> u32 {
         cmp::max(
-            env::var("SAFECOIN_BANKING_THREADS")
+            env::var("wickandbergamot_BANKING_THREADS")
                 .map(|x| x.parse().unwrap_or(NUM_THREADS))
                 .unwrap_or(NUM_THREADS),
             MIN_TOTAL_THREADS,
@@ -2309,8 +2309,8 @@ mod tests {
         super::*,
         crossbeam_channel::{unbounded, Receiver},
         solana_address_lookup_table_program::state::{AddressLookupTable, LookupTableMeta},
-        safecoin_entry::entry::{next_entry, next_versioned_entry, Entry, EntrySlice},
-        safecoin_gossip::cluster_info::Node,
+        wickandbergamot_entry::entry::{next_entry, next_versioned_entry, Entry, EntrySlice},
+        wickandbergamot_gossip::cluster_info::Node,
         solana_ledger::{
             blockstore::{entries_to_test_shreds, Blockstore},
             genesis_utils::{create_genesis_config, GenesisConfigInfo},
@@ -2318,12 +2318,12 @@ mod tests {
             leader_schedule_cache::LeaderScheduleCache,
         },
         solana_perf::packet::{to_packet_batches, PacketFlags},
-        safecoin_poh::{
+        wickandbergamot_poh::{
             poh_recorder::{create_test_recorder, Record, WorkingBankEntry},
             poh_service::PohService,
         },
         solana_program_runtime::timings::ProgramTiming,
-        safecoin_rpc::transaction_status_service::TransactionStatusService,
+        wickandbergamot_rpc::transaction_status_service::TransactionStatusService,
         solana_runtime::bank_forks::BankForks,
         solana_sdk::{
             account::AccountSharedData,
@@ -2339,7 +2339,7 @@ mod tests {
             transaction::{MessageHash, Transaction, TransactionError, VersionedTransaction},
         },
         solana_streamer::{recvmmsg::recv_mmsg, socket::SocketAddrSpace},
-        safecoin_transaction_status::{TransactionStatusMeta, VersionedTransactionWithStatusMeta},
+        wickandbergamot_transaction_status::{TransactionStatusMeta, VersionedTransactionWithStatusMeta},
         std::{
             borrow::Cow,
             path::Path,
