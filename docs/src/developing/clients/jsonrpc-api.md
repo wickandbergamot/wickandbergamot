@@ -2767,7 +2767,7 @@ Result:
       {
         "account": {
           "data": {
-            "program": "Wickandbergamot-token",
+            "program": "wickandbergamot-token",
             "parsed": {
               "info": {
                 "tokenAmount": {
