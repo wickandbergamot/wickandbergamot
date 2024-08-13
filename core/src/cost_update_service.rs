@@ -6,7 +6,7 @@
 use {
     crossbeam_channel::Receiver,
     solana_ledger::blockstore::Blockstore,
-    safecoin_measure::measure,
+    wickandbergamot_measure::measure,
     solana_program_runtime::timings::ExecuteTimings,
     solana_runtime::{bank::Bank, cost_model::CostModel},
     solana_sdk::timing::timestamp,
