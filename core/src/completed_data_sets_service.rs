@@ -1,8 +1,8 @@
 use {
     crossbeam_channel::{Receiver, RecvTimeoutError, Sender},
-    safecoin_entry::entry::Entry,
+    wickandbergamot_entry::entry::Entry,
     solana_ledger::blockstore::{Blockstore, CompletedDataSetInfo},
-    safecoin_rpc::{max_slots::MaxSlots, rpc_subscriptions::RpcSubscriptions},
+    wickandbergamot_rpc::{max_slots::MaxSlots, rpc_subscriptions::RpcSubscriptions},
     solana_sdk::signature::Signature,
     std::{
         sync::{
