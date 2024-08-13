@@ -614,7 +614,7 @@ impl BankingStage {
             .collect();
 
         let packet_vec_len = packet_vec.len();
-        // TODO: see https://github.com/fair-exchange/wickandbergamot/issues/23819
+        // TODO: see https://github.com/wickandbergamot/wickandbergamot/issues/23819
         // fix this so returns the correct number of succeeded packets
         // when there's an error sending the batch. This was left as-is for now
         // in favor of shipping Quic support, which was considered higher-priority
@@ -1315,7 +1315,7 @@ impl BankingStage {
 
     pub fn num_threads() -> u32 {
         cmp::max(
-            env::var("wickandbergamot_BANKING_THREADS")
+            env::var("WICKANDBERGAMOT_BANKING_THREADS")
                 .map(|x| x.parse().unwrap_or(NUM_THREADS))
                 .unwrap_or(NUM_THREADS),
             MIN_TOTAL_THREADS,
