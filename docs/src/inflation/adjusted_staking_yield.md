@@ -16,12 +16,12 @@ Due to this relative change in representation, the proportion of stake of any to
 
 Of initial interest, however, is the _dilution of **un-staked** tokens_, or $D_{us}$. In the case of un-staked tokens, token dilution is only a function of the _Inflation Schedule_ because the amount of un-staked tokens doesn't change over time.
 
-This can be seen by explicitly calculating un-staked dilution as $D_{us}$. The un-staked proportion of the token pool at time $t$ is $P_{us}(t_{N})$ and $I_{t}$ is the incremental inflation rate applied between any two consecutive time points. $SAFE_{us}(t)$ and $SAFE_{total}(t)$ is the amount of un-staked and total SAFE on the network, respectively, at time $t$. Therefore $P_{us}(t) = SAFE_{us}(t)/SAFE_{total}(t)$.
+This can be seen by explicitly calculating un-staked dilution as $D_{us}$. The un-staked proportion of the token pool at time $t$ is $P_{us}(t_{N})$ and $I_{t}$ is the incremental inflation rate applied between any two consecutive time points. $WICKANDBERGAMOT_{us}(t)$ and $WICKANDBERGAMOT_{total}(t)$ is the amount of un-staked and total WICKANDBERGAMOT on the network, respectively, at time $t$. Therefore $P_{us}(t) = WICKANDBERGAMOT_{us}(t)/WICKANDBERGAMOT_{total}(t)$.
 
 $$
 \begin{aligned}
 	D_{us} &= \left( \frac{P_{us}(t_{1}) - P_{us}(t_{0})}{P_{us}(t_{0})} \right)\\
-		&= \left( \frac{ \left( \frac{SAFE_{us}(t_{2})}{SAFE_{total}(t_{2})} \right) - \left( \frac{SAFE_{us}(t_{1})}{SAFE_{total}(t_{1})} \right)}{ \left( \frac{SAFE_{us}(t_{1})}{SAFE_{total}(t_{1})} \right) } \right)\\
+		&= \left( \frac{ \left( \frac{WICKANDBERGAMOT_{us}(t_{2})}{WICKANDBERGAMOT_{total}(t_{2})} \right) - \left( \frac{WICKANDBERGAMOT_{us}(t_{1})}{WICKANDBERGAMOT_{total}(t_{1})} \right)}{ \left( \frac{WICKANDBERGAMOT_{us}(t_{1})}{WICKANDBERGAMOT_{total}(t_{1})} \right) } \right)\\
 
 \end{aligned}
 $$
@@ -30,8 +30,8 @@ However, because inflation issuance only increases the total amount and the un-s
 
 $$
 \begin{aligned}
-	SAFE_{us}(t_2) &= SAFE_{us}(t_1)\\
-	SAFE_{total}(t_2) &= SAFE_{total}(t_1)\times (1 + I_{t_1})\\
+	WICKANDBERGAMOT_{us}(t_2) &= WICKANDBERGAMOT_{us}(t_1)\\
+	WICKANDBERGAMOT_{total}(t_2) &= WICKANDBERGAMOT_{total}(t_1)\times (1 + I_{t_1})\\
 \end{aligned}
 $$
 
@@ -39,7 +39,7 @@ So $D_{us}$ becomes:
 
 $$
 \begin{aligned}
-	D_{us} &= \left( \frac{ \left( \frac{SAFE_{us}(t_{1})}{SAFE_{total}(t_{1})\times (1 + I_{1})} \right) - \left( \frac{SAFE_{us}(t_{1})}{SAFE_{total}(t_{1})} \right)}{ \left( \frac{SAFE_{us}(t_{1})}{SAFE_{total}(t_{1})} \right) } \right)\\
+	D_{us} &= \left( \frac{ \left( \frac{WICKANDBERGAMOT_{us}(t_{1})}{WICKANDBERGAMOT_{total}(t_{1})\times (1 + I_{1})} \right) - \left( \frac{WICKANDBERGAMOT_{us}(t_{1})}{WICKANDBERGAMOT_{total}(t_{1})} \right)}{ \left( \frac{WICKANDBERGAMOT_{us}(t_{1})}{WICKANDBERGAMOT_{total}(t_{1})} \right) } \right)\\
 	D_{us} &= \frac{1}{(1 + I_{1})} - 1\\
 \end{aligned}
 $$
@@ -64,18 +64,18 @@ $$
 	Y_{adj} = \frac{P_s(t_2) - P_s(t_1)}{P_s(t_1)}\\
 $$
 
-As seen in the plot above, the proportion of staked tokens increases with inflation issuance. Letting $SAFE_s(t)$ and $SAFE_{\text{total}}(t)$ represent the amount of staked and total SAFE at time $t$ respectively:
+As seen in the plot above, the proportion of staked tokens increases with inflation issuance. Letting $WICKANDBERGAMOT_s(t)$ and $WICKANDBERGAMOT_{\text{total}}(t)$ represent the amount of staked and total WICKANDBERGAMOT at time $t$ respectively:
 
 $$
-	P_s(t_2) = \frac{SAFE_s(t_1) + SAFE_{\text{total}}(t_1)\times I(t_1)}{SAFE_{\text{total}}(t_1)\times (1 + I(t_1))}\\
+	P_s(t_2) = \frac{WICKANDBERGAMOT_s(t_1) + WICKANDBERGAMOT_{\text{total}}(t_1)\times I(t_1)}{WICKANDBERGAMOT_{\text{total}}(t_1)\times (1 + I(t_1))}\\
 $$
 
-Where $SAFE_{\text{total}}(t_1)\times I(t_1)$ is the additional inflation issuance added to the staked token pool. Now we can write $Y_{adj}$ in common terms $t_1 = t$:
+Where $WICKANDBERGAMOT_{\text{total}}(t_1)\times I(t_1)$ is the additional inflation issuance added to the staked token pool. Now we can write $Y_{adj}$ in common terms $t_1 = t$:
 
 $$
 \begin{aligned}
-Y_{adj} &= \frac{\frac{SAFE_s(t) + SAFE_{\text{total}}(t)\times I(t)}{SAFE_{\text{total}}(t)\times (1 + I(t))} - \frac{SAFE_s(t)}{SAFE_{\text{total}}(t)} }{ \frac{SAFE_s(t)}{SAFE_{\text{total}}(t)} }  \\
-	&= \frac{ SAFE_{\text{total}}(t)\times (SAFE_s(t) + SAFE_{\text{total}}(t)\times I(t)) }{ SAFE_s(t)\times SAFE_{\text{total}}\times (1 + I(t)) } -1 \\
+Y_{adj} &= \frac{\frac{WICKANDBERGAMOT_s(t) + WICKANDBERGAMOT_{\text{total}}(t)\times I(t)}{WICKANDBERGAMOT_{\text{total}}(t)\times (1 + I(t))} - \frac{WICKANDBERGAMOT_s(t)}{WICKANDBERGAMOT_{\text{total}}(t)} }{ \frac{WICKANDBERGAMOT_s(t)}{WICKANDBERGAMOT_{\text{total}}(t)} }  \\
+	&= \frac{ WICKANDBERGAMOT_{\text{total}}(t)\times (WICKANDBERGAMOT_s(t) + WICKANDBERGAMOT_{\text{total}}(t)\times I(t)) }{ WICKANDBERGAMOT_s(t)\times WICKANDBERGAMOT_{\text{total}}\times (1 + I(t)) } -1 \\
 \end{aligned}
 $$
 
