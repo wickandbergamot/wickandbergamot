@@ -1,11 +1,11 @@
 import React from "react";
-import { PublicKey } from "@safecoin/web3.js";
+import { PublicKey } from "@wickandbergamot/web3.js";
 import { useFetchRewards, useRewards } from "providers/accounts/rewards";
 import { LoadingCard } from "components/common/LoadingCard";
 import { FetchStatus } from "providers/cache";
 import { ErrorCard } from "components/common/ErrorCard";
 import { Slot } from "components/common/Slot";
-import { lamportsToSafeString } from "utils";
+import { lamportsToWickandbergamotString } from "utils";
 import { useAccountInfo } from "providers/accounts";
 import BN from "bn.js";
 import { Epoch } from "components/common/Epoch";
@@ -59,8 +59,8 @@ export function RewardsCard({ pubkey }: { pubkey: PublicKey }) {
         <td>
           <Slot slot={reward.effectiveSlot} link />
         </td>
-        <td>{lamportsToSafeString(reward.amount)}</td>
-        <td>{lamportsToSafeString(reward.postBalance)}</td>
+        <td>{lamportsToWickandbergamotString(reward.amount)}</td>
+        <td>{lamportsToWickandbergamotString(reward.postBalance)}</td>
       </tr>
     );
   });
