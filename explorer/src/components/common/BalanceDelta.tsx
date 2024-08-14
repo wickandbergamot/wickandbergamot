@@ -1,30 +1,30 @@
 import React from "react";
 import { BigNumber } from "bignumber.js";
-import { SafeBalance } from "utils";
+import { WickandbergamotBalance } from "utils";
 
 export function BalanceDelta({
   delta,
-  isSafe = false,
+  isWickandbergamot = false,
 }: {
   delta: BigNumber;
-  isSafe?: boolean;
+  isWickandbergamot?: boolean;
 }) {
   let sols;
 
-  if (isSafe) {
-    sols = <SafeBalance lamports={delta.toNumber()} />;
+  if (isWickandbergamot) {
+    sols = <WickandbergamotBalance lamports={delta.toNumber()} />;
   }
 
   if (delta.gt(0)) {
     return (
       <span className="badge bg-success-soft">
-        +{isSafe ? sols : delta.toString()}
+        +{isWickandbergamot ? sols : delta.toString()}
       </span>
     );
   } else if (delta.lt(0)) {
     return (
       <span className="badge bg-warning-soft">
-        {isSafe ? <>-{sols}</> : delta.toString()}
+        {isWickandbergamot ? <>-{sols}</> : delta.toString()}
       </span>
     );
   }
