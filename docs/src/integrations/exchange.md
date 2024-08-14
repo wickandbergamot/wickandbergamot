@@ -1,8 +1,8 @@
 ---
-title: Add Safecoin to Your Exchange
+title: Add Wickandbergamot to Your Exchange
 ---
 
-This guide describes how to add Safecoin's native token SAFE to your cryptocurrency
+This guide describes how to add Wickandbergamot's native token WICKANDBERGAMOT to your cryptocurrency
 exchange.
 
 ## Node Setup
@@ -13,22 +13,22 @@ operations with a bundled monitoring tool.
 
 This setup enables you:
 
-- to have a self-administered gateway to the Safecoin mainnet-beta cluster to get
+- to have a self-administered gateway to the Wickandbergamot mainnet-beta cluster to get
   data and submit withdrawal transactions
 - to have full control over how much historical block data is retained
 - to maintain your service availability even if one node fails
 
-Safecoin nodes demand relatively high computing power to handle our fast blocks
+Wickandbergamot nodes demand relatively high computing power to handle our fast blocks
 and high TPS. For specific requirements, please see
 [hardware recommendations](../running-validator/validator-reqs.md).
 
 To run an api node:
 
-1. [Install the Safecoin command-line tool suite](../cli/install-safecoin-cli-tools.md)
+1. [Install the Wickandbergamot command-line tool suite](../cli/install-Wickandbergamot-cli-tools.md)
 2. Start the validator with at least the following parameters:
 
 ```bash
-safecoin-validator \
+wickandbergamot-validator \
   --ledger <LEDGER_PATH> \
   --identity <VALIDATOR_IDENTITY_KEYPAIR> \
   --entrypoint <CLUSTER_ENTRYPOINT> \
@@ -44,17 +44,17 @@ safecoin-validator \
 Customize `--ledger` to your desired ledger storage location, and `--rpc-port` to the port you want to expose.
 
 The `--entrypoint` and `--expected-genesis-hash` parameters are all specific to the cluster you are joining.
-[Current parameters for Mainnet Beta](../clusters.md#example-safecoin-validator-command-line-2)
+[Current parameters for Mainnet Beta](../clusters.md#example-wickandbergamot-validator-command-line-2)
 
 The `--limit-ledger-size` parameter allows you to specify how many ledger
 [shreds](../terminology.md#shred) your node retains on disk. If you do not
 include this parameter, the validator will keep the entire ledger until it runs
 out of disk space. The default value attempts to keep the ledger disk usage
 under 500GB. More or less disk usage may be requested by adding an argument to
-`--limit-ledger-size` if desired. Check `safecoin-validator --help` for the
+`--limit-ledger-size` if desired. Check `wickandbergamot-validator --help` for the
 default limit value used by `--limit-ledger-size`. More information about
 selecting a custom limit value is [available
-here](https://github.com/fair-exchange/safecoin/blob/583cec922b6107e0f85c7e14cb5e642bc7dfb340/core/src/ledger_cleanup_service.rs#L15-L26).
+here](https://github.com/wickandbergamot/wickandbergamot/blob/583cec922b6107e0f85c7e14cb5e642bc7dfb340/core/src/ledger_cleanup_service.rs#L15-L26).
 
 Specifying one or more `--known-validator` parameters can protect you from booting from a malicious snapshot. [More on the value of booting with known validators](../running-validator/validator-start.md#known-validators)
 
@@ -66,17 +66,17 @@ Optional parameters to consider:
 ### Automatic Restarts and Monitoring
 
 We recommend configuring each of your nodes to restart automatically on exit, to
-ensure you miss as little data as possible. Running the safecoin software as a
+ensure you miss as little data as possible. Running the wickandbergamot software as a
 systemd service is one great option.
 
 For monitoring, we provide
-[`safecoin-watchtower`](https://github.com/fair-exchange/safecoin/blob/master/watchtower/README.md),
-which can monitor your validator and detect with the `safecoin-validator` process
+[`wickandbergamot-watchtower`](https://github.com/wickandbergamot/wickandbergamot/blob/master/watchtower/README.md),
+which can monitor your validator and detect with the `wickandbergamot-validator` process
 is unhealthy. It can directly be configured to alert you via Slack, Telegram,
-Discord, or Twillio. For details, run `safecoin-watchtower --help`.
+Discord, or Twillio. For details, run `wickandbergamot-watchtower --help`.
 
 ```bash
-safecoin-watchtower --validator-identity <YOUR VALIDATOR IDENTITY>
+wickandbergamot-watchtower --validator-identity <YOUR VALIDATOR IDENTITY>
 ```
 
 #### New Software Release Announcements
@@ -101,7 +101,7 @@ known validators. This snapshot reflects the current state of the chain, but
 does not contain the complete historical ledger. If one of your node exits and
 boots from a new snapshot, there may be a gap in the ledger on that node. In
 order to prevent this issue, add the `--no-snapshot-fetch` parameter to your
-`safecoin-validator` command to receive historical ledger data instead of a
+`wickandbergamot-validator` command to receive historical ledger data instead of a
 snapshot.
 
 Do not pass the `--no-snapshot-fetch` parameter on your initial boot as it's not
@@ -118,9 +118,9 @@ historical ledger data that cannot be filled.
 ### Minimizing Validator Port Exposure
 
 The validator requires that various UDP and TCP ports be open for inbound
-traffic from all other Safecoin validators. While this is the most efficient mode of
+traffic from all other Wickandbergamot validators. While this is the most efficient mode of
 operation, and is strongly recommended, it is possible to restrict the
-validator to only require inbound traffic from one other Safecoin validator.
+validator to only require inbound traffic from one other Wickandbergamot validator.
 
 First add the `--restricted-repair-only-mode` argument. This will cause the
 validator to operate in a restricted mode where it will not receive pushes from
@@ -147,14 +147,14 @@ validators and only on the _Gossip_, _Repair_ and _ServeR_ ports.
 
 ## Setting up Deposit Accounts
 
-Safecoin accounts do not require any on-chain initialization; once they contain
-some SAFE, they exist. To set up a deposit account for your exchange, simply
-generate a Safecoin keypair using any of our [wallet tools](../wallet-guide/cli.md).
+Wickandbergamot accounts do not require any on-chain initialization; once they contain
+some WICKANDBERGAMOT, they exist. To set up a deposit account for your exchange, simply
+generate a Wickandbergamot keypair using any of our [wallet tools](../wallet-guide/cli.md).
 
 We recommend using a unique deposit account for each of your users.
 
-Safecoin accounts must be made rent-exempt by containing 2-years worth of
-[rent](developing/programming-model/accounts.md#rent) in SAFE. In order to find
+Wickandbergamot accounts must be made rent-exempt by containing 2-years worth of
+[rent](developing/programming-model/accounts.md#rent) in WICKANDBERGAMOT. In order to find
 the minimum rent-exempt balance for your deposit accounts, query the
 [`getMinimumBalanceForRentExemption` endpoint](developing/clients/jsonrpc-api.md#getminimumbalanceforrentexemption):
 
@@ -173,12 +173,12 @@ curl localhost:8328 -X POST -H "Content-Type: application/json" -d '{
 ### Offline Accounts
 
 You may wish to keep the keys for one or more collection accounts offline for
-greater security. If so, you will need to move SAFE to hot accounts using our
+greater security. If so, you will need to move WICKANDBERGAMOT to hot accounts using our
 [offline methods](../offline-signing.md).
 
 ## Listening for Deposits
 
-When a user wants to deposit SAFE into your exchange, instruct them to send a
+When a user wants to deposit WICKANDBERGAMOT into your exchange, instruct them to send a
 transfer to the appropriate deposit address.
 
 ### Versioned Transaction Migration
@@ -216,13 +216,13 @@ lookup tables.
 
 To track all the deposit accounts for your exchange, poll for each confirmed
 block and inspect for addresses of interest, using the JSON-RPC service of your
-Safecoin API node.
+Wickandbergamot API node.
 
 - To identify which blocks are available, send a [`getBlocks` request](developing/clients/jsonrpc-api.md#getblocks),
   passing the last block you have already processed as the start-slot parameter:
 
 ```bash
-curl https://api.devnet.safecoin.org -X POST -H "Content-Type: application/json" -d '{
+curl https://api.devnet.wickandbergamot.org -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1,
   "method": "getBlocks",
@@ -252,7 +252,7 @@ that isn't necessary for tracking account balances. Set the "transactionDetails"
 parameter to speed up block fetching.
 
 ```bash
-curl https://api.devnet.safecoin.org -X POST -H 'Content-Type: application/json' -d '{
+curl https://api.devnet.wickandbergamot.org -X POST -H 'Content-Type: application/json' -d '{
   "jsonrpc": "2.0",
   "id": 1,
   "method": "getBlock",
@@ -338,12 +338,12 @@ list the starting and ending balances of each account in
 [lamports](../terminology.md#lamport), indexed to the `accountKeys` list. For
 example, if the deposit address of interest is
 `G1wZ113tiUHdSpQEBcid8n1x8BAvcWZoZgxPKxgE5B7o`, this transaction represents a
-transfer of 1040000000 - 1030000000 = 10,000,000 lamports = 0.01 SAFE
+transfer of 1040000000 - 1030000000 = 10,000,000 lamports = 0.01 WICKANDBERGAMOT
 
 If you need more information about the transaction type or other specifics, you
 can request the block from RPC in binary format, and parse it using either our
-[Rust SDK](https://github.com/fair-exchange/safecoin) or
-[Javascript SDK](https://github.com/fair-exchange/safecoin-web3.js).
+[Rust SDK](https://github.com/wickandbergamot/wickandbergamot) or
+[Javascript SDK](https://github.com/wickandbergamot/wickandbergamot-web3.js).
 
 ### Address History
 
@@ -405,7 +405,7 @@ curl localhost:8328 -X POST -H "Content-Type: application/json" -d '{
   [`getTransaction`](developing/clients/jsonrpc-api.md#gettransaction) request:
 
 ```bash
-curl https://api.devnet.safecoin.org -X POST -H 'Content-Type: application/json' -d '{
+curl https://api.devnet.Wickandbergamot.org -X POST -H 'Content-Type: application/json' -d '{
   "jsonrpc":"2.0",
   "id":1,
   "method":"getTransaction",
@@ -508,25 +508,25 @@ curl https://api.devnet.safecoin.org -X POST -H 'Content-Type: application/json'
 
 ## Sending Withdrawals
 
-To accommodate a user's request to withdraw SAFE, you must generate a Safecoin
+To accommodate a user's request to withdraw WICKANDBERGAMOT, you must generate a Wickandbergamot
 transfer transaction, and send it to the api node to be forwarded to your
 cluster.
 
 ### Synchronous
 
-Sending a synchronous transfer to the Safecoin cluster allows you to easily ensure
+Sending a synchronous transfer to the Wickandbergamot cluster allows you to easily ensure
 that a transfer is successful and finalized by the cluster.
 
-Safecoin's command-line tool offers a simple command, `safecoin transfer`, to
+Wickandbergamot's command-line tool offers a simple command, `wickandbergamot transfer`, to
 generate, submit, and confirm transfer transactions. By default, this method
 will wait and track progress on stderr until the transaction has been finalized
 by the cluster. If the transaction fails, it will report any transaction errors.
 
 ```bash
-safecoin transfer <USER_ADDRESS> <AMOUNT> --allow-unfunded-recipient --keypair <KEYPAIR> --url http://localhost:8328
+wickandbergamot transfer <USER_ADDRESS> <AMOUNT> --allow-unfunded-recipient --keypair <KEYPAIR> --url http://localhost:8328
 ```
 
-The [Safecoin Javascript SDK](https://github.com/fair-exchange/safecoin-web3.js)
+The [Wickandbergamot Javascript SDK](https://github.com/wickandbergamot/wickandbergamot-web3.js)
 offers a similar approach for the JS ecosystem. Use the `SystemProgram` to build
 a transfer transaction, and submit it using the `sendAndConfirmTransaction`
 method.
@@ -548,14 +548,14 @@ First, get a recent blockhash using the [`getFees` endpoint](developing/clients/
 or the CLI command:
 
 ```bash
-safecoin fees --url http://localhost:8328
+wickandbergamot fees --url http://localhost:8328
 ```
 
 In the command-line tool, pass the `--no-wait` argument to send a transfer
 asynchronously, and include your recent blockhash with the `--blockhash` argument:
 
 ```bash
-safecoin transfer <USER_ADDRESS> <AMOUNT> --no-wait --allow-unfunded-recipient --blockhash <RECENT_BLOCKHASH> --keypair <KEYPAIR> --url http://localhost:8328
+wickandbergamot transfer <USER_ADDRESS> <AMOUNT> --no-wait --allow-unfunded-recipient --blockhash <RECENT_BLOCKHASH> --keypair <KEYPAIR> --url http://localhost:8328
 ```
 
 You can also build, sign, and serialize the transaction manually, and fire it off to
@@ -628,14 +628,14 @@ prevent accidental loss of user funds.
 
 #### Basic verification
 
-Safecoin addresses a 32-byte array, encoded with the bitcoin base58 alphabet. This
+Wickandbergamot addresses a 32-byte array, encoded with the bitcoin base58 alphabet. This
 results in an ASCII text string matching the following regular expression:
 
 ```
 [1-9A-HJ-NP-Za-km-z]{32,44}
 ```
 
-This check is insufficient on its own as Safecoin addresses are not checksummed, so
+This check is insufficient on its own as Wickandbergamot addresses are not checksummed, so
 typos cannot be detected. To further validate the user's input, the string can be
 decoded and the resulting byte array's length confirmed to be 32. However, there
 are some addresses that can decode to 32 bytes despite a typo such as a single
@@ -649,7 +649,7 @@ confirm their intentions if a non-zero balance is discovered.
 
 #### Valid ed25519 pubkey check
 
-The address of a normal account in Safecoin is a Base58-encoded string of a
+The address of a normal account in Wickandbergamot is a Base58-encoded string of a
 256-bit ed25519 public key. Not all bit patterns are valid public keys for the
 ed25519 curve, so it is possible to ensure user-supplied account addresses are
 at least correct ed25519 public keys.
@@ -714,9 +714,9 @@ public class PubkeyValidator
 
 ## Minimum Deposit & Withdrawal Amounts
 
-Every deposit and withdrawal of SAFE must be greater or equal to the minimum
-rent-exempt balance for the account at the wallet address (a basic SAFE account
-holding no data), currently: 0.000890880 SAFE
+Every deposit and withdrawal of WICKANDBERGAMOT must be greater or equal to the minimum
+rent-exempt balance for the account at the wallet address (a basic WICKANDBERGAMOT account
+holding no data), currently: 0.000890880 WICKANDBERGAMOT
 
 Similarly, every deposit account must contain at least this balance.
 
@@ -735,9 +735,9 @@ curl localhost:8328 -X POST -H "Content-Type: application/json" -d '{
 ## Supporting the SPL Token Standard
 
 [SPL Token](https://spl.solana.com/token) is the standard for wrapped/synthetic
-token creation and exchange on the Safecoin blockchain.
+token creation and exchange on the Wickandbergamot blockchain.
 
-The SPL Token workflow is similar to that of native SAFE tokens, but there are a
+The SPL Token workflow is similar to that of native WICKANDBERGAMOT tokens, but there are a
 few differences which will be discussed in this section.
 
 ### Token Mints
@@ -747,31 +747,31 @@ stores metadata describing token features like the supply, number of decimals, a
 various authorities with control over the mint. Each SPL Token account references
 its associated mint and may only interact with SPL Tokens of that type.
 
-### Installing the `safe-token` CLI Tool
+### Installing the `wickandbergamot-token` CLI Tool
 
-SPL Token accounts are queried and modified using the `safe-token` command line
+SPL Token accounts are queried and modified using the `wickandbergamot-token` command line
 utility. The examples provided in this section depend upon having it installed
 on the local system.
 
-`safe-token` is distributed from Rust [crates.io](https://crates.io/crates/safe-token)
+`wickandbergamot-token` is distributed from Rust [crates.io](https://crates.io/crates/wickandbergamot-token)
 via the Rust `cargo` command line utility. The latest version of `cargo` can be
 installed using a handy one-liner for your platform at [rustup.rs](https://rustup.rs).
-Once `cargo` is installed, `safe-token` can be obtained with the following command:
+Once `cargo` is installed, `wickandbergamot-token` can be obtained with the following command:
 
 ```
-cargo install safe-token-cli
+cargo install wickandbergamot-token-cli
 ```
 
 You can then check the installed version to verify
 
 ```
-safe-token --version
+wickandbergamot-token --version
 ```
 
 Which should result in something like
 
 ```text
-safe-token-cli 2.0.1
+wickandbergamot-token-cli 2.0.1
 ```
 
 ### Account Creation
@@ -781,12 +781,12 @@ accounts do not:
 
 1. SPL Token accounts must be created before an amount of tokens can be
    deposited. Token accounts can be created explicitly with the
-   `safe-token create-account` command, or implicitly by the
-   `safe-token transfer --fund-recipient ...` command.
+   `wickandbergamot-token create-account` command, or implicitly by the
+   `wickandbergamot-token transfer --fund-recipient ...` command.
 1. SPL Token accounts must remain [rent-exempt](developing/programming-model/accounts.md#rent-exemption)
    for the duration of their existence and therefore require a small amount of
-   native SAFE tokens be deposited at account creation. For SPL Token v2 accounts,
-   this amount is 0.00203928 SAFE (2,039,280 lamports).
+   native WICKANDBERGAMOT tokens be deposited at account creation. For SPL Token v2 accounts,
+   this amount is 0.00203928 WICKANDBERGAMOT (2,039,280 lamports).
 
 #### Command Line
 
@@ -796,13 +796,13 @@ To create an SPL Token account with the following properties:
 1. Owned by the funding account's keypair
 
 ```
-safe-token create-account <TOKEN_MINT_ADDRESS>
+wickandbergamot-token create-account <TOKEN_MINT_ADDRESS>
 ```
 
 #### Example
 
 ```
-$ safe-token create-account AkUFCWTXb3w9nY2n6SFJvBV6VwvFUCe4KBMCcgLsa2ir
+$ wickandbergamot-token create-account AkUFCWTXb3w9nY2n6SFJvBV6VwvFUCe4KBMCcgLsa2ir
 Creating account 6VzWGL51jLebvnDifvcuEDec17sK6Wupi4gYhm5RzfkV
 Signature: 4JsqZEPra2eDTHtHpB4FMWSfk3UgcCVmkKkP7zESZeMrKmFFkDkNd91pKP3vPVVZZPiu5XxyJwS73Vi5WsZL88D7
 ```
@@ -810,8 +810,8 @@ Signature: 4JsqZEPra2eDTHtHpB4FMWSfk3UgcCVmkKkP7zESZeMrKmFFkDkNd91pKP3vPVVZZPiu5
 Or to create an SPL Token account with a specific keypair:
 
 ```
-$ safecoin-keygen new -o token-account.json
-$ safe-token create-account AkUFCWTXb3w9nY2n6SFJvBV6VwvFUCe4KBMCcgLsa2ir token-account.json
+$ wickandbergamot-keygen new -o token-account.json
+$ wickandbergamot-token create-account AkUFCWTXb3w9nY2n6SFJvBV6VwvFUCe4KBMCcgLsa2ir token-account.json
 Creating account 6VzWGL51jLebvnDifvcuEDec17sK6Wupi4gYhm5RzfkV
 Signature: 4JsqZEPra2eDTHtHpB4FMWSfk3UgcCVmkKkP7zESZeMrKmFFkDkNd91pKP3vPVVZZPiu5XxyJwS73Vi5WsZL88D7
 ```
@@ -821,13 +821,13 @@ Signature: 4JsqZEPra2eDTHtHpB4FMWSfk3UgcCVmkKkP7zESZeMrKmFFkDkNd91pKP3vPVVZZPiu5
 #### Command Line
 
 ```
-safe-token balance <TOKEN_ACCOUNT_ADDRESS>
+wickandbergamot-token balance <TOKEN_ACCOUNT_ADDRESS>
 ```
 
 #### Example
 
 ```
-$ safecoin balance 6VzWGL51jLebvnDifvcuEDec17sK6Wupi4gYhm5RzfkV
+$ wickandbergamot balance 6VzWGL51jLebvnDifvcuEDec17sK6Wupi4gYhm5RzfkV
 0
 ```
 
@@ -844,13 +844,13 @@ provided.
 #### Command Line
 
 ```
-safe-token transfer <SENDER_ACCOUNT_ADDRESS> <AMOUNT> <RECIPIENT_WALLET_ADDRESS> --fund-recipient
+wickandbergamot-token transfer <SENDER_ACCOUNT_ADDRESS> <AMOUNT> <RECIPIENT_WALLET_ADDRESS> --fund-recipient
 ```
 
 #### Example
 
 ```
-$ safe-token transfer 6B199xxzw3PkAm25hGJpjj3Wj3WNYNHzDAnt1tEqg5BN 1 6VzWGL51jLebvnDifvcuEDec17sK6Wupi4gYhm5RzfkV
+$ wickandbergamot-token transfer 6B199xxzw3PkAm25hGJpjj3Wj3WNYNHzDAnt1tEqg5BN 1 6VzWGL51jLebvnDifvcuEDec17sK6Wupi4gYhm5RzfkV
 Transfer 1 tokens
   Sender: 6B199xxzw3PkAm25hGJpjj3Wj3WNYNHzDAnt1tEqg5BN
   Recipient: 6VzWGL51jLebvnDifvcuEDec17sK6Wupi4gYhm5RzfkV
@@ -860,7 +860,7 @@ Signature: 3R6tsog17QM8KfzbcbdP4aoMfwgo6hBggJDVy7dZPVmH2xbCWjEj31JKD53NzMrf25ChF
 ### Depositing
 
 Since each `(wallet, mint)` pair requires a separate account on chain. It is
-recommended that the addresses for these accounts be derived from SAFE deposit
+recommended that the addresses for these accounts be derived from WICKANDBERGAMOT deposit
 wallets using the
 [Associated Token Account](https://spl.solana.com/associated-token-account) (ATA)
 scheme and that _only_ deposits from ATA addresses be accepted.
@@ -879,28 +879,28 @@ case, the initial balance can be assumed to be zero.
 
 ### Withdrawing
 
-The withdrawal address a user provides must be the that of their SAFE wallet.
+The withdrawal address a user provides must be the that of their WICKANDBERGAMOT wallet.
 
 Before executing a withdrawal [transfer](#token-transfers),
 the exchange should check the address as
 [described above](#validating-user-supplied-account-addresses-for-withdrawals).
 Additionally this address must be owned by the System Program and have no
-account data. If the address has no SAFE balance, user confirmation should be
+account data. If the address has no WICKANDBERGAMOT balance, user confirmation should be
 obtained before proceeding with the withdrawal. All other withdrawal addresses
 must be rejected.
 
 From the withdrawal address, the [Associated Token Account](https://spl.solana.com/associated-token-account)
 (ATA) for the correct mint is derived and the transfer issued to that account via a
-[TransferChecked](https://github.com/fair-exchange/safecoin-program-library/blob/fc0d6a2db79bd6499f04b9be7ead0c400283845e/token/program/src/instruction.rs#L268)
+[TransferChecked](https://github.com/wickandbergamot/wickandbergamot-program-library/blob/fc0d6a2db79bd6499f04b9be7ead0c400283845e/token/program/src/instruction.rs#L268)
 instruction. Note that it is possible that the ATA address does not yet exist, at which point the
 exchange should fund the account on behalf of the user. For SPL Token v2
-accounts, funding the withdrawal account will require 0.00203928 SAFE (2,039,280
+accounts, funding the withdrawal account will require 0.00203928 WICKANDBERGAMOT (2,039,280
 lamports).
 
-Template `safe-token transfer` command for a withdrawal:
+Template `wickandbergamot-token transfer` command for a withdrawal:
 
 ```
-$ safe-token transfer --fund-recipient <exchange token account> <withdrawal amount> <withdrawal address>
+$ wickandbergamot-token transfer --fund-recipient <exchange token account> <withdrawal amount> <withdrawal address>
 ```
 
 ### Other Considerations
@@ -916,8 +916,8 @@ the SPL Token's mint account.
 
 ## Testing the Integration
 
-Be sure to test your complete workflow on Safecoin devnet and testnet
+Be sure to test your complete workflow on Wickandbergamot devnet and testnet
 [clusters](../clusters.md) before moving to production on mainnet-beta. Devnet
 is the most open and flexible, and ideal for initial development, while testnet
 offers more realistic cluster configuration. Both devnet and testnet support a faucet,
-run `safecoin airdrop 1` to obtain some devnet or testnet SAFE for development and testing.
+run `wickandbergamot airdrop 1` to obtain some devnet or testnet WICKANDBERGAMOT for development and testing.
