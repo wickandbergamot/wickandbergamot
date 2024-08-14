@@ -3,12 +3,12 @@ module.exports = {
     {
       type: "category",
       collapsed: false,
-      label: "Introduction to Safecoin",
+      label: "Introduction to Wickandbergamot",
       items: [
         {
           type: "doc",
           id: "introduction",
-          label: "What is Safecoin?",
+          label: "What is Wickandbergamot?",
         },
         // This will be the future home for the economics overview page
         // {
@@ -19,21 +19,21 @@ module.exports = {
         {
           type: "doc",
           id: "history",
-          label: "History of Safecoin",
+          label: "History of Wickandbergamot",
         },
       ],
     },
     {
       type: "category",
       collapsed: false,
-      label: "Getting started with Safecoin",
+      label: "Getting started with Wickandbergamot",
       items: [
         {
           type: "doc",
           id: "wallet-guide",
           label: "Wallets",
         },
-        // This will be the future home of the `staking` page, with the introductory info on what staking on Safecoin looks like
+        // This will be the future home of the `staking` page, with the introductory info on what staking on Wickandbergamot looks like
         // {
         //   type: "doc",
         //   id: "staking",
@@ -44,7 +44,7 @@ module.exports = {
     {
       type: "category",
       collapsed: false,
-      label: "Dive into Safecoin",
+      label: "Dive into Wickandbergamot",
       items: [
         "terminology",
         {
@@ -271,7 +271,7 @@ module.exports = {
         {
           type: "doc",
           id: "developing/test-validator",
-          label: "Safecoin Test Validator",
+          label: "Wickandbergamot Test Validator",
         },
       ],
     },
@@ -312,7 +312,7 @@ module.exports = {
   ],
   cliSidebar: [
     "cli",
-    "cli/install-safecoin-cli-tools",
+    "cli/install-wickandbergamot-cli-tools",
     {
       type: "category",
       label: "Command-line Wallets",
@@ -343,7 +343,7 @@ module.exports = {
   architectureSidebar: [
     {
       type: "doc",
-      label: "What is a Safecoin Cluster?",
+      label: "What is a Wickandbergamot Cluster?",
       id: "cluster/overview",
     },
     {
