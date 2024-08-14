@@ -1,7 +1,7 @@
 #![feature(test)]
 extern crate test;
 use {
-    safecoin_entry::entry::{self, VerifyRecyclers},
+    wickandbergamot_entry::entry::{self, VerifyRecyclers},
     solana_perf::test_tx::test_tx,
     solana_sdk::{
         hash::Hash,
