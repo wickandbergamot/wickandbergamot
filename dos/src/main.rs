@@ -18,24 +18,24 @@
 //! 1. Without blockhash or payer:
 //! 1.1 With invalid signatures
 //! ```bash
-//! safecoin-dos $COMMON --num-signatures 8
+//! wickandbergamot-dos $COMMON --num-signatures 8
 //! ```
 //! 1.2 With valid signatures
 //! ```bash
-//! safecoin-dos $COMMON --valid-signatures --num-signatures 8
+//! wickandbergamot-dos $COMMON --valid-signatures --num-signatures 8
 //! ```
 //! 2. With blockhash and payer:
 //! 2.1 Single-instruction transaction
 //! ```bash
-//! safecoin-dos $COMMON --valid-blockhash --transaction-type transfer --num-instructions 1
+//! wickandbergamot-dos $COMMON --valid-blockhash --transaction-type transfer --num-instructions 1
 //! ```
 //! 2.2 Multi-instruction transaction
 //! ```bash
-//! safecoin-dos $COMMON --valid-blockhash --transaction-type transfer --num-instructions 8
+//! wickandbergamot-dos $COMMON --valid-blockhash --transaction-type transfer --num-instructions 8
 //! ```
 //! 2.3 Account-creation transaction
 //! ```bash
-//! safecoin-dos $COMMON --valid-blockhash --transaction-type account-creation
+//! wickandbergamot-dos $COMMON --valid-blockhash --transaction-type account-creation
 //! ```
 //!
 #![allow(clippy::integer_arithmetic)]
@@ -44,19 +44,19 @@ use {
     itertools::Itertools,
     log::*,
     rand::{thread_rng, Rng},
-    safecoin_bench_tps::{bench::generate_and_fund_keypairs, bench_tps_client::BenchTpsClient},
-    safecoin_client::{
+    wickandbergamot_bench_tps::{bench::generate_and_fund_keypairs, bench_tps_client::BenchTpsClient},
+    wickandbergamot_client::{
         connection_cache::{ConnectionCache, DEFAULT_TPU_CONNECTION_POOL_SIZE},
         rpc_client::RpcClient,
         tpu_connection::TpuConnection,
     },
     solana_core::serve_repair::{RepairProtocol, RepairRequestHeader, ServeRepair},
-    safecoin_dos::cli::*,
-    safecoin_gossip::{
+    wickandbergamot_dos::cli::*,
+    wickandbergamot_gossip::{
         gossip_service::{discover, get_multi_client},
         legacy_contact_info::LegacyContactInfo as ContactInfo,
     },
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_sdk::{
         hash::Hash,
         instruction::CompiledInstruction,
@@ -786,15 +786,15 @@ fn main() {
 pub mod test {
     use {
         super::*,
-        safecoin_client::thin_client::ThinClient,
+        wickandbergamot_client::thin_client::ThinClient,
         solana_core::validator::ValidatorConfig,
-        safecoin_faucet::faucet::run_local_faucet,
-        safecoin_local_cluster::{
+        wickandbergamot_faucet::faucet::run_local_faucet,
+        wickandbergamot_local_cluster::{
             cluster::Cluster,
             local_cluster::{ClusterConfig, LocalCluster},
             validator_configs::make_identical_validator_configs,
         },
-        safecoin_rpc::rpc::JsonRpcConfig,
+        wickandbergamot_rpc::rpc::JsonRpcConfig,
         solana_sdk::timing::timestamp,
     };
 
