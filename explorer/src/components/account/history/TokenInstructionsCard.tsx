@@ -4,7 +4,7 @@ import {
   ParsedInstruction,
   PartiallyDecodedInstruction,
   PublicKey,
-} from "@safecoin/web3.js";
+} from "@wickandbergamot/web3.js";
 import { useAccountHistory } from "providers/accounts";
 import { Signature } from "components/common/Signature";
 import {
