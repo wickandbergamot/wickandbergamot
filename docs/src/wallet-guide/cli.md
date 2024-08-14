@@ -2,10 +2,10 @@
 title: Command Line Wallets
 ---
 
-Safecoin supports several different types of wallets that can be used to interface
-directly with the Safecoin command-line tools.
+Wickandbergamot supports several different types of wallets that can be used to interface
+directly with the Wickandbergamot command-line tools.
 
-To use a Command Line Wallet, you must first [install the Safecoin CLI tools](../cli/install-safecoin-cli-tools.md)
+To use a Command Line Wallet, you must first [install the Wickandbergamot CLI tools](../cli/install-wickandbergamot-cli-tools.md)
 
 ## File System Wallet
 
