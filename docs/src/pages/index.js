@@ -9,7 +9,7 @@ function Home() {
   const { siteConfig = {} } = context;
 
   return (
-    <Layout title="Homepage" description="Safecoin Documentation">
+    <Layout title="Homepage" description="WICKANDBERGAMOT Documentation">
       <main>
         <section className={styles.features}>
           <div className="container">
@@ -22,7 +22,7 @@ function Home() {
                 }}
                 body={{
                   label:
-                    "Get started building your decentralized app or marketplace with Safecoin.",
+                    "Get started building your decentralized app or marketplace with WICKANDBERGAMOT.",
                   translateId: "get-started-building",
                 }}
               />
@@ -48,7 +48,7 @@ function Home() {
                 }}
                 body={{
                   label:
-                    "Launch your own SPL Token, Safecoin's equivalent of ERC-20.",
+                    "Launch your own SPL Token, WICKANDBERGAMOT's equivalent of ERC-20.",
                   translateId: "erc-20",
                 }}
               />
@@ -82,12 +82,12 @@ function Home() {
               <Card
                 to="introduction"
                 header={{
-                  label: "🤯 Learn How Safecoin Works",
+                  label: "🤯 Learn How WICKANDBERGAMOT Works",
                   translateId: "learn-how",
                 }}
                 body={{
                   label:
-                    "Get a high-level understanding of Safecoin's architecture.",
+                    "Get a high-level understanding of WICKANDBERGAMOT's architecture.",
                   translateId: "high-level",
                 }}
               />
