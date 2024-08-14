@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { PublicKey } from "@safecoin/web3.js";
+import { PublicKey } from "@wickandbergamot/web3.js";
 import { clusterPath } from "utils/url";
 import { displayAddress } from "utils/tx";
 import { useCluster } from "providers/cluster";
