@@ -1,6 +1,6 @@
 import React from "react";
 import { TableCardBody } from "components/common/TableCardBody";
-import { SafeBalance } from "utils";
+import { WickandbergamotBalance } from "utils";
 import { displayTimestampUtc } from "utils/date";
 import { Account, useFetchAccountInfo } from "providers/accounts";
 import { Address } from "components/common/Address";
@@ -10,7 +10,7 @@ import {
   StakeAccountType,
 } from "validators/accounts/stake";
 import BN from "bn.js";
-import { StakeActivationData } from "@safecoin/web3.js";
+import { StakeActivationData } from "@wickandbergamot/web3.js";
 import { Epoch } from "components/common/Epoch";
 
 const MAX_EPOCH = new BN(2).pow(new BN(64)).sub(new BN(1));
@@ -124,15 +124,15 @@ function OverviewCard({
           </td>
         </tr>
         <tr>
-          <td>Balance (SAFE)</td>
+          <td>Balance (WICKANDBERGAMOT)</td>
           <td className="text-lg-end text-uppercase">
-            <SafeBalance lamports={account.lamports || 0} />
+            <WickandbergamotBalance lamports={account.lamports || 0} />
           </td>
         </tr>
         <tr>
-          <td>Rent Reserve (SAFE)</td>
+          <td>Rent Reserve (WICKANDBERGAMOT)</td>
           <td className="text-lg-end">
-            <SafeBalance lamports={stakeAccount.meta.rentExemptReserve} />
+            <WickandbergamotBalance lamports={stakeAccount.meta.rentExemptReserve} />
           </td>
         </tr>
         {hideDelegation && (
@@ -189,25 +189,25 @@ function DelegationCard({
         {stake && (
           <>
             <tr>
-              <td>Delegated Stake (SAFE)</td>
+              <td>Delegated Stake (WICKANDBERGAMOT)</td>
               <td className="text-lg-end">
-                <SafeBalance lamports={stake.delegation.stake} />
+                <WickandbergamotBalance lamports={stake.delegation.stake} />
               </td>
             </tr>
 
             {activation && (
               <>
                 <tr>
-                  <td>Active Stake (SAFE)</td>
+                  <td>Active Stake (WICKANDBERGAMOT)</td>
                   <td className="text-lg-end">
-                    <SafeBalance lamports={activation.active} />
+                    <WickandbergamotBalance lamports={activation.active} />
                   </td>
                 </tr>
 
                 <tr>
-                  <td>Inactive Stake (SAFE)</td>
+                  <td>Inactive Stake (WICKANDBERGAMOT)</td>
                   <td className="text-lg-end">
-                    <SafeBalance lamports={activation.inactive} />
+                    <WickandbergamotBalance lamports={activation.inactive} />
                   </td>
                 </tr>
               </>
