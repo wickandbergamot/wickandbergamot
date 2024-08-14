@@ -1,5 +1,5 @@
 import React from "react";
-import { PublicKey } from "@safecoin/web3.js";
+import { PublicKey } from "@wickandbergamot/web3.js";
 import { useUserDomains, DomainInfo } from "../../utils/name-service";
 import { LoadingCard } from "components/common/LoadingCard";
 import { ErrorCard } from "components/common/ErrorCard";
