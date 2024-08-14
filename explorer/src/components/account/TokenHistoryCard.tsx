@@ -4,7 +4,7 @@ import {
   ConfirmedSignatureInfo,
   ParsedInstruction,
   PartiallyDecodedInstruction,
-} from "@safecoin/web3.js";
+} from "@wickandbergamot/web3.js";
 import { CacheEntry, FetchStatus } from "providers/cache";
 import {
   useAccountHistories,
@@ -48,7 +48,7 @@ import { useCluster, Cluster } from "providers/cluster";
 import { Link } from "react-router-dom";
 import { Location } from "history";
 import { useQuery } from "utils/url";
-import { TokenInfoMap } from "@safecoin/safe-token-registry";
+import { TokenInfoMap } from "@wickandbergamot/wickandbergamot-token-registry";
 import { useTokenRegistry } from "providers/mints/token-registry";
 import { getTokenProgramInstructionName } from "utils/instruction";
 import {
@@ -459,7 +459,7 @@ const TokenTransactionRow = React.memo(
           }
 
           if ("parsed" in ix) {
-            if (ix.program === "safe-token") {
+            if (ix.program === "wickandbergamot-token") {
               name = getTokenProgramInstructionName(ix, tx);
             } else {
               return undefined;
@@ -579,7 +579,7 @@ function InstructionDetails({
 
   let instructionTypes = instructionType.innerInstructions
     .map((ix) => {
-      if ("parsed" in ix && ix.program === "safe-token") {
+      if ("parsed" in ix && ix.program === "wickandbergamot-token") {
         return getTokenProgramInstructionName(ix, tx);
       }
       return undefined;
