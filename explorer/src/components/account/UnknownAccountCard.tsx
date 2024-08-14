@@ -1,6 +1,6 @@
 import React from "react";
 import { Account } from "providers/accounts";
-import { SafeBalance } from "utils";
+import { WickandbergamotBalance } from "utils";
 import { TableCardBody } from "components/common/TableCardBody";
 import { Address } from "components/common/Address";
 import { addressLabel } from "utils/tx";
@@ -34,9 +34,9 @@ export function UnknownAccountCard({ account }: { account: Account }) {
           </tr>
         )}
         <tr>
-          <td>Balance (SAFE)</td>
+          <td>Balance (WICKANDBERGAMOT)</td>
           <td className="text-lg-end">
-            <SafeBalance lamports={lamports} />
+            <WickandbergamotBalance lamports={lamports} />
           </td>
         </tr>
 
