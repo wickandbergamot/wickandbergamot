@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-redeclare */
-import { PublicKey, TransactionInstruction } from "@safecoin/web3.js";
+import { PublicKey, TransactionInstruction } from "@wickandbergamot/web3.js";
 import {
   enums,
   number,
