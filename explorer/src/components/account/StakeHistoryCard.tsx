@@ -1,5 +1,5 @@
 import React from "react";
-import { SafeBalance } from "utils";
+import { WickandbergamotBalance } from "utils";
 import { Epoch } from "components/common/Epoch";
 import {
   SysvarAccount,
@@ -29,9 +29,9 @@ export function StakeHistoryCard({
             <thead>
               <tr>
                 <th className="w-1 text-muted">Epoch</th>
-                <th className="text-muted">Effective (SAFE)</th>
-                <th className="text-muted">Activating (SAFE)</th>
-                <th className="text-muted">Deactivating (SAFE)</th>
+                <th className="text-muted">Effective (WICKANDBERGAMOT)</th>
+                <th className="text-muted">Activating (WICKANDBERGAMOT)</th>
+                <th className="text-muted">Deactivating (WICKANDBERGAMOT)</th>
               </tr>
             </thead>
             <tbody className="list">
@@ -60,13 +60,13 @@ const renderAccountRow = (entry: StakeHistoryEntry, index: number) => {
         <Epoch epoch={entry.epoch} link />
       </td>
       <td className="font-monospace">
-        <SafeBalance lamports={entry.stakeHistory.effective} />
+        <WickandbergamotBalance lamports={entry.stakeHistory.effective} />
       </td>
       <td className="font-monospace">
-        <SafeBalance lamports={entry.stakeHistory.activating} />
+        <WickandbergamotBalance lamports={entry.stakeHistory.activating} />
       </td>
       <td className="font-monospace">
-        <SafeBalance lamports={entry.stakeHistory.deactivating} />
+        <WickandbergamotBalance lamports={entry.stakeHistory.deactivating} />
       </td>
     </tr>
   );
