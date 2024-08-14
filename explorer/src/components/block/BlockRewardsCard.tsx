@@ -1,6 +1,6 @@
 import React from "react";
-import { SafeBalance } from "utils";
-import { BlockResponse, PublicKey } from "@safecoin/web3.js";
+import { WickandbergamotBalance } from "utils";
+import { BlockResponse, PublicKey } from "@wickandbergamot/web3.js";
 import { Address } from "components/common/Address";
 
 const PAGE_SIZE = 10;
@@ -50,11 +50,11 @@ export function BlockRewardsCard({ block }: { block: BlockResponse }) {
                   </td>
                   <td>{reward.rewardType}</td>
                   <td>
-                    <SafeBalance lamports={reward.lamports} />
+                    <WickandbergamotBalance lamports={reward.lamports} />
                   </td>
                   <td>
                     {reward.postBalance ? (
-                      <SafeBalance lamports={reward.postBalance} />
+                      <WickandbergamotBalance lamports={reward.postBalance} />
                     ) : (
                       "-"
                     )}
