@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Stream } from "@cloudflare/stream-react";
-import { PublicKey } from "@safecoin/web3.js";
+import { PublicKey } from "@wickandbergamot/web3.js";
 import {
   programs,
   MetadataJson,
@@ -27,7 +27,7 @@ const LoadingPlaceholder = () => (
 );
 
 const ErrorPlaceHolder = () => (
-  <img src={ErrorLogo} width="120" height="120" alt="Safecoin Logo" />
+  <img src={ErrorLogo} width="120" height="120" alt="Wickandbergamot Logo" />
 );
 
 const ViewOriginalArtContentLink = ({ src }: { src: string }) => {
