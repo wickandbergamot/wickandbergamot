@@ -2,7 +2,7 @@
 title: "Developing with C"
 ---
 
-Safecoin supports writing on-chain programs using the C and C++ programming
+Wickandbergamot supports writing on-chain programs using the C and C++ programming
 languages.
 
 ## Project Layout
@@ -33,7 +33,7 @@ for an example of a C program.
 First setup the environment:
 
 - Install the latest Rust stable from https://rustup.rs
-- Install the latest [Safecoin command-line tools](../../cli/install-safecoin-cli-tools.md)
+- Install the latest [wickandbergamot command-line tools](../../cli/install-wickandbergamot-cli-tools.md)
 
 Then build using make:
 
@@ -43,7 +43,7 @@ make -C <program directory>
 
 ## How to Test
 
-Safecoin uses the [Criterion](https://github.com/Snaipe/Criterion) test framework
+Wickandbergamot uses the [Criterion](https://github.com/Snaipe/Criterion) test framework
 and tests are executed each time the program is built [How to
 Build](#how-to-build).
 
@@ -55,16 +55,16 @@ information on how to write a test case.
 
 ## Program Entrypoint
 
-Programs export a known entrypoint symbol which the Safecoin runtime looks up and
-calls when invoking a program. Safecoin supports multiple [versions of the BPF
+Programs export a known entrypoint symbol which the Wickandbergamot runtime looks up and
+calls when invoking a program. Wickandbergamot supports multiple [versions of the BPF
 loader](overview.md#versions) and the entrypoints may vary between them.
 Programs must be written for and deployed to the same loader. For more details
 see the [overview](overview#loaders).
 
 Currently there are two supported loaders [BPF
-Loader](https://github.com/fair-exchange/safecoin/blob/7ddf10e602d2ed87a9e3737aa8c32f1db9f909d8/sdk/program/src/bpf_loader.rs#L17)
+Loader](https://github.com/wickandbergamot/wickandbergamot/blob/7ddf10e602d2ed87a9e3737aa8c32f1db9f909d8/sdk/program/src/bpf_loader.rs#L17)
 and [BPF loader
-deprecated](https://github.com/fair-exchange/safecoin/blob/7ddf10e602d2ed87a9e3737aa8c32f1db9f909d8/sdk/program/src/bpf_loader_deprecated.rs#L14).
+deprecated](https://github.com/wickandbergamot/wickandbergamot/blob/7ddf10e602d2ed87a9e3737aa8c32f1db9f909d8/sdk/program/src/bpf_loader_deprecated.rs#L14).
 
 They both have the same raw entrypoint definition, the following is the raw
 symbol that the runtime looks up and calls:
@@ -90,9 +90,9 @@ Each loader provides a helper function that deserializes the program's input
 parameters into C types:
 
 - [BPF Loader
-  deserialization](https://github.com/fair-exchange/safecoin/blob/d2ee9db2143859fa5dc26b15ee6da9c25cc0429c/sdk/bpf/c/inc/solana_sdk.h#L304)
+  deserialization](https://github.com/wickandbergamot/wickandbergamot/blob/d2ee9db2143859fa5dc26b15ee6da9c25cc0429c/sdk/bpf/c/inc/solana_sdk.h#L304)
 - [BPF Loader deprecated
-  deserialization](https://github.com/fair-exchange/safecoin/blob/8415c22b593f164020adc7afe782e8041d756ddf/sdk/bpf/c/inc/deserialize_deprecated.h#L25)
+  deserialization](https://github.com/wickandbergamot/wickandbergamot/blob/8415c22b593f164020adc7afe782e8041d756ddf/sdk/bpf/c/inc/deserialize_deprecated.h#L25)
 
 Some programs may want to perform deserialization themselves, and they can by
 providing their own implementation of the [raw entrypoint](#program-entrypoint).
@@ -109,7 +109,7 @@ Details on how the loader serializes the program inputs can be found in the
 ## Data Types
 
 The loader's deserialization helper function populates the
-[SafeParameters](https://github.com/fair-exchange/safecoin/blob/8415c22b593f164020adc7afe782e8041d756ddf/sdk/bpf/c/inc/solana_sdk.h#L276)
+[WickandbergamotParameters](https://github.com/wickandbergamot/wickandbergamot/blob/8415c22b593f164020adc7afe782e8041d756ddf/sdk/bpf/c/inc/solana_sdk.h#L276)
 structure:
 
 ```c
@@ -117,28 +117,28 @@ structure:
  * Structure that the program's entrypoint input data is deserialized into.
  */
 typedef struct {
-  SafeAccountInfo* ka; /** Pointer to an array of SafeAccountInfo, must already
-                          point to an array of SafeAccountInfos */
-  uint64_t ka_num; /** Number of SafeAccountInfo entries in `ka` */
+  WickandbergamotAccountInfo* ka; /** Pointer to an array of WickandbergamotAccountInfo, must already
+                          point to an array of WickandbergamotAccountInfos */
+  uint64_t ka_num; /** Number of WickandbergamotAccountInfo entries in `ka` */
   const uint8_t *data; /** pointer to the instruction data */
   uint64_t data_len; /** Length in bytes of the instruction data */
-  const SafePubkey *program_id; /** program_id of the currently executing program */
-} SafeParameters;
+  const WickandbergamotPubkey *program_id; /** program_id of the currently executing program */
+} WickandbergamotParameters;
 ```
 
 'ka' is an ordered array of the accounts referenced by the instruction and
 represented as a
-[SafeAccountInfo](https://github.com/fair-exchange/safecoin/blob/8415c22b593f164020adc7afe782e8041d756ddf/sdk/bpf/c/inc/solana_sdk.h#L173)
+[WickandbergamotAccountInfo](https://github.com/wickandbergamot/wickandbergamot/blob/8415c22b593f164020adc7afe782e8041d756ddf/sdk/bpf/c/inc/solana_sdk.h#L173)
 structures. An account's place in the array signifies its meaning, for example,
 when transferring lamports an instruction may define the first account as the
 source and the second as the destination.
 
-The members of the `SafeAccountInfo` structure are read-only except for
+The members of the `WickandbergamotAccountInfo` structure are read-only except for
 `lamports` and `data`. Both may be modified by the program in accordance with
 the [runtime enforcement
 policy](developing/programming-model/accounts.md#policy). When an instruction
 reference the same account multiple times there may be duplicate
-`SafeAccountInfo` entries in the array but they both point back to the original
+`WickandbergamotAccountInfo` entries in the array but they both point back to the original
 input byte array. A program should handle these cases delicately to avoid
 overlapping read/writes to the same buffer. If a program implements their own
 deserialization function care should be taken to handle duplicate accounts
@@ -153,7 +153,7 @@ processed.
 ## Heap
 
 C programs can allocate memory via the system call
-[`calloc`](https://github.com/fair-exchange/safecoin/blob/c3d2d2134c93001566e1e56f691582f379b5ae55/sdk/bpf/c/inc/solana_sdk.h#L245)
+[`calloc`](https://github.com/wickandbergamot/wickandbergamot/blob/c3d2d2134c93001566e1e56f691582f379b5ae55/sdk/bpf/c/inc/solana_sdk.h#L245)
 or implement their own heap on top of the 32KB heap region starting at virtual
 address x300000000. The heap region is also used by `calloc` so if a program
 implements their own heap it should not also call `calloc`.
@@ -163,8 +163,8 @@ implements their own heap it should not also call `calloc`.
 The runtime provides two system calls that take data and log it to the program
 logs.
 
-- [`sol_log(const char*)`](https://github.com/fair-exchange/safecoin/blob/d2ee9db2143859fa5dc26b15ee6da9c25cc0429c/sdk/bpf/c/inc/solana_sdk.h#L128)
-- [`sol_log_64(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)`](https://github.com/fair-exchange/safecoin/blob/d2ee9db2143859fa5dc26b15ee6da9c25cc0429c/sdk/bpf/c/inc/solana_sdk.h#L134)
+- [`sol_log(const char*)`](https://github.com/wickandbergamot/wickandbergamot/blob/d2ee9db2143859fa5dc26b15ee6da9c25cc0429c/sdk/bpf/c/inc/solana_sdk.h#L128)
+- [`sol_log_64(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)`](https://github.com/wickandbergamot/wickandbergamot/blob/d2ee9db2143859fa5dc26b15ee6da9c25cc0429c/sdk/bpf/c/inc/solana_sdk.h#L134)
 
 The [debugging](debugging.md#logging) section has more information about working
 with program logs.
@@ -172,7 +172,7 @@ with program logs.
 ## Compute Budget
 
 Use the system call
-[`sol_log_compute_units()`](https://github.com/fair-exchange/safecoin/blob/d3a3a7548c857f26ec2cb10e270da72d373020ec/sdk/bpf/c/inc/solana_sdk.h#L140)
+[`sol_log_compute_units()`](https://github.com/wickandbergamot/wickandbergamot/blob/d3a3a7548c857f26ec2cb10e270da72d373020ec/sdk/bpf/c/inc/solana_sdk.h#L140)
 to log a message containing the remaining number of compute units the program
 may consume before execution is halted
 
@@ -198,4 +198,4 @@ $ make dump_<program name>
 
 ## Examples
 
-The [Safecoin Program Library github](https://github.com/fair-exchange/safecoin-program-library/tree/master/examples/c) repo contains a collection of C examples
+The [wickandbergamot Program Library github](https://github.com/wickandbergamot/wickandbergamot-program-library/tree/master/examples/c) repo contains a collection of C examples
