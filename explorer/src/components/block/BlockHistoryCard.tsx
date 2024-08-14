@@ -7,7 +7,7 @@ import {
   TransactionSignature,
   PublicKey,
   VOTE_PROGRAM_ID,
-} from "@safecoin/web3.js";
+} from "@wickandbergamot/web3.js";
 import { ErrorCard } from "components/common/ErrorCard";
 import { Signature } from "components/common/Signature";
 import { Address } from "components/common/Address";
@@ -15,7 +15,7 @@ import { pickClusterParams, useQuery } from "utils/url";
 import { useCluster } from "providers/cluster";
 import { displayAddress } from "utils/tx";
 import { parseProgramLogs } from "utils/program-logs";
-import { SafeBalance } from "utils";
+import { WickandbergamotBalance } from "utils";
 
 const PAGE_SIZE = 25;
 
@@ -283,7 +283,7 @@ export function BlockHistoryCard({ block }: { block: BlockResponse }) {
 
                     <td className="text-end">
                       {tx.meta !== null ? (
-                        <SafeBalance lamports={-tx.meta.fee} />
+                        <WickandbergamotBalance lamports={-tx.meta.fee} />
                       ) : (
                         "Unknown"
                       )}
