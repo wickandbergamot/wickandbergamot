@@ -1,5 +1,5 @@
 import React from "react";
-import { ConfirmedSignatureInfo } from "@safecoin/web3.js";
+import { ConfirmedSignatureInfo } from "@wickandbergamot/web3.js";
 import {
   getTokenProgramInstructionName,
   InstructionType,
@@ -16,7 +16,7 @@ export function InstructionDetails({
 
   let instructionTypes = instructionType.innerInstructions
     .map((ix) => {
-      if ("parsed" in ix && ix.program === "safe-token") {
+      if ("parsed" in ix && ix.program === "wickandbergamot-token") {
         return getTokenProgramInstructionName(ix, tx);
       }
       return undefined;
