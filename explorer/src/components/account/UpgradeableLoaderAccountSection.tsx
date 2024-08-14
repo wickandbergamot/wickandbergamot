@@ -1,6 +1,6 @@
 import React from "react";
 import { TableCardBody } from "components/common/TableCardBody";
-import { SafeBalance } from "utils";
+import { WickandbergamotBalance } from "utils";
 import { Account, useFetchAccountInfo } from "providers/accounts";
 import { Address } from "components/common/Address";
 import {
@@ -106,9 +106,9 @@ export function UpgradeableProgramSection({
           </tr>
         )}
         <tr>
-          <td>Balance (SAFE)</td>
+          <td>Balance (WICKANDBERGAMOT)</td>
           <td className="text-lg-end text-uppercase">
-            <SafeBalance lamports={account.lamports || 0} />
+            <WickandbergamotBalance lamports={account.lamports || 0} />
           </td>
         </tr>
         <tr>
@@ -231,9 +231,9 @@ export function UpgradeableProgramDataSection({
           </td>
         </tr>
         <tr>
-          <td>Balance (SAFE)</td>
+          <td>Balance (WICKANDBERGAMOT)</td>
           <td className="text-lg-end text-uppercase">
-            <SafeBalance lamports={account.lamports || 0} />
+            <WickandbergamotBalance lamports={account.lamports || 0} />
           </td>
         </tr>
         {account.details?.space !== undefined && (
@@ -305,9 +305,9 @@ export function UpgradeableProgramBufferSection({
           </td>
         </tr>
         <tr>
-          <td>Balance (SAFE)</td>
+          <td>Balance (WICKANDBERGAMOT)</td>
           <td className="text-lg-end text-uppercase">
-            <SafeBalance lamports={account.lamports || 0} />
+            <WickandbergamotBalance lamports={account.lamports || 0} />
           </td>
         </tr>
         {account.details?.space !== undefined && (
