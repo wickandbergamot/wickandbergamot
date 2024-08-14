@@ -282,7 +282,7 @@ pub fn download_snapshot_archive<'a, 'b>(
         ArchiveFormat::TarGzip,
         ArchiveFormat::TarBzip2,
         ArchiveFormat::TarLz4,
-        ArchiveFormat::Tar, // `safecoin-test-validator` creates uncompressed snapshots
+        ArchiveFormat::Tar, // `wickandbergamot-test-validator` creates uncompressed snapshots
     ] {
         let destination_path = match snapshot_type {
             SnapshotType::FullSnapshot => snapshot_utils::build_full_snapshot_archive_path(
