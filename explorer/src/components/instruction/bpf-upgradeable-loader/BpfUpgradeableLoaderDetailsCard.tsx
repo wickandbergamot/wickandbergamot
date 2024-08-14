@@ -4,7 +4,7 @@ import {
   ParsedInstruction,
   SignatureResult,
   PublicKey,
-} from "@safecoin/web3.js";
+} from "@wickandbergamot/web3.js";
 import { Address } from "components/common/Address";
 import { create, Struct } from "superstruct";
 import { camelToTitleCase } from "utils";
