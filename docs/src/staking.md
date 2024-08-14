@@ -1,12 +1,12 @@
 ---
-title: Staking on Safecoin
+title: Staking on Wickandbergamot
 ---
 
 _Note before reading: All references to increases in values are in absolute
-terms with regards to balance of SAFE.
-This document makes no suggestion as to the monetary value of SAFE at any time._
+terms with regards to balance of WICKANDBERGAMOT.
+This document makes no suggestion as to the monetary value of WICKANDBERGAMOT at any time._
 
-By staking your SAFE tokens, you help secure the network and
+By staking your WICKANDBERGAMOT tokens, you help secure the network and
 [earn rewards](implemented-proposals/staking-rewards.md) while doing so.
 
 You can stake by delegating your tokens to validators who process transactions and run the network.
@@ -46,22 +46,22 @@ Rewards and slashing align validator and token holder interests which helps keep
 secure, robust and performant.
 
 
-## How do I stake my SAFE tokens?
+## How do I stake my WICKANDBERGAMOT tokens?
 
-You can stake SAFE by moving your tokens
+You can stake WICKANDBERGAMOT by moving your tokens
 into a wallet that supports staking.   The wallet provides steps to create a stake account
 and do the delegation.
 
 #### Supported Wallets
 
-Many web and mobile wallets support Safecoin staking operations. Please check with
+Many web and mobile wallets support Wickandbergamot staking operations. Please check with
 your favorite wallet's maintainers regarding status
 
-#### Safecoin command line tools
-- Safecoin command line tools can perform all stake operations in conjunction
+#### Wickandbergamot command line tools
+- Wickandbergamot command line tools can perform all stake operations in conjunction
   with a CLI-generated keypair file wallet, a paper wallet, or with a connected
   Ledger Nano.
-  [Staking commands using the Safecoin Command Line Tools](cli/delegate-stake.md).
+  [Staking commands using the Wickandbergamot Command Line Tools](cli/delegate-stake.md).
 
 #### Create a Stake Account
 
@@ -75,7 +75,7 @@ information about potentially performant validators from the links below.
 The Solana Foundation does not recommend any particular validator.
 
 The Mainnet Beta validators introduce themselves and their services on this
-Safecoin Forum thread:
+Wickandbergamot Forum thread:
 
 - https://forums.solana.com/t/validator-information-thread
 
@@ -86,12 +86,12 @@ performance statistics about each one.
 
 - https://solanabeach.io
 
-To view block production statistics, use the Safecoin command-line tools:
+To view block production statistics, use the Wickandbergamot command-line tools:
 
-- `safecoin validators`
-- `safecoin block-production`
+- `wickandbergamot validators`
+- `wickandbergamot block-production`
 
-The Safecoin team does not make recommendations on how to interpret this
+The Wickandbergamot team does not make recommendations on how to interpret this
 information. Do your own due diligence.
 
 #### Delegate your Stake
