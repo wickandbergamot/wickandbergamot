@@ -1,4 +1,4 @@
-import { ParsedConfirmedTransaction } from "@safecoin/web3.js";
+import { ParsedConfirmedTransaction } from "@wickandbergamot/web3.js";
 
 export type MintDetails = {
   decimals: number;
