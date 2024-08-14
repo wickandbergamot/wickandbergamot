@@ -12,7 +12,7 @@ use {
     rand::{thread_rng, Rng},
     rayon::{prelude::*, ThreadPool},
     serde::{Deserialize, Serialize},
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_merkle_tree::MerkleTree,
     solana_metrics::*,
     solana_perf::{
@@ -22,7 +22,7 @@ use {
         recycler::Recycler,
         sigverify,
     },
-    safecoin_rayon_threadlimit::get_max_thread_count,
+    wickandbergamot_rayon_threadlimit::get_max_thread_count,
     solana_sdk::{
         hash::Hash,
         packet::Meta,
@@ -42,7 +42,7 @@ use {
 };
 
 // get_max_thread_count to match number of threads in the old code.
-// see: https://github.com/fair-exchange/safecoin/pull/24853
+// see: https://github.com/wickandbergamot/wickandbergamot/pull/24853
 lazy_static! {
     static ref PAR_THREAD_POOL: ThreadPool = rayon::ThreadPoolBuilder::new()
         .num_threads(get_max_thread_count())
