@@ -24,7 +24,7 @@ import { Copyable } from "components/common/Copyable";
 import { CoingeckoStatus, useCoinGecko } from "utils/coingecko";
 import { displayTimestampWithoutDate } from "utils/date";
 import { LoadingCard } from "components/common/LoadingCard";
-import { PublicKey } from "@safecoin/web3.js";
+import { PublicKey } from "@wickandbergamot/web3.js";
 import isMetaplexNFT from "providers/accounts/utils/isMetaplexNFT";
 
 const getEthAddress = (link?: string) => {
@@ -415,7 +415,7 @@ function TokenAccountCard({
 
   let unit, balance;
   if (info.isNative) {
-    unit = "SAFE";
+    unit = "WICKANDBERGAMOT";
     balance = (
       <>
         ◎
@@ -481,7 +481,7 @@ function TokenAccountCard({
         )}
         {info.rentExemptReserve && (
           <tr>
-            <td>Rent-exempt reserve (SAFE)</td>
+            <td>Rent-exempt reserve (WICKANDBERGAMOT)</td>
             <td className="text-lg-end">
               <>
                 ◎
