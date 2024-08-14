@@ -1,5 +1,5 @@
 import React from "react";
-import { SignatureResult, TransactionInstruction } from "@safecoin/web3.js";
+import { SignatureResult, TransactionInstruction } from "@wickandbergamot/web3.js";
 import { Address } from "components/common/Address";
 import { Copyable } from "components/common/Copyable";
 import { InstructionCard } from "../InstructionCard";
