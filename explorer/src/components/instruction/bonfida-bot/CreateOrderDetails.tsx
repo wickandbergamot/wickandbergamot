@@ -3,7 +3,7 @@ import {
   SignatureResult,
   TransactionInstruction,
   PublicKey,
-} from "@safecoin/web3.js";
+} from "@wickandbergamot/web3.js";
 import { InstructionCard } from "../InstructionCard";
 import { Address } from "components/common/Address";
 import { CreateOrder } from "./types";
