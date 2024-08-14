@@ -4,7 +4,7 @@ import {
   ParsedInstruction,
   PartiallyDecodedInstruction,
   PublicKey,
-} from "@safecoin/web3.js";
+} from "@wickandbergamot/web3.js";
 import { useAccountHistory } from "providers/accounts";
 import { useTokenRegistry } from "providers/mints/token-registry";
 import { create } from "superstruct";
@@ -250,7 +250,7 @@ function getTransfer(
   cluster: Cluster,
   signature: string
 ): Transfer | TransferChecked | undefined {
-  if ("parsed" in instruction && instruction.program === "safe-token") {
+  if ("parsed" in instruction && instruction.program === "wickandbergamot-token") {
     try {
       const { type: rawType } = instruction.parsed;
       const type = create(rawType, TokenInstructionType);
