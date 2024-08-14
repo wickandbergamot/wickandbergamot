@@ -1,9 +1,9 @@
 const math = require("remark-math");
 const katex = require("rehype-katex");
 module.exports = {
-  title: "Safecoin Docs",
+  title: "wickandbergamot Docs",
   tagline:
-    "Safecoin is an open source project implementing a new, high-performance, permissionless blockchain.",
+    "Wickandbergamot is an open source project implementing a new, high-performance, permissionless blockchain.",
   url: "https://docs.solana.com",
   baseUrl: "/",
   favicon: "img/favicon.ico",
@@ -50,7 +50,7 @@ module.exports = {
     },
     navbar: {
       logo: {
-        alt: "Safecoin Logo",
+        alt: "Wickandbergamot Logo",
         src: "img/logo-horizontal.svg",
         srcDark: "img/logo-horizontal-dark.svg",
       },
@@ -91,7 +91,7 @@ module.exports = {
             { label: "Proposals", to: "proposals" },
             {
               href: "https://spl.solana.com",
-              label: "Safecoin Program Library »",
+              label: "Wickandbergamot Program Library »",
             },
           ],
         },
@@ -103,11 +103,11 @@ module.exports = {
           href: "https://discordapp.com/invite/pquxPsq",
           // label: "Discord",
           className: "header-link-icon header-discord-link",
-          "aria-label": "Safecoin Discord",
+          "aria-label": "Wickandbergamot Discord",
           position: "right",
         },
         {
-          href: "https://github.com/fair-exchange/safecoin",
+          href: "https://github.com/wickandbergamot/wickandbergamot",
           // label: "GitHub",
           className: "header-link-icon header-github-link",
           "aria-label": "GitHub repository",
@@ -159,7 +159,7 @@ module.exports = {
             },
             {
               label: "GitHub »",
-              href: "https://github.com/fair-exchange/safecoin",
+              href: "https://github.com/wickandbergamot/wickandbergamot",
             },
             {
               label: "Discord »",
@@ -188,7 +188,7 @@ module.exports = {
             },
             {
               href: "https://spl.solana.com",
-              label: "Safecoin Program Library »",
+              label: "Wickandbergamot Program Library »",
             },
           ],
         },
