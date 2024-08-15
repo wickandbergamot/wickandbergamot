@@ -1,4 +1,4 @@
-import { SignatureResult, TransactionInstruction } from "@safecoin/web3.js";
+import { SignatureResult, TransactionInstruction } from "@wickandbergamot/web3.js";
 import { InstructionCard } from "./InstructionCard";
 import {
   Idl,
