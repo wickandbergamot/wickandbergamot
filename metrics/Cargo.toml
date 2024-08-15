@@ -1,12 +1,12 @@
 [package]
-name = "safecoin-metrics"
+name = "wickandbergamot-metrics"
 version = "1.14.17"
-description = "Safecoin Metrics"
+description = "Wickandbergamot Metrics"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-metrics"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-metrics"
 edition = "2021"
 
 [dependencies]
@@ -15,7 +15,7 @@ gethostname = "0.2.3"
 lazy_static = "1.4.0"
 log = "0.4.17"
 reqwest = { version = "0.11.11", default-features = false, features = ["blocking", "brotli", "deflate", "gzip", "rustls-tls", "json"] }
-safecoin-sdk = { path = "../sdk", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../sdk", version = "=1.14.17" }
 
 [dev-dependencies]
 env_logger = "0.9.0"
