@@ -1,5 +1,5 @@
 import React from "react";
-import { ParsedInstruction } from "@safecoin/web3.js";
+import { ParsedInstruction } from "@wickandbergamot/web3.js";
 
 export function RawParsedDetails({
   ix,
