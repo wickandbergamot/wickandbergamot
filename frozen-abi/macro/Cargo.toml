@@ -1,11 +1,11 @@
 [package]
-name = "safecoin-frozen-abi-macro"
+name = "wickandbergamot-frozen-abi-macro"
 version = "1.14.17"
-description = "Safecoin Frozen ABI Macro"
+description = "Wickandbergamot Frozen ABI Macro"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-frozen-abi-macro"
+repository = "https://github.com/fair-exchange/wickandbergamot"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-frozen-abi-macro"
 license = "Apache-2.0"
 edition = "2021"
 
