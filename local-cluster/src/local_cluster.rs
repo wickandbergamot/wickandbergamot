@@ -264,7 +264,7 @@ impl LocalCluster {
 
         let (leader_ledger_path, _blockhash) = create_new_tmp_ledger!(&genesis_config);
         let leader_contact_info = leader_node.info.clone();
-        let mut leader_config = safe_clone_config(&config.validator_configs[0]);
+        let mut leader_config = wickandbergamot_clone_config(&config.validator_configs[0]);
         leader_config.rpc_addrs = Some((leader_node.info.rpc, leader_node.info.rpc_pubsub));
         Self::sync_ledger_path_across_nested_config_fields(&mut leader_config, &leader_ledger_path);
         let leader_keypair = Arc::new(Keypair::from_bytes(&leader_keypair.to_bytes()).unwrap());
@@ -296,7 +296,7 @@ impl LocalCluster {
         };
         let cluster_leader = ClusterValidatorInfo::new(
             leader_info,
-            safe_clone_config(&config.validator_configs[0]),
+            wickandbergamot_clone_config(&config.validator_configs[0]),
             leader_server,
         );
 
@@ -336,7 +336,7 @@ impl LocalCluster {
             );
         }
 
-        let mut listener_config = safe_clone_config(&config.validator_configs[0]);
+        let mut listener_config = wickandbergamot_clone_config(&config.validator_configs[0]);
         listener_config.voting_disabled = true;
         (0..config.num_listeners).for_each(|_| {
             cluster.add_validator_listener(
@@ -466,7 +466,7 @@ impl LocalCluster {
             .unwrap();
         }
 
-        let mut config = safe_clone_config(validator_config);
+        let mut config = wickandbergamot_clone_config(validator_config);
         config.rpc_addrs = Some((validator_node.info.rpc, validator_node.info.rpc_pubsub));
         Self::sync_ledger_path_across_nested_config_fields(&mut config, &ledger_path);
         let voting_keypair = voting_keypair.unwrap();
@@ -494,7 +494,7 @@ impl LocalCluster {
                 ledger_path,
                 contact_info,
             },
-            safe_clone_config(validator_config),
+            wickandbergamot_clone_config(validator_config),
             validator_server,
         );
 
@@ -839,7 +839,7 @@ impl Cluster for LocalCluster {
             entry_point_info
                 .map(|entry_point_info| vec![entry_point_info])
                 .unwrap_or_default(),
-            &safe_clone_config(&cluster_validator_info.config),
+            &wickandbergamot_clone_config(&cluster_validator_info.config),
             true, // should_check_duplicate_instance
             Arc::new(RwLock::new(ValidatorStartProgress::default())),
             socket_addr_space,
