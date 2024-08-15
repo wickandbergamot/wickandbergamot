@@ -4,7 +4,7 @@ use {
     log::*,
     rayon::{prelude::*, ThreadPool, ThreadPoolBuilder},
     serial_test::serial,
-    safecoin_gossip::{
+    wickandbergamot_gossip::{
         cluster_info,
         cluster_info_metrics::GossipStats,
         crds::GossipRoute,
@@ -16,7 +16,7 @@ use {
         legacy_contact_info::LegacyContactInfo as ContactInfo,
         ping_pong::PingCache,
     },
-    safecoin_rayon_threadlimit::get_thread_count,
+    wickandbergamot_rayon_threadlimit::get_thread_count,
     solana_sdk::{
         hash::hash,
         pubkey::Pubkey,
