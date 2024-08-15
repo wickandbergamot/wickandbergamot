@@ -14,13 +14,13 @@ usage() {
   echo
   echo " Run bench-tps "
   echo
-  echo "   extra args: additional arguments are passed along to safecoin-bench-tps"
+  echo "   extra args: additional arguments are passed along to wickandbergamot-bench-tps"
   echo
   exit 1
 }
 
 if [[ -z $1 ]]; then # default behavior
-  $safecoin_bench_tps \
+  $wickandbergamot_bench_tps \
     --entrypoint 127.0.0.1:10015 \
     --faucet 127.0.0.1:9900 \
     --duration 90 \
@@ -28,5 +28,5 @@ if [[ -z $1 ]]; then # default behavior
     --thread-batch-sleep-ms 0 \
 
 else
-  $safecoin_bench_tps "$@"
+  $wickandbergamot_bench_tps "$@"
 fi
