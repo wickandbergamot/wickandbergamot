@@ -6,7 +6,7 @@ use {
     },
     itertools::izip,
     log::*,
-    safecoin_client::{
+    wickandbergamot_client::{
         connection_cache::{
             ConnectionCache, DEFAULT_TPU_CONNECTION_POOL_SIZE, DEFAULT_TPU_ENABLE_UDP,
             DEFAULT_TPU_USE_QUIC,
@@ -17,7 +17,7 @@ use {
         tower_storage::FileTowerStorage,
         validator::{Validator, ValidatorConfig, ValidatorStartProgress},
     },
-    safecoin_gossip::{
+    wickandbergamot_gossip::{
         cluster_info::Node, gossip_service::discover_cluster,
         legacy_contact_info::LegacyContactInfo as ContactInfo,
     },
