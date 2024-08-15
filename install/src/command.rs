@@ -9,7 +9,7 @@ use {
     crossbeam_channel::unbounded,
     indicatif::{ProgressBar, ProgressStyle},
     serde::{Deserialize, Serialize},
-    safecoin_client::rpc_client::RpcClient,
+    wickandbergamot_client::rpc_client::RpcClient,
     solana_config_program::{config_instruction, get_config_data, ConfigState},
     solana_sdk::{
         hash::{Hash, Hasher},
@@ -301,7 +301,7 @@ fn check_env_path_for_bin_dir(config: &Config) {
 
     if !found {
         println!(
-            "\nPlease update your PATH environment variable to include the safecoin programs:\n    PATH=\"{}:$PATH\"\n",
+            "\nPlease update your PATH environment variable to include the wickandbergamot programs:\n    PATH=\"{}:$PATH\"\n",
             config.active_release_bin_dir().to_str().unwrap()
         );
     }
@@ -537,7 +537,7 @@ pub fn init(
     explicit_release: Option<ExplicitRelease>,
 ) -> Result<(), String> {
     let config = {
-        // Write new config file only if different, so that running |safecoin-install init|
+        // Write new config file only if different, so that running |wickandbergamot-install init|
         // repeatedly doesn't unnecessarily re-download
         let mut current_config = Config::load(config_file).unwrap_or_default();
         current_config.current_update_manifest = None;
@@ -569,7 +569,7 @@ pub fn init(
 
 fn github_release_download_url(release_semver: &str) -> String {
     format!(
-        "https://github.com/fair-exchange/safecoin/releases/download/v{}/solana-release-{}.tar.bz2",
+        "https://github.com/wickandbergamot/wickandbergamot/releases/download/v{}/solana-release-{}.tar.bz2",
         release_semver,
         crate::build_env::TARGET
     )
@@ -605,7 +605,7 @@ pub fn info(config_file: &str, local_info_only: bool, eval: bool) -> Result<(), 
 
     if eval {
         println!(
-            "SAFECOIN_INSTALL_ACTIVE_RELEASE={}",
+            "WICKANDBERGAMOT_INSTALL_ACTIVE_RELEASE={}",
             &config.active_release_dir().to_str().unwrap_or("")
         );
         config
@@ -615,7 +615,7 @@ pub fn info(config_file: &str, local_info_only: bool, eval: bool) -> Result<(), 
                 ExplicitRelease::Channel(channel) => channel,
             })
             .and_then(|channel| {
-                println!("SAFECOIN_INSTALL_ACTIVE_CHANNEL={}", channel,);
+                println!("WICKANDBERGAMOT_INSTALL_ACTIVE_CHANNEL={}", channel,);
                 Option::<String>::None
             });
         return Ok(());
@@ -874,7 +874,7 @@ fn check_for_newer_github_release(
     prerelease_allowed: bool,
 ) -> Result<Option<String>, String> {
     let client = reqwest::blocking::Client::builder()
-        .user_agent("safecoin-install")
+        .user_agent("wickandbergamot-install")
         .build()
         .map_err(|err| err.to_string())?;
 
@@ -909,7 +909,7 @@ fn check_for_newer_github_release(
 
     while page == 1 || releases.len() == PER_PAGE {
         let url = reqwest::Url::parse_with_params(
-            "https://api.github.com/repos/fair-exchange/safecoin/releases",
+            "https://api.github.com/repos/wickandbergamot/wickandbergamot/releases",
             &[
                 ("per_page", &format!("{}", PER_PAGE)),
                 ("page", &format!("{}", page)),
