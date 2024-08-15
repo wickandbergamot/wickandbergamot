@@ -3,8 +3,8 @@ import {
   SystemProgram,
   SignatureResult,
   ParsedInstruction,
-} from "@safecoin/web3.js";
-import { SafeBalance } from "utils";
+} from "@wickandbergamot/web3.js";
+import { WickandbergamotBalance } from "utils";
 import { InstructionCard } from "../InstructionCard";
 import { Address } from "components/common/Address";
 import { TransferInfo } from "./types";
@@ -50,9 +50,9 @@ export function TransferDetailsCard(props: {
       </tr>
 
       <tr>
-        <td>Transfer Amount (SAFE)</td>
+        <td>Transfer Amount (WICKANDBERGAMOT)</td>
         <td className="text-lg-end">
-          <SafeBalance lamports={info.lamports} />
+          <WickandbergamotBalance lamports={info.lamports} />
         </td>
       </tr>
     </InstructionCard>
