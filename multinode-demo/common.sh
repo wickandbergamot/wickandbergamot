@@ -18,13 +18,13 @@ fi
 if [[ $(uname) != Linux ]]; then
   # Protect against unsupported configurations to prevent non-obvious errors
   # later. Arguably these should be fatal errors but for now prefer tolerance.
-  if [[ -n $SAFECOIN_CUDA ]]; then
+  if [[ -n $WICKANDBERGAMOT_CUDA ]]; then
     echo "Warning: CUDA is not supported on $(uname)"
-    SAFECOIN_CUDA=
+    WICKANDBERGAMOT_CUDA=
   fi
 fi
 
-if [[ -n $USE_INSTALL || ! -f "$SAFECOIN_ROOT"/Cargo.toml ]]; then
+if [[ -n $USE_INSTALL || ! -f "$WICKANDBERGAMOT_ROOT"/Cargo.toml ]]; then
   solana_program() {
     declare program="$1"
     if [[ -z $program ]]; then
@@ -61,15 +61,15 @@ else
   }
 fi
 
-safecoin_bench_tps=$(solana_program bench-tps)
-safecoin_faucet=$(solana_program faucet)
-safecoin_validator=$(solana_program validator)
-safecoin_validator_cuda="$safecoin_validator --cuda"
-safecoin_genesis=$(solana_program genesis)
-safecoin_gossip=$(solana_program gossip)
+wickandbergamot_bench_tps=$(solana_program bench-tps)
+wickandbergamot_faucet=$(solana_program faucet)
+wickandbergamot_validator=$(solana_program validator)
+wickandbergamot_validator_cuda="$wickandbergamot_validator --cuda"
+wickandbergamot_genesis=$(solana_program genesis)
+wickandbergamot_gossip=$(solana_program gossip)
 solana_keygen=$(solana_program keygen)
-safecoin_ledger_tool=$(solana_program ledger-tool)
-safecoin_cli=$(solana_program)
+wickandbergamot_ledger_tool=$(solana_program ledger-tool)
+wickandbergamot_cli=$(solana_program)
 
 export RUST_BACKTRACE=1
 
