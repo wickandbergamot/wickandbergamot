@@ -1,6 +1,6 @@
 import React from "react";
 import bs58 from "bs58";
-import { Connection, Message, Transaction } from "@safecoin/web3.js";
+import { Connection, Message, Transaction } from "@wickandbergamot/web3.js";
 import { useCluster } from "providers/cluster";
 import { InstructionLogs, parseProgramLogs } from "utils/program-logs";
 import { ProgramLogsCardBody } from "components/ProgramLogsCardBody";
