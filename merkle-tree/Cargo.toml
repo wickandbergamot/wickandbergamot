@@ -1,17 +1,17 @@
 [package]
-name = "safecoin-merkle-tree"
+name = "wickandbergamot-merkle-tree"
 version = "1.14.17"
-description = "Safecoin Merkle Tree"
+description = "Wickandbergamot Merkle Tree"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-merkle-tree"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-merkle-tree"
 edition = "2021"
 
 [dependencies]
 fast-math = "0.1"
-safecoin-program = { path = "../sdk/program", version = "=1.14.17" }
+wickandbergamot-program = { path = "../sdk/program", version = "=1.14.17" }
 
 # This can go once the BPF toolchain target Rust 1.42.0+
 [target.bpfel-unknown-unknown.dependencies]
