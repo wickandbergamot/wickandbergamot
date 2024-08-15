@@ -3,7 +3,7 @@ import {
   SignatureResult,
   ParsedTransaction,
   ParsedInstruction,
-} from "@safecoin/web3.js";
+} from "@wickandbergamot/web3.js";
 
 import { UnknownDetailsCard } from "../UnknownDetailsCard";
 import { InitializeDetailsCard } from "./InitializeDetailsCard";
