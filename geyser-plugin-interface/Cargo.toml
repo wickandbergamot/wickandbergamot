@@ -1,18 +1,18 @@
 [package]
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 edition = "2021"
-name = "safecoin-geyser-plugin-interface"
-description = "The Safecoin Geyser plugin interface."
+name = "wickandbergamot-geyser-plugin-interface"
+description = "The Wickandbergamot Geyser plugin interface."
 version = "1.14.17"
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-geyser-plugin-interface"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-geyser-plugin-interface"
 
 [dependencies]
 log = "0.4.17"
-safecoin-sdk = { path = "../sdk", version = "=1.14.17" }
-safecoin-transaction-status = { path = "../transaction-status", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../sdk", version = "=1.14.17" }
+wickandbergamot-transaction-status = { path = "../transaction-status", version = "=1.14.17" }
 thiserror = "1.0.31"
 
 [package.metadata.docs.rs]
