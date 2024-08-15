@@ -1,6 +1,6 @@
 # |source| this file to enable metrics in the current shell
 
-echoSafecoinMetricsConfig() {
+echoWickandbergamotMetricsConfig() {
   declare metrics_config_sh
   metrics_config_sh="$(dirname "${BASH_SOURCE[0]}")"/lib/config.sh
   if [[ ! -f "$metrics_config_sh" ]]; then
@@ -14,9 +14,9 @@ echoSafecoinMetricsConfig() {
   )
 }
 
-SAFECOIN_METRICS_CONFIG=$(echoSafecoinMetricsConfig)
-export SAFECOIN_METRICS_CONFIG
-unset -f echoSafecoinMetricsConfig
+WICKANDBERGAMOT_METRICS_CONFIG=$(echoWickandbergamotMetricsConfig)
+export WICKANDBERGAMOT_METRICS_CONFIG
+unset -f echoWickandbergamotMetricsConfig
 
 __configure_metrics_sh="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. || true; pwd)"/scripts/configure-metrics.sh
 if [[ -f $__configure_metrics_sh ]]; then
