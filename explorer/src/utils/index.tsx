@@ -3,10 +3,10 @@ import {
   HumanizeDuration,
   HumanizeDurationLanguage,
 } from "humanize-duration-ts";
-import { PublicKey } from "@safecoin/web3.js";
+import { PublicKey } from "@wickandbergamot/web3.js";
 
 // Switch to web3 constant when web3 updates superstruct
-export const LAMPORTS_PER_SAFE = 1_000_000_000;
+export const LAMPORTS_PER_WICKANDBERGAMOT = 1_000_000_000;
 export const MICRO_LAMPORTS_PER_LAMPORT = 1_000_000;
 
 export const NUM_TICKS_PER_SECOND = 160;
@@ -56,9 +56,9 @@ export function microLamportsToLamportsString(
   );
 }
 
-export function lamportsToSafe(lamports: number | BN): number {
+export function lamportsToWickandbergamot(lamports: number | BN): number {
   if (typeof lamports === "number") {
-    return Math.abs(lamports) / LAMPORTS_PER_SAFE;
+    return Math.abs(lamports) / LAMPORTS_PER_Wickandbergamot;
   }
 
   let signMultiplier = 1;
@@ -76,11 +76,11 @@ export function lamportsToSafe(lamports: number | BN): number {
   return signMultiplier * parseFloat(solString);
 }
 
-export function lamportsToSafeString(
+export function lamportsToWickandbergamotString(
   lamports: number | BN,
   maximumFractionDigits: number = 9
 ): string {
-  const sol = lamportsToSafe(lamports);
+  const sol = lamportsToWickandbergamot(lamports);
   return new Intl.NumberFormat("en-US", { maximumFractionDigits }).format(sol);
 }
 
@@ -88,7 +88,7 @@ export function numberWithSeparator(s: string) {
   return s.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-export function SafeBalance({
+export function WickandbergamotBalance({
   lamports,
   maximumFractionDigits = 9,
 }: {
@@ -99,7 +99,7 @@ export function SafeBalance({
     <span>
       ◎
       <span className="font-monospace">
-        {lamportsToSafeString(lamports, maximumFractionDigits)}
+        {lamportsToWickandbergamotString(lamports, maximumFractionDigits)}
       </span>
     </span>
   );
