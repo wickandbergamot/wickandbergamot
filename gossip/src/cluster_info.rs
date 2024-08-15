@@ -15,10 +15,10 @@
 
 #[deprecated(
     since = "1.10.6",
-    note = "Please use `safecoin_net_utils::{MINIMUM_VALIDATOR_PORT_RANGE_WIDTH, VALIDATOR_PORT_RANGE}` instead"
+    note = "Please use `wickandbergamot_net_utils::{MINIMUM_VALIDATOR_PORT_RANGE_WIDTH, VALIDATOR_PORT_RANGE}` instead"
 )]
 #[allow(deprecated)]
-pub use safecoin_net_utils::{MINIMUM_VALIDATOR_PORT_RANGE_WIDTH, VALIDATOR_PORT_RANGE};
+pub use wickandbergamot_net_utils::{MINIMUM_VALIDATOR_PORT_RANGE_WIDTH, VALIDATOR_PORT_RANGE};
 use {
     crate::{
         cluster_info_metrics::{
@@ -47,8 +47,8 @@ use {
     rayon::{prelude::*, ThreadPool, ThreadPoolBuilder},
     serde::ser::Serialize,
     solana_ledger::shred::Shred,
-    safecoin_measure::measure::Measure,
-    safecoin_net_utils::{
+    wickandbergamot_measure::measure::Measure,
+    wickandbergamot_net_utils::{
         bind_common, bind_common_in_range, bind_in_range, bind_two_in_range_with_offset,
         find_available_port_in_range, multi_bind_in_range, PortRange,
     },
@@ -56,7 +56,7 @@ use {
         data_budget::DataBudget,
         packet::{Packet, PacketBatch, PacketBatchRecycler, PACKET_DATA_SIZE},
     },
-    safecoin_rayon_threadlimit::get_thread_count,
+    wickandbergamot_rayon_threadlimit::get_thread_count,
     solana_runtime::{bank_forks::BankForks, vote_parser},
     solana_sdk::{
         clock::{Slot, DEFAULT_MS_PER_SLOT, DEFAULT_SLOTS_PER_EPOCH},
@@ -1243,7 +1243,7 @@ impl ClusterInfo {
             .collect()
     }
 
-    pub fn get_node_version(&self, pubkey: &Pubkey) -> Option<safecoin_version::Version> {
+    pub fn get_node_version(&self, pubkey: &Pubkey) -> Option<wickandbergamot_version::Version> {
         let gossip_crds = self.gossip.crds.read().unwrap();
         if let Some(version) = gossip_crds.get::<&Version>(*pubkey) {
             return Some(version.version.clone());
@@ -3150,7 +3150,7 @@ mod tests {
         rand_chacha::ChaChaRng,
         regex::Regex,
         solana_ledger::shred::Shredder,
-        safecoin_net_utils::MINIMUM_VALIDATOR_PORT_RANGE_WIDTH,
+        wickandbergamot_net_utils::MINIMUM_VALIDATOR_PORT_RANGE_WIDTH,
         solana_sdk::signature::{Keypair, Signer},
         solana_vote_program::{vote_instruction, vote_state::Vote},
         std::{
