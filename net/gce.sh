@@ -759,7 +759,7 @@ if [[ -f /solana-scratch/.instance-startup-complete ]]; then
     cat ../../scripts/ulimit-n.sh
   )
   if [[ -x ~solana/solana/on-reboot ]]; then
-    sudo -u safecoin ~solana/solana/on-reboot
+    sudo -u wickandbergamot ~solana/solana/on-reboot
   fi
 
   # Skip most setup on instance reboot
