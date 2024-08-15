@@ -5,7 +5,7 @@ extern crate test;
 
 use {
     rand::Rng,
-    safecoin_entry::entry::{create_ticks, Entry},
+    wickandbergamot_entry::entry::{create_ticks, Entry},
     solana_ledger::{
         blockstore::{entries_to_test_shreds, Blockstore},
         get_tmp_ledger_path,
