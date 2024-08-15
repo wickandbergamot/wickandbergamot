@@ -1,12 +1,12 @@
 [package]
-name = "safecoin-logger"
+name = "wickandbergamot-logger"
 version = "1.14.17"
-description = "Safecoin Logger"
+description = "wickandbergamot Logger"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-logger"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-logger"
 edition = "2021"
 
 [dependencies]
