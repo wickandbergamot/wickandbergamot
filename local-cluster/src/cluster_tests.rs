@@ -6,10 +6,10 @@ use log::*;
 use {
     rand::{thread_rng, Rng},
     rayon::prelude::*,
-    safecoin_client::{connection_cache::ConnectionCache, thin_client::ThinClient},
+    wickandbergamot_client::{connection_cache::ConnectionCache, thin_client::ThinClient},
     solana_core::consensus::VOTE_THRESHOLD_DEPTH,
-    safecoin_entry::entry::{Entry, EntrySlice},
-    safecoin_gossip::{
+    wickandbergamot_entry::entry::{Entry, EntrySlice},
+    wickandbergamot_gossip::{
         cluster_info,
         crds_value::{self, CrdsData, CrdsValue},
         gossip_error::GossipError,
