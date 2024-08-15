@@ -1,6 +1,6 @@
 import React from "react";
 import bs58 from "bs58";
-import { CompiledInstruction, Message } from "@safecoin/web3.js";
+import { CompiledInstruction, Message } from "@wickandbergamot/web3.js";
 import { TableCardBody } from "components/common/TableCardBody";
 import { AddressWithContext, programValidator } from "./AddressWithContext";
 import { useCluster } from "providers/cluster";
