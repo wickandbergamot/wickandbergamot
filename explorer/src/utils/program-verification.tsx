@@ -1,4 +1,4 @@
-import { PublicKey } from "@safecoin/web3.js";
+import { PublicKey } from "@wickandbergamot/web3.js";
 import { useEffect, useState } from "react";
 
 export type VerifiableBuild =
