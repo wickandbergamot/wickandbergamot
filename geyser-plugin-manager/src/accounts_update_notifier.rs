@@ -2,10 +2,10 @@
 use {
     crate::geyser_plugin_manager::GeyserPluginManager,
     log::*,
-    safecoin_geyser_plugin_interface::geyser_plugin_interface::{
+    wickandbergamot_geyser_plugin_interface::geyser_plugin_interface::{
         ReplicaAccountInfoV2, ReplicaAccountInfoVersions,
     },
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_metrics::*,
     solana_runtime::{
         accounts_update_notifier_interface::AccountsUpdateNotifierInterface,
