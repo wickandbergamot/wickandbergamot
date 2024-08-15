@@ -1,12 +1,12 @@
 [package]
-name = "safecoin-faucet"
+name = "wickandbergamot-faucet"
 version = "1.14.17"
-description = "Safecoin Faucet"
+description = "Wickandbergamot Faucet"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-faucet"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-faucet"
 edition = "2021"
 
 [dependencies]
@@ -17,22 +17,22 @@ crossbeam-channel = "0.5"
 log = "0.4.17"
 serde = "1.0.138"
 serde_derive = "1.0.103"
-safecoin-clap-utils = { path = "../clap-utils", version = "=1.14.17" }
-safecoin-cli-config = { path = "../cli-config", version = "=1.14.17" }
-safecoin-logger = { path = "../logger", version = "=1.14.17" }
-safecoin-metrics = { path = "../metrics", version = "=1.14.17" }
-safecoin-sdk = { path = "../sdk", version = "=1.14.17" }
-safecoin-version = { path = "../version", version = "=1.14.17" }
+wickandbergamot-clap-utils = { path = "../clap-utils", version = "=1.14.17" }
+wickandbergamot-cli-config = { path = "../cli-config", version = "=1.14.17" }
+wickandbergamot-logger = { path = "../logger", version = "=1.14.17" }
+wickandbergamot-metrics = { path = "../metrics", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../sdk", version = "=1.14.17" }
+wickandbergamot-version = { path = "../version", version = "=1.14.17" }
 safe-memo = {  version = "=3.0.9", features = ["no-entrypoint"] }
 thiserror = "1.0"
 tokio = { version = "1", features = ["full"] }
 
 [lib]
 crate-type = ["lib"]
-name = "safecoin_faucet"
+name = "wickandbergamot_faucet"
 
 [[bin]]
-name = "safecoin-faucet"
+name = "wickandbergamot-faucet"
 path = "src/bin/faucet.rs"
 
 [package.metadata.docs.rs]
