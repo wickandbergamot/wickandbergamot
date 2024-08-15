@@ -1,4 +1,4 @@
-import { PerfSample } from "@safecoin/web3.js";
+import { PerfSample } from "@wickandbergamot/web3.js";
 import { ClusterStatsStatus } from "./solanaClusterStats";
 
 export type PerformanceInfo = {
