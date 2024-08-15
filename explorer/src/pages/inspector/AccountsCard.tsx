@@ -1,5 +1,5 @@
 import React from "react";
-import { Message, PublicKey } from "@safecoin/web3.js";
+import { Message, PublicKey } from "@wickandbergamot/web3.js";
 import { TableCardBody } from "components/common/TableCardBody";
 import { AddressWithContext } from "./AddressWithContext";
 import { ErrorCard } from "components/common/ErrorCard";
