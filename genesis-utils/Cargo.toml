@@ -1,22 +1,22 @@
 [package]
-name = "safecoin-genesis-utils"
+name = "wickandbergamot-genesis-utils"
 version = "1.14.17"
-description = "Safecoin Genesis Utils"
+description = "Wickandbergamot Genesis Utils"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/fair-exchange/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-download-utils"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-download-utils"
 edition = "2021"
 
 [dependencies]
-safecoin-download-utils = { path = "../download-utils", version = "=1.14.17" }
-safecoin-runtime = { path = "../runtime", version = "=1.14.17" }
-safecoin-sdk = { path = "../sdk", version = "=1.14.17" }
+wickandbergamot-download-utils = { path = "../download-utils", version = "=1.14.17" }
+wickandbergamot-runtime = { path = "../runtime", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../sdk", version = "=1.14.17" }
 
 [lib]
 crate-type = ["lib"]
-name = "safecoin_genesis_utils"
+name = "wickandbergamot_genesis_utils"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
