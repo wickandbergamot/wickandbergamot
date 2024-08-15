@@ -4,7 +4,7 @@ use {
     crate::{cluster_info::ClusterInfo, legacy_contact_info::LegacyContactInfo as ContactInfo},
     crossbeam_channel::{unbounded, Sender},
     rand::{thread_rng, Rng},
-    safecoin_client::{connection_cache::ConnectionCache, thin_client::ThinClient},
+    wickandbergamot_client::{connection_cache::ConnectionCache, thin_client::ThinClient},
     solana_perf::recycler::Recycler,
     solana_runtime::bank_forks::BankForks,
     solana_sdk::{
@@ -158,7 +158,7 @@ pub fn discover(
         info!("Gossip Address: {:?}", my_gossip_addr);
     }
     let _ip_echo_server = ip_echo
-        .map(|tcp_listener| safecoin_net_utils::ip_echo_server(tcp_listener, Some(my_shred_version)));
+        .map(|tcp_listener| wickandbergamot_net_utils::ip_echo_server(tcp_listener, Some(my_shred_version)));
     let (met_criteria, elapsed, all_peers, tvu_peers) = spy(
         spy_ref.clone(),
         num_nodes,
