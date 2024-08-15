@@ -1,12 +1,12 @@
-import { SafecoinPingProvider } from "providers/stats/SafecoinPingProvider";
+import { WickandbergamotPingProvider } from "providers/stats/WickandbergamotPingProvider";
 import React from "react";
-import { SafecoinClusterStatsProvider } from "./solanaClusterStats";
+import { WickandbergamotClusterStatsProvider } from "./solanaClusterStats";
 
 type Props = { children: React.ReactNode };
 export function StatsProvider({ children }: Props) {
   return (
-    <SafecoinClusterStatsProvider>
-      <SafecoinPingProvider>{children}</SafecoinPingProvider>
-    </SafecoinClusterStatsProvider>
+    <WickandbergamotClusterStatsProvider>
+      <WickandbergamotPingProvider>{children}</WickandbergamotPingProvider>
+    </WickandbergamotClusterStatsProvider>
   );
 }
