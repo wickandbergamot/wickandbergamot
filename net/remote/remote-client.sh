@@ -42,11 +42,11 @@ skip)
 esac
 
 case $clientToRun in
-safecoin-bench-tps)
+wickandbergamot-bench-tps)
   net/scripts/rsync-retry.sh -vPrc \
     "$entrypointIp":~/solana/config/bench-tps"$clientIndex".yml ./client-accounts.yml
   clientCommand="\
-    safecoin-bench-tps \
+    wickandbergamot-bench-tps \
       --entrypoint $entrypointIp:10015 \
       --duration 7500 \
       --sustained \
@@ -77,7 +77,7 @@ export USE_INSTALL=1
 echo "$(date) | $0 $*" >> client.log
 
 (
-  sudo SAFECOIN_METRICS_CONFIG="$SAFECOIN_METRICS_CONFIG" scripts/oom-monitor.sh
+  sudo WICKANDBERGAMOT_METRICS_CONFIG="$WICKANDBERGAMOT_METRICS_CONFIG" scripts/oom-monitor.sh
 ) > oom-monitor.log 2>&1 &
 echo \$! > oom-monitor.pid
 scripts/fd-monitor.sh > fd-monitor.log 2>&1 &
