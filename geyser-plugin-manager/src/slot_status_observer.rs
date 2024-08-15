@@ -1,7 +1,7 @@
 use {
     crate::slot_status_notifier::SlotStatusNotifier,
     crossbeam_channel::Receiver,
-    safecoin_rpc::optimistically_confirmed_bank_tracker::BankNotification,
+    wickandbergamot_rpc::optimistically_confirmed_bank_tracker::BankNotification,
     std::{
         sync::{
             atomic::{AtomicBool, Ordering},
