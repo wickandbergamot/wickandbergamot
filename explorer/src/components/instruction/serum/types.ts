@@ -5,7 +5,7 @@ import {
   AccountMeta,
   PublicKey,
   TransactionInstruction,
-} from "@safecoin/web3.js";
+} from "@wickandbergamot/web3.js";
 import { enums, number, type, Infer, create } from "superstruct";
 import { BigNumFromString } from "validators/bignum";
 
