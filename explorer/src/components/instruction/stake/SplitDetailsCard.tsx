@@ -4,7 +4,7 @@ import {
   StakeProgram,
   ParsedInstruction,
 } from "@wickandbergamot/web3.js";
-import { SafeBalance } from "utils";
+import { WickandbergamotBalance } from "utils";
 import { InstructionCard } from "../InstructionCard";
 import { Address } from "components/common/Address";
 import { SplitInfo } from "./types";
@@ -57,9 +57,9 @@ export function SplitDetailsCard(props: {
       </tr>
 
       <tr>
-        <td>Split Amount (SAFE)</td>
+        <td>Split Amount (WICKANDBERGAMOT)</td>
         <td className="text-lg-end">
-          <SafeBalance lamports={info.lamports} />
+          <WickandbergamotBalance lamports={info.lamports} />
         </td>
       </tr>
     </InstructionCard>
