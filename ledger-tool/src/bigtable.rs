@@ -6,11 +6,11 @@ use {
     },
     log::info,
     serde_json::json,
-    safecoin_clap_utils::{
+    wickandbergamot_clap_utils::{
         input_parsers::pubkey_of,
         input_validators::{is_slot, is_valid_pubkey},
     },
-    safecoin_cli_output::{
+    wickandbergamot_cli_output::{
         display::println_transaction, CliBlock, CliTransaction, CliTransactionConfirmation,
         OutputFormat,
     },
@@ -21,7 +21,7 @@ use {
     },
     solana_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature},
     solana_storage_bigtable::CredentialType,
-    safecoin_transaction_status::{
+    wickandbergamot_transaction_status::{
         BlockEncodingOptions, ConfirmedBlock, EncodeError, TransactionDetails,
         UiTransactionEncoding,
     },
