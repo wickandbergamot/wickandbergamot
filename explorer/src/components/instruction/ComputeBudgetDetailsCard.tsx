@@ -3,7 +3,7 @@ import {
   ComputeBudgetInstruction,
   SignatureResult,
   TransactionInstruction,
-} from "@safecoin/web3.js";
+} from "@wickandbergamot/web3.js";
 import { InstructionCard } from "./InstructionCard";
 import { microLamportsToLamportsString, SafeBalance } from "utils";
 import { Address } from "components/common/Address";
