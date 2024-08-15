@@ -2,7 +2,7 @@
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 edition = "2021"
 name = "Wickandbergamot-net-shaper"
-description = "The wickandbergamot cluster network shaping tool"
+description = "The Wickandbergamot cluster network shaping tool"
 version = "1.14.17"
 repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
