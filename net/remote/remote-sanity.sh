@@ -63,9 +63,9 @@ case $deployMethod in
 local|tar|skip)
   PATH="$HOME"/.cargo/bin:"$PATH"
   export USE_INSTALL=1
-  safecoin_cli=solana
-  safecoin_gossip=safecoin-gossip
-  safecoin_install=safecoin-install
+  wickandbergamot_cli=solana
+  wickandbergamot_gossip=wickandbergamot-gossip
+  wickandbergamot_install=wickandbergamot-install
   ;;
 *)
   echo "Unknown deployment method: $deployMethod"
@@ -85,7 +85,7 @@ fi
 echo "--- $sanityTargetIp: validators"
 (
   set -x
-  $safecoin_cli --url http://"$sanityTargetIp":8328 validators
+  $wickandbergamot_cli --url http://"$sanityTargetIp":8328 validators
 )
 
 echo "--- $sanityTargetIp: node count ($numSanityNodes expected)"
@@ -97,7 +97,7 @@ echo "--- $sanityTargetIp: node count ($numSanityNodes expected)"
     nodeArg="num-nodes-exactly"
   fi
 
-  $safecoin_gossip --allow-private-addr spy --entrypoint "$sanityTargetIp:10015" \
+  $wickandbergamot_gossip --allow-private-addr spy --entrypoint "$sanityTargetIp:10015" \
     --$nodeArg "$numSanityNodes" --timeout 60 \
 )
 
@@ -122,17 +122,17 @@ else
 fi
 
 if $installCheck && [[ -r update_manifest_keypair.json ]]; then
-  echo "--- $sanityTargetIp: safecoin-install test"
+  echo "--- $sanityTargetIp: wickandbergamot-install test"
 
   (
     set -x
     rm -rf install-data-dir
-    $safecoin_install init \
+    $wickandbergamot_install init \
       --no-modify-path \
       --data-dir install-data-dir \
       --url http://"$sanityTargetIp":8328 \
 
-    $safecoin_install info
+    $wickandbergamot_install info
   )
 fi
 
