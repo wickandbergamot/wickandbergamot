@@ -2,7 +2,7 @@
 use {
     libloading::{Library, Symbol},
     log::*,
-    safecoin_geyser_plugin_interface::geyser_plugin_interface::GeyserPlugin,
+    wickandbergamot_geyser_plugin_interface::geyser_plugin_interface::GeyserPlugin,
     std::error::Error,
 };
 
