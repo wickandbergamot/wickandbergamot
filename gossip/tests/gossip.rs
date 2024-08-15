@@ -4,7 +4,7 @@ extern crate log;
 
 use {
     rayon::iter::*,
-    safecoin_gossip::{
+    wickandbergamot_gossip::{
         cluster_info::{ClusterInfo, Node},
         crds::Cursor,
         gossip_service::GossipService,
@@ -287,7 +287,7 @@ pub fn cluster_info_retransmit() {
 #[ignore]
 pub fn cluster_info_scale() {
     use {
-        safecoin_measure::measure::Measure,
+        wickandbergamot_measure::measure::Measure,
         solana_perf::test_tx::test_tx,
         solana_runtime::{
             bank::Bank,
