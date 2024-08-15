@@ -1,8 +1,8 @@
 use {
     clap::{crate_description, crate_name, values_t, App, Arg},
     log::*,
-    safecoin_clap_utils::input_parsers::{lamports_of_sol, value_of},
-    safecoin_faucet::{
+    wickandbergamot_clap_utils::input_parsers::{lamports_of_sol, value_of},
+    wickandbergamot_faucet::{
         faucet::{run_faucet, Faucet, FAUCET_PORT},
         socketaddr,
     },
@@ -17,13 +17,13 @@ use {
 
 #[tokio::main]
 async fn main() {
-    let default_keypair = safecoin_cli_config::Config::default().keypair_path;
+    let default_keypair = wickandbergamot_cli_config::Config::default().keypair_path;
 
     solana_logger::setup_with_default("solana=info");
     solana_metrics::set_panic_hook("faucet", /*version:*/ None);
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(safecoin_version::version!())
+        .version(wickandbergamot_version::version!())
         .arg(
             Arg::with_name("keypair")
                 .short("k")
@@ -47,14 +47,14 @@ async fn main() {
                 .alias("cap")
                 .value_name("NUM")
                 .takes_value(true)
-                .help("Request limit for time slice, in SAFE"),
+                .help("Request limit for time slice, in WICKANDBERGAMOT"),
         )
         .arg(
             Arg::with_name("per_request_cap")
                 .long("per-request-cap")
                 .value_name("NUM")
                 .takes_value(true)
-                .help("Request limit for a single request, in SAFE"),
+                .help("Request limit for a single request, in WICKANDBERGAMOT"),
         )
         .arg(
             Arg::with_name("allowed_ip")
