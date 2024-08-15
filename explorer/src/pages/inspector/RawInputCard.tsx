@@ -1,5 +1,5 @@
 import React from "react";
-import { Message } from "@safecoin/web3.js";
+import { Message } from "@wickandbergamot/web3.js";
 import type { TransactionData } from "./InspectorPage";
 import { useQuery } from "utils/url";
 import { useHistory, useLocation } from "react-router";
