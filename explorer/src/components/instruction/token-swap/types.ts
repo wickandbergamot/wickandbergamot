@@ -1,4 +1,4 @@
-import { TransactionInstruction } from "@safecoin/web3.js";
+import { TransactionInstruction } from "@wickandbergamot/web3.js";
 
 export const PROGRAM_IDS: string[] = [
   "SWPUnynS7FHA1koTbvmRktQgCDs7Tf4RkqwH19e2qSP", // mainnet / testnet / devnet
