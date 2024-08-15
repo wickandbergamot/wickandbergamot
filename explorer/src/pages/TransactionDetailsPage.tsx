@@ -12,8 +12,8 @@ import {
   TransactionSignature,
   SystemProgram,
   SystemInstruction,
-} from "@safecoin/web3.js";
-import { SafeBalance } from "utils";
+} from "@wickandbergamot/web3.js";
+import { WickandbergamotBalance } from "utils";
 import { ErrorCard } from "components/common/ErrorCard";
 import { LoadingCard } from "components/common/LoadingCard";
 import { TableCardBody } from "components/common/TableCardBody";
@@ -323,9 +323,9 @@ function StatusCard({
 
         {fee && (
           <tr>
-            <td>Fee (SAFE)</td>
+            <td>Fee (WICKANDBERGAMOT)</td>
             <td className="text-lg-end">
-              <SafeBalance lamports={fee} />
+              <WickandbergamotBalance lamports={fee} />
             </td>
           </tr>
         )}
@@ -402,10 +402,10 @@ function AccountsCard({ signature }: SignatureProps) {
           <Address pubkey={pubkey} link />
         </td>
         <td>
-          <BalanceDelta delta={delta} isSafe />
+          <BalanceDelta delta={delta} isWickandbergamot />
         </td>
         <td>
-          <SafeBalance lamports={post} />
+          <WickandbergamotBalance lamports={post} />
         </td>
         <td>
           {index === 0 && (
@@ -436,8 +436,8 @@ function AccountsCard({ signature }: SignatureProps) {
             <tr>
               <th className="text-muted">#</th>
               <th className="text-muted">Address</th>
-              <th className="text-muted">Change (SAFE)</th>
-              <th className="text-muted">Post Balance (SAFE)</th>
+              <th className="text-muted">Change (WICKANDBERGAMOT)</th>
+              <th className="text-muted">Post Balance (WICKANDBERGAMOT)</th>
               <th className="text-muted">Details</th>
             </tr>
           </thead>
