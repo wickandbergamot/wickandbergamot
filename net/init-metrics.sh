@@ -29,7 +29,7 @@ EOF
 useEnv=false
 delete=false
 createWithoutConfig=false
-host="https://internal-metrics.WICKANDBERGAMOT.org:10016"
+host="https://internal-metrics.wickandbergamot.org:10016"
 while getopts ":hdec:" opt; do
   case $opt in
   h)
