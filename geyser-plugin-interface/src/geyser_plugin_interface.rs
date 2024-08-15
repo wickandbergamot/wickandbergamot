@@ -4,7 +4,7 @@
 /// creates the implementation of the plugin.
 use {
     solana_sdk::{clock::UnixTimestamp, signature::Signature, transaction::SanitizedTransaction},
-    safecoin_transaction_status::{Reward, TransactionStatusMeta},
+    wickandbergamot_transaction_status::{Reward, TransactionStatusMeta},
     std::{any::Any, error, io},
     thiserror::Error,
 };
