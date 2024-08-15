@@ -283,7 +283,7 @@ pub(crate) mod tests {
     use {
         super::*,
         rand::Rng,
-        safecoin_entry::entry::Entry,
+        wickandbergamot_entry::entry::Entry,
         solana_ledger::shred::{ProcessShredsStats, ReedSolomonCache, Shredder},
         solana_sdk::{
             hash,
