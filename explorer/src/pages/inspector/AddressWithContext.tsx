@@ -1,5 +1,5 @@
 import React from "react";
-import { PublicKey, SystemProgram } from "@safecoin/web3.js";
+import { PublicKey, SystemProgram } from "@wickandbergamot/web3.js";
 import { Address } from "components/common/Address";
 import {
   Account,
@@ -8,7 +8,7 @@ import {
 } from "providers/accounts";
 import { ClusterStatus, useCluster } from "providers/cluster";
 import { addressLabel } from "utils/tx";
-import { lamportsToSafeString } from "utils";
+import { lamportsToWickandbergamotString } from "utils";
 
 type AccountValidator = (account: Account) => string | undefined;
 
@@ -92,7 +92,7 @@ function AccountInfo({
   return (
     <span className="text-muted">
       {`Owned by ${ownerLabel || ownerAddress}.`}
-      {` Balance is ${lamportsToSafeString(info.data.lamports)} SAFE.`}
+      {` Balance is ${lamportsToWickandbergamotString(info.data.lamports)} WICKANDBERGAMOT.`}
       {` Size is ${new Intl.NumberFormat("en-US").format(
         info.data.details.space
       )} byte(s).`}
