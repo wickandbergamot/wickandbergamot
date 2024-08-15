@@ -4,7 +4,7 @@ use {
     std::sync::{Arc, RwLock},
 };
 
-pub fn safe_clone_config(config: &ValidatorConfig) -> ValidatorConfig {
+pub fn wickandbergamot_clone_config(config: &ValidatorConfig) -> ValidatorConfig {
     ValidatorConfig {
         halt_at_slot: config.halt_at_slot,
         expected_genesis_hash: config.expected_genesis_hash,
@@ -74,7 +74,7 @@ pub fn make_identical_validator_configs(
 ) -> Vec<ValidatorConfig> {
     let mut configs = vec![];
     for _ in 0..num {
-        configs.push(safe_clone_config(config));
+        configs.push(wickandbergamot_clone_config(config));
     }
     configs
 }
