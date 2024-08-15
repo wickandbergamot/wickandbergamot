@@ -2,7 +2,7 @@
 use {
     bip39::{Language, Mnemonic, MnemonicType, Seed},
     clap::{crate_description, crate_name, Arg, ArgMatches, Command},
-    safecoin_clap_v3_utils::{
+    wickandbergamot_clap_v3_utils::{
         input_parsers::STDOUT_OUTFILE_TOKEN,
         input_validators::{is_parsable, is_prompt_signer_source},
         keypair::{
@@ -11,8 +11,8 @@ use {
         },
         ArgConstant, DisplayError,
     },
-    safecoin_cli_config::{Config, CONFIG_FILE},
-    safecoin_remote_wallet::remote_wallet::RemoteWalletManager,
+    wickandbergamot_cli_config::{Config, CONFIG_FILE},
+    wickandbergamot_remote_wallet::remote_wallet::RemoteWalletManager,
     solana_sdk::{
         instruction::{AccountMeta, Instruction},
         message::Message,
@@ -329,7 +329,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     let default_num_threads = num_cpus::get().to_string();
     let matches = Command::new(crate_name!())
         .about(crate_description!())
-        .version(safecoin_version::version!())
+        .version(wickandbergamot_version::version!())
         .subcommand_required(true)
         .arg_required_else_help(true)
         .arg({
@@ -682,7 +682,7 @@ fn do_main(matches: &ArgMatches) -> Result<(), Box<dyn error::Error>> {
             };
             let no_outfile = matches.is_present(NO_OUTFILE_ARG.name);
 
-            let grind_matches_thread_safe = Arc::new(grind_matches);
+            let grind_matches_thread_wickandbergamot = Arc::new(grind_matches);
             let attempts = Arc::new(AtomicU64::new(1));
             let found = Arc::new(AtomicU64::new(0));
             let start = Instant::now();
@@ -693,7 +693,7 @@ fn do_main(matches: &ArgMatches) -> Result<(), Box<dyn error::Error>> {
                     let done = done.clone();
                     let attempts = attempts.clone();
                     let found = found.clone();
-                    let grind_matches_thread_safe = grind_matches_thread_safe.clone();
+                    let grind_matches_thread_wickandbergamot = grind_matches_thread_wickandbergamot.clone();
                     let passphrase = passphrase.clone();
                     let passphrase_message = passphrase_message.clone();
 
@@ -722,24 +722,24 @@ fn do_main(matches: &ArgMatches) -> Result<(), Box<dyn error::Error>> {
                             pubkey = pubkey.to_lowercase();
                         }
                         let mut total_matches_found = 0;
-                        for i in 0..grind_matches_thread_safe.len() {
-                            if grind_matches_thread_safe[i].count.load(Ordering::Relaxed) == 0 {
+                        for i in 0..grind_matches_thread_wickandbergamot.len() {
+                            if grind_matches_thread_wickandbergamot[i].count.load(Ordering::Relaxed) == 0 {
                                 total_matches_found += 1;
                                 continue;
                             }
-                            if (!grind_matches_thread_safe[i].starts.is_empty()
-                                && grind_matches_thread_safe[i].ends.is_empty()
-                                && pubkey.starts_with(&grind_matches_thread_safe[i].starts))
-                                || (grind_matches_thread_safe[i].starts.is_empty()
-                                    && !grind_matches_thread_safe[i].ends.is_empty()
-                                    && pubkey.ends_with(&grind_matches_thread_safe[i].ends))
-                                || (!grind_matches_thread_safe[i].starts.is_empty()
-                                    && !grind_matches_thread_safe[i].ends.is_empty()
-                                    && pubkey.starts_with(&grind_matches_thread_safe[i].starts)
-                                    && pubkey.ends_with(&grind_matches_thread_safe[i].ends))
+                            if (!grind_matches_thread_wickandbergamot[i].starts.is_empty()
+                                && grind_matches_thread_wickandbergamot[i].ends.is_empty()
+                                && pubkey.starts_with(&grind_matches_thread_wickandbergamot[i].starts))
+                                || (grind_matches_thread_wickandbergamot[i].starts.is_empty()
+                                    && !grind_matches_thread_wickandbergamot[i].ends.is_empty()
+                                    && pubkey.ends_with(&grind_matches_thread_wickandbergamot[i].ends))
+                                || (!grind_matches_thread_wickandbergamot[i].starts.is_empty()
+                                    && !grind_matches_thread_wickandbergamot[i].ends.is_empty()
+                                    && pubkey.starts_with(&grind_matches_thread_wickandbergamot[i].starts)
+                                    && pubkey.ends_with(&grind_matches_thread_wickandbergamot[i].ends))
                             {
                                 let _found = found.fetch_add(1, Ordering::Relaxed);
-                                grind_matches_thread_safe[i]
+                                grind_matches_thread_wickandbergamot[i]
                                     .count
                                     .fetch_sub(1, Ordering::Relaxed);
                                 if !no_outfile {
@@ -762,7 +762,7 @@ fn do_main(matches: &ArgMatches) -> Result<(), Box<dyn error::Error>> {
                                 }
                             }
                         }
-                        if total_matches_found == grind_matches_thread_safe.len() {
+                        if total_matches_found == grind_matches_thread_wickandbergamot.len() {
                             done.store(true, Ordering::Relaxed);
                         }
                     })
