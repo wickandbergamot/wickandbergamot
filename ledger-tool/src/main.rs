@@ -12,14 +12,14 @@ use {
     regex::Regex,
     serde::Serialize,
     serde_json::json,
-    safecoin_clap_utils::{
+    wickandbergamot_clap_utils::{
         input_parsers::{cluster_type_of, pubkey_of, pubkeys_of},
         input_validators::{
             is_parsable, is_pow2, is_pubkey, is_pubkey_or_keypair, is_slot, is_valid_percentage,
         },
     },
     solana_core::system_monitor_service::SystemMonitorService,
-    safecoin_entry::entry::Entry,
+    wickandbergamot_entry::entry::Entry,
     solana_ledger::{
         ancestor_iterator::AncestorIterator,
         bank_forks_utils,
@@ -32,7 +32,7 @@ use {
         blockstore_processor::{self, BlockstoreProcessorError, ProcessOptions},
         shred::Shred,
     },
-    safecoin_measure::{measure, measure::Measure},
+    wickandbergamot_measure::{measure, measure::Measure},
     solana_runtime::{
         accounts_background_service::{
             AbsRequestHandler, AbsRequestSender, AccountsBackgroundService,
@@ -63,7 +63,7 @@ use {
         genesis_config::{ClusterType, GenesisConfig},
         hash::Hash,
         inflation::Inflation,
-        native_token::{lamports_to_sol, sol_to_lamports, Safe},
+        native_token::{lamports_to_sol, sol_to_lamports, Wickandbergamot},
         pubkey::Pubkey,
         rent::Rent,
         shred_version::compute_shred_version,
@@ -166,7 +166,7 @@ fn output_entry(
                     })
                     .map(|meta| meta.into());
 
-                safecoin_cli_output::display::println_transaction(
+                wickandbergamot_cli_output::display::println_transaction(
                     &transaction,
                     tx_status_meta.as_ref(),
                     "      ",
@@ -364,7 +364,7 @@ fn output_account(
     print_account_data: bool,
 ) {
     println!("{}", pubkey);
-    println!("  balance: {} SAFE", lamports_to_sol(account.lamports()));
+    println!("  balance: {} WICKANDBERGAMOT", lamports_to_sol(account.lamports()));
     println!("  owner: '{}'", account.owner());
     println!("  executable: {}", account.executable());
     if let Some(slot) = modified_slot {
@@ -547,7 +547,7 @@ fn graph_forks(bank_forks: &BankForks, config: &GraphConfig) -> String {
                         slot_stake_and_vote_count.get(&bank.slot())
                     {
                         format!(
-                            "\nvotes: {}, stake: {:.1} SAFE ({:.1}%)",
+                            "\nvotes: {}, stake: {:.1} WICKANDBERGAMOT ({:.1}%)",
                             votes,
                             lamports_to_sol(*stake),
                             *stake as f64 / *total_stake as f64 * 100.,
@@ -643,7 +643,7 @@ fn graph_forks(bank_forks: &BankForks, config: &GraphConfig) -> String {
                     )
                 };
             dot.push(format!(
-                r#"  "last vote {}"[shape=box,label="Latest validator vote: {}\nstake: {} SAFE\nroot slot: {}\n{}"];"#,
+                r#"  "last vote {}"[shape=box,label="Latest validator vote: {}\nstake: {} WICKANDBERGAMOT\nroot slot: {}\n{}"];"#,
                 node_pubkey,
                 node_pubkey,
                 lamports_to_sol(*stake),
@@ -666,7 +666,7 @@ fn graph_forks(bank_forks: &BankForks, config: &GraphConfig) -> String {
     // Annotate the final "..." node with absent vote and stake information
     if absent_votes > 0 {
         dot.push(format!(
-            r#"    "..."[label="...\nvotes: {}, stake: {:.1} SAFE {:.1}%"];"#,
+            r#"    "..."[label="...\nvotes: {}, stake: {:.1} WICKANDBERGAMOT {:.1}%"];"#,
             absent_votes,
             lamports_to_sol(absent_stake),
             absent_stake as f64 / lowest_total_stake as f64 * 100.,
@@ -1287,7 +1287,7 @@ fn main() {
     let mut measure_total_execution_time = Measure::start("ledger tool");
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(safecoin_version::version!())
+        .version(wickandbergamot_version::version!())
         .setting(AppSettings::InferSubcommands)
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .setting(AppSettings::VersionlessSubcommands)
@@ -1994,7 +1994,7 @@ fn main() {
         )
         .get_matches();
 
-    info!("{} {}", crate_name!(), safecoin_version::version!());
+    info!("{} {}", crate_name!(), wickandbergamot_version::version!());
 
     let ledger_path = parse_ledger_path(&matches, "ledger_path");
 
@@ -2111,7 +2111,7 @@ fn main() {
 
                 if let Some(hashes_per_tick) = arg_matches.value_of("hashes_per_tick") {
                     genesis_config.poh_config.hashes_per_tick = match hashes_per_tick {
-                        // Note: Unlike `safecoin-genesis`, "auto" is not supported here.
+                        // Note: Unlike `wickandbergamot-genesis`, "auto" is not supported here.
                         "sleep" => None,
                         _ => Some(value_t_or_exit!(arg_matches, "hashes_per_tick", u64)),
                     }
@@ -2796,7 +2796,7 @@ fn main() {
 
                             if let Some(hashes_per_tick) = hashes_per_tick {
                                 child_bank.set_hashes_per_tick(match hashes_per_tick {
-                                    // Note: Unlike `safecoin-genesis`, "auto" is not supported here.
+                                    // Note: Unlike `wickandbergamot-genesis`, "auto" is not supported here.
                                     "sleep" => None,
                                     _ => {
                                         Some(value_t_or_exit!(arg_matches, "hashes_per_tick", u64))
@@ -3179,7 +3179,7 @@ fn main() {
                             if old_capitalization == bank.capitalization() {
                                 eprintln!(
                                     "Capitalization was identical: {}",
-                                    Safe(old_capitalization)
+                                    Wickandbergamot(old_capitalization)
                                 );
                             }
                         }
@@ -3426,9 +3426,9 @@ fn main() {
                                 / warped_bank.epoch_duration_in_years(base_bank.epoch());
                             println!(
                                 "Capitalization: {} => {} (+{} {}%; annualized {}%)",
-                                Safe(base_bank.capitalization()),
-                                Safe(warped_bank.capitalization()),
-                                Safe(warped_bank.capitalization() - base_bank.capitalization()),
+                                Wickandbergamot(base_bank.capitalization()),
+                                Wickandbergamot(warped_bank.capitalization()),
+                                Wickandbergamot(warped_bank.capitalization() - base_bank.capitalization()),
                                 interest_per_epoch,
                                 interest_per_year,
                             );
@@ -3499,9 +3499,9 @@ fn main() {
                                         "{:<45}({}): {} => {} (+{} {:>4.9}%) {:?}",
                                         format!("{}", pubkey), // format! is needed to pad/justify correctly.
                                         base_account.owner(),
-                                        Safe(base_account.lamports()),
-                                        Safe(warped_account.lamports()),
-                                        Safe(delta),
+                                        Wickandbergamot(base_account.lamports()),
+                                        Wickandbergamot(warped_account.lamports()),
+                                        Wickandbergamot(delta),
                                         ((warped_account.lamports() as f64)
                                             / (base_account.lamports() as f64)
                                             * 100_f64)
@@ -3649,7 +3649,7 @@ fn main() {
                                 }
                             }
                             if overall_delta > 0 {
-                                println!("Sum of lamports changes: {}", Safe(overall_delta));
+                                println!("Sum of lamports changes: {}", Wickandbergamot(overall_delta));
                             }
                         } else {
                             if arg_matches.is_present("recalculate_capitalization") {
@@ -3666,7 +3666,7 @@ fn main() {
                             assert_capitalization(&bank);
                             println!("Inflation: {:?}", bank.inflation());
                             println!("RentCollector: {:?}", bank.rent_collector());
-                            println!("Capitalization: {}", Safe(bank.capitalization()));
+                            println!("Capitalization: {}", Wickandbergamot(bank.capitalization()));
                         }
                     }
                     Err(err) => {
