@@ -11,7 +11,7 @@ use {
     },
     solana_runtime::bank::RewardType,
     solana_sdk::{clock::Slot, pubkey},
-    safecoin_transaction_status::{Reward, Rewards},
+    wickandbergamot_transaction_status::{Reward, Rewards},
     std::path::Path,
     test::Bencher,
 };
