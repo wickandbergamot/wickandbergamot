@@ -6,7 +6,7 @@ use {
     rand_chacha::ChaChaRng,
     rayon::{iter::ParallelIterator, prelude::*},
     serial_test::serial,
-    safecoin_gossip::{
+    wickandbergamot_gossip::{
         cluster_info::{compute_retransmit_peers, ClusterInfo},
         legacy_contact_info::LegacyContactInfo as ContactInfo,
         weighted_shuffle::WeightedShuffle,
