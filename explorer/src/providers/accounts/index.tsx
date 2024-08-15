@@ -1,6 +1,6 @@
 import React from "react";
 import { pubkeyToString } from "utils";
-import { PublicKey, Connection, StakeActivationData } from "@safecoin/web3.js";
+import { PublicKey, Connection, StakeActivationData } from "@wickandbergamot/web3.js";
 import { useCluster, Cluster } from "../cluster";
 import { HistoryProvider } from "./history";
 import { TokensProvider } from "./tokens";
@@ -51,7 +51,7 @@ export type NFTData = {
 };
 
 export type TokenProgramData = {
-  program: "safe-token";
+  program: "wickandbergamot-token";
   parsed: TokenAccount;
   nftData?: NFTData;
 };
@@ -238,7 +238,7 @@ async function fetchAccountInfo(
               };
               break;
 
-            case "safe-token":
+            case "wickandbergamot-token":
               const parsed = create(info, TokenAccount);
               let nftData;
 
@@ -398,7 +398,7 @@ export function useMintAccountInfo(
     try {
       const data = accountInfo?.data?.details?.data;
       if (!data) return;
-      if (data.program !== "safe-token" || data.parsed.type !== "mint") {
+      if (data.program !== "wickandbergamot-token" || data.parsed.type !== "mint") {
         return;
       }
 
@@ -418,7 +418,7 @@ export function useTokenAccountInfo(
   try {
     const data = accountInfo?.data?.details?.data;
     if (!data) return;
-    if (data.program !== "safe-token" || data.parsed.type !== "account") {
+    if (data.program !== "wickandbergamot-token" || data.parsed.type !== "account") {
       return;
     }
 
