@@ -16,10 +16,10 @@ import {
   ParsedInstruction,
   Secp256k1Program,
   Ed25519Program,
-} from "@safecoin/web3.js";
+} from "@wickandbergamot/web3.js";
 import { Cluster } from "providers/cluster";
 import { SerumMarketRegistry } from "serumMarketRegistry";
-import { TokenInfoMap } from "@safecoin/safe-token-registry";
+import { TokenInfoMap } from "@wickandbergamot/safe-token-registry";
 
 export enum PROGRAM_NAMES {
   // native built-ins
@@ -50,7 +50,7 @@ export enum PROGRAM_NAMES {
   // other
   ACUMEN = "Acumen Program",
   BONFIDA_POOL = "Bonfida Pool Program",
-  BREAK_SAFECOIN = "Break Safecoin Program",
+  BREAK_WICKANDBERGAMOT = "Break Wickandbergamot Program",
   CHAINLINK_ORACLE = "Chainlink OCR2 Oracle Program",
   CHAINLINK_STORE = "Chainlink Store Program",
   MANGO_GOVERNANCE = "Mango Governance Program",
@@ -88,13 +88,13 @@ export enum PROGRAM_NAMES {
   SERUM_3 = "Serum Dex Program v3",
   SERUM_SWAP = "Serum Swap Program",
   SAFEEND = "Safeend Program",
-  SAFEIDO = "Lido for Safecoin Program",
+  SAFEIDO = "Lido for Wickandbergamot Program",
   STEP_SWAP = "Step Finance Swap Program",
   SWIM_SWAP = "Swim Swap Program",
   SWITCHBOARD = "Switchboard Oracle Program",
   WORMHOLE = "Wormhole",
-  SAFECOINRT = "Safecoinrt",
-  SAFECOINRT_GO = "Safecoinrt - Global offers",
+  WICKANDBERGAMOTRT = "Wickandbergamotrt",
+  WICKANDBERGAMOTRT_GO = "Wickandbergamotrt - Global offers",
   STEPN_DEX = "STEPN Dex",
 }
 
@@ -205,7 +205,7 @@ export const PROGRAM_INFO_BY_ID: { [address: string]: ProgramInfo } = {
     deployments: [Cluster.MainnetBeta],
   },
   BRKvqZwnXaukqUsUZK8MuDExAV3CLnMSmLwnGcahjWbk: {
-    name: PROGRAM_NAMES.BREAK_SAFECOIN,
+    name: PROGRAM_NAMES.BREAK_WICKANDBERGAMOT,
     deployments: LIVE_CLUSTERS,
   },
   cjg3oHmg9uuPsP8D6g29NWvhySJkdYdAo9D25PRbKXJ: {
@@ -377,11 +377,11 @@ export const PROGRAM_INFO_BY_ID: { [address: string]: ProgramInfo } = {
     deployments: [Cluster.MainnetBeta],
   },
   CJsLwbP1iu5DuUikHEJnLfANgKy6stB2uFgvBBHoyxwz: {
-    name: PROGRAM_NAMES.SAFECOINRT,
+    name: PROGRAM_NAMES.WICKANDBERGAMOTRT,
     deployments: [Cluster.MainnetBeta],
   },
   "5ZfZAwP2m93waazg8DkrrVmsupeiPEvaEHowiUP7UAbJ": {
-    name: PROGRAM_NAMES.SAFECOINRT_GO,
+    name: PROGRAM_NAMES.WICKANDBERGAMOTRT_GO,
     deployments: [Cluster.MainnetBeta],
   },
   Dooar9JkhdZ7J3LHN3A7YCuoGRUggXhQaG4kijfLGU2j: {
