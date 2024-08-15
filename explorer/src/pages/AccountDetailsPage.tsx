@@ -1,5 +1,5 @@
 import React from "react";
-import { PublicKey } from "@safecoin/web3.js";
+import { PublicKey } from "@wickandbergamot/web3.js";
 import { CacheEntry, FetchStatus } from "providers/cache";
 import {
   useFetchAccountInfo,
@@ -48,7 +48,7 @@ import { useAnchorProgram } from "providers/anchor";
 const IDENTICON_WIDTH = 64;
 
 const TABS_LOOKUP: { [id: string]: Tab[] } = {
-  "safe-token:mint": [
+  "Wickandbergamot-token:mint": [
     {
       slug: "transfers",
       title: "Transfers",
@@ -65,7 +65,7 @@ const TABS_LOOKUP: { [id: string]: Tab[] } = {
       path: "/largest",
     },
   ],
-  "safe-token:mint:metaplexNFT": [
+  "Wickandbergamot-token:mint:metaplexNFT": [
     {
       slug: "metadata",
       title: "Metadata",
@@ -127,7 +127,7 @@ const TABS_LOOKUP: { [id: string]: Tab[] } = {
 };
 
 const TOKEN_TABS_HIDDEN = [
-  "safe-token:mint",
+  "Wickandbergamot-token:mint",
   "config",
   "vote",
   "sysvar",
@@ -180,7 +180,7 @@ export function AccountHeader({
   const mintInfo = useMintAccountInfo(address);
   const account = info?.data;
   const data = account?.details?.data;
-  const isToken = data?.program === "safe-token" && data?.parsed.type === "mint";
+  const isToken = data?.program === "Wickandbergamot-token" && data?.parsed.type === "mint";
 
   if (isMetaplexNFT(data, mintInfo)) {
     return (
@@ -295,7 +295,7 @@ function DetailsSections({
       {flaggedAccounts.has(address) && (
         <div className="alert alert-danger alert-scam" role="alert">
           Warning! This account has been flagged by the community as a scam
-          account. Please be cautious sending SAFE to this account.
+          account. Please be cautious sending WICKANDBERGAMOT to this account.
         </div>
       )}
       <InfoSection account={account} />
@@ -328,7 +328,7 @@ function InfoSection({ account }: { account: Account }) {
         stakeAccountType={data.parsed.type}
       />
     );
-  } else if (data && data.program === "safe-token") {
+  } else if (data && data.program === "Wickandbergamot-token") {
     return <TokenAccountSection account={account} tokenAccount={data.parsed} />;
   } else if (data && data.program === "nonce") {
     return <NonceAccountSection account={account} nonceAccount={data.parsed} />;
@@ -487,7 +487,7 @@ function getTabs(pubkey: PublicKey, account: Account): TabComponent[] {
   // Add the key for Metaplex NFTs
   if (
     data &&
-    programTypeKey === "safe-token:mint" &&
+    programTypeKey === "Wickandbergamot-token:mint" &&
     (data as TokenProgramData).nftData
   ) {
     tabs.push(...TABS_LOOKUP[`${programTypeKey}:metaplexNFT`]);
