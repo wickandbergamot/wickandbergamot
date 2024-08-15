@@ -6,7 +6,7 @@ export default function isMetaplexNFT(
   mintInfo?: MintAccountInfo
 ) {
   return (
-    data?.program === "safe-token" &&
+    data?.program === "wickandbergamot-token" &&
     data?.parsed.type === "mint" &&
     data?.nftData &&
     mintInfo?.decimals === 0 &&
