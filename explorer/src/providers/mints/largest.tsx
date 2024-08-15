@@ -7,7 +7,7 @@ import {
   Connection,
   TokenAccountBalancePair,
   ParsedAccountData,
-} from "@safecoin/web3.js";
+} from "@wickandbergamot/web3.js";
 import { TokenAccountInfo, TokenAccount } from "validators/accounts/token";
 import { ParsedInfo } from "validators";
 import { create } from "superstruct";
