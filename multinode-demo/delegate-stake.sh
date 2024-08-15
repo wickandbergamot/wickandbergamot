@@ -88,7 +88,7 @@ if [[ -n ${positional_args[0]} ]]; then
   stake_sol=${positional_args[0]}
 fi
 
-VALIDATOR_KEYS_DIR=$SAFECOIN_CONFIG_DIR/validator$label
+VALIDATOR_KEYS_DIR=$WICKANDBERGAMOT_CONFIG_DIR/validator$label
 vote_account="${vote_account:-$VALIDATOR_KEYS_DIR/vote-account.json}"
 stake_account="${stake_account:-$VALIDATOR_KEYS_DIR/stake-account.json}"
 
@@ -102,8 +102,8 @@ if ((airdrops_enabled)); then
     echo "--keypair argument must be provided"
     exit 1
   fi
-  $safecoin_cli \
-    "${common_args[@]}" --keypair "$SAFECOIN_CONFIG_DIR/faucet.json" \
+  $wickandbergamot_cli \
+    "${common_args[@]}" --keypair "$WICKANDBERGAMOT_CONFIG_DIR/faucet.json" \
     transfer --allow-unfunded-recipient "$keypair" "$stake_sol"
 fi
 
@@ -118,10 +118,10 @@ else
 fi
 
 set -x
-$safecoin_cli "${common_args[@]}" \
+$wickandbergamot_cli "${common_args[@]}" \
   vote-account "$vote_account"
-$safecoin_cli "${common_args[@]}" \
+$wickandbergamot_cli "${common_args[@]}" \
   create-stake-account "$stake_account" "$stake_sol"
-$safecoin_cli "${common_args[@]}" \
+$wickandbergamot_cli "${common_args[@]}" \
   delegate-stake $maybe_force "$stake_account" "$vote_account"
-$safecoin_cli "${common_args[@]}" stakes "$stake_account"
+$wickandbergamot_cli "${common_args[@]}" stakes "$stake_account"
