@@ -1,7 +1,7 @@
 [package]
 name = "wickandbergamot-logger"
 version = "1.14.17"
-description = "wickandbergamot Logger"
+description = "Wickandbergamot Logger"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
