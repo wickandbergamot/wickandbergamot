@@ -5,7 +5,7 @@ import {
   TransactionInstruction,
 } from "@wickandbergamot/web3.js";
 import { InstructionCard } from "./InstructionCard";
-import { microLamportsToLamportsString, SafeBalance } from "utils";
+import { microLamportsToLamportsString, WickandbergamotBalance } from "utils";
 import { Address } from "components/common/Address";
 import { reportError } from "utils/sentry";
 import { useCluster } from "providers/cluster";
@@ -56,9 +56,9 @@ export function ComputeBudgetDetailsCard({
             </tr>
 
             <tr>
-              <td>Additional Fee (SAFE)</td>
+              <td>Additional Fee (WICKANDBERGAMOT)</td>
               <td className="text-lg-end">
-                <SafeBalance lamports={additionalFee} />
+                <WickandbergamotBalance lamports={additionalFee} />
               </td>
             </tr>
           </InstructionCard>
