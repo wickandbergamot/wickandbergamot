@@ -1,12 +1,12 @@
 [package]
-name = "safecoin-net-utils"
+name = "wickandbergamot-net-utils"
 version = "1.14.17"
-description = "Safecoin Network Utilities"
+description = "Wickandbergamot Network Utilities"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-net-utils"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-net-utils"
 edition = "2021"
 
 [dependencies]
@@ -19,21 +19,21 @@ rand = "0.7.0"
 serde = "1.0.138"
 serde_derive = "1.0.103"
 socket2 = "0.4.4"
-safecoin-logger = { path = "../logger", version = "=1.14.17" }
-safecoin-sdk = { path = "../sdk", version = "=1.14.17" }
-safecoin-version = { path = "../version", version = "=1.14.17" }
+wickandbergamot-logger = { path = "../logger", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../sdk", version = "=1.14.17" }
+wickandbergamot-version = { path = "../version", version = "=1.14.17" }
 tokio = { version = "1", features = ["full"] }
 url = "2.2.2"
 
 [lib]
-name = "safecoin_net_utils"
+name = "wickandbergamot_net_utils"
 
 [[bin]]
-name = "safecoin-ip-address"
+name = "wickandbergamot-ip-address"
 path = "src/bin/ip_address.rs"
 
 [[bin]]
-name = "safecoin-ip-address-server"
+name = "wickandbergamot-ip-address-server"
 path = "src/bin/ip_address_server.rs"
 
 [package.metadata.docs.rs]
