@@ -19,7 +19,7 @@ Creates a testnet dev metrics database
   username        InfluxDB user with access to create a new database
   -c              Manually specify a database to create, rather than read from config file
   -d              Delete the database instead of creating it
-  -e              Assume database already exists and SAFECOIN_METRICS_CONFIG is
+  -e              Assume database already exists and WICKANDBERGAMOT_METRICS_CONFIG is
                   defined in the environment already
 
 EOF
@@ -29,7 +29,7 @@ EOF
 useEnv=false
 delete=false
 createWithoutConfig=false
-host="https://internal-metrics.safecoin.org:10016"
+host="https://internal-metrics.WICKANDBERGAMOT.org:10016"
 while getopts ":hdec:" opt; do
   case $opt in
   h)
@@ -54,8 +54,8 @@ done
 shift $((OPTIND - 1))
 
 if $useEnv; then
-  [[ -n $SAFECOIN_METRICS_CONFIG ]] ||
-    usage "SAFECOIN_METRICS_CONFIG is not defined in the environment"
+  [[ -n $WICKANDBERGAMOT_METRICS_CONFIG ]] ||
+    usage "WICKANDBERGAMOT_METRICS_CONFIG is not defined in the environment"
 else
   username=$1
   [[ -n "$username" ]] || usage "username not specified"
@@ -85,9 +85,9 @@ else
   query "GRANT READ ON \"$netBasename\" TO \"ro\""
   query "GRANT WRITE ON \"$netBasename\" TO \"scratch_writer\""
 
-  SAFECOIN_METRICS_CONFIG="host=$host,db=$netBasename,u=scratch_writer,p=topsecret"
+  WICKANDBERGAMOT_METRICS_CONFIG="host=$host,db=$netBasename,u=scratch_writer,p=topsecret"
 fi
 
-echo "export SAFECOIN_METRICS_CONFIG=\"$SAFECOIN_METRICS_CONFIG\"" >> "$configFile"
+echo "export WICKANDBERGAMOT_METRICS_CONFIG=\"$WICKANDBERGAMOT_METRICS_CONFIG\"" >> "$configFile"
 
 exit 0
