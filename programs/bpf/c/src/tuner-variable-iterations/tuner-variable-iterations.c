@@ -12,9 +12,9 @@
 #define NUM_KA 1
 
 extern uint64_t entrypoint(const uint8_t *input) {
-  SafeAccountInfo ka[NUM_KA];
-  SafeParameters params = (SafeParameters){.ka = ka};
-  if (!sol_deserialize(input, &params, SAFE_ARRAY_SIZE(ka))) {
+  WickandbergamotAccountInfo ka[NUM_KA];
+  WickandbergamotParameters params = (WickandbergamotParameters){.ka = ka};
+  if (!sol_deserialize(input, &params, WICKANDBERGAMOT_ARRAY_SIZE(ka))) {
     return ERROR_INVALID_ARGUMENT;
   }
 
