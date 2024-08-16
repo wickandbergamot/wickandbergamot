@@ -1,12 +1,12 @@
 [package]
-name = "safecoin-rpc-test"
+name = "wickandbergamot-rpc-test"
 version = "1.14.17"
-description = "Safecoin RPC Test"
+description = "Wickandbergamot RPC Test"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/fair-exchange/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-rpc-test"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-rpc-test"
 edition = "2021"
 publish = false
 
@@ -19,17 +19,17 @@ log = "0.4.17"
 reqwest = { version = "0.11.11", default-features = false, features = ["blocking", "brotli", "deflate", "gzip", "rustls-tls", "json"] }
 serde = "1.0.138"
 serde_json = "1.0.81"
-safecoin-account-decoder = { path = "../account-decoder", version = "=1.14.17" }
-safecoin-client = { path = "../client", version = "=1.14.17" }
-safecoin-rpc = { path = "../rpc", version = "=1.14.17" }
-safecoin-sdk = { path = "../sdk", version = "=1.14.17" }
-safecoin-streamer = { path = "../streamer", version = "=1.14.17" }
-safecoin-test-validator = { path = "../test-validator", version = "=1.14.17" }
-safecoin-transaction-status = { path = "../transaction-status", version = "=1.14.17" }
+wickandbergamot-account-decoder = { path = "../account-decoder", version = "=1.14.17" }
+wickandbergamot-client = { path = "../client", version = "=1.14.17" }
+wickandbergamot-rpc = { path = "../rpc", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../sdk", version = "=1.14.17" }
+wickandbergamot-streamer = { path = "../streamer", version = "=1.14.17" }
+wickandbergamot-test-validator = { path = "../test-validator", version = "=1.14.17" }
+wickandbergamot-transaction-status = { path = "../transaction-status", version = "=1.14.17" }
 tokio = { version = "~1.14.1", features = ["full"] }
 
 [dev-dependencies]
-safecoin-logger = { path = "../logger", version = "=1.14.17" }
+wickandbergamot-logger = { path = "../logger", version = "=1.14.17" }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
