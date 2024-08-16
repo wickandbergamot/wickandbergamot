@@ -4,32 +4,32 @@ use solana_sdk::{
     rent::Rent,
 };
 
-mod safe_token {
+mod WICKANDBERGAMOT_token {
     solana_sdk::declare_id!("ToKLx75MGim1d1jRusuVX8xvdvvbSDESVaNXpRA9PHN");
 }
-mod safe_memo_1_0 {
+mod WICKANDBERGAMOT_memo_1_0 {
     solana_sdk::declare_id!("MEMDqRW2fYAU19mcFnoDVoqG4Br4t7TdyWjjv38P6Nc");
 }
-mod safe_memo_3_0 {
+mod WICKANDBERGAMOT_memo_3_0 {
     solana_sdk::declare_id!("MEMWKbqsjEB8o972BvDHExZFSauzGZKvB4xHDVPFowh");
 }
-mod safe_associated_token_account {
+mod WICKANDBERGAMOT_associated_token_account {
     solana_sdk::declare_id!("AToD9iqHSc2fhEP9Jp7UYA6mRjHQ4CTWyzCsw8X3tH7K");
 }
 
 static SPL_PROGRAMS: &[(Pubkey, &[u8])] = &[
-    (safe_token::ID, include_bytes!("programs/safe_token-3.5.0.so")),
+    (WICKANDBERGAMOT_token::ID, include_bytes!("programs/WICKANDBERGAMOT_token-3.5.0.so")),
     (
-        safe_memo_1_0::ID,
-        include_bytes!("programs/safe_memo-1.0.0.so"),
+        WICKANDBERGAMOT_memo_1_0::ID,
+        include_bytes!("programs/WICKANDBERGAMOT_memo-1.0.0.so"),
     ),
     (
-        safe_memo_3_0::ID,
-        include_bytes!("programs/safe_memo-3.0.0.so"),
+        WICKANDBERGAMOT_memo_3_0::ID,
+        include_bytes!("programs/WICKANDBERGAMOT_memo-3.0.0.so"),
     ),
     (
-        safe_associated_token_account::ID,
-        include_bytes!("programs/safe_associated_token_account-1.1.1.so"),
+        WICKANDBERGAMOT_associated_token_account::ID,
+        include_bytes!("programs/WICKANDBERGAMOT_associated_token_account-1.1.1.so"),
     ),
 ];
 
