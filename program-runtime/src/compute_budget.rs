@@ -15,7 +15,7 @@ pub const MAX_COMPUTE_UNIT_LIMIT: u32 = 1_400_000;
 const MAX_HEAP_FRAME_BYTES: u32 = 256 * 1024;
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-impl ::safecoin_frozen_abi::abi_example::AbiExample for ComputeBudget {
+impl ::wickandbergamot_frozen_abi::abi_example::AbiExample for ComputeBudget {
     fn example() -> Self {
         // ComputeBudget is not Serialize so just rely on Default.
         ComputeBudget::default()
