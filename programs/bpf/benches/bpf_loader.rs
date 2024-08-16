@@ -11,7 +11,7 @@ use {
         create_vm, serialization::serialize_parameters, syscalls::register_syscalls, BpfError,
         ThisInstructionMeter,
     },
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_program_runtime::invoke_context::with_mock_invoke_context,
     solana_rbpf::{
         elf::Executable,
