@@ -1,7 +1,7 @@
 #![cfg(feature = "test-bpf")]
 
 use {
-    safecoin_bpf_rust_sanity::process_instruction,
+    wickandbergamot_bpf_rust_sanity::process_instruction,
     solana_program_test::*,
     solana_sdk::{
         instruction::{AccountMeta, Instruction},
@@ -15,7 +15,7 @@ use {
 async fn test_sysvars() {
     let program_id = Pubkey::new_unique();
     let program_test = ProgramTest::new(
-        "safecoin_bpf_rust_sanity",
+        "wickandbergamot_bpf_rust_sanity",
         program_id,
         processor!(process_instruction),
     );
