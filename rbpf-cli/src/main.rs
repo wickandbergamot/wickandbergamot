@@ -53,7 +53,7 @@ fn load_accounts(path: &Path) -> Result<Input> {
 
 fn main() {
     solana_logger::setup();
-    let matches = Command::new("Safecoin BPF CLI")
+    let matches = Command::new("wickandbergamot BPF CLI")
         .version(crate_version!())
         .author("Solana Maintainers <maintainers@solana.foundation>")
         .about(
