@@ -2,7 +2,7 @@
 
 extern crate solana_program;
 use {
-    safecoin_bpf_rust_param_passing_dep::{Data, TestDep},
+    wickandbergamot_bpf_rust_param_passing_dep::{Data, TestDep},
     solana_program::{
         custom_heap_default, custom_panic_default, entrypoint::SUCCESS, log::sol_log_64,
     },
