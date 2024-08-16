@@ -1,5 +1,5 @@
 [package]
-name = "wickandbergamot-bpf-rust-sibling_inner-instructions"
+name = "Wickandbergamot-bpf-rust-sibling_inner-instructions"
 version = "1.14.17"
 description = "Wickandbergamot BPF test program written in Rust"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
