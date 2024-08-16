@@ -5,8 +5,8 @@ use {
     log::*,
     reqwest::{self, header::CONTENT_TYPE},
     serde_json::{json, Value},
-    safecoin_account_decoder::UiAccount,
-    safecoin_client::{
+    wickandbergamot_account_decoder::UiAccount,
+    wickandbergamot_client::{
         client_error::{ClientErrorKind, Result as ClientResult},
         connection_cache::{ConnectionCache, DEFAULT_TPU_CONNECTION_POOL_SIZE},
         nonblocking::pubsub_client::PubsubClient,
@@ -26,8 +26,8 @@ use {
         transaction::Transaction,
     },
     solana_streamer::socket::SocketAddrSpace,
-    safecoin_test_validator::TestValidator,
-    safecoin_transaction_status::TransactionStatus,
+    wickandbergamot_test_validator::TestValidator,
+    wickandbergamot_transaction_status::TransactionStatus,
     std::{
         collections::HashSet,
         net::UdpSocket,
@@ -119,7 +119,7 @@ fn test_rpc_send_tx() {
     assert!(confirmed_tx);
 
     use {
-        safecoin_account_decoder::UiAccountEncoding, safecoin_client::rpc_config::RpcAccountInfoConfig,
+        wickandbergamot_account_decoder::UiAccountEncoding, wickandbergamot_client::rpc_config::RpcAccountInfoConfig,
     };
     let config = RpcAccountInfoConfig {
         encoding: Some(UiAccountEncoding::Base64),
