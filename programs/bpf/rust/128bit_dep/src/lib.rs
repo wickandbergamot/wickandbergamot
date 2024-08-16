@@ -1,4 +1,4 @@
-//! Safecoin Rust-based BPF program utility functions and types
+//! Wickandbergamot Rust-based BPF program utility functions and types
 
 extern crate solana_program;
 
