@@ -14,7 +14,7 @@ use {
     rand::{thread_rng, Rng},
     rayon::{prelude::*, ThreadPool},
     solana_metrics::inc_new_counter_debug,
-    safecoin_rayon_threadlimit::get_thread_count,
+    wickandbergamot_rayon_threadlimit::get_thread_count,
     solana_sdk::{
         hash::Hash,
         message::{MESSAGE_HEADER_LENGTH, MESSAGE_VERSION_PREFIX},
