@@ -1,11 +1,11 @@
 [package]
-name = "safecoin-bpf-programs"
-description = "Safecoin: Enterprise Security for the Community by the Community"
+name = "wickandbergamot-bpf-programs"
+description = "wickandbergamot: Pawn"
 version = "1.14.17"
 documentation = "https://docs.rs/solana"
-homepage = "https://safecoin.org/"
+homepage = "https://wickandbergamot.org/"
 readme = "README.md"
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 license = "Apache-2.0"
 edition = "2021"
@@ -26,22 +26,22 @@ itertools = "0.10.1"
 log = "0.4.11"
 miow = "0.3.6"
 net2 = "0.2.37"
-safecoin-account-decoder = { path = "../../account-decoder", version = "=1.14.17" }
-safecoin-bpf-loader-program = { path = "../bpf_loader", version = "=1.14.17" }
-safecoin-bpf-rust-invoke = { path = "rust/invoke", version = "=1.14.17" }
-safecoin-bpf-rust-realloc = { path = "rust/realloc", version = "=1.14.17" }
-safecoin-bpf-rust-realloc-invoke = { path = "rust/realloc_invoke", version = "=1.14.17" }
-safecoin-cli-output = { path = "../../cli-output", version = "=1.14.17" }
-safecoin-logger = { path = "../../logger", version = "=1.14.17" }
-safecoin-measure = { path = "../../measure", version = "=1.14.17" }
-safecoin-program-runtime = { path = "../../program-runtime", version = "=1.14.17" }
-safecoin-runtime = { path = "../../runtime", version = "=1.14.17" }
-safecoin-sdk = { path = "../../sdk", version = "=1.14.17" }
-safecoin-transaction-status = { path = "../../transaction-status", version = "=1.14.17" }
+wickandbergamot-account-decoder = { path = "../../account-decoder", version = "=1.14.17" }
+wickandbergamot-bpf-loader-program = { path = "../bpf_loader", version = "=1.14.17" }
+wickandbergamot-bpf-rust-invoke = { path = "rust/invoke", version = "=1.14.17" }
+wickandbergamot-bpf-rust-realloc = { path = "rust/realloc", version = "=1.14.17" }
+wickandbergamot-bpf-rust-realloc-invoke = { path = "rust/realloc_invoke", version = "=1.14.17" }
+wickandbergamot-cli-output = { path = "../../cli-output", version = "=1.14.17" }
+wickandbergamot-logger = { path = "../../logger", version = "=1.14.17" }
+wickandbergamot-measure = { path = "../../measure", version = "=1.14.17" }
+wickandbergamot-program-runtime = { path = "../../program-runtime", version = "=1.14.17" }
+wickandbergamot-runtime = { path = "../../runtime", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../../sdk", version = "=1.14.17" }
+wickandbergamot-transaction-status = { path = "../../transaction-status", version = "=1.14.17" }
 solana_rbpf = "=0.2.31"
 
 [dev-dependencies]
-safecoin-ledger = { path = "../../ledger", version = "=1.14.17" }
+wickandbergamot-ledger = { path = "../../ledger", version = "=1.14.17" }
 
 [[bench]]
 name = "bpf_loader"
