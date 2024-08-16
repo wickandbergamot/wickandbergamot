@@ -133,7 +133,7 @@ impl Default for CachedExecutors {
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-impl safecoin_frozen_abi::abi_example::AbiExample for CachedExecutors {
+impl wickandbergamot_frozen_abi::abi_example::AbiExample for CachedExecutors {
     fn example() -> Self {
         // Delegate AbiExample impl to Default before going deep and stuck with
         // not easily impl-able Arc<dyn Executor> due to rust's coherence issue
