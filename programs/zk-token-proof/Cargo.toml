@@ -1,8 +1,8 @@
 [package]
-name = "safe-zk-token-proof-program"
-description = "Safecoin Zk Token Proof Program"
+name = "wickandbergamot-zk-token-proof-program"
+description = "wickandbergamot Zk Token Proof Program"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 version = "1.14.17"
 license = "Apache-2.0"
 edition = "2021"
@@ -12,6 +12,6 @@ bytemuck = { version = "1.11.0", features = ["derive"] }
 getrandom = { version = "0.1", features = ["dummy"] }
 num-derive = "0.3"
 num-traits = "0.2"
-safecoin-program-runtime = { path = "../../program-runtime", version = "=1.14.17" }
-safecoin-sdk = { path = "../../sdk", version = "=1.14.17" }
-safe-zk-token-sdk = { path = "../../zk-token-sdk", version = "=1.14.17" }
+wickandbergamot-program-runtime = { path = "../../program-runtime", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../../sdk", version = "=1.14.17" }
+wickandbergamot-zk-token-sdk = { path = "../../zk-token-sdk", version = "=1.14.17" }
