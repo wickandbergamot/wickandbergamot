@@ -7,12 +7,12 @@
 #include <sol/deserialize_deprecated.h>
 
 extern uint64_t entrypoint(const uint8_t *input) {
-  SafeAccountInfo ka[1];
-  SafeParameters params = (SafeParameters) { .ka = ka };
+  WickandbergamotAccountInfo ka[1];
+  WickandbergamotParameters params = (WickandbergamotParameters) { .ka = ka };
 
   sol_log(__FILE__);
 
-  if (!sol_deserialize_deprecated(input, &params, SAFE_ARRAY_SIZE(ka))) {
+  if (!sol_deserialize_deprecated(input, &params, WICKANDBERGAMOT_ARRAY_SIZE(ka))) {
     return ERROR_INVALID_ARGUMENT;
   }
 
