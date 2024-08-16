@@ -304,10 +304,10 @@ impl<'a, 'b> SyscallInvokeSigned<'a, 'b> for SyscallInvokeSignedRust<'a, 'b> {
     }
 }
 
-/// Rust representation of C's SafeInstruction
+/// Rust representation of C's WickandbergamotInstruction
 #[derive(Debug)]
 #[repr(C)]
-struct SafeInstruction {
+struct WickandbergamotInstruction {
     program_id_addr: u64,
     accounts_addr: u64,
     accounts_len: u64,
@@ -315,19 +315,19 @@ struct SafeInstruction {
     data_len: u64,
 }
 
-/// Rust representation of C's SafeAccountMeta
+/// Rust representation of C's WickandbergamotAccountMeta
 #[derive(Debug)]
 #[repr(C)]
-struct SafeAccountMeta {
+struct WickandbergamotAccountMeta {
     pubkey_addr: u64,
     is_writable: bool,
     is_signer: bool,
 }
 
-/// Rust representation of C's SafeAccountInfo
+/// Rust representation of C's WickandbergamotAccountInfo
 #[derive(Debug)]
 #[repr(C)]
-struct SafeAccountInfo {
+struct WickandbergamotAccountInfo {
     key_addr: u64,
     lamports_addr: u64,
     data_len: u64,
@@ -341,18 +341,18 @@ struct SafeAccountInfo {
     executable: bool,
 }
 
-/// Rust representation of C's SafeSignerSeed
+/// Rust representation of C's WickandbergamotSignerSeed
 #[derive(Debug)]
 #[repr(C)]
-struct SafeSignerSeedC {
+struct WickandbergamotSignerSeedC {
     addr: u64,
     len: u64,
 }
 
-/// Rust representation of C's SafeSignerSeeds
+/// Rust representation of C's WickandbergamotSignerSeeds
 #[derive(Debug)]
 #[repr(C)]
-struct SafeSignerSeedsC {
+struct WickandbergamotSignerSeedsC {
     addr: u64,
     len: u64,
 }
@@ -395,7 +395,7 @@ impl<'a, 'b> SyscallInvokeSigned<'a, 'b> for SyscallInvokeSignedC<'a, 'b> {
         memory_mapping: &mut MemoryMapping,
         invoke_context: &mut InvokeContext,
     ) -> Result<Instruction, EbpfError<BpfError>> {
-        let ix_c = translate_type::<SafeInstruction>(
+        let ix_c = translate_type::<WickandbergamotInstruction>(
             memory_mapping,
             addr,
             invoke_context.get_check_aligned(),
@@ -411,7 +411,7 @@ impl<'a, 'b> SyscallInvokeSigned<'a, 'b> for SyscallInvokeSignedC<'a, 'b> {
             ix_c.program_id_addr,
             invoke_context.get_check_aligned(),
         )?;
-        let meta_cs = translate_slice::<SafeAccountMeta>(
+        let meta_cs = translate_slice::<WickandbergamotAccountMeta>(
             memory_mapping,
             ix_c.accounts_addr,
             ix_c.accounts_len as u64,
@@ -470,7 +470,7 @@ impl<'a, 'b> SyscallInvokeSigned<'a, 'b> for SyscallInvokeSignedC<'a, 'b> {
         memory_mapping: &mut MemoryMapping,
         invoke_context: &mut InvokeContext,
     ) -> Result<TranslatedAccounts<'c>, EbpfError<BpfError>> {
-        let account_infos = translate_slice::<SafeAccountInfo>(
+        let account_infos = translate_slice::<WickandbergamotAccountInfo>(
             memory_mapping,
             account_infos_addr,
             account_infos_len,
@@ -489,7 +489,7 @@ impl<'a, 'b> SyscallInvokeSigned<'a, 'b> for SyscallInvokeSignedC<'a, 'b> {
             })
             .collect::<Result<Vec<_>, EbpfError<BpfError>>>()?;
 
-        let translate = |account_info: &SafeAccountInfo, invoke_context: &InvokeContext| {
+        let translate = |account_info: &WickandbergamotAccountInfo, invoke_context: &InvokeContext| {
             // Translate the account from user space
 
             let lamports = translate_type_mut::<u64>(
@@ -588,7 +588,7 @@ impl<'a, 'b> SyscallInvokeSigned<'a, 'b> for SyscallInvokeSignedC<'a, 'b> {
         invoke_context: &InvokeContext,
     ) -> Result<Vec<Pubkey>, EbpfError<BpfError>> {
         if signers_seeds_len > 0 {
-            let signers_seeds = translate_slice::<SafeSignerSeedsC>(
+            let signers_seeds = translate_slice::<WickandbergamotSignerSeedsC>(
                 memory_mapping,
                 signers_seeds_addr,
                 signers_seeds_len,
@@ -601,7 +601,7 @@ impl<'a, 'b> SyscallInvokeSigned<'a, 'b> for SyscallInvokeSignedC<'a, 'b> {
             Ok(signers_seeds
                 .iter()
                 .map(|signer_seeds| {
-                    let seeds = translate_slice::<SafeSignerSeedC>(
+                    let seeds = translate_slice::<WickandbergamotSignerSeedC>(
                         memory_mapping,
                         signer_seeds.addr,
                         signer_seeds.len,
