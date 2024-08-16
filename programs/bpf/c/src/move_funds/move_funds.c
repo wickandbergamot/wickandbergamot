@@ -5,16 +5,16 @@
 #include <solana_sdk.h>
 
 /**
- * Number of SafeKeyedAccount expected. The program should bail if an
+ * Number of WickandbergamotKeyedAccount expected. The program should bail if an
  * unexpected number of accounts are passed to the program's entrypoint
  */
 #define NUM_KA 3
 
 extern uint64_t entrypoint(const uint8_t *input) {
-  SafeAccountInfo ka[NUM_KA];
-  SafeParameters params = (SafeParameters) { .ka = ka };
+  WickandbergamotAccountInfo ka[NUM_KA];
+  WickandbergamotParameters params = (WickandbergamotParameters) { .ka = ka };
 
-  if (!sol_deserialize(input, &params, SAFE_ARRAY_SIZE(ka))) {
+  if (!sol_deserialize(input, &params, WICKANDBERGAMOT_ARRAY_SIZE(ka))) {
     return ERROR_INVALID_ARGUMENT;
   }
 
