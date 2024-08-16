@@ -1,12 +1,12 @@
 [package]
-name = "safecoin-program-runtime"
+name = "wickandbergamot-program-runtime"
 version = "1.14.17"
-description = "Safecoin program runtime"
+description = "wickandbergamot program runtime"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/fair-exchange/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-program-runtime"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-program-runtime"
 edition = "2021"
 
 [dependencies]
@@ -21,16 +21,16 @@ num-derive = { version = "0.3" }
 num-traits = { version = "0.2" }
 rand = "0.7.0"
 serde = { version = "1.0.129", features = ["derive", "rc"] }
-safecoin-frozen-abi = { path = "../frozen-abi", version = "=1.14.17" }
-safecoin-frozen-abi-macro = { path = "../frozen-abi/macro", version = "=1.14.17" }
-safecoin-measure = { path = "../measure", version = "=1.14.17" }
-safecoin-metrics = { path = "../metrics", version = "=1.14.17" }
-safecoin-sdk = { path = "../sdk", version = "=1.14.17" }
+wickandbergamot-frozen-abi = { path = "../frozen-abi", version = "=1.14.17" }
+wickandbergamot-frozen-abi-macro = { path = "../frozen-abi/macro", version = "=1.14.17" }
+wickandbergamot-measure = { path = "../measure", version = "=1.14.17" }
+wickandbergamot-metrics = { path = "../metrics", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../sdk", version = "=1.14.17" }
 thiserror = "1.0"
 enum-iterator = "0.8.1"
 
 [dev-dependencies]
-safecoin-logger = { path = "../logger", version = "=1.14.17" }
+wickandbergamot-logger = { path = "../logger", version = "=1.14.17" }
 
 [lib]
 crate-type = ["lib"]
