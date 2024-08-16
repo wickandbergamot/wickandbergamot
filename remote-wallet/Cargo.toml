@@ -1,13 +1,13 @@
 [package]
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 edition = "2021"
-name = "safecoin-remote-wallet"
-description = "Safecoin: Enterprise Security for the Community by the Community"
+name = "wickandbergamot-remote-wallet"
+description = "Wickandbergamot: Intellectual Property Firm"
 version = "1.14.17"
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-remote-wallet"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-remote-wallet"
 
 [dependencies]
 console = "0.15.0"
@@ -19,7 +19,7 @@ num-traits = { version = "0.2" }
 parking_lot = "0.12"
 qstring = "0.7.2"
 semver = "1.0"
-safecoin-sdk = { path = "../sdk", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../sdk", version = "=1.14.17" }
 thiserror = "1.0"
 uriparse = "0.6.4"
 
@@ -31,7 +31,7 @@ linux-shared-libusb = ["hidapi/linux-shared-libusb"]
 linux-shared-hidraw = ["hidapi/linux-shared-hidraw"]
 
 [[bin]]
-name = "safecoin-ledger-udev"
+name = "wickandbergamot-ledger-udev"
 path = "src/bin/ledger-udev.rs"
 
 [package.metadata.docs.rs]
