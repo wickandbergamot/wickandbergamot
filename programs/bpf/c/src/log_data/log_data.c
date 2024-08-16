@@ -6,11 +6,11 @@
 static const uint8_t return_data[] = { 0x08, 0x01, 0x44 };
 
 extern uint64_t entrypoint(const uint8_t *input) {
-  SafeAccountInfo ka[1];
-  SafeParameters params = (SafeParameters) { .ka = ka };
-  SafeBytes fields[2];
+  WickandbergamotAccountInfo ka[1];
+  WickandbergamotParameters params = (WickandbergamotParameters) { .ka = ka };
+  WickandbergamotBytes fields[2];
 
-  if (!sol_deserialize(input, &params, SAFE_ARRAY_SIZE(ka))) {
+  if (!sol_deserialize(input, &params, WICKANDBERGAMOT_ARRAY_SIZE(ka))) {
     return ERROR_INVALID_ARGUMENT;
   }
 
