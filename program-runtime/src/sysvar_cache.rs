@@ -15,7 +15,7 @@ use {
 };
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-impl ::safecoin_frozen_abi::abi_example::AbiExample for SysvarCache {
+impl ::wickandbergamot_frozen_abi::abi_example::AbiExample for SysvarCache {
     fn example() -> Self {
         // SysvarCache is not Serialize so just rely on Default.
         SysvarCache::default()
