@@ -18,7 +18,7 @@ use {
         syscalls::SyscallError,
     },
     log::{log_enabled, trace, Level::Trace},
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_program_runtime::{
         executor_cache::Executor,
         ic_logger_msg, ic_msg,
@@ -1448,7 +1448,7 @@ mod tests {
             genesis_config::create_genesis_config,
             instruction::{AccountMeta, Instruction, InstructionError},
             message::Message,
-            native_token::LAMPORTS_PER_SAFE,
+            native_token::LAMPORTS_PER_WICKANDBERGAMOT,
             pubkey::Pubkey,
             rent::Rent,
             signature::{Keypair, Signer},
@@ -2240,7 +2240,7 @@ mod tests {
         );
 
         // Test successful deploy
-        let payer_base_balance = LAMPORTS_PER_SAFE;
+        let payer_base_balance = LAMPORTS_PER_WICKANDBERGAMOT;
         let deploy_fees = {
             let fee_calculator = genesis_config.fee_rate_governor.create_fee_calculator();
             3 * fee_calculator.lamports_per_signature
