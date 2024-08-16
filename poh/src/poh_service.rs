@@ -4,8 +4,8 @@ use {
     crate::poh_recorder::{PohRecorder, Record},
     crossbeam_channel::Receiver,
     log::*,
-    safecoin_entry::poh::Poh,
-    safecoin_measure::{measure, measure::Measure},
+    wickandbergamot_entry::poh::Poh,
+    wickandbergamot_measure::{measure, measure::Measure},
     solana_sdk::poh_config::PohConfig,
     std::{
         sync::{
@@ -390,7 +390,7 @@ mod tests {
             get_tmp_ledger_path,
             leader_schedule_cache::LeaderScheduleCache,
         },
-        safecoin_measure::measure::Measure,
+        wickandbergamot_measure::measure::Measure,
         solana_perf::test_tx::test_tx,
         solana_runtime::bank::Bank,
         solana_sdk::{
