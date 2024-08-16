@@ -6,7 +6,7 @@ extern crate solana_bpf_loader_program;
 use {
     itertools::izip,
     log::{log_enabled, trace, Level::Trace},
-    safecoin_account_decoder::parse_bpf_loader::{
+    wickandbergamot_account_decoder::parse_bpf_loader::{
         parse_bpf_upgradeable_loader, BpfUpgradeableLoaderAccountType,
     },
     solana_bpf_loader_program::{
@@ -15,9 +15,9 @@ use {
         syscalls::register_syscalls,
         BpfError, ThisInstructionMeter,
     },
-    safecoin_bpf_rust_invoke::instructions::*,
-    safecoin_bpf_rust_realloc::instructions::*,
-    safecoin_bpf_rust_realloc_invoke::instructions::*,
+    wickandbergamot_bpf_rust_invoke::instructions::*,
+    wickandbergamot_bpf_rust_realloc::instructions::*,
+    wickandbergamot_bpf_rust_realloc_invoke::instructions::*,
     solana_ledger::token_balances::collect_token_balances,
     solana_program_runtime::{
         compute_budget::ComputeBudget, invoke_context::with_mock_invoke_context,
@@ -65,7 +65,7 @@ use {
         sysvar::{self, clock, rent},
         transaction::{SanitizedTransaction, Transaction, TransactionError, VersionedTransaction},
     },
-    safecoin_transaction_status::{
+    wickandbergamot_transaction_status::{
         ConfirmedTransactionWithStatusMeta, InnerInstructions, TransactionStatusMeta,
         TransactionWithStatusMeta, VersionedTransactionWithStatusMeta,
     },
@@ -403,22 +403,22 @@ fn test_program_bpf_sanity() {
     #[cfg(feature = "bpf_rust")]
     {
         programs.extend_from_slice(&[
-            ("safecoin_bpf_rust_128bit", true),
-            ("safecoin_bpf_rust_alloc", true),
-            ("safecoin_bpf_rust_curve25519", true),
-            ("safecoin_bpf_rust_custom_heap", true),
-            ("safecoin_bpf_rust_dep_crate", true),
-            ("safecoin_bpf_rust_external_spend", false),
-            ("safecoin_bpf_rust_iter", true),
-            ("safecoin_bpf_rust_many_args", true),
-            ("safecoin_bpf_rust_membuiltins", true),
-            ("safecoin_bpf_rust_noop", true),
-            ("safecoin_bpf_rust_panic", false),
-            ("safecoin_bpf_rust_param_passing", true),
-            ("safecoin_bpf_rust_rand", true),
-            ("safecoin_bpf_rust_sanity", true),
-            ("safecoin_bpf_rust_secp256k1_recover", true),
-            ("safecoin_bpf_rust_sha", true),
+            ("wickandbergamot_bpf_rust_128bit", true),
+            ("wickandbergamot_bpf_rust_alloc", true),
+            ("wickandbergamot_bpf_rust_curve25519", true),
+            ("wickandbergamot_bpf_rust_custom_heap", true),
+            ("wickandbergamot_bpf_rust_dep_crate", true),
+            ("wickandbergamot_bpf_rust_external_spend", false),
+            ("wickandbergamot_bpf_rust_iter", true),
+            ("wickandbergamot_bpf_rust_many_args", true),
+            ("wickandbergamot_bpf_rust_membuiltins", true),
+            ("wickandbergamot_bpf_rust_noop", true),
+            ("wickandbergamot_bpf_rust_panic", false),
+            ("wickandbergamot_bpf_rust_param_passing", true),
+            ("wickandbergamot_bpf_rust_rand", true),
+            ("wickandbergamot_bpf_rust_sanity", true),
+            ("wickandbergamot_bpf_rust_secp256k1_recover", true),
+            ("wickandbergamot_bpf_rust_sha", true),
         ]);
     }
 
@@ -465,7 +465,7 @@ fn test_program_bpf_loader_deprecated() {
     }
     #[cfg(feature = "bpf_rust")]
     {
-        programs.extend_from_slice(&[("safecoin_bpf_rust_deprecated_loader")]);
+        programs.extend_from_slice(&[("wickandbergamot_bpf_rust_deprecated_loader")]);
     }
 
     for program in programs.iter() {
@@ -522,7 +522,7 @@ fn test_sol_alloc_free_no_longer_deployable() {
     bank.add_builtin(&name, &id, entrypoint);
 
     // Populate loader account with elf that depends on _sol_alloc_free syscall
-    let elf = load_program_from_file("safecoin_bpf_rust_deprecated_loader");
+    let elf = load_program_from_file("wickandbergamot_bpf_rust_deprecated_loader");
     let mut program_account = AccountSharedData::new(1, elf.len(), &loader_address);
     program_account
         .data_as_mut_slice()
@@ -598,7 +598,7 @@ fn test_program_bpf_duplicate_accounts() {
     }
     #[cfg(feature = "bpf_rust")]
     {
-        programs.extend_from_slice(&[("safecoin_bpf_rust_dup_accounts")]);
+        programs.extend_from_slice(&[("wickandbergamot_bpf_rust_dup_accounts")]);
     }
 
     for program in programs.iter() {
@@ -699,7 +699,7 @@ fn test_program_bpf_error_handling() {
     }
     #[cfg(feature = "bpf_rust")]
     {
-        programs.extend_from_slice(&[("safecoin_bpf_rust_error_handling")]);
+        programs.extend_from_slice(&[("wickandbergamot_bpf_rust_error_handling")]);
     }
 
     for program in programs.iter() {
@@ -804,7 +804,7 @@ fn test_return_data_and_log_data_syscall() {
     }
     #[cfg(feature = "bpf_rust")]
     {
-        programs.extend_from_slice(&[("safecoin_bpf_rust_log_data")]);
+        programs.extend_from_slice(&[("wickandbergamot_bpf_rust_log_data")]);
     }
 
     for program in programs.iter() {
@@ -865,9 +865,9 @@ fn test_program_bpf_invoke_sanity() {
     {
         programs.push((
             Languages::Rust,
-            "safecoin_bpf_rust_invoke",
-            "safecoin_bpf_rust_invoked",
-            "safecoin_bpf_rust_noop",
+            "wickandbergamot_bpf_rust_invoke",
+            "wickandbergamot_bpf_rust_invoked",
+            "wickandbergamot_bpf_rust_noop",
         ));
     }
     for program in programs.iter() {
@@ -1287,13 +1287,13 @@ fn test_program_bpf_program_id_spoofing() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_spoof1",
+        "wickandbergamot_bpf_rust_spoof1",
     );
     let malicious_system_pubkey = create_deprecated_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_spoof1_system",
+        "wickandbergamot_bpf_rust_spoof1_system",
     );
 
     let from_pubkey = Pubkey::new_unique();
@@ -1340,13 +1340,13 @@ fn test_program_bpf_caller_has_access_to_cpi_program() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_caller_access",
+        "wickandbergamot_bpf_rust_caller_access",
     );
     let caller2_pubkey = create_deprecated_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_caller_access",
+        "wickandbergamot_bpf_rust_caller_access",
     );
     let account_metas = vec![
         AccountMeta::new_readonly(caller_pubkey, false),
@@ -1380,7 +1380,7 @@ fn test_program_bpf_ro_modify() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_ro_modify",
+        "wickandbergamot_bpf_rust_ro_modify",
     );
 
     let test_keypair = Keypair::new();
@@ -1435,7 +1435,7 @@ fn test_program_bpf_call_depth() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_call_depth",
+        "wickandbergamot_bpf_rust_call_depth",
     );
 
     let instruction = Instruction::new_with_bincode(
@@ -1470,7 +1470,7 @@ fn test_program_bpf_compute_budget() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_noop",
+        "wickandbergamot_bpf_rust_noop",
     );
     let message = Message::new(
         &[
@@ -1512,21 +1512,21 @@ fn assert_instruction_count() {
     #[cfg(feature = "bpf_rust")]
     {
         programs.extend_from_slice(&[
-            ("safecoin_bpf_rust_128bit", 580),
-            ("safecoin_bpf_rust_alloc", 5060),
-            ("safecoin_bpf_rust_custom_heap", 509),
-            ("safecoin_bpf_rust_dep_crate", 2),
-            ("safecoin_bpf_rust_external_spend", 378),
-            ("safecoin_bpf_rust_iter", 108),
-            ("safecoin_bpf_rust_many_args", 1289),
-            ("safecoin_bpf_rust_mem", 2158),
-            ("safecoin_bpf_rust_membuiltins", 1541),
-            ("safecoin_bpf_rust_noop", 366),
-            ("safecoin_bpf_rust_param_passing", 146),
-            ("safecoin_bpf_rust_rand", 469),
-            ("safecoin_bpf_rust_sanity", 52232),
-            ("safecoin_bpf_rust_secp256k1_recover", 91195),
-            ("safecoin_bpf_rust_sha", 24081),
+            ("wickandbergamot_bpf_rust_128bit", 580),
+            ("wickandbergamot_bpf_rust_alloc", 5060),
+            ("wickandbergamot_bpf_rust_custom_heap", 509),
+            ("wickandbergamot_bpf_rust_dep_crate", 2),
+            ("wickandbergamot_bpf_rust_external_spend", 378),
+            ("wickandbergamot_bpf_rust_iter", 108),
+            ("wickandbergamot_bpf_rust_many_args", 1289),
+            ("wickandbergamot_bpf_rust_mem", 2158),
+            ("wickandbergamot_bpf_rust_membuiltins", 1541),
+            ("wickandbergamot_bpf_rust_noop", 366),
+            ("wickandbergamot_bpf_rust_param_passing", 146),
+            ("wickandbergamot_bpf_rust_rand", 469),
+            ("wickandbergamot_bpf_rust_sanity", 52232),
+            ("wickandbergamot_bpf_rust_secp256k1_recover", 91195),
+            ("wickandbergamot_bpf_rust_sha", 24081),
         ]);
     }
 
@@ -1571,7 +1571,7 @@ fn test_program_bpf_instruction_introspection() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_instruction_introspection",
+        "wickandbergamot_bpf_rust_instruction_introspection",
     );
 
     // Passing transaction
@@ -1629,7 +1629,7 @@ fn test_program_bpf_test_use_latest_executor() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_panic",
+        "wickandbergamot_bpf_rust_panic",
     );
 
     // Write the panic program into the program account
@@ -1638,7 +1638,7 @@ fn test_program_bpf_test_use_latest_executor() {
         &bpf_loader::id(),
         None,
         &mint_keypair,
-        "safecoin_bpf_rust_panic",
+        "wickandbergamot_bpf_rust_panic",
     );
 
     // Finalize the panic program, but fail the tx
@@ -1659,7 +1659,7 @@ fn test_program_bpf_test_use_latest_executor() {
         &bpf_loader::id(),
         Some(program_keypair),
         &mint_keypair,
-        "safecoin_bpf_rust_noop",
+        "wickandbergamot_bpf_rust_noop",
     );
     let message = Message::new(&[instruction], Some(&mint_keypair.pubkey()));
     bank_client
@@ -1706,7 +1706,7 @@ fn test_program_bpf_upgrade() {
         &buffer_keypair,
         &program_keypair,
         &authority_keypair,
-        "safecoin_bpf_rust_upgradeable",
+        "wickandbergamot_bpf_rust_upgradeable",
     );
 
     let mut instruction =
@@ -1727,7 +1727,7 @@ fn test_program_bpf_upgrade() {
         &buffer_keypair,
         &program_id,
         &authority_keypair,
-        "safecoin_bpf_rust_upgraded",
+        "wickandbergamot_bpf_rust_upgraded",
     );
 
     // Call upgraded program
@@ -1756,7 +1756,7 @@ fn test_program_bpf_upgrade() {
         &buffer_keypair,
         &program_id,
         &new_authority_keypair,
-        "safecoin_bpf_rust_upgradeable",
+        "wickandbergamot_bpf_rust_upgradeable",
     );
 
     // Call original program
@@ -1798,7 +1798,7 @@ fn test_program_bpf_invoke_in_same_tx_as_deployment() {
         &buffer_keypair,
         &indirect_program_keypair,
         &authority_keypair,
-        "safecoin_bpf_rust_invoke_and_return",
+        "wickandbergamot_bpf_rust_invoke_and_return",
     );
 
     let invoke_instruction =
@@ -1818,7 +1818,7 @@ fn test_program_bpf_invoke_in_same_tx_as_deployment() {
         &mint_keypair,
         &buffer_keypair,
         &authority_keypair,
-        "safecoin_bpf_rust_noop",
+        "wickandbergamot_bpf_rust_noop",
     );
     let deployment_instructions = bpf_loader_upgradeable::deploy_with_max_program_len(
         &mint_keypair.pubkey(),
@@ -1887,7 +1887,7 @@ fn test_program_bpf_invoke_in_same_tx_as_redeployment() {
         &buffer_keypair,
         &program_keypair,
         &authority_keypair,
-        "safecoin_bpf_rust_noop",
+        "wickandbergamot_bpf_rust_noop",
     );
 
     // Deploy indirect invocation program
@@ -1898,7 +1898,7 @@ fn test_program_bpf_invoke_in_same_tx_as_redeployment() {
         &buffer_keypair,
         &indirect_program_keypair,
         &authority_keypair,
-        "safecoin_bpf_rust_invoke_and_return",
+        "wickandbergamot_bpf_rust_invoke_and_return",
     );
 
     let invoke_instruction =
@@ -1918,7 +1918,7 @@ fn test_program_bpf_invoke_in_same_tx_as_redeployment() {
         &mint_keypair,
         &buffer_keypair,
         &authority_keypair,
-        "safecoin_bpf_rust_panic",
+        "wickandbergamot_bpf_rust_panic",
     );
     let redeployment_instruction = bpf_loader_upgradeable::upgrade(
         &program_id,
@@ -1979,7 +1979,7 @@ fn test_program_bpf_invoke_in_same_tx_as_undeployment() {
         &buffer_keypair,
         &program_keypair,
         &authority_keypair,
-        "safecoin_bpf_rust_noop",
+        "wickandbergamot_bpf_rust_noop",
     );
 
     // Deploy indirect invocation program
@@ -1990,7 +1990,7 @@ fn test_program_bpf_invoke_in_same_tx_as_undeployment() {
         &buffer_keypair,
         &indirect_program_keypair,
         &authority_keypair,
-        "safecoin_bpf_rust_invoke_and_return",
+        "wickandbergamot_bpf_rust_invoke_and_return",
     );
 
     // Deploy panic program
@@ -2001,7 +2001,7 @@ fn test_program_bpf_invoke_in_same_tx_as_undeployment() {
         &buffer_keypair,
         &panic_program_keypair,
         &authority_keypair,
-        "safecoin_bpf_rust_panic",
+        "wickandbergamot_bpf_rust_panic",
     );
 
     let invoke_instruction =
@@ -2078,7 +2078,7 @@ fn test_program_bpf_invoke_upgradeable_via_cpi() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_invoke_and_return",
+        "wickandbergamot_bpf_rust_invoke_and_return",
     );
 
     // Deploy upgradeable program
@@ -2092,7 +2092,7 @@ fn test_program_bpf_invoke_upgradeable_via_cpi() {
         &buffer_keypair,
         &program_keypair,
         &authority_keypair,
-        "safecoin_bpf_rust_upgradeable",
+        "wickandbergamot_bpf_rust_upgradeable",
     );
 
     let mut instruction = Instruction::new_with_bytes(
@@ -2120,7 +2120,7 @@ fn test_program_bpf_invoke_upgradeable_via_cpi() {
         &buffer_keypair,
         &program_id,
         &authority_keypair,
-        "safecoin_bpf_rust_upgraded",
+        "wickandbergamot_bpf_rust_upgraded",
     );
 
     // Call the upgraded program
@@ -2149,7 +2149,7 @@ fn test_program_bpf_invoke_upgradeable_via_cpi() {
         &buffer_keypair,
         &program_id,
         &new_authority_keypair,
-        "safecoin_bpf_rust_upgradeable",
+        "wickandbergamot_bpf_rust_upgradeable",
     );
 
     // Call original program
@@ -2173,7 +2173,7 @@ fn test_program_bpf_disguised_as_bpf_loader() {
     }
     #[cfg(feature = "bpf_rust")]
     {
-        programs.extend_from_slice(&[("safecoin_bpf_rust_noop")]);
+        programs.extend_from_slice(&[("wickandbergamot_bpf_rust_noop")]);
     }
 
     for program in programs.iter() {
@@ -2251,7 +2251,7 @@ fn test_program_bpf_upgrade_via_cpi() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_invoke_and_return",
+        "wickandbergamot_bpf_rust_invoke_and_return",
     );
 
     // Deploy upgradeable program
@@ -2265,7 +2265,7 @@ fn test_program_bpf_upgrade_via_cpi() {
         &buffer_keypair,
         &program_keypair,
         &authority_keypair,
-        "safecoin_bpf_rust_upgradeable",
+        "wickandbergamot_bpf_rust_upgradeable",
     );
     let program_account = bank_client.get_account(&program_id).unwrap().unwrap();
     let programdata_address = match program_account.state() {
@@ -2303,7 +2303,7 @@ fn test_program_bpf_upgrade_via_cpi() {
         &mint_keypair,
         &buffer_keypair,
         &authority_keypair,
-        "safecoin_bpf_rust_upgraded",
+        "wickandbergamot_bpf_rust_upgraded",
     );
 
     // Upgrade program via CPI
@@ -2360,7 +2360,7 @@ fn test_program_bpf_set_upgrade_authority_via_cpi() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_invoke_and_return",
+        "wickandbergamot_bpf_rust_invoke_and_return",
     );
 
     // Deploy upgradeable program
@@ -2374,7 +2374,7 @@ fn test_program_bpf_set_upgrade_authority_via_cpi() {
         &buffer_keypair,
         &program_keypair,
         &authority_keypair,
-        "safecoin_bpf_rust_upgradeable",
+        "wickandbergamot_bpf_rust_upgradeable",
     );
 
     // Set program upgrade authority instruction to invoke via CPI
@@ -2453,7 +2453,7 @@ fn test_program_upgradeable_locks() {
             buffer_keypair,
             program_keypair,
             payer_keypair,
-            "safecoin_bpf_rust_panic",
+            "wickandbergamot_bpf_rust_panic",
         );
 
         // Load the buffer account
@@ -2462,7 +2462,7 @@ fn test_program_upgradeable_locks() {
             &mint_keypair,
             buffer_keypair,
             &payer_keypair,
-            "safecoin_bpf_rust_noop",
+            "wickandbergamot_bpf_rust_noop",
         );
 
         bank_client
@@ -2572,7 +2572,7 @@ fn test_program_bpf_finalize() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_finalize",
+        "wickandbergamot_bpf_rust_finalize",
     );
 
     // Write the noop program into the same program account
@@ -2581,7 +2581,7 @@ fn test_program_bpf_finalize() {
         &bpf_loader::id(),
         None,
         &mint_keypair,
-        "safecoin_bpf_rust_noop",
+        "wickandbergamot_bpf_rust_noop",
     );
 
     let account_metas = vec![
@@ -2618,7 +2618,7 @@ fn test_program_bpf_ro_account_modify() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_ro_account_modify",
+        "wickandbergamot_bpf_rust_ro_account_modify",
     );
 
     let argument_keypair = Keypair::new();
@@ -2685,7 +2685,7 @@ fn test_program_bpf_realloc() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_realloc",
+        "wickandbergamot_bpf_rust_realloc",
     );
 
     let mut bump = 0;
@@ -2982,14 +2982,14 @@ fn test_program_bpf_realloc_invoke() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_realloc",
+        "wickandbergamot_bpf_rust_realloc",
     );
 
     let realloc_invoke_program_id = create_deprecated_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_realloc_invoke",
+        "wickandbergamot_bpf_rust_realloc_invoke",
     );
 
     let mut bump = 0;
@@ -3500,25 +3500,25 @@ fn test_program_bpf_processed_inner_instruction() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_sibling_instructions",
+        "wickandbergamot_bpf_rust_sibling_instructions",
     );
     let sibling_inner_program_id = create_deprecated_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_sibling_inner_instructions",
+        "wickandbergamot_bpf_rust_sibling_inner_instructions",
     );
     let noop_program_id = create_deprecated_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_noop",
+        "wickandbergamot_bpf_rust_noop",
     );
     let invoke_and_return_program_id = create_deprecated_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_invoke_and_return",
+        "wickandbergamot_bpf_rust_invoke_and_return",
     );
 
     let instruction2 = Instruction::new_with_bytes(
@@ -3583,7 +3583,7 @@ fn test_program_fees() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_noop",
+        "wickandbergamot_bpf_rust_noop",
     );
 
     let pre_balance = bank_client.get_balance(&mint_keypair.pubkey()).unwrap();
@@ -3653,7 +3653,7 @@ fn test_get_minimum_delegation() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_get_minimum_delegation",
+        "wickandbergamot_bpf_rust_get_minimum_delegation",
     );
 
     let account_metas = vec![AccountMeta::new_readonly(stake::program::id(), false)];
@@ -3688,7 +3688,7 @@ fn test_program_bpf_inner_instruction_alignment_checks() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_noop",
+        "wickandbergamot_bpf_rust_noop",
     );
 
     // Load unaligned program
@@ -3696,7 +3696,7 @@ fn test_program_bpf_inner_instruction_alignment_checks() {
         &bank_client,
         &bpf_loader_deprecated::id(),
         &mint_keypair,
-        "safecoin_bpf_rust_inner_instruction_alignment_check",
+        "wickandbergamot_bpf_rust_inner_instruction_alignment_check",
     );
 
     // invoke unaligned program, which will call aligned program twice,
