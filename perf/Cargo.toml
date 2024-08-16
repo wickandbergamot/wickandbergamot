@@ -1,12 +1,12 @@
 [package]
-name = "safecoin-perf"
+name = "wickandbergamot-perf"
 version = "1.14.17"
-description = "Safecoin Performance APIs"
+description = "Wickandbergamot Performance APIs"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-perf"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-perf"
 edition = "2021"
 
 [dependencies]
@@ -22,10 +22,10 @@ log = "0.4.17"
 rand = "0.7.0"
 rayon = "1.5.3"
 serde = "1.0.138"
-safecoin-metrics = { path = "../metrics", version = "=1.14.17" }
-safecoin-rayon-threadlimit = { path = "../rayon-threadlimit", version = "=1.14.17" }
-safecoin-sdk = { path = "../sdk", version = "=1.14.17" }
-safecoin-vote-program = { path = "../programs/vote", version = "=1.14.17" }
+wickandbergamot-metrics = { path = "../metrics", version = "=1.14.17" }
+wickandbergamot-rayon-threadlimit = { path = "../rayon-threadlimit", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../sdk", version = "=1.14.17" }
+wickandbergamot-vote-program = { path = "../programs/vote", version = "=1.14.17" }
 
 [target."cfg(target_os = \"linux\")".dependencies]
 caps = "0.5.3"
@@ -37,7 +37,7 @@ name = "solana_perf"
 
 [dev-dependencies]
 matches = "0.1.9"
-safecoin-logger = { path = "../logger", version = "=1.14.17" }
+wickandbergamot-logger = { path = "../logger", version = "=1.14.17" }
 
 [[bench]]
 name = "sigverify"
