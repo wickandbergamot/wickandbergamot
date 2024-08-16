@@ -3,7 +3,7 @@
 extern crate solana_program;
 use {
     solana_program::{custom_heap_default, custom_panic_default, msg},
-    safe_zk_token_sdk::curve25519::{edwards, ristretto, scalar},
+    wickandbergamot_zk_token_sdk::curve25519::{edwards, ristretto, scalar},
 };
 
 #[no_mangle]
