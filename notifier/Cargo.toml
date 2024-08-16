@@ -1,12 +1,12 @@
 [package]
-name = "safecoin-notifier"
+name = "wickandbergamot-notifier"
 version = "1.14.17"
-description = "Safecoin Notifier"
+description = "Wickandbergamot Notifier"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-notifier"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-notifier"
 edition = "2021"
 
 [dependencies]
