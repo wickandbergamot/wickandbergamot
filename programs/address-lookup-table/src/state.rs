@@ -1,7 +1,7 @@
 use {
     crate::error::AddressLookupError,
     serde::{Deserialize, Serialize},
-    safecoin_frozen_abi_macro::{AbiEnumVisitor, AbiExample},
+    wickandbergamot_frozen_abi_macro::{AbiEnumVisitor, AbiExample},
     solana_program::{
         clock::Slot,
         instruction::InstructionError,
