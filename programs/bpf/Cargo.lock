@@ -1382,7 +1382,7 @@ dependencies = [
 name = "fs_extra"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2022715d62ab30faffd124d40b76f4134a550a87792276512b18d63272333394"
+checksum = "2024715d62ab30faffd124d40b76f4134a550a87792276512b18d63272333394"
 
 [[package]]
 name = "futures"
@@ -4053,7 +4053,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-account-decoder"
+name = "wickandbergamot-account-decoder"
 version = "1.14.17"
 dependencies = [
  "Inflector",
@@ -4065,18 +4065,18 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "safecoin-address-lookup-table-program",
- "safecoin-config-program",
- "safecoin-sdk 1.14.17",
- "safecoin-vote-program",
- "safe-token",
- "safe-token-2022",
+ "wickandbergamot-address-lookup-table-program",
+ "wickandbergamot-config-program",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-vote-program",
+ "wickandbergamot-token",
+ "wickandbergamot-token-2024",
  "thiserror",
  "zstd",
 ]
 
 [[package]]
-name = "safecoin-address-lookup-table-program"
+name = "wickandbergamot-address-lookup-table-program"
 version = "1.14.17"
 dependencies = [
  "bincode",
@@ -4086,23 +4086,23 @@ dependencies = [
  "num-traits",
  "rustc_version",
  "serde",
- "safecoin-frozen-abi 1.14.17",
- "safecoin-frozen-abi-macro 1.14.17",
- "safecoin-program 1.14.17",
- "safecoin-program-runtime",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-frozen-abi 1.14.17",
+ "wickandbergamot-frozen-abi-macro 1.14.17",
+ "wickandbergamot-program 1.14.17",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-sdk 1.14.17",
  "thiserror",
 ]
 
 [[package]]
-name = "safecoin-banks-client"
+name = "wickandbergamot-banks-client"
 version = "1.14.17"
 dependencies = [
  "borsh",
  "futures 0.3.21",
- "safecoin-banks-interface",
- "safecoin-program 1.14.17",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-banks-interface",
+ "wickandbergamot-program 1.14.17",
+ "wickandbergamot-sdk 1.14.17",
  "tarpc",
  "thiserror",
  "tokio",
@@ -4110,26 +4110,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-banks-interface"
+name = "wickandbergamot-banks-interface"
 version = "1.14.17"
 dependencies = [
  "serde",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-sdk 1.14.17",
  "tarpc",
 ]
 
 [[package]]
-name = "safecoin-banks-server"
+name = "wickandbergamot-banks-server"
 version = "1.14.17"
 dependencies = [
  "bincode",
  "crossbeam-channel",
  "futures 0.3.21",
- "safecoin-banks-interface",
- "safecoin-client",
- "safecoin-runtime",
- "safecoin-sdk 1.14.17",
- "safecoin-send-transaction-service",
+ "wickandbergamot-banks-interface",
+ "wickandbergamot-client",
+ "wickandbergamot-runtime",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-send-transaction-service",
  "tarpc",
  "tokio",
  "tokio-serde",
@@ -4137,7 +4137,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-bloom"
+name = "wickandbergamot-bloom"
 version = "1.14.17"
 dependencies = [
  "bv",
@@ -4148,30 +4148,30 @@ dependencies = [
  "rustc_version",
  "serde",
  "serde_derive",
- "safecoin-frozen-abi 1.14.17",
- "safecoin-frozen-abi-macro 1.14.17",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-frozen-abi 1.14.17",
+ "wickandbergamot-frozen-abi-macro 1.14.17",
+ "wickandbergamot-sdk 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-loader-program"
+name = "wickandbergamot-bpf-loader-program"
 version = "1.14.17"
 dependencies = [
  "bincode",
  "byteorder 1.4.3",
  "libsecp256k1 0.6.0",
  "log",
- "safecoin-measure",
- "safecoin-metrics",
- "safecoin-program-runtime",
- "safecoin-sdk 1.14.17",
- "safe-zk-token-sdk 1.14.17",
+ "wickandbergamot-measure",
+ "wickandbergamot-metrics",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-zk-token-sdk 1.14.17",
  "solana_rbpf",
  "thiserror",
 ]
 
 [[package]]
-name = "safecoin-bpf-programs"
+name = "wickandbergamot-bpf-programs"
 version = "1.14.17"
 dependencies = [
  "bincode",
@@ -4181,404 +4181,404 @@ dependencies = [
  "log",
  "miow",
  "net2",
- "safecoin-account-decoder",
- "safecoin-bpf-loader-program",
- "safecoin-bpf-rust-invoke",
- "safecoin-bpf-rust-realloc",
- "safecoin-bpf-rust-realloc-invoke",
- "safecoin-cli-output",
- "safecoin-ledger",
- "safecoin-logger 1.14.17",
- "safecoin-measure",
- "safecoin-program-runtime",
- "safecoin-runtime",
- "safecoin-sdk 1.14.17",
- "safecoin-transaction-status",
+ "wickandbergamot-account-decoder",
+ "wickandbergamot-bpf-loader-program",
+ "wickandbergamot-bpf-rust-invoke",
+ "wickandbergamot-bpf-rust-realloc",
+ "wickandbergamot-bpf-rust-realloc-invoke",
+ "wickandbergamot-cli-output",
+ "wickandbergamot-ledger",
+ "wickandbergamot-logger 1.14.17",
+ "wickandbergamot-measure",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-runtime",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-transaction-status",
  "solana_rbpf",
  "walkdir",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-128bit"
+name = "wickandbergamot-bpf-rust-128bit"
 version = "1.14.17"
 dependencies = [
- "safecoin-bpf-rust-128bit-dep",
- "safecoin-program 1.14.17",
+ "wickandbergamot-bpf-rust-128bit-dep",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-128bit-dep"
+name = "wickandbergamot-bpf-rust-128bit-dep"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-alloc"
+name = "wickandbergamot-bpf-rust-alloc"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-call-depth"
+name = "wickandbergamot-bpf-rust-call-depth"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-caller-access"
+name = "wickandbergamot-bpf-rust-caller-access"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-curve25519"
+name = "wickandbergamot-bpf-rust-curve25519"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
- "safe-zk-token-sdk 1.14.17",
+ "wickandbergamot-program 1.14.17",
+ "wickandbergamot-zk-token-sdk 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-custom-heap"
+name = "wickandbergamot-bpf-rust-custom-heap"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-dep-crate"
+name = "wickandbergamot-bpf-rust-dep-crate"
 version = "1.14.17"
 dependencies = [
  "byteorder 1.4.3",
- "safecoin-address-lookup-table-program",
- "safecoin-program 1.14.17",
+ "wickandbergamot-address-lookup-table-program",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-deprecated-loader"
+name = "wickandbergamot-bpf-rust-deprecated-loader"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-dup-accounts"
+name = "wickandbergamot-bpf-rust-dup-accounts"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-error-handling"
+name = "wickandbergamot-bpf-rust-error-handling"
 version = "1.14.17"
 dependencies = [
  "num-derive",
  "num-traits",
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
  "thiserror",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-external-spend"
+name = "wickandbergamot-bpf-rust-external-spend"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-finalize"
+name = "wickandbergamot-bpf-rust-finalize"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-get-minimum-delegation"
+name = "wickandbergamot-bpf-rust-get-minimum-delegation"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-inner_instruction_alignment_check"
+name = "wickandbergamot-bpf-rust-inner_instruction_alignment_check"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-instruction-introspection"
+name = "wickandbergamot-bpf-rust-instruction-introspection"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-invoke"
+name = "wickandbergamot-bpf-rust-invoke"
 version = "1.14.17"
 dependencies = [
- "safecoin-bpf-rust-invoked",
- "safecoin-program 1.14.17",
+ "wickandbergamot-bpf-rust-invoked",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-invoke-and-error"
+name = "wickandbergamot-bpf-rust-invoke-and-error"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-invoke-and-ok"
+name = "wickandbergamot-bpf-rust-invoke-and-ok"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-invoke-and-return"
+name = "wickandbergamot-bpf-rust-invoke-and-return"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-invoked"
+name = "wickandbergamot-bpf-rust-invoked"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-iter"
+name = "wickandbergamot-bpf-rust-iter"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-log-data"
+name = "wickandbergamot-bpf-rust-log-data"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-many-args"
+name = "wickandbergamot-bpf-rust-many-args"
 version = "1.14.17"
 dependencies = [
- "safecoin-bpf-rust-many-args-dep",
- "safecoin-program 1.14.17",
+ "wickandbergamot-bpf-rust-many-args-dep",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-many-args-dep"
+name = "wickandbergamot-bpf-rust-many-args-dep"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-mem"
+name = "wickandbergamot-bpf-rust-mem"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
- "safecoin-program-runtime",
- "safecoin-program-test",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-program 1.14.17",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-program-test",
+ "wickandbergamot-sdk 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-membuiltins"
+name = "wickandbergamot-bpf-rust-membuiltins"
 version = "1.14.17"
 dependencies = [
- "safecoin-bpf-rust-mem",
- "safecoin-program 1.14.17",
+ "wickandbergamot-bpf-rust-mem",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-noop"
+name = "wickandbergamot-bpf-rust-noop"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-panic"
+name = "wickandbergamot-bpf-rust-panic"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-param-passing"
+name = "wickandbergamot-bpf-rust-param-passing"
 version = "1.14.17"
 dependencies = [
- "safecoin-bpf-rust-param-passing-dep",
- "safecoin-program 1.14.17",
+ "wickandbergamot-bpf-rust-param-passing-dep",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-param-passing-dep"
+name = "wickandbergamot-bpf-rust-param-passing-dep"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-rand"
+name = "wickandbergamot-bpf-rust-rand"
 version = "1.14.17"
 dependencies = [
  "getrandom 0.1.14",
  "rand 0.7.3",
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-realloc"
+name = "wickandbergamot-bpf-rust-realloc"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-realloc-invoke"
+name = "wickandbergamot-bpf-rust-realloc-invoke"
 version = "1.14.17"
 dependencies = [
- "safecoin-bpf-rust-realloc",
- "safecoin-program 1.14.17",
+ "wickandbergamot-bpf-rust-realloc",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-ro-account_modify"
+name = "wickandbergamot-bpf-rust-ro-account_modify"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-ro-modify"
+name = "wickandbergamot-bpf-rust-ro-modify"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-sanity"
+name = "wickandbergamot-bpf-rust-sanity"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
- "safecoin-program-runtime",
- "safecoin-program-test",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-program 1.14.17",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-program-test",
+ "wickandbergamot-sdk 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-secp256k1-recover"
+name = "wickandbergamot-bpf-rust-secp256k1-recover"
 version = "1.14.17"
 dependencies = [
  "libsecp256k1 0.7.0",
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-sha"
+name = "wickandbergamot-bpf-rust-sha"
 version = "1.14.17"
 dependencies = [
  "blake3",
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-sibling-instructions"
+name = "wickandbergamot-bpf-rust-sibling-instructions"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-sibling_inner-instructions"
+name = "wickandbergamot-bpf-rust-sibling_inner-instructions"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-simulation"
+name = "wickandbergamot-bpf-rust-simulation"
 version = "1.14.17"
 dependencies = [
- "safecoin-logger 1.14.17",
- "safecoin-program 1.14.17",
- "safecoin-program-test",
- "safecoin-sdk 1.14.17",
- "safecoin-validator",
+ "wickandbergamot-logger 1.14.17",
+ "wickandbergamot-program 1.14.17",
+ "wickandbergamot-program-test",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-validator",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-spoof1"
+name = "wickandbergamot-bpf-rust-spoof1"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-spoof1-system"
+name = "wickandbergamot-bpf-rust-spoof1-system"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-sysvar"
+name = "wickandbergamot-bpf-rust-sysvar"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
- "safecoin-program-runtime",
- "safecoin-program-test",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-program 1.14.17",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-program-test",
+ "wickandbergamot-sdk 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-upgradeable"
+name = "wickandbergamot-bpf-rust-upgradeable"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bpf-rust-upgraded"
+name = "wickandbergamot-bpf-rust-upgraded"
 version = "1.14.17"
 dependencies = [
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-bucket-map"
+name = "wickandbergamot-bucket-map"
 version = "1.14.17"
 dependencies = [
  "log",
  "memmap2",
  "modular-bitfield",
  "rand 0.7.3",
- "safecoin-measure",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-measure",
+ "wickandbergamot-sdk 1.14.17",
  "tempfile",
 ]
 
 [[package]]
-name = "safecoin-clap-utils"
+name = "wickandbergamot-clap-utils"
 version = "1.14.17"
 dependencies = [
  "chrono",
  "clap 2.33.3",
  "rpassword",
- "safecoin-perf",
- "safecoin-remote-wallet",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-perf",
+ "wickandbergamot-remote-wallet",
+ "wickandbergamot-sdk 1.14.17",
  "thiserror",
  "tiny-bip39",
  "uriparse",
@@ -4586,7 +4586,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-cli-config"
+name = "wickandbergamot-cli-config"
 version = "1.14.17"
 dependencies = [
  "dirs-next",
@@ -4594,13 +4594,13 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_yaml",
- "safecoin-clap-utils",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-clap-utils",
+ "wickandbergamot-sdk 1.14.17",
  "url 2.2.2",
 ]
 
 [[package]]
-name = "safecoin-cli-output"
+name = "wickandbergamot-cli-output"
 version = "1.14.17"
 dependencies = [
  "Inflector",
@@ -4614,18 +4614,18 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "safecoin-account-decoder",
- "safecoin-clap-utils",
- "safecoin-cli-config",
- "safecoin-client",
- "safecoin-sdk 1.14.17",
- "safecoin-transaction-status",
- "safecoin-vote-program",
- "safe-memo",
+ "wickandbergamot-account-decoder",
+ "wickandbergamot-clap-utils",
+ "wickandbergamot-cli-config",
+ "wickandbergamot-client",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-transaction-status",
+ "wickandbergamot-vote-program",
+ "wickandbergamot-memo",
 ]
 
 [[package]]
-name = "safecoin-client"
+name = "wickandbergamot-client"
 version = "1.14.17"
 dependencies = [
  "async-mutex",
@@ -4656,18 +4656,18 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "safecoin-account-decoder",
- "safecoin-clap-utils",
- "safecoin-faucet",
- "safecoin-measure",
- "safecoin-metrics",
- "safecoin-net-utils",
- "safecoin-sdk 1.14.17",
- "safecoin-streamer",
- "safecoin-transaction-status",
- "safecoin-version",
- "safecoin-vote-program",
- "safe-token-2022",
+ "wickandbergamot-account-decoder",
+ "wickandbergamot-clap-utils",
+ "wickandbergamot-faucet",
+ "wickandbergamot-measure",
+ "wickandbergamot-metrics",
+ "wickandbergamot-net-utils",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-streamer",
+ "wickandbergamot-transaction-status",
+ "wickandbergamot-version",
+ "wickandbergamot-vote-program",
+ "wickandbergamot-token-2024",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -4677,27 +4677,27 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-compute-budget-program"
+name = "wickandbergamot-compute-budget-program"
 version = "1.14.17"
 dependencies = [
- "safecoin-program-runtime",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-sdk 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-config-program"
+name = "wickandbergamot-config-program"
 version = "1.14.17"
 dependencies = [
  "bincode",
  "chrono",
  "serde",
  "serde_derive",
- "safecoin-program-runtime",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-sdk 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-core"
+name = "wickandbergamot-core"
 version = "1.14.17"
 dependencies = [
  "ahash",
@@ -4723,30 +4723,30 @@ dependencies = [
  "rustc_version",
  "serde",
  "serde_derive",
- "safecoin-address-lookup-table-program",
- "safecoin-bloom",
- "safecoin-client",
- "safecoin-entry",
- "safecoin-frozen-abi 1.14.17",
- "safecoin-frozen-abi-macro 1.14.17",
- "safecoin-geyser-plugin-manager",
- "safecoin-gossip",
- "safecoin-ledger",
- "safecoin-measure",
- "safecoin-metrics",
- "safecoin-net-utils",
- "safecoin-perf",
- "safecoin-poh",
- "safecoin-program-runtime",
- "safecoin-rayon-threadlimit",
- "safecoin-rpc",
- "safecoin-runtime",
- "safecoin-sdk 1.14.17",
- "safecoin-send-transaction-service",
- "safecoin-streamer",
- "safecoin-transaction-status",
- "safecoin-version",
- "safecoin-vote-program",
+ "wickandbergamot-address-lookup-table-program",
+ "wickandbergamot-bloom",
+ "wickandbergamot-client",
+ "wickandbergamot-entry",
+ "wickandbergamot-frozen-abi 1.14.17",
+ "wickandbergamot-frozen-abi-macro 1.14.17",
+ "wickandbergamot-geyser-plugin-manager",
+ "wickandbergamot-gossip",
+ "wickandbergamot-ledger",
+ "wickandbergamot-measure",
+ "wickandbergamot-metrics",
+ "wickandbergamot-net-utils",
+ "wickandbergamot-perf",
+ "wickandbergamot-poh",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-rayon-threadlimit",
+ "wickandbergamot-rpc",
+ "wickandbergamot-runtime",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-send-transaction-service",
+ "wickandbergamot-streamer",
+ "wickandbergamot-transaction-status",
+ "wickandbergamot-version",
+ "wickandbergamot-vote-program",
  "sys-info",
  "sysctl",
  "tempfile",
@@ -4756,19 +4756,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-download-utils"
+name = "wickandbergamot-download-utils"
 version = "1.14.17"
 dependencies = [
  "console",
  "indicatif",
  "log",
  "reqwest",
- "safecoin-runtime",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-runtime",
+ "wickandbergamot-sdk 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-entry"
+name = "wickandbergamot-entry"
 version = "1.14.17"
 dependencies = [
  "bincode",
@@ -4780,16 +4780,16 @@ dependencies = [
  "rand 0.7.3",
  "rayon",
  "serde",
- "safecoin-measure",
- "safecoin-merkle-tree",
- "safecoin-metrics",
- "safecoin-perf",
- "safecoin-rayon-threadlimit",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-measure",
+ "wickandbergamot-merkle-tree",
+ "wickandbergamot-metrics",
+ "wickandbergamot-perf",
+ "wickandbergamot-rayon-threadlimit",
+ "wickandbergamot-sdk 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-faucet"
+name = "wickandbergamot-faucet"
 version = "1.14.17"
 dependencies = [
  "bincode",
@@ -4799,19 +4799,19 @@ dependencies = [
  "log",
  "serde",
  "serde_derive",
- "safecoin-clap-utils",
- "safecoin-cli-config",
- "safecoin-logger 1.14.17",
- "safecoin-metrics",
- "safecoin-sdk 1.14.17",
- "safecoin-version",
- "safe-memo",
+ "wickandbergamot-clap-utils",
+ "wickandbergamot-cli-config",
+ "wickandbergamot-logger 1.14.17",
+ "wickandbergamot-metrics",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-version",
+ "wickandbergamot-memo",
  "thiserror",
  "tokio",
 ]
 
 [[package]]
-name = "safecoin-frozen-abi"
+name = "wickandbergamot-frozen-abi"
 version = "1.14.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "341bba362c91aedad2ad9fc0c28c2e39aaa606e6b9c049e8fbcc9f60675163ff"
@@ -4839,13 +4839,13 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "sha2 0.10.2",
- "safecoin-frozen-abi-macro 1.14.8",
+ "wickandbergamot-frozen-abi-macro 1.14.8",
  "subtle",
  "thiserror",
 ]
 
 [[package]]
-name = "safecoin-frozen-abi"
+name = "wickandbergamot-frozen-abi"
 version = "1.14.17"
 dependencies = [
  "ahash",
@@ -4871,13 +4871,13 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "sha2 0.10.2",
- "safecoin-frozen-abi-macro 1.14.17",
+ "wickandbergamot-frozen-abi-macro 1.14.17",
  "subtle",
  "thiserror",
 ]
 
 [[package]]
-name = "safecoin-frozen-abi-macro"
+name = "wickandbergamot-frozen-abi-macro"
 version = "1.14.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6fae474ab37e2ccc4dfd33edd36a05d7df02b8531fa9870cb244f9491b64fe3"
@@ -4889,7 +4889,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-frozen-abi-macro"
+name = "wickandbergamot-frozen-abi-macro"
 version = "1.14.17"
 dependencies = [
  "proc-macro2 1.0.41",
@@ -4899,26 +4899,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-genesis-utils"
+name = "wickandbergamot-genesis-utils"
 version = "1.14.17"
 dependencies = [
- "safecoin-download-utils",
- "safecoin-runtime",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-download-utils",
+ "wickandbergamot-runtime",
+ "wickandbergamot-sdk 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-geyser-plugin-interface"
+name = "wickandbergamot-geyser-plugin-interface"
 version = "1.14.17"
 dependencies = [
  "log",
- "safecoin-sdk 1.14.17",
- "safecoin-transaction-status",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-transaction-status",
  "thiserror",
 ]
 
 [[package]]
-name = "safecoin-geyser-plugin-manager"
+name = "wickandbergamot-geyser-plugin-manager"
 version = "1.14.17"
 dependencies = [
  "bs58",
@@ -4927,18 +4927,18 @@ dependencies = [
  "libloading",
  "log",
  "serde_json",
- "safecoin-geyser-plugin-interface",
- "safecoin-measure",
- "safecoin-metrics",
- "safecoin-rpc",
- "safecoin-runtime",
- "safecoin-sdk 1.14.17",
- "safecoin-transaction-status",
+ "wickandbergamot-geyser-plugin-interface",
+ "wickandbergamot-measure",
+ "wickandbergamot-metrics",
+ "wickandbergamot-rpc",
+ "wickandbergamot-runtime",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-transaction-status",
  "thiserror",
 ]
 
 [[package]]
-name = "safecoin-gossip"
+name = "wickandbergamot-gossip"
 version = "1.14.17"
 dependencies = [
  "bincode",
@@ -4959,29 +4959,29 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_derive",
- "safecoin-bloom",
- "safecoin-clap-utils",
- "safecoin-client",
- "safecoin-entry",
- "safecoin-frozen-abi 1.14.17",
- "safecoin-frozen-abi-macro 1.14.17",
- "safecoin-ledger",
- "safecoin-logger 1.14.17",
- "safecoin-measure",
- "safecoin-metrics",
- "safecoin-net-utils",
- "safecoin-perf",
- "safecoin-rayon-threadlimit",
- "safecoin-runtime",
- "safecoin-sdk 1.14.17",
- "safecoin-streamer",
- "safecoin-version",
- "safecoin-vote-program",
+ "wickandbergamot-bloom",
+ "wickandbergamot-clap-utils",
+ "wickandbergamot-client",
+ "wickandbergamot-entry",
+ "wickandbergamot-frozen-abi 1.14.17",
+ "wickandbergamot-frozen-abi-macro 1.14.17",
+ "wickandbergamot-ledger",
+ "wickandbergamot-logger 1.14.17",
+ "wickandbergamot-measure",
+ "wickandbergamot-metrics",
+ "wickandbergamot-net-utils",
+ "wickandbergamot-perf",
+ "wickandbergamot-rayon-threadlimit",
+ "wickandbergamot-runtime",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-streamer",
+ "wickandbergamot-version",
+ "wickandbergamot-vote-program",
  "thiserror",
 ]
 
 [[package]]
-name = "safecoin-ledger"
+name = "wickandbergamot-ledger"
 version = "1.14.17"
 dependencies = [
  "assert_matches",
@@ -5011,25 +5011,25 @@ dependencies = [
  "serde",
  "serde_bytes",
  "sha2 0.10.2",
- "safecoin-account-decoder",
- "safecoin-bpf-loader-program",
- "safecoin-entry",
- "safecoin-frozen-abi 1.14.17",
- "safecoin-frozen-abi-macro 1.14.17",
- "safecoin-measure",
- "safecoin-metrics",
- "safecoin-perf",
- "safecoin-program-runtime",
- "safecoin-rayon-threadlimit",
- "safecoin-runtime",
- "safecoin-sdk 1.14.17",
- "safecoin-stake-program",
- "safecoin-storage-bigtable",
- "safecoin-storage-proto",
- "safecoin-transaction-status",
- "safecoin-vote-program",
- "safe-token",
- "safe-token-2022",
+ "wickandbergamot-account-decoder",
+ "wickandbergamot-bpf-loader-program",
+ "wickandbergamot-entry",
+ "wickandbergamot-frozen-abi 1.14.17",
+ "wickandbergamot-frozen-abi-macro 1.14.17",
+ "wickandbergamot-measure",
+ "wickandbergamot-metrics",
+ "wickandbergamot-perf",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-rayon-threadlimit",
+ "wickandbergamot-runtime",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-stake-program",
+ "wickandbergamot-storage-bigtable",
+ "wickandbergamot-storage-proto",
+ "wickandbergamot-transaction-status",
+ "wickandbergamot-vote-program",
+ "wickandbergamot-token",
+ "wickandbergamot-token-2024",
  "static_assertions",
  "tempfile",
  "thiserror",
@@ -5039,7 +5039,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-logger"
+name = "wickandbergamot-logger"
 version = "1.14.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ec82f7dedfee58ff2ac102b20a033a195950e7355fb29f1713f46cee629ffda"
@@ -5050,7 +5050,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-logger"
+name = "wickandbergamot-logger"
 version = "1.14.17"
 dependencies = [
  "env_logger",
@@ -5059,24 +5059,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-measure"
+name = "wickandbergamot-measure"
 version = "1.14.17"
 dependencies = [
  "log",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-sdk 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-merkle-tree"
+name = "wickandbergamot-merkle-tree"
 version = "1.14.17"
 dependencies = [
  "fast-math",
  "matches",
- "safecoin-program 1.14.17",
+ "wickandbergamot-program 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-metrics"
+name = "wickandbergamot-metrics"
 version = "1.14.17"
 dependencies = [
  "crossbeam-channel",
@@ -5084,11 +5084,11 @@ dependencies = [
  "lazy_static",
  "log",
  "reqwest",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-sdk 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-net-utils"
+name = "wickandbergamot-net-utils"
 version = "1.14.17"
 dependencies = [
  "bincode",
@@ -5100,15 +5100,15 @@ dependencies = [
  "serde",
  "serde_derive",
  "socket2",
- "safecoin-logger 1.14.17",
- "safecoin-sdk 1.14.17",
- "safecoin-version",
+ "wickandbergamot-logger 1.14.17",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-version",
  "tokio",
  "url 2.2.2",
 ]
 
 [[package]]
-name = "safecoin-perf"
+name = "wickandbergamot-perf"
 version = "1.14.17"
 dependencies = [
  "ahash",
@@ -5126,31 +5126,31 @@ dependencies = [
  "rand 0.7.3",
  "rayon",
  "serde",
- "safecoin-metrics",
- "safecoin-rayon-threadlimit",
- "safecoin-sdk 1.14.17",
- "safecoin-vote-program",
+ "wickandbergamot-metrics",
+ "wickandbergamot-rayon-threadlimit",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-vote-program",
 ]
 
 [[package]]
-name = "safecoin-poh"
+name = "wickandbergamot-poh"
 version = "1.14.17"
 dependencies = [
  "core_affinity",
  "crossbeam-channel",
  "log",
- "safecoin-entry",
- "safecoin-ledger",
- "safecoin-measure",
- "safecoin-metrics",
- "safecoin-runtime",
- "safecoin-sdk 1.14.17",
- "safecoin-sys-tuner",
+ "wickandbergamot-entry",
+ "wickandbergamot-ledger",
+ "wickandbergamot-measure",
+ "wickandbergamot-metrics",
+ "wickandbergamot-runtime",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-sys-tuner",
  "thiserror",
 ]
 
 [[package]]
-name = "safecoin-program"
+name = "wickandbergamot-program"
 version = "1.14.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f480a0a440ea15d8436de1c9ac01501cb15979dae4a0a5fc8e33198949b38681"
@@ -5189,9 +5189,9 @@ dependencies = [
  "serde_json",
  "sha2 0.10.2",
  "sha3 0.10.1",
- "safecoin-frozen-abi 1.14.8",
- "safecoin-frozen-abi-macro 1.14.8",
- "safecoin-sdk-macro 1.14.8",
+ "wickandbergamot-frozen-abi 1.14.8",
+ "wickandbergamot-frozen-abi-macro 1.14.8",
+ "wickandbergamot-sdk-macro 1.14.8",
  "thiserror",
  "tiny-bip39",
  "wasm-bindgen",
@@ -5199,7 +5199,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-program"
+name = "wickandbergamot-program"
 version = "1.14.17"
 dependencies = [
  "base64 0.13.0",
@@ -5236,9 +5236,9 @@ dependencies = [
  "serde_json",
  "sha2 0.10.2",
  "sha3 0.10.1",
- "safecoin-frozen-abi 1.14.17",
- "safecoin-frozen-abi-macro 1.14.17",
- "safecoin-sdk-macro 1.14.17",
+ "wickandbergamot-frozen-abi 1.14.17",
+ "wickandbergamot-frozen-abi-macro 1.14.17",
+ "wickandbergamot-sdk-macro 1.14.17",
  "thiserror",
  "tiny-bip39",
  "wasm-bindgen",
@@ -5246,7 +5246,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-program-runtime"
+name = "wickandbergamot-program-runtime"
 version = "1.14.17"
 dependencies = [
  "base64 0.13.0",
@@ -5262,16 +5262,16 @@ dependencies = [
  "rand 0.7.3",
  "rustc_version",
  "serde",
- "safecoin-frozen-abi 1.14.17",
- "safecoin-frozen-abi-macro 1.14.17",
- "safecoin-measure",
- "safecoin-metrics",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-frozen-abi 1.14.17",
+ "wickandbergamot-frozen-abi-macro 1.14.17",
+ "wickandbergamot-measure",
+ "wickandbergamot-metrics",
+ "wickandbergamot-sdk 1.14.17",
  "thiserror",
 ]
 
 [[package]]
-name = "safecoin-program-test"
+name = "wickandbergamot-program-test"
 version = "1.14.17"
 dependencies = [
  "assert_matches",
@@ -5281,20 +5281,20 @@ dependencies = [
  "chrono-humanize",
  "log",
  "serde",
- "safecoin-banks-client",
- "safecoin-banks-server",
- "safecoin-bpf-loader-program",
- "safecoin-logger 1.14.17",
- "safecoin-program-runtime",
- "safecoin-runtime",
- "safecoin-sdk 1.14.17",
- "safecoin-vote-program",
+ "wickandbergamot-banks-client",
+ "wickandbergamot-banks-server",
+ "wickandbergamot-bpf-loader-program",
+ "wickandbergamot-logger 1.14.17",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-runtime",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-vote-program",
  "thiserror",
  "tokio",
 ]
 
 [[package]]
-name = "safecoin-rayon-threadlimit"
+name = "wickandbergamot-rayon-threadlimit"
 version = "1.14.17"
 dependencies = [
  "lazy_static",
@@ -5302,7 +5302,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-remote-wallet"
+name = "wickandbergamot-remote-wallet"
 version = "1.14.17"
 dependencies = [
  "console",
@@ -5313,13 +5313,13 @@ dependencies = [
  "parking_lot 0.12.1",
  "qstring",
  "semver",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-sdk 1.14.17",
  "thiserror",
  "uriparse",
 ]
 
 [[package]]
-name = "safecoin-rpc"
+name = "wickandbergamot-rpc"
 version = "1.14.17"
 dependencies = [
  "base64 0.13.0",
@@ -5341,28 +5341,28 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "soketto",
- "safecoin-account-decoder",
- "safecoin-client",
- "safecoin-entry",
- "safecoin-faucet",
- "safecoin-gossip",
- "safecoin-ledger",
- "safecoin-measure",
- "safecoin-metrics",
- "safecoin-perf",
- "safecoin-poh",
- "safecoin-rayon-threadlimit",
- "safecoin-runtime",
- "safecoin-sdk 1.14.17",
- "safecoin-send-transaction-service",
- "safecoin-stake-program",
- "safecoin-storage-bigtable",
- "safecoin-streamer",
- "safecoin-transaction-status",
- "safecoin-version",
- "safecoin-vote-program",
- "safe-token",
- "safe-token-2022",
+ "wickandbergamot-account-decoder",
+ "wickandbergamot-client",
+ "wickandbergamot-entry",
+ "wickandbergamot-faucet",
+ "wickandbergamot-gossip",
+ "wickandbergamot-ledger",
+ "wickandbergamot-measure",
+ "wickandbergamot-metrics",
+ "wickandbergamot-perf",
+ "wickandbergamot-poh",
+ "wickandbergamot-rayon-threadlimit",
+ "wickandbergamot-runtime",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-send-transaction-service",
+ "wickandbergamot-stake-program",
+ "wickandbergamot-storage-bigtable",
+ "wickandbergamot-streamer",
+ "wickandbergamot-transaction-status",
+ "wickandbergamot-version",
+ "wickandbergamot-vote-program",
+ "wickandbergamot-token",
+ "wickandbergamot-token-2024",
  "stream-cancel",
  "thiserror",
  "tokio",
@@ -5370,7 +5370,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-runtime"
+name = "wickandbergamot-runtime"
 version = "1.14.17"
 dependencies = [
  "arrayref",
@@ -5404,21 +5404,21 @@ dependencies = [
  "rustc_version",
  "serde",
  "serde_derive",
- "safecoin-address-lookup-table-program",
- "safecoin-bucket-map",
- "safecoin-compute-budget-program",
- "safecoin-config-program",
- "safecoin-frozen-abi 1.14.17",
- "safecoin-frozen-abi-macro 1.14.17",
- "safecoin-measure",
- "safecoin-metrics",
- "safecoin-program-runtime",
- "safecoin-rayon-threadlimit",
- "safecoin-sdk 1.14.17",
- "safecoin-stake-program",
- "safecoin-vote-program",
- "safe-zk-token-proof-program",
- "safe-zk-token-sdk 1.14.17",
+ "wickandbergamot-address-lookup-table-program",
+ "wickandbergamot-bucket-map",
+ "wickandbergamot-compute-budget-program",
+ "wickandbergamot-config-program",
+ "wickandbergamot-frozen-abi 1.14.17",
+ "wickandbergamot-frozen-abi-macro 1.14.17",
+ "wickandbergamot-measure",
+ "wickandbergamot-metrics",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-rayon-threadlimit",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-stake-program",
+ "wickandbergamot-vote-program",
+ "wickandbergamot-zk-token-proof-program",
+ "wickandbergamot-zk-token-sdk 1.14.17",
  "strum",
  "strum_macros",
  "symlink",
@@ -5429,7 +5429,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-sdk"
+name = "wickandbergamot-sdk"
 version = "1.14.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "65641c3c87a81fbbf7663360a2d8d5e145280021c444220257f9975ff6cddc80"
@@ -5469,18 +5469,18 @@ dependencies = [
  "serde_json",
  "sha2 0.10.2",
  "sha3 0.10.1",
- "safecoin-frozen-abi 1.14.8",
- "safecoin-frozen-abi-macro 1.14.8",
- "safecoin-logger 1.14.8",
- "safecoin-program 1.14.8",
- "safecoin-sdk-macro 1.14.8",
+ "wickandbergamot-frozen-abi 1.14.8",
+ "wickandbergamot-frozen-abi-macro 1.14.8",
+ "wickandbergamot-logger 1.14.8",
+ "wickandbergamot-program 1.14.8",
+ "wickandbergamot-sdk-macro 1.14.8",
  "thiserror",
  "uriparse",
  "wasm-bindgen",
 ]
 
 [[package]]
-name = "safecoin-sdk"
+name = "wickandbergamot-sdk"
 version = "1.14.17"
 dependencies = [
  "assert_matches",
@@ -5518,18 +5518,18 @@ dependencies = [
  "serde_json",
  "sha2 0.10.2",
  "sha3 0.10.1",
- "safecoin-frozen-abi 1.14.17",
- "safecoin-frozen-abi-macro 1.14.17",
- "safecoin-logger 1.14.17",
- "safecoin-program 1.14.17",
- "safecoin-sdk-macro 1.14.17",
+ "wickandbergamot-frozen-abi 1.14.17",
+ "wickandbergamot-frozen-abi-macro 1.14.17",
+ "wickandbergamot-logger 1.14.17",
+ "wickandbergamot-program 1.14.17",
+ "wickandbergamot-sdk-macro 1.14.17",
  "thiserror",
  "uriparse",
  "wasm-bindgen",
 ]
 
 [[package]]
-name = "safecoin-sdk-macro"
+name = "wickandbergamot-sdk-macro"
 version = "1.14.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "768f16d1a7315fc66ba835eebf9e95a83365ac94222551bc5cdcc6a74cb4a137"
@@ -5542,7 +5542,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-sdk-macro"
+name = "wickandbergamot-sdk-macro"
 version = "1.14.17"
 dependencies = [
  "bs58",
@@ -5553,20 +5553,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-send-transaction-service"
+name = "wickandbergamot-send-transaction-service"
 version = "1.14.17"
 dependencies = [
  "crossbeam-channel",
  "log",
- "safecoin-client",
- "safecoin-measure",
- "safecoin-metrics",
- "safecoin-runtime",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-client",
+ "wickandbergamot-measure",
+ "wickandbergamot-metrics",
+ "wickandbergamot-runtime",
+ "wickandbergamot-sdk 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-stake-program"
+name = "wickandbergamot-stake-program"
 version = "1.14.17"
 dependencies = [
  "bincode",
@@ -5576,18 +5576,18 @@ dependencies = [
  "rustc_version",
  "serde",
  "serde_derive",
- "safecoin-config-program",
- "safecoin-frozen-abi 1.14.17",
- "safecoin-frozen-abi-macro 1.14.17",
- "safecoin-metrics",
- "safecoin-program-runtime",
- "safecoin-sdk 1.14.17",
- "safecoin-vote-program",
+ "wickandbergamot-config-program",
+ "wickandbergamot-frozen-abi 1.14.17",
+ "wickandbergamot-frozen-abi-macro 1.14.17",
+ "wickandbergamot-metrics",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-vote-program",
  "thiserror",
 ]
 
 [[package]]
-name = "safecoin-storage-bigtable"
+name = "wickandbergamot-storage-bigtable"
 version = "1.14.17"
 dependencies = [
  "backoff",
@@ -5608,10 +5608,10 @@ dependencies = [
  "serde",
  "serde_derive",
  "smpl_jwt",
- "safecoin-metrics",
- "safecoin-sdk 1.14.17",
- "safecoin-storage-proto",
- "safecoin-transaction-status",
+ "wickandbergamot-metrics",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-storage-proto",
+ "wickandbergamot-transaction-status",
  "thiserror",
  "tokio",
  "tonic 0.8.0",
@@ -5619,7 +5619,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "safecoin-storage-proto"
+name = "wickandbergamot-storage-proto"
 version = "1.14.17"
 dependencies = [
  "bincode",
@@ -5627,14 +5627,14 @@ dependencies = [
  "prost 0.11.0",
  "protobuf-src",
  "serde",
- "safecoin-account-decoder",
- "safecoin-sdk 1.14.17",
- "safecoin-transaction-status",
+ "wickandbergamot-account-decoder",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-transaction-status",
  "tonic-build 0.8.0",
 ]
 
 [[package]]
-name = "safecoin-streamer"
+name = "wickandbergamot-streamer"
 version = "1.14.17"
 dependencies = [
  "crossbeam-channel",
@@ -5652,55 +5652,55 @@ dependencies = [
  "rand 0.7.3",
  "rcgen",
  "rustls 0.20.6",
- "safecoin-metrics",
- "safecoin-perf",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-metrics",
+ "wickandbergamot-perf",
+ "wickandbergamot-sdk 1.14.17",
  "thiserror",
  "tokio",
  "x509-parser",
 ]
 
 [[package]]
-name = "safecoin-sys-tuner"
+name = "wickandbergamot-sys-tuner"
 version = "1.14.17"
 dependencies = [
  "clap 2.33.3",
  "libc",
  "log",
  "nix",
- "safecoin-logger 1.14.17",
- "safecoin-version",
+ "wickandbergamot-logger 1.14.17",
+ "wickandbergamot-version",
  "sysctl",
  "unix_socket2",
  "users",
 ]
 
 [[package]]
-name = "safecoin-test-validator"
+name = "wickandbergamot-test-validator"
 version = "1.14.17"
 dependencies = [
  "base64 0.13.0",
  "log",
  "serde_derive",
  "serde_json",
- "safecoin-cli-output",
- "safecoin-client",
- "safecoin-core",
- "safecoin-gossip",
- "safecoin-ledger",
- "safecoin-logger 1.14.17",
- "safecoin-net-utils",
- "safecoin-program-runtime",
- "safecoin-program-test",
- "safecoin-rpc",
- "safecoin-runtime",
- "safecoin-sdk 1.14.17",
- "safecoin-streamer",
+ "wickandbergamot-cli-output",
+ "wickandbergamot-client",
+ "wickandbergamot-core",
+ "wickandbergamot-gossip",
+ "wickandbergamot-ledger",
+ "wickandbergamot-logger 1.14.17",
+ "wickandbergamot-net-utils",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-program-test",
+ "wickandbergamot-rpc",
+ "wickandbergamot-runtime",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-streamer",
  "tokio",
 ]
 
 [[package]]
-name = "safecoin-transaction-status"
+name = "wickandbergamot-transaction-status"
 version = "1.14.17"
 dependencies = [
  "Inflector",
@@ -5713,21 +5713,21 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "safecoin-account-decoder",
- "safecoin-address-lookup-table-program",
- "safecoin-measure",
- "safecoin-metrics",
- "safecoin-sdk 1.14.17",
- "safecoin-vote-program",
- "safe-associated-token-account",
- "safe-memo",
- "safe-token",
- "safe-token-2022",
+ "wickandbergamot-account-decoder",
+ "wickandbergamot-address-lookup-table-program",
+ "wickandbergamot-measure",
+ "wickandbergamot-metrics",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-vote-program",
+ "wickandbergamot-associated-token-account",
+ "wickandbergamot-memo",
+ "wickandbergamot-token",
+ "wickandbergamot-token-2024",
  "thiserror",
 ]
 
 [[package]]
-name = "safecoin-validator"
+name = "wickandbergamot-validator"
 version = "1.14.17"
 dependencies = [
  "chrono",
@@ -5749,36 +5749,36 @@ dependencies = [
  "serde",
  "serde_json",
  "signal-hook",
- "safecoin-clap-utils",
- "safecoin-cli-config",
- "safecoin-client",
- "safecoin-core",
- "safecoin-download-utils",
- "safecoin-entry",
- "safecoin-faucet",
- "safecoin-genesis-utils",
- "safecoin-gossip",
- "safecoin-ledger",
- "safecoin-logger 1.14.17",
- "safecoin-metrics",
- "safecoin-net-utils",
- "safecoin-perf",
- "safecoin-poh",
- "safecoin-rpc",
- "safecoin-runtime",
- "safecoin-sdk 1.14.17",
- "safecoin-send-transaction-service",
- "safecoin-storage-bigtable",
- "safecoin-streamer",
- "safecoin-test-validator",
- "safecoin-version",
- "safecoin-vote-program",
+ "wickandbergamot-clap-utils",
+ "wickandbergamot-cli-config",
+ "wickandbergamot-client",
+ "wickandbergamot-core",
+ "wickandbergamot-download-utils",
+ "wickandbergamot-entry",
+ "wickandbergamot-faucet",
+ "wickandbergamot-genesis-utils",
+ "wickandbergamot-gossip",
+ "wickandbergamot-ledger",
+ "wickandbergamot-logger 1.14.17",
+ "wickandbergamot-metrics",
+ "wickandbergamot-net-utils",
+ "wickandbergamot-perf",
+ "wickandbergamot-poh",
+ "wickandbergamot-rpc",
+ "wickandbergamot-runtime",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-send-transaction-service",
+ "wickandbergamot-storage-bigtable",
+ "wickandbergamot-streamer",
+ "wickandbergamot-test-validator",
+ "wickandbergamot-version",
+ "wickandbergamot-vote-program",
  "symlink",
  "tikv-jemallocator",
 ]
 
 [[package]]
-name = "safecoin-version"
+name = "wickandbergamot-version"
 version = "1.14.17"
 dependencies = [
  "log",
@@ -5786,13 +5786,13 @@ dependencies = [
  "semver",
  "serde",
  "serde_derive",
- "safecoin-frozen-abi 1.14.17",
- "safecoin-frozen-abi-macro 1.14.17",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-frozen-abi 1.14.17",
+ "wickandbergamot-frozen-abi-macro 1.14.17",
+ "wickandbergamot-sdk 1.14.17",
 ]
 
 [[package]]
-name = "safecoin-vote-program"
+name = "wickandbergamot-vote-program"
 version = "1.14.17"
 dependencies = [
  "bincode",
@@ -5802,29 +5802,29 @@ dependencies = [
  "rustc_version",
  "serde",
  "serde_derive",
- "safecoin-frozen-abi 1.14.17",
- "safecoin-frozen-abi-macro 1.14.17",
- "safecoin-metrics",
- "safecoin-program-runtime",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-frozen-abi 1.14.17",
+ "wickandbergamot-frozen-abi-macro 1.14.17",
+ "wickandbergamot-metrics",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-sdk 1.14.17",
  "thiserror",
 ]
 
 [[package]]
-name = "safe-zk-token-proof-program"
+name = "wickandbergamot-zk-token-proof-program"
 version = "1.14.17"
 dependencies = [
  "bytemuck",
  "getrandom 0.1.14",
  "num-derive",
  "num-traits",
- "safecoin-program-runtime",
- "safecoin-sdk 1.14.17",
- "safe-zk-token-sdk 1.14.17",
+ "wickandbergamot-program-runtime",
+ "wickandbergamot-sdk 1.14.17",
+ "wickandbergamot-zk-token-sdk 1.14.17",
 ]
 
 [[package]]
-name = "safe-zk-token-sdk"
+name = "wickandbergamot-zk-token-sdk"
 version = "1.14.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac5982ab9d8771b3d9bbef11ece78348c496a9f70a90a96225aee0a70bd13b9d"
@@ -5847,15 +5847,15 @@ dependencies = [
  "serde",
  "serde_json",
  "sha3 0.9.1",
- "safecoin-program 1.14.8",
- "safecoin-sdk 1.14.8",
+ "wickandbergamot-program 1.14.8",
+ "wickandbergamot-sdk 1.14.8",
  "subtle",
  "thiserror",
  "zeroize",
 ]
 
 [[package]]
-name = "safe-zk-token-sdk"
+name = "wickandbergamot-zk-token-sdk"
 version = "1.14.17"
 dependencies = [
  "aes-gcm-siv",
@@ -5876,8 +5876,8 @@ dependencies = [
  "serde",
  "serde_json",
  "sha3 0.9.1",
- "safecoin-program 1.14.17",
- "safecoin-sdk 1.14.17",
+ "wickandbergamot-program 1.14.17",
+ "wickandbergamot-sdk 1.14.17",
  "subtle",
  "thiserror",
  "zeroize",
@@ -5924,7 +5924,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "safe-associated-token-account"
+name = "wickandbergamot-associated-token-account"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fbc000f0fdf1f12f99d77d398137c1751345b18c88258ce0f99b7872cf6c9bd6"
@@ -5933,23 +5933,23 @@ dependencies = [
  "borsh",
  "num-derive",
  "num-traits",
- "safecoin-program 1.14.8",
- "safe-token",
- "safe-token-2022",
+ "wickandbergamot-program 1.14.8",
+ "wickandbergamot-token",
+ "wickandbergamot-token-2024",
  "thiserror",
 ]
 
 [[package]]
-name = "safe-memo"
+name = "wickandbergamot-memo"
 version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd0dc6f70db6bacea7ff25870b016a65ba1d1b6013536f08e4fd79a8f9005325"
 dependencies = [
- "safecoin-program 1.14.8",
+ "wickandbergamot-program 1.14.8",
 ]
 
 [[package]]
-name = "safe-token"
+name = "wickandbergamot-token"
 version = "3.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8e85e168a785e82564160dcb87b2a8e04cee9bfd1f4d488c729d53d6a4bd300d"
@@ -5959,12 +5959,12 @@ dependencies = [
  "num-derive",
  "num-traits",
  "num_enum",
- "safecoin-program 1.14.8",
+ "wickandbergamot-program 1.14.8",
  "thiserror",
 ]
 
 [[package]]
-name = "safe-token-2022"
+name = "wickandbergamot-token-2024"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0edb869dbe159b018f17fb9bfa67118c30f232d7f54a73742bc96794dff77ed8"
@@ -5974,10 +5974,10 @@ dependencies = [
  "num-derive",
  "num-traits",
  "num_enum",
- "safecoin-program 1.14.8",
- "safe-zk-token-sdk 1.14.8",
- "safe-memo",
- "safe-token",
+ "wickandbergamot-program 1.14.8",
+ "wickandbergamot-zk-token-sdk 1.14.8",
+ "wickandbergamot-memo",
+ "wickandbergamot-token",
  "thiserror",
 ]
 
@@ -7258,11 +7258,11 @@ version = "0.11.2+zstd.1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20cc960326ece64f010d2d2107537f26dc589a6573a316bd5b1dba685fa5fde4"
 dependencies = [
- "zstd-safe",
+ "zstd-wickandbergamot",
 ]
 
 [[package]]
-name = "zstd-safe"
+name = "zstd-wickandbergamot"
 version = "5.0.1+zstd.1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c12659121420dd6365c5c3de4901f97145b79651fb1d25814020ed2ed0585ae"
