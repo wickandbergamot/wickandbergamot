@@ -1,4 +1,4 @@
-//! The safecoin-program-test provides a BanksClient-based test framework BPF programs
+//! The wickandbergamot-program-test provides a BanksClient-based test framework BPF programs
 #![allow(clippy::integer_arithmetic)]
 
 // Export tokio for test clients
@@ -8,7 +8,7 @@ use {
     chrono_humanize::{Accuracy, HumanTime, Tense},
     log::*,
     solana_banks_client::start_client,
-    safecoin_banks_server::banks_server::start_local_server,
+    wickandbergamot_banks_server::banks_server::start_local_server,
     solana_bpf_loader_program::serialization::serialize_parameters,
     solana_program_runtime::{
         compute_budget::ComputeBudget, ic_msg, invoke_context::ProcessInstructionWithContext,
@@ -57,7 +57,7 @@ use {
     thiserror::Error,
     tokio::task::JoinHandle,
 };
-// Export types so test clients can limit their safecoin crate dependencies
+// Export types so test clients can limit their wickandbergamot crate dependencies
 pub use {
     solana_banks_client::{BanksClient, BanksClientError},
     solana_program_runtime::invoke_context::InvokeContext,
@@ -170,7 +170,7 @@ pub fn builtin_process_instruction(
     Ok(())
 }
 
-/// Converts a `safecoin-program`-style entrypoint into the runtime's entrypoint style, for
+/// Converts a `wickandbergamot-program`-style entrypoint into the runtime's entrypoint style, for
 /// use with `ProgramTest::add_program`
 #[macro_export]
 macro_rules! processor {
@@ -887,7 +887,7 @@ impl ProgramTest {
     /// Start the test client
     ///
     /// Returns a `BanksClient` interface into the test environment as well as a payer `Keypair`
-    /// with SAFE for sending transactions
+    /// with WICKANDBERGAMOT for sending transactions
     pub async fn start_with_context(self) -> ProgramTestContext {
         let (bank_forks, block_commitment_cache, last_blockhash, gci) = self.setup_bank();
         let target_tick_duration = gci.genesis_config.poh_config.target_tick_duration;
