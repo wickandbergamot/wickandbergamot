@@ -4,8 +4,8 @@
 extern crate test;
 
 use {
-    safecoin_entry::poh::Poh,
-    safecoin_poh::poh_service::DEFAULT_HASHES_PER_BATCH,
+    wickandbergamot_entry::poh::Poh,
+    wickandbergamot_poh::poh_service::DEFAULT_HASHES_PER_BATCH,
     solana_sdk::hash::Hash,
     std::sync::{
         atomic::{AtomicBool, Ordering},
