@@ -5,7 +5,7 @@
 
 use {
     crate::instructions::*,
-    safecoin_bpf_rust_invoked::instructions::*,
+    wickandbergamot_bpf_rust_invoked::instructions::*,
     solana_program::{
         account_info::AccountInfo,
         entrypoint::{ProgramResult, MAX_PERMITTED_DATA_INCREASE},
