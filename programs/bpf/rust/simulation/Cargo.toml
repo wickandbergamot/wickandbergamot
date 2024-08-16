@@ -1,25 +1,25 @@
 [package]
-name = "safecoin-bpf-rust-simulation"
+name = "wickandbergamot-bpf-rust-simulation"
 version = "1.14.17"
-description = "Safecoin BPF Program Simulation Differences"
+description = "Wickandbergamot BPF Program Simulation Differences"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-bpf-rust-simulation"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-bpf-rust-simulation"
 edition = "2021"
 
 [features]
 test-bpf = []
 
 [dependencies]
-safecoin-program = { path = "../../../../sdk/program", version = "=1.14.17" }
+wickandbergamot-program = { path = "../../../../sdk/program", version = "=1.14.17" }
 
 [dev-dependencies]
-safecoin-logger = { path = "../../../../logger", version = "=1.14.17" }
-safecoin-program-test = { path = "../../../../program-test", version = "=1.14.17" }
-safecoin-sdk = { path = "../../../../sdk", version = "=1.14.17" }
-safecoin-validator = { path = "../../../../validator", version = "=1.14.17" }
+wickandbergamot-logger = { path = "../../../../logger", version = "=1.14.17" }
+wickandbergamot-program-test = { path = "../../../../program-test", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../../../../sdk", version = "=1.14.17" }
+wickandbergamot-validator = { path = "../../../../validator", version = "=1.14.17" }
 
 [lib]
 crate-type = ["cdylib", "lib"]
