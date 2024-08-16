@@ -1,10 +1,10 @@
 use {
-    safecoin_client::{
+    wickandbergamot_client::{
         nonblocking::tpu_client::{LeaderTpuService, TpuClient},
         tpu_client::TpuClientConfig,
     },
     solana_sdk::{clock::DEFAULT_MS_PER_SLOT, pubkey::Pubkey, system_transaction},
-    safecoin_test_validator::TestValidatorGenesis,
+    wickandbergamot_test_validator::TestValidatorGenesis,
     std::sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
