@@ -7,7 +7,7 @@ use solana_program::{
 
 #[derive(Debug)]
 #[repr(C)]
-struct SafeInstruction {
+struct WickandbergamotInstruction {
     program_id_addr: u64,
     accounts_addr: u64,
     accounts_len: usize,
@@ -15,19 +15,19 @@ struct SafeInstruction {
     data_len: usize,
 }
 
-/// Rust representation of C's SafeAccountMeta
+/// Rust representation of C's WickandbergamotAccountMeta
 #[derive(Debug)]
 #[repr(C)]
-struct SafeAccountMeta {
+struct WickandbergamotAccountMeta {
     pubkey_addr: u64,
     is_writable: bool,
     is_signer: bool,
 }
 
-/// Rust representation of C's SafeAccountInfo
+/// Rust representation of C's WickandbergamotAccountInfo
 #[derive(Debug, Clone)]
 #[repr(C)]
-struct SafeAccountInfo {
+struct WickandbergamotAccountInfo {
     key_addr: u64,
     lamports_addr: u64,
     data_len: u64,
@@ -39,24 +39,24 @@ struct SafeAccountInfo {
     executable: bool,
 }
 
-/// Rust representation of C's SafeSignerSeed
+/// Rust representation of C's WickandbergamotSignerSeed
 #[derive(Debug)]
 #[repr(C)]
-struct SafeSignerSeedC {
+struct WickandbergamotSignerSeedC {
     addr: u64,
     len: u64,
 }
 
-/// Rust representation of C's SafeSignerSeeds
+/// Rust representation of C's WickandbergamotSignerSeeds
 #[derive(Debug)]
 #[repr(C)]
-struct SafeSignerSeedsC {
+struct WickandbergamotSignerSeedsC {
     addr: u64,
     len: u64,
 }
 
-const READONLY_ACCOUNTS: &[SafeAccountInfo] = &[
-    SafeAccountInfo {
+const READONLY_ACCOUNTS: &[WickandbergamotAccountInfo] = &[
+    WickandbergamotAccountInfo {
         is_signer: false,
         is_writable: false,
         executable: true,
@@ -67,7 +67,7 @@ const READONLY_ACCOUNTS: &[SafeAccountInfo] = &[
         data_addr: 0x400000060,
         data_len: 14,
     },
-    SafeAccountInfo {
+    WickandbergamotAccountInfo {
         is_signer: true,
         is_writable: true,
         executable: false,
@@ -87,7 +87,7 @@ const PUBKEY: Pubkey = Pubkey::new_from_array([
 
 fn check_preconditions(
     in_infos: &[AccountInfo],
-    static_infos: &[SafeAccountInfo],
+    static_infos: &[WickandbergamotAccountInfo],
 ) -> Result<(), ProgramError> {
     for (in_info, static_info) in in_infos.iter().zip(static_infos) {
         check!(in_info.key.as_ref().as_ptr() as u64, static_info.key_addr);
@@ -119,12 +119,12 @@ fn process_instruction(
     match instruction_data[0] {
         1 => {
             let system_instruction = system_instruction::allocate(accounts[1].key, 42);
-            let metas = &[SafeAccountMeta {
+            let metas = &[WickandbergamotAccountMeta {
                 is_signer: true,
                 is_writable: true,
                 pubkey_addr: accounts[1].key as *const _ as u64,
             }];
-            let instruction = SafeInstruction {
+            let instruction = WickandbergamotInstruction {
                 accounts_addr: metas.as_ptr() as u64,
                 accounts_len: metas.len(),
                 data_addr: system_instruction.data.as_ptr() as u64,
@@ -154,12 +154,12 @@ fn process_instruction(
                 &mut [READONLY_ACCOUNTS[0].clone(), READONLY_ACCOUNTS[1].clone()];
             new_accounts[1].owner_addr = &PUBKEY as *const _ as u64;
             let system_instruction = system_instruction::assign(accounts[1].key, program_id);
-            let metas = &[SafeAccountMeta {
+            let metas = &[WickandbergamotAccountMeta {
                 is_signer: true,
                 is_writable: true,
                 pubkey_addr: accounts[1].key as *const _ as u64,
             }];
-            let instruction = SafeInstruction {
+            let instruction = WickandbergamotInstruction {
                 accounts_addr: metas.as_ptr() as u64,
                 accounts_len: metas.len(),
                 data_addr: system_instruction.data.as_ptr() as u64,
