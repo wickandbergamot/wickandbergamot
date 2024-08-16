@@ -7,7 +7,7 @@ use {
         sysvar,
     },
     solana_sdk::{signature::Signer, transaction::Transaction},
-    safecoin_validator::test_validator::*,
+    wickandbergamot_validator::test_validator::*,
 };
 
 #[test]
@@ -16,7 +16,7 @@ fn no_panic() {
     let program_id = Pubkey::new_unique();
 
     let (test_validator, payer) = TestValidatorGenesis::default()
-        .add_program("safecoin_bpf_rust_simulation", program_id)
+        .add_program("wickandbergamot_bpf_rust_simulation", program_id)
         .start();
     let rpc_client = test_validator.get_rpc_client();
     let blockhash = rpc_client.get_latest_blockhash().unwrap();
