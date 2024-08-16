@@ -158,7 +158,7 @@ impl RemoteWalletManager {
     #[cfg(not(feature = "hidapi"))]
     pub fn update_devices(&self) -> Result<usize, RemoteWalletError> {
         Err(RemoteWalletError::Hid(
-            "hidapi crate compilation disabled in safecoin-remote-wallet.".to_string(),
+            "hidapi crate compilation disabled in wickandbergamot-remote-wallet.".to_string(),
         ))
     }
 
@@ -219,7 +219,7 @@ pub trait RemoteWallet<T> {
         unimplemented!();
     }
 
-    /// Get safecoin pubkey from a RemoteWallet
+    /// Get wickandbergamot pubkey from a RemoteWallet
     fn get_pubkey(
         &self,
         derivation_path: &DerivationPath,
@@ -264,7 +264,7 @@ pub struct RemoteWalletInfo {
     pub serial: String,
     /// RemoteWallet host device path
     pub host_device_path: String,
-    /// Base pubkey of device at Safecoin derivation path
+    /// Base pubkey of device at Wickandbergamot derivation path
     pub pubkey: Pubkey,
     /// Initial read error
     pub error: Option<RemoteWalletError>,
@@ -305,7 +305,7 @@ pub fn initialize_wallet_manager() -> Result<Arc<RemoteWalletManager>, RemoteWal
 #[cfg(not(feature = "hidapi"))]
 pub fn initialize_wallet_manager() -> Result<Arc<RemoteWalletManager>, RemoteWalletError> {
     Err(RemoteWalletError::Hid(
-        "hidapi crate compilation disabled in safecoin-remote-wallet.".to_string(),
+        "hidapi crate compilation disabled in wickandbergamot-remote-wallet.".to_string(),
     ))
 }
 
