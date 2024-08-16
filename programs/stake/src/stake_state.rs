@@ -262,7 +262,7 @@ fn calculate_stake_points_and_credits(
             //    history sysvar. And properly handling all the cases
             //    regarding deactivation epoch/warm-up/cool-down without
             //    introducing incentive skew is hard.
-            //  - Conceptually, it should be acceptable for the staked SAFEs at
+            //  - Conceptually, it should be acceptable for the staked WICKANDBERGAMOTs at
             //    the recreated vote to receive rewards again immediately after
             //    rewind even if it looks like instant activation. That's
             //    because it must have passed the required warmed-up at least
@@ -2555,7 +2555,7 @@ mod tests {
         let mut vote_state = VoteState::default();
 
         // bootstrap means fully-vested stake at epoch 0 with
-        //  10_000_000 SAFE is a big but not unreasaonable stake
+        //  10_000_000 WICKANDBERGAMOT is a big but not unreasaonable stake
         let stake = new_stake(
             native_token::sol_to_lamports(10_000_000f64),
             &Pubkey::default(),
@@ -2989,9 +2989,9 @@ mod tests {
     fn test_dbg_stake_minimum_balance() {
         let minimum_balance = Rent::default().minimum_balance(StakeState::size_of());
         panic!(
-            "stake minimum_balance: {} lamports, {} SAFE",
+            "stake minimum_balance: {} lamports, {} WICKANDBERGAMOT",
             minimum_balance,
-            minimum_balance as f64 / solana_sdk::native_token::LAMPORTS_PER_SAFE as f64
+            minimum_balance as f64 / solana_sdk::native_token::LAMPORTS_PER_WICKANDBERGAMOT as f64
         );
     }
 
