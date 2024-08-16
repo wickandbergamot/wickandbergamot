@@ -9,10 +9,10 @@
  */
 
 extern uint64_t entrypoint(const uint8_t *input) {
-  SafeAccountInfo accounts[5];
-  SafeParameters params = (SafeParameters){.ka = accounts};
+  WickandbergamotAccountInfo accounts[5];
+  WickandbergamotParameters params = (WickandbergamotParameters){.ka = accounts};
 
-  if (!sol_deserialize(input, &params, SAFE_ARRAY_SIZE(accounts))) {
+  if (!sol_deserialize(input, &params, WICKANDBERGAMOT_ARRAY_SIZE(accounts))) {
     return ERROR_INVALID_ARGUMENT;
   }
 
@@ -60,26 +60,26 @@ extern uint64_t entrypoint(const uint8_t *input) {
 
     if (params.ka_num > 4) {
       {
-        SafeAccountMeta arguments[] = {{accounts[0].key, true, true},
+        WickandbergamotAccountMeta arguments[] = {{accounts[0].key, true, true},
                                       {accounts[1].key, true, false},
                                       {accounts[2].key, true, false},
                                       {accounts[3].key, false, true}};
         uint8_t data[] = {7};
-        const SafeInstruction instruction = {
-            (SafePubkey *)params.program_id, arguments,
-            SAFE_ARRAY_SIZE(arguments), data, SAFE_ARRAY_SIZE(data)};
+        const WickandbergamotInstruction instruction = {
+            (WickandbergamotPubkey *)params.program_id, arguments,
+            WICKANDBERGAMOT_ARRAY_SIZE(arguments), data, WICKANDBERGAMOT_ARRAY_SIZE(data)};
         sol_assert(SUCCESS ==
                    sol_invoke(&instruction, accounts, params.ka_num));
       }
       {
-        SafeAccountMeta arguments[] = {{accounts[0].key, true, true},
+        WickandbergamotAccountMeta arguments[] = {{accounts[0].key, true, true},
                                       {accounts[1].key, true, false},
                                       {accounts[2].key, true, false},
                                       {accounts[3].key, true, false}};
         uint8_t data[] = {3};
-        const SafeInstruction instruction = {
-            (SafePubkey *)params.program_id, arguments,
-            SAFE_ARRAY_SIZE(arguments), data, SAFE_ARRAY_SIZE(data)};
+        const WickandbergamotInstruction instruction = {
+            (WickandbergamotPubkey *)params.program_id, arguments,
+            WICKANDBERGAMOT_ARRAY_SIZE(arguments), data, WICKANDBERGAMOT_ARRAY_SIZE(data)};
         sol_assert(SUCCESS ==
                    sol_invoke(&instruction, accounts, params.ka_num));
       }
