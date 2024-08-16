@@ -7,8 +7,8 @@
 extern uint64_t entrypoint(const uint8_t *input) {
   sol_log("Invoked C program");
 
-  SafeAccountInfo accounts[4];
-  SafeParameters params = (SafeParameters){.ka = accounts};
+  WickandbergamotAccountInfo accounts[4];
+  WickandbergamotParameters params = (WickandbergamotParameters){.ka = accounts};
 
   if (!sol_deserialize(input, &params, 0)) {
     return ERROR_INVALID_ARGUMENT;
@@ -31,13 +31,13 @@ extern uint64_t entrypoint(const uint8_t *input) {
     static const int INVOKED_PROGRAM_DUP_INDEX = 3;
     sol_assert(sol_deserialize(input, &params, 4));
 
-    SafePubkey bpf_loader_id =
-        (SafePubkey){.x = {2,  168, 246, 145, 78,  136, 161, 110, 57,  90, 225,
+    WickandbergamotPubkey bpf_loader_id =
+        (WickandbergamotPubkey){.x = {2,  168, 246, 145, 78,  136, 161, 110, 57,  90, 225,
                           40, 148, 143, 250, 105, 86,  147, 55,  104, 24, 221,
                           71, 67,  82,  33,  243, 198, 0,   0,   0,   0}};
 
-    SafePubkey bpf_loader_deprecated_id =
-        (SafePubkey){.x = {2,   168, 246, 145, 78,  136, 161, 107, 189, 35,  149,
+    WickandbergamotPubkey bpf_loader_deprecated_id =
+        (WickandbergamotPubkey){.x = {2,   168, 246, 145, 78,  136, 161, 107, 189, 35,  149,
                           133, 95,  100, 4,   217, 180, 244, 86,  183, 130, 27,
                           176, 20,  87,  73,  66,  140, 0,   0,   0,   0}};
 
@@ -56,7 +56,7 @@ extern uint64_t entrypoint(const uint8_t *input) {
       sol_assert(accounts[ARGUMENT_INDEX].data[i] == i);
     }
 
-    sol_assert(SafePubkey_same(accounts[INVOKED_ARGUMENT_INDEX].owner,
+    sol_assert(WickandbergamotPubkey_same(accounts[INVOKED_ARGUMENT_INDEX].owner,
                               accounts[INVOKED_PROGRAM_INDEX].key));
     sol_assert(*accounts[INVOKED_ARGUMENT_INDEX].lamports == 10);
     sol_assert(accounts[INVOKED_ARGUMENT_INDEX].data_len == 10);
@@ -66,17 +66,17 @@ extern uint64_t entrypoint(const uint8_t *input) {
     sol_assert(!accounts[INVOKED_ARGUMENT_INDEX].executable);
 
     sol_assert(
-        SafePubkey_same(accounts[INVOKED_PROGRAM_INDEX].key, params.program_id))
-        sol_assert(SafePubkey_same(accounts[INVOKED_PROGRAM_INDEX].owner,
+        WickandbergamotPubkey_same(accounts[INVOKED_PROGRAM_INDEX].key, params.program_id))
+        sol_assert(WickandbergamotPubkey_same(accounts[INVOKED_PROGRAM_INDEX].owner,
                                   &bpf_loader_id));
     sol_assert(!accounts[INVOKED_PROGRAM_INDEX].is_signer);
     sol_assert(!accounts[INVOKED_PROGRAM_INDEX].is_writable);
     sol_assert(accounts[INVOKED_PROGRAM_INDEX].rent_epoch == 0);
     sol_assert(accounts[INVOKED_PROGRAM_INDEX].executable);
 
-    sol_assert(SafePubkey_same(accounts[INVOKED_PROGRAM_INDEX].key,
+    sol_assert(WickandbergamotPubkey_same(accounts[INVOKED_PROGRAM_INDEX].key,
                               accounts[INVOKED_PROGRAM_DUP_INDEX].key));
-    sol_assert(SafePubkey_same(accounts[INVOKED_PROGRAM_INDEX].owner,
+    sol_assert(WickandbergamotPubkey_same(accounts[INVOKED_PROGRAM_INDEX].owner,
                               accounts[INVOKED_PROGRAM_DUP_INDEX].owner));
     sol_assert(*accounts[INVOKED_PROGRAM_INDEX].lamports ==
                *accounts[INVOKED_PROGRAM_DUP_INDEX].lamports);
@@ -119,28 +119,28 @@ extern uint64_t entrypoint(const uint8_t *input) {
     uint8_t bump_seed2 = params.data[1];
     uint8_t bump_seed3 = params.data[2];
 
-    SafeAccountMeta arguments[] = {
+    WickandbergamotAccountMeta arguments[] = {
         {accounts[DERIVED_KEY1_INDEX].key, true, false},
         {accounts[DERIVED_KEY2_INDEX].key, true, true},
         {accounts[DERIVED_KEY3_INDEX].key, false, true}};
     uint8_t data[] = {VERIFY_NESTED_SIGNERS};
-    const SafeInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
-                                        arguments, SAFE_ARRAY_SIZE(arguments),
-                                        data, SAFE_ARRAY_SIZE(data)};
+    const WickandbergamotInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
+                                        arguments, WICKANDBERGAMOT_ARRAY_SIZE(arguments),
+                                        data, WICKANDBERGAMOT_ARRAY_SIZE(data)};
     uint8_t seed1[] = {'L', 'i', 'l', '\''};
     uint8_t seed2[] = {'B', 'i', 't', 's'};
-    const SafeSignerSeed seeds1[] = {{seed1, SAFE_ARRAY_SIZE(seed1)},
-                                    {seed2, SAFE_ARRAY_SIZE(seed2)},
+    const WickandbergamotSignerSeed seeds1[] = {{seed1, WICKANDBERGAMOT_ARRAY_SIZE(seed1)},
+                                    {seed2, WICKANDBERGAMOT_ARRAY_SIZE(seed2)},
                                     {&bump_seed2, 1}};
-    const SafeSignerSeed seeds2[] = {
+    const WickandbergamotSignerSeed seeds2[] = {
         {(uint8_t *)accounts[DERIVED_KEY2_INDEX].key, SIZE_PUBKEY},
         {&bump_seed3, 1}};
-    const SafeSignerSeeds signers_seeds[] = {{seeds1, SAFE_ARRAY_SIZE(seeds1)},
-                                            {seeds2, SAFE_ARRAY_SIZE(seeds2)}};
+    const WickandbergamotSignerSeeds signers_seeds[] = {{seeds1, WICKANDBERGAMOT_ARRAY_SIZE(seeds1)},
+                                            {seeds2, WICKANDBERGAMOT_ARRAY_SIZE(seeds2)}};
 
     sol_assert(SUCCESS == sol_invoke_signed(&instruction, accounts,
                                             params.ka_num, signers_seeds,
-                                            SAFE_ARRAY_SIZE(signers_seeds)));
+                                            WICKANDBERGAMOT_ARRAY_SIZE(signers_seeds)));
 
     break;
   }
@@ -188,14 +188,14 @@ extern uint64_t entrypoint(const uint8_t *input) {
 
     sol_assert(false == accounts[INVOKED_ARGUMENT_INDEX].is_signer);
     sol_assert(false == accounts[INVOKED_ARGUMENT_INDEX].is_writable);
-    SafeAccountMeta arguments[] = {
+    WickandbergamotAccountMeta arguments[] = {
         {accounts[INVOKED_ARGUMENT_INDEX].key, true, false}};
     uint8_t data[] = {VERIFY_PRIVILEGE_ESCALATION};
-    const SafeInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
-                                        arguments, SAFE_ARRAY_SIZE(arguments),
-                                        data, SAFE_ARRAY_SIZE(data)};
+    const WickandbergamotInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
+                                        arguments, WICKANDBERGAMOT_ARRAY_SIZE(arguments),
+                                        data, WICKANDBERGAMOT_ARRAY_SIZE(data)};
     sol_assert(SUCCESS ==
-               sol_invoke(&instruction, accounts, SAFE_ARRAY_SIZE(accounts)));
+               sol_invoke(&instruction, accounts, WICKANDBERGAMOT_ARRAY_SIZE(accounts)));
     break;
   }
 
@@ -207,14 +207,14 @@ extern uint64_t entrypoint(const uint8_t *input) {
 
     sol_assert(false == accounts[INVOKED_ARGUMENT_INDEX].is_signer);
     sol_assert(false == accounts[INVOKED_ARGUMENT_INDEX].is_writable);
-    SafeAccountMeta arguments[] = {
+    WickandbergamotAccountMeta arguments[] = {
         {accounts[INVOKED_ARGUMENT_INDEX].key, false, true}};
     uint8_t data[] = {VERIFY_PRIVILEGE_ESCALATION};
-    const SafeInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
-                                        arguments, SAFE_ARRAY_SIZE(arguments),
-                                        data, SAFE_ARRAY_SIZE(data)};
+    const WickandbergamotInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
+                                        arguments, WICKANDBERGAMOT_ARRAY_SIZE(arguments),
+                                        data, WICKANDBERGAMOT_ARRAY_SIZE(data)};
     sol_assert(SUCCESS ==
-               sol_invoke(&instruction, accounts, SAFE_ARRAY_SIZE(accounts)));
+               sol_invoke(&instruction, accounts, WICKANDBERGAMOT_ARRAY_SIZE(accounts)));
     break;
   }
 
@@ -240,14 +240,14 @@ extern uint64_t entrypoint(const uint8_t *input) {
     uint8_t remaining_invokes = params.data[1];
     if (remaining_invokes > 1) {
       sol_log("Invoke again");
-      SafeAccountMeta arguments[] = {
+      WickandbergamotAccountMeta arguments[] = {
           {accounts[INVOKED_ARGUMENT_INDEX].key, true, true},
           {accounts[ARGUMENT_INDEX].key, true, true},
           {accounts[INVOKED_PROGRAM_INDEX].key, false, false}};
       uint8_t data[] = {NESTED_INVOKE, remaining_invokes - 1};
-      const SafeInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
-                                          arguments, SAFE_ARRAY_SIZE(arguments),
-                                          data, SAFE_ARRAY_SIZE(data)};
+      const WickandbergamotInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
+                                          arguments, WICKANDBERGAMOT_ARRAY_SIZE(arguments),
+                                          data, WICKANDBERGAMOT_ARRAY_SIZE(data)};
       sol_assert(SUCCESS == sol_invoke(&instruction, accounts, params.ka_num));
     } else {
       sol_log("Last invoked");
