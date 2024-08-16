@@ -1,17 +1,17 @@
 [package]
-name = "safecoin-compute-budget-program"
-description = "Safecoin Compute Budget program"
+name = "wickandbergamot-compute-budget-program"
+description = "wickandbergamot Compute Budget program"
 version = "1.14.17"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-compute-budget-program"
-repository = "https://github.com/fair-exchange/safecoin"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-compute-budget-program"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 license = "Apache-2.0"
 edition = "2021"
 
 [dependencies]
-safecoin-program-runtime = { path = "../../program-runtime", version = "=1.14.17" }
-safecoin-sdk = { path = "../../sdk", version = "=1.14.17" }
+wickandbergamot-program-runtime = { path = "../../program-runtime", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../../sdk", version = "=1.14.17" }
 
 [lib]
 crate-type = ["lib"]
