@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Run a minimal Safecoin cluster.  Ctrl-C to exit.
+# Run a minimal Wickandbergamot cluster.  Ctrl-C to exit.
 #
-# Before running this script ensure standard Safecoin programs are available
+# Before running this script ensure standard Wickandbergamot programs are available
 # in the PATH, or that `cargo build` ran successfully
 #
 set -e
@@ -40,30 +40,30 @@ export RUST_BACKTRACE=1
 dataDir=$PWD/config/"$(basename "$0" .sh)"
 ledgerDir=$PWD/config/ledger
 
-SAFECOIN_RUN_SH_CLUSTER_TYPE=${SAFECOIN_RUN_SH_CLUSTER_TYPE:-development}
+WICKANDBERGAMOT_RUN_SH_CLUSTER_TYPE=${WICKANDBERGAMOT_RUN_SH_CLUSTER_TYPE:-development}
 
 set -x
-if ! safecoin address; then
+if ! wickandbergamot address; then
   echo Generating default keypair
-  safecoin-keygen new --no-passphrase
+  wickandbergamot-keygen new --no-passphrase
 fi
 validator_identity="$dataDir/validator-identity.json"
 if [[ -e $validator_identity ]]; then
   echo "Use existing validator keypair"
 else
-  safecoin-keygen new --no-passphrase -so "$validator_identity"
+  wickandbergamot-keygen new --no-passphrase -so "$validator_identity"
 fi
 validator_vote_account="$dataDir/validator-vote-account.json"
 if [[ -e $validator_vote_account ]]; then
   echo "Use existing validator vote account keypair"
 else
-  safecoin-keygen new --no-passphrase -so "$validator_vote_account"
+  wickandbergamot-keygen new --no-passphrase -so "$validator_vote_account"
 fi
 validator_stake_account="$dataDir/validator-stake-account.json"
 if [[ -e $validator_stake_account ]]; then
   echo "Use existing validator stake account keypair"
 else
-  safecoin-keygen new --no-passphrase -so "$validator_stake_account"
+  wickandbergamot-keygen new --no-passphrase -so "$validator_stake_account"
 fi
 
 if [[ -e "$ledgerDir"/genesis.bin || -e "$ledgerDir"/genesis.tar.bz2 ]]; then
@@ -75,7 +75,7 @@ else
   fi
 
   # shellcheck disable=SC2086
-  safecoin-genesis \
+  wickandbergamot-genesis \
     --hashes-per-tick sleep \
     --faucet-lamports 500000000000000000 \
     --bootstrap-validator \
@@ -83,9 +83,9 @@ else
       "$validator_vote_account" \
       "$validator_stake_account" \
     --ledger "$ledgerDir" \
-    --cluster-type "$SAFECOIN_RUN_SH_CLUSTER_TYPE" \
+    --cluster-type "$WICKANDBERGAMOT_RUN_SH_CLUSTER_TYPE" \
     $SPL_GENESIS_ARGS \
-    $SAFECOIN_RUN_SH_GENESIS_ARGS
+    $WICKANDBERGAMOT_RUN_SH_GENESIS_ARGS
 fi
 
 abort() {
@@ -95,7 +95,7 @@ abort() {
 }
 trap abort INT TERM EXIT
 
-safecoin-faucet &
+wickandbergamot-faucet &
 faucet=$!
 
 args=(
@@ -116,7 +116,7 @@ args=(
   --no-os-network-limits-test
 )
 # shellcheck disable=SC2086
-safecoin-validator "${args[@]}" $SAFECOIN_RUN_SH_VALIDATOR_ARGS &
+wickandbergamot-validator "${args[@]}" $WICKANDBERGAMOT_RUN_SH_VALIDATOR_ARGS &
 validator=$!
 
 wait "$validator"
