@@ -37,4 +37,4 @@ impl From<&AccountStorageEntry> for SerializableAccountStorageEntry {
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-impl safecoin_frozen_abi::abi_example::IgnoreAsHelper for SerializableAccountStorageEntry {}
+impl wickandbergamot_frozen_abi::abi_example::IgnoreAsHelper for SerializableAccountStorageEntry {}
