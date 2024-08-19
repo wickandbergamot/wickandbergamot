@@ -290,7 +290,7 @@ impl RollingBitField {
 
 #[cfg(test)]
 pub mod tests {
-    use {super::*, log::*, safecoin_measure::measure::Measure};
+    use {super::*, log::*, wickandbergamot_measure::measure::Measure};
 
     impl RollingBitField {
         pub fn clear(&mut self) {
