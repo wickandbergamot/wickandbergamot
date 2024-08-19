@@ -14,7 +14,7 @@ use {
         iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator},
         prelude::ParallelSlice,
     },
-    safecoin_measure::measure,
+    wickandbergamot_measure::measure,
     solana_sdk::{
         account::ReadableAccount,
         account_utils::StateMut,
