@@ -3,7 +3,7 @@
 # Convenience script to easily deploy a software update to a testnet
 #
 set -e
-SAFECOIN_ROOT="$(cd "$(dirname "$0")"/..; pwd)"
+WICKANDBERGAMOT_ROOT="$(cd "$(dirname "$0")"/..; pwd)"
 
 maybeKeypair=
 while [[ ${1:0:2} = -- ]]; do
@@ -26,7 +26,7 @@ if [[ -z $URL || -z $TAG ]]; then
 fi
 
 if [[ ! -f update_manifest_keypair.json ]]; then
-  "$SAFECOIN_ROOT"/scripts/safecoin-install-update-manifest-keypair.sh "$OS"
+  "$WICKANDBERGAMOT_ROOT"/scripts/wickandbergamot-install-update-manifest-keypair.sh "$OS"
 fi
 
 case "$OS" in
@@ -46,7 +46,7 @@ esac
 
 case $URL in
 stable)
-  URL=http://api.devnet.safecoin.org
+  URL=http://api.devnet.wickandbergamot.org
   ;;
 localhost)
   URL=http://localhost:8328
@@ -60,20 +60,20 @@ edge|beta)
   DOWNLOAD_URL=https://release.solana.com/"$TAG"/solana-release-$TARGET.tar.bz2
   ;;
 *)
-  DOWNLOAD_URL=https://github.com/fair-exchange/safecoin/releases/download/"$TAG"/solana-release-$TARGET.tar.bz2
+  DOWNLOAD_URL=https://github.com/wickandbergamot/wickandbergamot/releases/download/"$TAG"/solana-release-$TARGET.tar.bz2
   ;;
 esac
 
 # Prefer possible `cargo build` binaries over PATH binaries
-PATH="$SAFECOIN_ROOT"/target/debug:$PATH
+PATH="$WICKANDBERGAMOT_ROOT"/target/debug:$PATH
 
 set -x
 # shellcheck disable=SC2086 # Don't want to double quote $maybeKeypair
-balance=$(safecoin $maybeKeypair --url "$URL" balance --lamports)
+balance=$(wickandbergamot $maybeKeypair --url "$URL" balance --lamports)
 if [[ $balance = "0 lamports" ]]; then
   # shellcheck disable=SC2086 # Don't want to double quote $maybeKeypair
-  safecoin $maybeKeypair --url "$URL" airdrop 0.000000042
+  wickandbergamot $maybeKeypair --url "$URL" airdrop 0.000000042
 fi
 
 # shellcheck disable=SC2086 # Don't want to double quote $maybeKeypair
-safecoin-install deploy $maybeKeypair --url "$URL" "$DOWNLOAD_URL" update_manifest_keypair.json
+wickandbergamot-install deploy $maybeKeypair --url "$URL" "$DOWNLOAD_URL" update_manifest_keypair.json
