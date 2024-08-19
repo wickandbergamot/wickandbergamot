@@ -10,7 +10,7 @@ use {
     },
     rand::{thread_rng, Rng},
     solana_bucket_map::bucket_api::BucketApi,
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_sdk::{clock::Slot, pubkey::Pubkey},
     std::{
         collections::{
