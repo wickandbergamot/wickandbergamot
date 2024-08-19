@@ -63,8 +63,8 @@ use {
     rand::{thread_rng, Rng},
     rayon::{prelude::*, ThreadPool},
     serde::{Deserialize, Serialize},
-    safecoin_measure::measure::Measure,
-    safecoin_rayon_threadlimit::get_thread_count,
+    wickandbergamot_measure::measure::Measure,
+    wickandbergamot_rayon_threadlimit::get_thread_count,
     solana_sdk::{
         account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
         clock::{BankId, Epoch, Slot, SlotCount},
@@ -1725,7 +1725,7 @@ pub fn make_min_priority_thread_pool() -> ThreadPool {
 }
 
 #[cfg(all(test, RUSTC_WITH_SPECIALIZATION))]
-impl safecoin_frozen_abi::abi_example::AbiExample for AccountsDb {
+impl wickandbergamot_frozen_abi::abi_example::AbiExample for AccountsDb {
     fn example() -> Self {
         let accounts_db = AccountsDb::new_single_for_tests();
         let key = Pubkey::default();
@@ -4202,8 +4202,8 @@ impl AccountsDb {
     {
         let key = match &index_key {
             IndexKey::ProgramId(key) => key,
-            IndexKey::SafeTokenMint(key) => key,
-            IndexKey::SafeTokenOwner(key) => key,
+            IndexKey::WickandbergamotTokenMint(key) => key,
+            IndexKey::WickandbergamotTokenOwner(key) => key,
         };
         if !self.account_indexes.include_key(key) {
             // the requested key was not indexed in the secondary index, so do a normal scan
@@ -9108,7 +9108,7 @@ pub mod tests {
             accounts_hash::MERKLE_FANOUT,
             accounts_index::{tests::*, AccountSecondaryIndexesIncludeExclude, RefCount},
             append_vec::{test_utils::TempFile, AccountMeta},
-            inline_safe_token,
+            inline_wickandbergamot_token,
         },
         assert_matches::assert_matches,
         rand::{prelude::SliceRandom, thread_rng, Rng},
@@ -10770,7 +10770,7 @@ pub mod tests {
         let mut accounts = AccountsDb::new_with_config_for_tests(
             Vec::new(),
             &ClusterType::Development,
-            safe_token_mint_index_enabled(),
+            wickandbergamot_token_mint_index_enabled(),
             false,
             AccountShrinkThreshold::default(),
         );
@@ -10779,14 +10779,14 @@ pub mod tests {
 
         // Set up account to be added to secondary index
         let mint_key = Pubkey::new_unique();
-        let mut account_data_with_mint = vec![0; inline_safe_token::Account::get_packed_len()];
+        let mut account_data_with_mint = vec![0; inline_wickandbergamot_token::Account::get_packed_len()];
         account_data_with_mint[..PUBKEY_BYTES].clone_from_slice(&(mint_key.to_bytes()));
 
         let mut normal_account = AccountSharedData::new(1, 0, AccountSharedData::default().owner());
-        normal_account.set_owner(inline_safe_token::id());
+        normal_account.set_owner(inline_wickandbergamot_token::id());
         normal_account.set_data(account_data_with_mint.clone());
         let mut zero_account = AccountSharedData::new(0, 0, AccountSharedData::default().owner());
-        zero_account.set_owner(inline_safe_token::id());
+        zero_account.set_owner(inline_wickandbergamot_token::id());
         zero_account.set_data(account_data_with_mint);
 
         //store an account
@@ -10811,7 +10811,7 @@ pub mod tests {
 
         // Secondary index should still find both pubkeys
         let mut found_accounts = HashSet::new();
-        let index_key = IndexKey::SafeTokenMint(mint_key);
+        let index_key = IndexKey::WickandbergamotTokenMint(mint_key);
         let bank_id = 0;
         accounts
             .accounts_index
@@ -10897,7 +10897,7 @@ pub mod tests {
             .index_scan_accounts(
                 &Ancestors::default(),
                 bank_id,
-                IndexKey::SafeTokenMint(mint_key),
+                IndexKey::WickandbergamotTokenMint(mint_key),
                 |key, _| found_accounts.push(*key),
                 &ScanConfig::default(),
             )
