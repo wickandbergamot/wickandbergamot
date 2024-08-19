@@ -8,7 +8,7 @@
 use {
     crate::waitable_condvar::WaitableCondvar,
     log::*,
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     std::{
         io::*,
         sync::{
