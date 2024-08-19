@@ -1,4 +1,4 @@
-/// Partial SPL Token declarations inlined to avoid an external dependency on the safe-token crate
+/// Partial SPL Token declarations inlined to avoid an external dependency on the wickandbergamot-token crate
 use solana_sdk::pubkey::{Pubkey, PUBKEY_BYTES};
 
 solana_sdk::declare_id!("ToKLx75MGim1d1jRusuVX8xvdvvbSDESVaNXpRA9PHN");
@@ -8,7 +8,7 @@ pub(crate) mod program_v3_4_0 {
 }
 
 /*
-    safe_token::state::Account {
+    wickandbergamot_token::state::Account {
         mint: Pubkey,
         owner: Pubkey,
         amount: u64,
@@ -72,7 +72,7 @@ impl GenericTokenAccount for Account {
 }
 
 pub mod native_mint {
-    solana_sdk::declare_id!("Safe111111111111111111111111111111111111111");
+    solana_sdk::declare_id!("Wickandbergamot111111111111111111111111111111111111111");
 
     /*
         Mint {
