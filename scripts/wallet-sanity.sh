@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# safecoin-cli integration sanity test
+# wickandbergamot-cli integration sanity test
 #
 set -e
 
@@ -15,13 +15,13 @@ else
   args=("$@")
 fi
 
-args+=(--keypair "$SAFECOIN_CONFIG_DIR"/faucet.json)
+args+=(--keypair "$WICKANDBERGAMOT_CONFIG_DIR"/faucet.json)
 
 node_readiness=false
 timeout=60
 while [[ $timeout -gt 0 ]]; do
   set +e
-  output=$($safecoin_cli "${args[@]}" transaction-count --commitment finalized)
+  output=$($WICKANDBERGAMOT_cli "${args[@]}" transaction-count --commitment finalized)
   rc=$?
   set -e
   if [[ $rc -eq 0 && -n $output ]]; then
@@ -38,10 +38,10 @@ fi
 
 (
   set -x
-  $safecoin_cli "${args[@]}" address
-  $safecoin_cli "${args[@]}" balance
-  $safecoin_cli "${args[@]}" ping --count 5 --interval 0
-  $safecoin_cli "${args[@]}" balance
+  $wickandbergamot_cli "${args[@]}" address
+  $wickandbergamot_cli "${args[@]}" balance
+  $wickandbergamot_cli "${args[@]}" ping --count 5 --interval 0
+  $wickandbergamot_cli "${args[@]}" balance
 )
 
 echo PASS
