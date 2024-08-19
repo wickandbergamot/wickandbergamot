@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Builds known downstream projects against local safecoin source
+# Builds known downstream projects against local wickandbergamot source
 #
 
 set -e
@@ -27,7 +27,7 @@ example_helloworld() {
     cd example-helloworld
 
     update_solana_dependencies src/program-rust "$solana_ver"
-    patch_crates_io_safecoin src/program-rust/Cargo.toml "$solana_dir"
+    patch_crates_io_wickandbergamot src/program-rust/Cargo.toml "$solana_dir"
     echo "[workspace]" >> src/program-rust/Cargo.toml
 
     $cargo_build_bpf \
@@ -56,12 +56,12 @@ spl() {
     )
     set -x
     rm -rf spl
-    git clone https://github.com/fair-exchange/safecoin-program-library.git spl
+    git clone https://github.com/fair-exchange/wickandbergamot-program-library.git spl
     cd spl
 
-    project_used_safecoin_version=$(sed -nE 's/safecoin-sdk = \"[>=<~]*(.*)\"/\1/p' <"token/program/Cargo.toml")
-    echo "used safecoin version: $project_used_safecoin_version"
-    if semverGT "$project_used_safecoin_version" "$solana_ver"; then
+    project_used_wickandbergamot_version=$(sed -nE 's/wickandbergamot-sdk = \"[>=<~]*(.*)\"/\1/p' <"token/program/Cargo.toml")
+    echo "used wickandbergamot version: $project_used_wickandbergamot_version"
+    if semverGT "$project_used_wickandbergamot_version" "$solana_ver"; then
       echo "skip"
       return
     fi
@@ -88,8 +88,8 @@ serum_dex() {
     cd serum-dex
 
     update_solana_dependencies . "$solana_ver"
-    patch_crates_io_safecoin Cargo.toml "$solana_dir"
-    patch_crates_io_safecoin dex/Cargo.toml "$solana_dir"
+    patch_crates_io_wickandbergamot Cargo.toml "$solana_dir"
+    patch_crates_io_wickandbergamot dex/Cargo.toml "$solana_dir"
     cat >> dex/Cargo.toml <<EOF
 [workspace]
 exclude = [
