@@ -7,7 +7,7 @@ use {
         snapshot_config::SnapshotConfig,
     },
     log::*,
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_sdk::{clock::Slot, hash::Hash, timing},
     std::{
         collections::{hash_map::Entry, HashMap, HashSet},
