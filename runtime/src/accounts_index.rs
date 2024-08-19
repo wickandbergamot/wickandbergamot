@@ -5,8 +5,8 @@ use {
         bucket_map_holder::{Age, BucketMapHolder},
         contains::Contains,
         in_mem_accounts_index::InMemAccountsIndex,
-        inline_safe_token::{self, GenericTokenAccount},
-        inline_safe_token_2022,
+        inline_wickandbergamot_token::{self, GenericTokenAccount},
+        inline_wickandbergamot_token_2024,
         pubkey_bins::PubkeyBinCalculator24,
         rent_paying_accounts_by_partition::RentPayingAccountsByPartition,
         rolling_bit_field::RollingBitField,
@@ -20,7 +20,7 @@ use {
         iter::{IntoParallelIterator, ParallelIterator},
         ThreadPool,
     },
-    safecoin_measure::measure::Measure,
+    wickandbergamotcoin_measure::measure::Measure,
     solana_sdk::{
         account::ReadableAccount,
         clock::{BankId, Slot},
@@ -154,15 +154,15 @@ enum ScanTypes<R: RangeBounds<Pubkey>> {
 #[derive(Debug, Clone, Copy)]
 pub enum IndexKey {
     ProgramId(Pubkey),
-    SafeTokenMint(Pubkey),
-    SafeTokenOwner(Pubkey),
+    WickandbergamotTokenMint(Pubkey),
+    WickandbergamotTokenOwner(Pubkey),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AccountIndex {
     ProgramId,
-    SafeTokenMint,
-    SafeTokenOwner,
+    WickandbergamotTokenMint,
+    WickandbergamotTokenOwner,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -664,8 +664,8 @@ pub struct AccountsIndex<T: IndexValue> {
     pub account_maps: LockMapType<T>,
     pub bin_calculator: PubkeyBinCalculator24,
     program_id_index: SecondaryIndex<DashMapSecondaryIndexEntry>,
-    safe_token_mint_index: SecondaryIndex<DashMapSecondaryIndexEntry>,
-    safe_token_owner_index: SecondaryIndex<RwLockSecondaryIndexEntry>,
+    wickandbergamot_token_mint_index: SecondaryIndex<DashMapSecondaryIndexEntry>,
+    wickandbergamot_token_owner_index: SecondaryIndex<RwLockSecondaryIndexEntry>,
     pub(crate) roots_tracker: RwLock<RootsTracker>,
     ongoing_scan_roots: RwLock<BTreeMap<Slot, u64>>,
     // Each scan has some latest slot `S` that is the tip of the fork the scan
@@ -714,11 +714,11 @@ impl<T: IndexValue> AccountsIndex<T> {
             program_id_index: SecondaryIndex::<DashMapSecondaryIndexEntry>::new(
                 "program_id_index_stats",
             ),
-            safe_token_mint_index: SecondaryIndex::<DashMapSecondaryIndexEntry>::new(
-                "safe_token_mint_index_stats",
+            wickandbergamot_token_mint_index: SecondaryIndex::<DashMapSecondaryIndexEntry>::new(
+                "wickandbergamot_token_mint_index_stats",
             ),
-            safe_token_owner_index: SecondaryIndex::<RwLockSecondaryIndexEntry>::new(
-                "safe_token_owner_index_stats",
+            wickandbergamot_token_owner_index: SecondaryIndex::<RwLockSecondaryIndexEntry>::new(
+                "wickandbergamot_token_owner_index_stats",
             ),
             roots_tracker: RwLock::<RootsTracker>::default(),
             ongoing_scan_roots: RwLock::<BTreeMap<Slot, u64>>::default(),
@@ -952,21 +952,21 @@ impl<T: IndexValue> AccountsIndex<T> {
                     config,
                 );
             }
-            ScanTypes::Indexed(IndexKey::SafeTokenMint(mint_key)) => {
+            ScanTypes::Indexed(IndexKey::WickandbergamotTokenMint(mint_key)) => {
                 self.do_scan_secondary_index(
                     ancestors,
                     func,
-                    &self.safe_token_mint_index,
+                    &self.wickandbergamot_token_mint_index,
                     &mint_key,
                     Some(max_root),
                     config,
                 );
             }
-            ScanTypes::Indexed(IndexKey::SafeTokenOwner(owner_key)) => {
+            ScanTypes::Indexed(IndexKey::WickandbergamotTokenOwner(owner_key)) => {
                 self.do_scan_secondary_index(
                     ancestors,
                     func,
-                    &self.safe_token_owner_index,
+                    &self.wickandbergamot_token_owner_index,
                     &owner_key,
                     Some(max_root),
                     config,
@@ -1434,7 +1434,7 @@ impl<T: IndexValue> AccountsIndex<T> {
         max_root
     }
 
-    fn update_safe_token_secondary_indexes<G: GenericTokenAccount>(
+    fn update_wickandbergamot_token_secondary_indexes<G: GenericTokenAccount>(
         &self,
         token_id: &Pubkey,
         pubkey: &Pubkey,
@@ -1443,18 +1443,18 @@ impl<T: IndexValue> AccountsIndex<T> {
         account_indexes: &AccountSecondaryIndexes,
     ) {
         if *account_owner == *token_id {
-            if account_indexes.contains(&AccountIndex::SafeTokenOwner) {
+            if account_indexes.contains(&AccountIndex::WickandbergamotTokenOwner) {
                 if let Some(owner_key) = G::unpack_account_owner(account_data) {
                     if account_indexes.include_key(owner_key) {
-                        self.safe_token_owner_index.insert(owner_key, pubkey);
+                        self.wickandbergamot_token_owner_index.insert(owner_key, pubkey);
                     }
                 }
             }
 
-            if account_indexes.contains(&AccountIndex::SafeTokenMint) {
+            if account_indexes.contains(&AccountIndex::WickandbergamotTokenMint) {
                 if let Some(mint_key) = G::unpack_account_mint(account_data) {
                     if account_indexes.include_key(mint_key) {
-                        self.safe_token_mint_index.insert(mint_key, pubkey);
+                        self.wickandbergamot_token_mint_index.insert(mint_key, pubkey);
                     }
                 }
             }
@@ -1467,13 +1467,13 @@ impl<T: IndexValue> AccountsIndex<T> {
             info!("secondary index: {:?}", AccountIndex::ProgramId);
             self.program_id_index.log_contents();
         }
-        if !self.safe_token_mint_index.index.is_empty() {
-            info!("secondary index: {:?}", AccountIndex::SafeTokenMint);
-            self.safe_token_mint_index.log_contents();
+        if !self.wickandbergamot_token_mint_index.index.is_empty() {
+            info!("secondary index: {:?}", AccountIndex::WickandbergamotTokenMint);
+            self.wickandbergamot_token_mint_index.log_contents();
         }
-        if !self.safe_token_owner_index.index.is_empty() {
-            info!("secondary index: {:?}", AccountIndex::SafeTokenOwner);
-            self.safe_token_owner_index.log_contents();
+        if !self.wickandbergamot_token_owner_index.index.is_empty() {
+            info!("secondary index: {:?}", AccountIndex::WickandbergamotTokenOwner);
+            self.wickandbergamot_token_owner_index.log_contents();
         }
     }
 
@@ -1507,17 +1507,17 @@ impl<T: IndexValue> AccountsIndex<T> {
         // and find the zero-lamport version
         // 2) When the fetch from storage occurs, it will return AccountSharedData::Default
         // (as persisted tombstone for snapshots). This will then ultimately be
-        // filtered out by post-scan filters, like in `get_filtered_safe_token_accounts_by_owner()`.
+        // filtered out by post-scan filters, like in `get_filtered_wickandbergamot_token_accounts_by_owner()`.
 
-        self.update_safe_token_secondary_indexes::<inline_safe_token::Account>(
-            &inline_safe_token::id(),
+        self.update_wickandbergamot_token_secondary_indexes::<inline_wickandbergamot_token::Account>(
+            &inline_wickandbergamot_token::id(),
             pubkey,
             account_owner,
             account_data,
             account_indexes,
         );
-        self.update_safe_token_secondary_indexes::<inline_safe_token_2022::Account>(
-            &inline_safe_token_2022::id(),
+        self.update_wickandbergamot_token_secondary_indexes::<inline_wickandbergamot_token_2024::Account>(
+            &inline_wickandbergamot_token_2024::id(),
             pubkey,
             account_owner,
             account_data,
@@ -1681,12 +1681,12 @@ impl<T: IndexValue> AccountsIndex<T> {
             self.program_id_index.remove_by_inner_key(inner_key);
         }
 
-        if account_indexes.contains(&AccountIndex::SafeTokenOwner) {
-            self.safe_token_owner_index.remove_by_inner_key(inner_key);
+        if account_indexes.contains(&AccountIndex::WickandbergamotTokenOwner) {
+            self.wickandbergamot_token_owner_index.remove_by_inner_key(inner_key);
         }
 
-        if account_indexes.contains(&AccountIndex::SafeTokenMint) {
-            self.safe_token_mint_index.remove_by_inner_key(inner_key);
+        if account_indexes.contains(&AccountIndex::WickandbergamotTokenMint) {
+            self.wickandbergamot_token_mint_index.remove_by_inner_key(inner_key);
         }
     }
 
@@ -1987,7 +1987,7 @@ impl<T: IndexValue> AccountsIndex<T> {
 pub mod tests {
     use {
         super::*,
-        crate::inline_safe_token::*,
+        crate::inline_wickandbergamot_token::*,
         solana_sdk::{
             account::{AccountSharedData, WritableAccount},
             pubkey::PUBKEY_BYTES,
@@ -2001,18 +2001,18 @@ pub mod tests {
         DashMap(&'a SecondaryIndex<DashMapSecondaryIndexEntry>),
     }
 
-    pub fn safe_token_mint_index_enabled() -> AccountSecondaryIndexes {
+    pub fn wickandbergamot_token_mint_index_enabled() -> AccountSecondaryIndexes {
         let mut account_indexes = HashSet::new();
-        account_indexes.insert(AccountIndex::SafeTokenMint);
+        account_indexes.insert(AccountIndex::WickandbergamotTokenMint);
         AccountSecondaryIndexes {
             indexes: account_indexes,
             keys: None,
         }
     }
 
-    pub fn safe_token_owner_index_enabled() -> AccountSecondaryIndexes {
+    pub fn wickandbergamot_token_owner_index_enabled() -> AccountSecondaryIndexes {
         let mut account_indexes = HashSet::new();
-        account_indexes.insert(AccountIndex::SafeTokenOwner);
+        account_indexes.insert(AccountIndex::WickandbergamotTokenOwner);
         AccountSecondaryIndexes {
             indexes: account_indexes,
             keys: None,
@@ -2049,23 +2049,23 @@ pub mod tests {
         {
             // Check that we're actually testing the correct variant
             let index = AccountsIndex::<bool>::default_for_tests();
-            let _type_check = SecondaryIndexTypes::DashMap(&index.safe_token_mint_index);
+            let _type_check = SecondaryIndexTypes::DashMap(&index.wickandbergamot_token_mint_index);
         }
 
-        (0, PUBKEY_BYTES, safe_token_mint_index_enabled())
+        (0, PUBKEY_BYTES, wickandbergamot_token_mint_index_enabled())
     }
 
     fn create_rwlock_secondary_index_state() -> (usize, usize, AccountSecondaryIndexes) {
         {
             // Check that we're actually testing the correct variant
             let index = AccountsIndex::<bool>::default_for_tests();
-            let _type_check = SecondaryIndexTypes::RwLock(&index.safe_token_owner_index);
+            let _type_check = SecondaryIndexTypes::RwLock(&index.wickandbergamot_token_owner_index);
         }
 
         (
             SPL_TOKEN_ACCOUNT_OWNER_OFFSET,
             SPL_TOKEN_ACCOUNT_OWNER_OFFSET + PUBKEY_BYTES,
-            safe_token_owner_index_enabled(),
+            wickandbergamot_token_owner_index_enabled(),
         )
     }
 
@@ -3468,7 +3468,7 @@ pub mod tests {
         let index_key = Pubkey::new_unique();
         let account_key = Pubkey::new_unique();
 
-        let mut account_data = vec![0; inline_safe_token::Account::get_packed_len()];
+        let mut account_data = vec![0; inline_wickandbergamot_token::Account::get_packed_len()];
         account_data[key_start..key_end].clone_from_slice(&(index_key.to_bytes()));
 
         // Insert slots into secondary index
@@ -3481,7 +3481,7 @@ pub mod tests {
                 &AccountSharedData::create(
                     0,
                     account_data.to_vec(),
-                    inline_safe_token::id(),
+                    inline_wickandbergamot_token::id(),
                     false,
                     0,
                 ),
@@ -3526,7 +3526,7 @@ pub mod tests {
         let index = AccountsIndex::<bool>::default_for_tests();
         run_test_purge_exact_secondary_index(
             &index,
-            &index.safe_token_mint_index,
+            &index.wickandbergamot_token_mint_index,
             key_start,
             key_end,
             &secondary_indexes,
@@ -3539,7 +3539,7 @@ pub mod tests {
         let index = AccountsIndex::<bool>::default_for_tests();
         run_test_purge_exact_secondary_index(
             &index,
-            &index.safe_token_owner_index,
+            &index.wickandbergamot_token_owner_index,
             key_start,
             key_end,
             &secondary_indexes,
@@ -3637,7 +3637,7 @@ pub mod tests {
         );
     }
 
-    fn run_test_safe_token_secondary_indexes<
+    fn run_test_wickandbergamot_token_secondary_indexes<
         SecondaryIndexEntryType: SecondaryIndexEntry + Default + Sync + Send,
     >(
         token_id: &Pubkey,
@@ -3650,7 +3650,7 @@ pub mod tests {
         let mut secondary_indexes = secondary_indexes.clone();
         let account_key = Pubkey::new_unique();
         let index_key = Pubkey::new_unique();
-        let mut account_data = vec![0; inline_safe_token::Account::get_packed_len()];
+        let mut account_data = vec![0; inline_wickandbergamot_token::Account::get_packed_len()];
         account_data[key_start..key_end].clone_from_slice(&(index_key.to_bytes()));
 
         // Wrong program id
@@ -3742,11 +3742,11 @@ pub mod tests {
     fn test_dashmap_secondary_index() {
         let (key_start, key_end, secondary_indexes) = create_dashmap_secondary_index_state();
         let index = AccountsIndex::<bool>::default_for_tests();
-        for token_id in [inline_safe_token::id(), inline_safe_token_2022::id()] {
-            run_test_safe_token_secondary_indexes(
+        for token_id in [inline_wickandbergamot_token::id(), inline_wickandbergamot_token_2024::id()] {
+            run_test_wickandbergamot_token_secondary_indexes(
                 &token_id,
                 &index,
-                &index.safe_token_mint_index,
+                &index.wickandbergamot_token_mint_index,
                 key_start,
                 key_end,
                 &secondary_indexes,
@@ -3758,11 +3758,11 @@ pub mod tests {
     fn test_rwlock_secondary_index() {
         let (key_start, key_end, secondary_indexes) = create_rwlock_secondary_index_state();
         let index = AccountsIndex::<bool>::default_for_tests();
-        for token_id in [inline_safe_token::id(), inline_safe_token_2022::id()] {
-            run_test_safe_token_secondary_indexes(
+        for token_id in [inline_wickandbergamot_token::id(), inline_safe_token_2024::id()] {
+            run_test_wickandbergamot_token_secondary_indexes(
                 &token_id,
                 &index,
-                &index.safe_token_owner_index,
+                &index.wickandbergamot_token_owner_index,
                 key_start,
                 key_end,
                 &secondary_indexes,
@@ -3784,10 +3784,10 @@ pub mod tests {
         let secondary_key1 = Pubkey::new_unique();
         let secondary_key2 = Pubkey::new_unique();
         let slot = 1;
-        let mut account_data1 = vec![0; inline_safe_token::Account::get_packed_len()];
+        let mut account_data1 = vec![0; inline_wickandbergamot_token::Account::get_packed_len()];
         account_data1[index_key_start..index_key_end]
             .clone_from_slice(&(secondary_key1.to_bytes()));
-        let mut account_data2 = vec![0; inline_safe_token::Account::get_packed_len()];
+        let mut account_data2 = vec![0; inline_wickandbergamot_token::Account::get_packed_len()];
         account_data2[index_key_start..index_key_end]
             .clone_from_slice(&(secondary_key2.to_bytes()));
 
@@ -3863,11 +3863,11 @@ pub mod tests {
     fn test_dashmap_secondary_index_same_slot_and_forks() {
         let (key_start, key_end, account_index) = create_dashmap_secondary_index_state();
         let index = AccountsIndex::<bool>::default_for_tests();
-        for token_id in [inline_safe_token::id(), inline_safe_token_2022::id()] {
+        for token_id in [inline_wickandbergamot_token::id(), inline_wickandbergamot_token_2024::id()] {
             run_test_secondary_indexes_same_slot_and_forks(
                 &token_id,
                 &index,
-                &index.safe_token_mint_index,
+                &index.wickandbergamot_token_mint_index,
                 key_start,
                 key_end,
                 &account_index,
@@ -3879,11 +3879,11 @@ pub mod tests {
     fn test_rwlock_secondary_index_same_slot_and_forks() {
         let (key_start, key_end, account_index) = create_rwlock_secondary_index_state();
         let index = AccountsIndex::<bool>::default_for_tests();
-        for token_id in [inline_safe_token::id(), inline_safe_token_2022::id()] {
+        for token_id in [inline_wickandbergamot_token::id(), inline_wickandbergamot_token_2024::id()] {
             run_test_secondary_indexes_same_slot_and_forks(
                 &token_id,
                 &index,
-                &index.safe_token_owner_index,
+                &index.wickandbergamot_token_owner_index,
                 key_start,
                 key_end,
                 &account_index,
