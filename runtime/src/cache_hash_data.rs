@@ -6,7 +6,7 @@ use {
     },
     log::*,
     memmap2::MmapMut,
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     std::{
         collections::HashSet,
         fs::{self, remove_file, OpenOptions},
