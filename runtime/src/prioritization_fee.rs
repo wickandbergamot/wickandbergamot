@@ -1,5 +1,5 @@
 use {
-    safecoin_measure::measure,
+    wickandbergamot_measure::measure,
     solana_sdk::{clock::Slot, pubkey::Pubkey, saturating_add_assign},
     std::collections::HashMap,
 };
