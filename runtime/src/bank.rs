@@ -54,7 +54,7 @@ use {
         builtins::{self, BuiltinAction, BuiltinFeatureTransition, Builtins},
         cost_tracker::CostTracker,
         epoch_stakes::{EpochStakes, NodeVoteAccounts},
-        inline_safe_associated_token_account, inline_safe_token,
+        inline_wickandbergamot_associated_token_account, inline_wickandbergamot_token,
         message_processor::MessageProcessor,
         rent_collector::{CollectedInfo, RentCollector},
         stake_account::{self, StakeAccount},
@@ -79,7 +79,7 @@ use {
         iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator},
         ThreadPool, ThreadPoolBuilder,
     },
-    safecoin_measure::{measure, measure::Measure},
+    wickandbergamot_measure::{measure, measure::Measure},
     solana_metrics::{inc_new_counter_debug, inc_new_counter_info},
     solana_program_runtime::{
         accounts_data_meter::MAX_ACCOUNTS_DATA_LEN,
@@ -121,7 +121,7 @@ use {
         lamports::LamportsError,
         message::{AccountKeys, SanitizedMessage},
         native_loader,
-        native_token::{sol_to_lamports, LAMPORTS_PER_SAFE},
+        native_token::{sol_to_lamports, LAMPORTS_PER_WICKANDBERGAMOT},
         nonce::{self, state::DurableNonce, NONCED_TX_MARKER_IX_INDEX},
         nonce_account,
         packet::PACKET_DATA_SIZE,
@@ -326,7 +326,7 @@ pub struct BankRc {
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-use safecoin_frozen_abi::abi_example::AbiExample;
+use wickandbergamot_frozen_abi::abi_example::AbiExample;
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
 impl AbiExample for BankRc {
@@ -374,7 +374,7 @@ pub struct TransactionExecutionDetails {
     pub accounts_data_len_delta: i64,
 }
 
-/// Type safe representation of a transaction execution attempt which
+/// Type wickandbergamot representation of a transaction execution attempt which
 /// differentiates between a transaction that was executed (will be
 /// committed to the ledger) and a transaction which wasn't executed
 /// and will be dropped.
@@ -2671,7 +2671,7 @@ impl Bank {
             let num_stake_delegations = stakes.stake_delegations().len();
             let min_stake_delegation =
                 solana_stake_program::get_minimum_delegation(&self.feature_set)
-                    .max(LAMPORTS_PER_SAFE);
+                    .max(LAMPORTS_PER_WICKANDBERGAMOT);
 
             let (stake_delegations, filter_timer) = measure!(stakes
                 .stake_delegations()
@@ -7399,20 +7399,20 @@ impl Bank {
             self.rent_collector.rent.burn_percent = 50; // 50% rent burn
         }
 
-        if new_feature_activations.contains(&feature_set::safe_token_v3_4_0::id()) {
+        if new_feature_activations.contains(&feature_set::wickandbergamot_token_v3_4_0::id()) {
             self.replace_program_account(
-                &inline_safe_token::id(),
-                &inline_safe_token::program_v3_4_0::id(),
-                "bank-apply_safe_token_v3_4_0",
+                &inline_wickandbergamot_token::id(),
+                &inline_wickandbergamot_token::program_v3_4_0::id(),
+                "bank-apply_wickandbergamot_token_v3_4_0",
             );
         }
 
-        if new_feature_activations.contains(&feature_set::safe_associated_token_account_v1_1_0::id())
+        if new_feature_activations.contains(&feature_set::wickandbergamot_associated_token_account_v1_1_0::id())
         {
             self.replace_program_account(
-                &inline_safe_associated_token_account::id(),
-                &inline_safe_associated_token_account::program_v1_1_0::id(),
-                "bank-apply_safe_associated_token_account_v1_1_0",
+                &inline_wickandbergamot_associated_token_account::id(),
+                &inline_wickandbergamot_associated_token_account::program_v1_1_0::id(),
+                "bank-apply_wickandbergamot_associated_token_account_v1_1_0",
             );
         }
 
@@ -7562,19 +7562,19 @@ impl Bank {
 
         if reconfigure_token2_native_mint {
             let mut native_mint_account = solana_sdk::account::AccountSharedData::from(Account {
-                owner: inline_safe_token::id(),
-                data: inline_safe_token::native_mint::ACCOUNT_DATA.to_vec(),
+                owner: inline_wickandbergamot_token::id(),
+                data: inline_wickandbergamot_token::native_mint::ACCOUNT_DATA.to_vec(),
                 lamports: sol_to_lamports(1.),
                 executable: false,
                 rent_epoch: self.epoch() + 1,
             });
 
             // As a workaround for
-            // https://github.com/fair-exchange/safecoin-program-library/issues/374, ensure that the
-            // safe-token 2 native mint account is owned by the safe-token 2 program.
+            // https://github.com/fair-exchange/wickandbergamot-program-library/issues/374, ensure that the
+            // wickandbergamot-token 2 native mint account is owned by the wickandbergamot-token 2 program.
             let old_account_data_size;
             let store = if let Some(existing_native_mint_account) =
-                self.get_account_with_fixed_root(&inline_safe_token::native_mint::id())
+                self.get_account_with_fixed_root(&inline_wickandbergamot_token::native_mint::id())
             {
                 old_account_data_size = existing_native_mint_account.data().len();
                 if existing_native_mint_account.owner() == &solana_sdk::system_program::id() {
@@ -7591,7 +7591,7 @@ impl Bank {
             };
 
             if store {
-                self.store_account(&inline_safe_token::native_mint::id(), &native_mint_account);
+                self.store_account(&inline_wickandbergamot_token::native_mint::id(), &native_mint_account);
                 self.calculate_and_update_accounts_data_size_delta_off_chain(
                     old_account_data_size,
                     native_mint_account.data().len(),
@@ -8813,7 +8813,7 @@ pub(crate) mod tests {
             .accounts
             .remove(&feature_set::no_overflow_rent_distribution::id())
             .unwrap();
-        let bank = std::panic::AssertUnwindSafe(Bank::new_for_tests(&genesis_config));
+        let bank = std::panic::AssertUnwindWickandbergamot(Bank::new_for_tests(&genesis_config));
         let old_validator_lamports = bank.get_balance(&validator_pubkey);
         let new_validator_lamports = std::panic::catch_unwind(|| {
             bank.distribute_rent_to_validators(&bank.vote_accounts(), RENT_TO_BE_DISTRIBUTED);
@@ -14984,15 +14984,15 @@ pub(crate) mod tests {
         assert_eq!(genesis_config.cluster_type, ClusterType::Development);
         let bank = Arc::new(Bank::new_for_tests(&genesis_config));
         assert_eq!(
-            bank.get_balance(&inline_safe_token::native_mint::id()),
+            bank.get_balance(&inline_wickandbergamot_token::native_mint::id()),
             1000000000
         );
 
         // Testnet - Native mint blinks into existence at epoch 93
         genesis_config.cluster_type = ClusterType::Testnet;
         let bank = Arc::new(Bank::new_for_tests(&genesis_config));
-        assert_eq!(bank.get_balance(&inline_safe_token::native_mint::id()), 0);
-        bank.deposit(&inline_safe_token::native_mint::id(), 4200000000)
+        assert_eq!(bank.get_balance(&inline_wickandbergamot_token::native_mint::id()), 0);
+        bank.deposit(&inline_wickandbergamot_token::native_mint::id(), 4200000000)
             .unwrap();
 
         let bank = Bank::new_from_parent(
@@ -15002,20 +15002,20 @@ pub(crate) mod tests {
         );
 
         let native_mint_account = bank
-            .get_account(&inline_safe_token::native_mint::id())
+            .get_account(&inline_wickandbergamot_token::native_mint::id())
             .unwrap();
         assert_eq!(native_mint_account.data().len(), 82);
         assert_eq!(
-            bank.get_balance(&inline_safe_token::native_mint::id()),
+            bank.get_balance(&inline_wickandbergamot_token::native_mint::id()),
             4200000000
         );
-        assert_eq!(native_mint_account.owner(), &inline_safe_token::id());
+        assert_eq!(native_mint_account.owner(), &inline_wickandbergamot_token::id());
 
         // MainnetBeta - Native mint blinks into existence at epoch 75
         genesis_config.cluster_type = ClusterType::MainnetBeta;
         let bank = Arc::new(Bank::new_for_tests(&genesis_config));
-        assert_eq!(bank.get_balance(&inline_safe_token::native_mint::id()), 0);
-        bank.deposit(&inline_safe_token::native_mint::id(), 4200000000)
+        assert_eq!(bank.get_balance(&inline_wickandbergamot_token::native_mint::id()), 0);
+        bank.deposit(&inline_wickandbergamot_token::native_mint::id(), 4200000000)
             .unwrap();
 
         let bank = Bank::new_from_parent(
@@ -15025,14 +15025,14 @@ pub(crate) mod tests {
         );
 
         let native_mint_account = bank
-            .get_account(&inline_safe_token::native_mint::id())
+            .get_account(&inline_wickandbergamot_token::native_mint::id())
             .unwrap();
         assert_eq!(native_mint_account.data().len(), 82);
         assert_eq!(
-            bank.get_balance(&inline_safe_token::native_mint::id()),
+            bank.get_balance(&inline_wickandbergamot_token::native_mint::id()),
             4200000000
         );
-        assert_eq!(native_mint_account.owner(), &inline_safe_token::id());
+        assert_eq!(native_mint_account.owner(), &inline_wickandbergamot_token::id());
     }
 
     #[test]
@@ -15075,7 +15075,7 @@ pub(crate) mod tests {
 
         // Depending on RUSTFLAGS, this test exposes rust's checked math behavior or not...
         // So do some convolted setup; anyway this test itself will just be temporary
-        let bank0 = std::panic::AssertUnwindSafe(bank0);
+        let bank0 = std::panic::AssertUnwindWickandbergamot(bank0);
         let overflowing_capitalization =
             std::panic::catch_unwind(|| bank0.calculate_capitalization(true));
         if let Ok(overflowing_capitalization) = overflowing_capitalization {
@@ -16423,7 +16423,7 @@ pub(crate) mod tests {
         );
         // TODO: stakes cache should be hardened for the case when the account
         // owner is changed from vote/stake program to something else. see:
-        // https://github.com/fair-exchange/safecoin/pull/24200#discussion_r849935444
+        // https://github.com/fair-exchange/wickandbergamot/pull/24200#discussion_r849935444
         check_stake_vote_account_validity(
             false, // check owner change
             |bank: &Bank| bank.load_vote_and_stake_accounts(&thread_pool, null_tracer()),
@@ -16442,7 +16442,7 @@ pub(crate) mod tests {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config_with_vote_accounts(
             1_000_000_000,
             &validator_keypairs,
-            vec![LAMPORTS_PER_SAFE; 2],
+            vec![LAMPORTS_PER_WICKANDBERGAMOT; 2],
         );
         let bank = Arc::new(Bank::new_for_tests(&genesis_config));
         let vote_and_stake_accounts =
@@ -16755,7 +16755,7 @@ pub(crate) mod tests {
             ])
             .collect();
 
-        // Initialize accounts; all have larger SAFE balances than current Bank built-ins
+        // Initialize accounts; all have larger WICKANDBERGAMOT balances than current Bank built-ins
         let account0 = AccountSharedData::new(pubkeys_balances[0].1, 0, &Pubkey::default());
         bank.store_account(&pubkeys_balances[0].0, &account0);
         let account1 = AccountSharedData::new(pubkeys_balances[1].1, 0, &Pubkey::default());
@@ -17686,7 +17686,7 @@ pub(crate) mod tests {
             &Keypair::new(),
             &Keypair::new(),
             bank.last_blockhash(),
-            LAMPORTS_PER_SAFE,
+            LAMPORTS_PER_WICKANDBERGAMOT,
             ACCOUNT_SIZE,
             &solana_sdk::system_program::id(),
         );
@@ -18929,7 +18929,7 @@ pub(crate) mod tests {
             genesis_config,
             mint_keypair,
             ..
-        } = genesis_utils::create_genesis_config(100 * LAMPORTS_PER_SAFE);
+        } = genesis_utils::create_genesis_config(100 * LAMPORTS_PER_WICKANDBERGAMOT);
         let mut bank = Bank::new_for_tests(&genesis_config);
         let mock_program_id = Pubkey::new_unique();
         bank.add_builtin(
@@ -18942,7 +18942,7 @@ pub(crate) mod tests {
         let funding_keypair = Keypair::new();
         bank.store_account(
             &funding_keypair.pubkey(),
-            &AccountSharedData::new(10 * LAMPORTS_PER_SAFE, 0, &mock_program_id),
+            &AccountSharedData::new(10 * LAMPORTS_PER_WICKANDBERGAMOT, 0, &mock_program_id),
         );
 
         let mut rng = rand::thread_rng();
@@ -18950,7 +18950,7 @@ pub(crate) mod tests {
         // Test case: Grow account
         {
             let account_pubkey = Pubkey::new_unique();
-            let account_balance = LAMPORTS_PER_SAFE;
+            let account_balance = LAMPORTS_PER_WICKANDBERGAMOT;
             let account_size = rng.gen_range(1, MAX_PERMITTED_DATA_LENGTH) as usize;
             let account_data =
                 AccountSharedData::new(account_balance, account_size, &mock_program_id);
@@ -18979,7 +18979,7 @@ pub(crate) mod tests {
         // Test case: Shrink account
         {
             let account_pubkey = Pubkey::new_unique();
-            let account_balance = LAMPORTS_PER_SAFE;
+            let account_balance = LAMPORTS_PER_WICKANDBERGAMOT;
             let account_size =
                 rng.gen_range(MAX_PERMITTED_DATA_LENGTH / 2, MAX_PERMITTED_DATA_LENGTH) as usize;
             let account_data =
@@ -19081,7 +19081,7 @@ pub(crate) mod tests {
     fn test_accounts_data_size_and_rent_collection() {
         let GenesisConfigInfo {
             mut genesis_config, ..
-        } = genesis_utils::create_genesis_config(100 * LAMPORTS_PER_SAFE);
+        } = genesis_utils::create_genesis_config(100 * LAMPORTS_PER_WICKANDBERGAMOT);
         genesis_config.rent = Rent::default();
         activate_all_features(&mut genesis_config);
         let bank = Arc::new(Bank::new_for_tests(&genesis_config));
@@ -19146,9 +19146,9 @@ pub(crate) mod tests {
             mint_keypair,
             ..
         } = genesis_utils::create_genesis_config_with_leader(
-            1_000_000 * LAMPORTS_PER_SAFE,
+            1_000_000 * LAMPORTS_PER_WICKANDBERGAMOT,
             &Pubkey::new_unique(),
-            100 * LAMPORTS_PER_SAFE,
+            100 * LAMPORTS_PER_WICKANDBERGAMOT,
         );
         genesis_config.rent = Rent::default();
         genesis_config.ticks_per_slot = 3;
