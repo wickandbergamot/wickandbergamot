@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Builds known downstream projects against local safecoin source
+# Builds known downstream projects against local wickandbergamot source
 #
 
 set -e
@@ -47,7 +47,7 @@ anchor() {
   cd anchor
 
   update_solana_dependencies . "$solana_ver"
-  patch_crates_io_safecoin Cargo.toml "$solana_dir"
+  patch_crates_io_wickandbergamot Cargo.toml "$solana_dir"
 
   $cargo build
   $cargo test
@@ -67,7 +67,7 @@ mango() {
 
     update_solana_dependencies . "$solana_ver"
     update_anchor_dependencies . "$anchor_ver"
-    patch_crates_io_safecoin Cargo.toml "$solana_dir"
+    patch_crates_io_wickandbergamot Cargo.toml "$solana_dir"
     patch_crates_io_anchor Cargo.toml "$anchor_dir"
 
     $cargo build
@@ -86,7 +86,7 @@ metaplex() {
 
     update_solana_dependencies . "$solana_ver"
     update_anchor_dependencies . "$anchor_ver"
-    patch_crates_io_safecoin Cargo.toml "$solana_dir"
+    patch_crates_io_wickandbergamot Cargo.toml "$solana_dir"
     patch_crates_io_anchor Cargo.toml "$anchor_dir"
 
     $cargo build
