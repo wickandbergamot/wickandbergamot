@@ -22,7 +22,7 @@ use {
     log::*,
     rayon::prelude::*,
     serde::{de::DeserializeOwned, Deserialize, Serialize},
-    safecoin_measure::{measure, measure::Measure},
+    wickandbergamot_measure::{measure, measure::Measure},
     solana_sdk::{
         clock::{Epoch, Slot, UnixTimestamp},
         deserialize_utils::default_on_eof,
@@ -486,7 +486,7 @@ impl<'a, C: TypeContext<'a>> Serialize for SerializableAccountsDb<'a, C> {
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-impl<'a, C> safecoin_frozen_abi::abi_example::IgnoreAsHelper for SerializableAccountsDb<'a, C> {}
+impl<'a, C> wickandbergamot_frozen_abi::abi_example::IgnoreAsHelper for SerializableAccountsDb<'a, C> {}
 
 #[allow(clippy::too_many_arguments)]
 fn reconstruct_bank_from_fields<E>(
