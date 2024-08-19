@@ -1,6 +1,6 @@
 use {
     serde::{Deserialize, Serialize},
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_program_runtime::{
         compute_budget::ComputeBudget,
         executor_cache::Executors,
@@ -28,7 +28,7 @@ use {
 pub struct MessageProcessor {}
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-impl ::safecoin_frozen_abi::abi_example::AbiExample for MessageProcessor {
+impl ::wickandbergamot_frozen_abi::abi_example::AbiExample for MessageProcessor {
     fn example() -> Self {
         // MessageProcessor's fields are #[serde(skip)]-ed and not Serialize
         // so, just rely on Default anyway.
