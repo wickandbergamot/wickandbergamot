@@ -83,28 +83,28 @@ if [[ $CI_OS_NAME = windows ]]; then
     cargo-test-bpf
     cargo-test-sbf
     solana
-    safecoin-install
-    safecoin-install-init
-    safecoin-keygen
-    safecoin-stake-accounts
-    safecoin-test-validator
-    safecoin-tokens
+    wickandbergamot-install
+    wickandbergamot-install-init
+    wickandbergamot-keygen
+    wickandbergamot-stake-accounts
+    wickandbergamot-test-validator
+    wickandbergamot-tokens
   )
 else
   ./fetch-perf-libs.sh
 
   BINS=(
     solana
-    safecoin-bench-tps
-    safecoin-faucet
-    safecoin-gossip
-    safecoin-install
-    safecoin-keygen
-    safecoin-ledger-tool
-    safecoin-log-analyzer
-    safecoin-net-shaper
-    safecoin-sys-tuner
-    safecoin-validator
+    wickandbergamot-bench-tps
+    wickandbergamot-faucet
+    wickandbergamot-gossip
+    wickandbergamot-install
+    wickandbergamot-keygen
+    wickandbergamot-ledger-tool
+    wickandbergamot-log-analyzer
+    wickandbergamot-net-shaper
+    wickandbergamot-sys-tuner
+    wickandbergamot-validator
     rbpf-cli
   )
 
@@ -115,18 +115,18 @@ else
       cargo-build-sbf
       cargo-test-bpf
       cargo-test-sbf
-      safecoin-dos
-      safecoin-install-init
-      safecoin-stake-accounts
-      safecoin-test-validator
-      safecoin-tokens
-      safecoin-watchtower
+      wickandbergamot-dos
+      wickandbergamot-install-init
+      wickandbergamot-stake-accounts
+      wickandbergamot-test-validator
+      wickandbergamot-tokens
+      wickandbergamot-watchtower
     )
   fi
 
-  #XXX: Ensure `safecoin-genesis` is built LAST!
-  # See https://github.com/fair-exchange/safecoin/issues/5826
-  BINS+=(safecoin-genesis)
+  #XXX: Ensure `wickandbergamot-genesis` is built LAST!
+  # See https://github.com/fair-exchange/wickandbergamot/issues/5826
+  BINS+=(wickandbergamot-genesis)
 fi
 
 binArgs=()
@@ -141,10 +141,10 @@ mkdir -p "$installDir/bin"
   # shellcheck disable=SC2086 # Don't want to double quote $rust_version
   "$cargo" $maybeRustVersion build $maybeReleaseFlag "${binArgs[@]}"
 
-  # Exclude `safe-token` binary for net.sh builds
+  # Exclude `wickandbergamot-token` binary for net.sh builds
   if [[ -z "$validatorOnly" ]]; then
     # shellcheck disable=SC2086 # Don't want to double quote $rust_version
-    "$cargo" $maybeRustVersion install --locked safe-token-cli --root "$installDir"
+    "$cargo" $maybeRustVersion install --locked wickandbergamot-token-cli --root "$installDir"
   fi
 )
 
