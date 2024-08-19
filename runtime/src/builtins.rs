@@ -1,5 +1,5 @@
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-use safecoin_frozen_abi::abi_example::AbiExample;
+use wickandbergamot_frozen_abi::abi_example::AbiExample;
 use {
     crate::system_instruction_processor,
     solana_program_runtime::invoke_context::{InvokeContext, ProcessInstructionWithContext},
@@ -189,8 +189,8 @@ fn builtin_feature_transitions() -> Vec<BuiltinFeatureTransition> {
         BuiltinFeatureTransition::Add {
             builtin: Builtin::new(
                 "zk_token_proof_program",
-                safe_zk_token_sdk::zk_token_proof_program::id(),
-                safe_zk_token_proof_program::process_instruction,
+                wickandbergamot_zk_token_sdk::zk_token_proof_program::id(),
+                wickandbergamot_zk_token_proof_program::process_instruction,
             ),
             feature_id: feature_set::zk_token_sdk_enabled::id(),
         },
