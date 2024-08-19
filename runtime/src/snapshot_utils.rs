@@ -27,7 +27,7 @@ use {
     log::*,
     rayon::prelude::*,
     regex::Regex,
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_sdk::{
         clock::Slot,
         genesis_config::GenesisConfig,
