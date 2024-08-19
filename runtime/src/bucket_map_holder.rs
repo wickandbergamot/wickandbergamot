@@ -6,7 +6,7 @@ use {
         waitable_condvar::WaitableCondvar,
     },
     solana_bucket_map::bucket_map::{BucketMap, BucketMapConfig},
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_sdk::{
         clock::{Slot, SLOT_MS},
         timing::AtomicInterval,
@@ -200,7 +200,7 @@ impl<T: IndexValue> BucketMapHolder<T> {
                     .map(|config| config.started_from_validator)
                     .unwrap_or_default()
                 {
-                    if let Ok(_limit) = std::env::var("SAFECOIN_TEST_ACCOUNTS_INDEX_MEMORY_LIMIT_MB")
+                    if let Ok(_limit) = std::env::var("WICKANDBERGAMOT_TEST_ACCOUNTS_INDEX_MEMORY_LIMIT_MB")
                     {
                         // Note this env var means the opposite of the default. The default now is disk index is on.
                         // So, if this env var is set, DO NOT allocate with disk buckets if mem budget was not set, we were NOT started from validator, and env var was set
