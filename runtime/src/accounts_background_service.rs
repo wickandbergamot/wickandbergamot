@@ -15,7 +15,7 @@ use {
     crossbeam_channel::{Receiver, SendError, Sender, TrySendError},
     log::*,
     rand::{thread_rng, Rng},
-    safecoin_measure::measure::Measure,
+    wickandbergamot_measure::measure::Measure,
     solana_sdk::{
         clock::{BankId, Slot},
         hash::Hash,
