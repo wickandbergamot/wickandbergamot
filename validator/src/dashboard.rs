@@ -4,7 +4,7 @@ use {
         ProgressBar,
     },
     console::style,
-    safecoin_client::{
+    wickandbergamot_client::{
         client_error, rpc_client::RpcClient, rpc_request, rpc_response::RpcContactInfo,
     },
     solana_core::validator::ValidatorStartProgress,
