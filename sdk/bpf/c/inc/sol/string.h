@@ -1,6 +1,6 @@
 #pragma once
 /**
- * @brief Safecoin string and memory system calls and utilities
+ * @brief Wickandbergamot string and memory system calls and utilities
  */
 
 #include <sol/types.h>
