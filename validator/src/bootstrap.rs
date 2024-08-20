@@ -1,11 +1,11 @@
 use {
     log::*,
     rand::{seq::SliceRandom, thread_rng, Rng},
-    safecoin_client::rpc_client::RpcClient,
+    wickandbergamot_client::rpc_client::RpcClient,
     solana_core::validator::{ValidatorConfig, ValidatorStartProgress},
-    safecoin_download_utils::{download_snapshot_archive, DownloadProgressRecord},
-    safecoin_genesis_utils::download_then_check_genesis_hash,
-    safecoin_gossip::{
+    wickandbergamot_download_utils::{download_snapshot_archive, DownloadProgressRecord},
+    wickandbergamot_genesis_utils::download_then_check_genesis_hash,
+    wickandbergamot_gossip::{
         cluster_info::{ClusterInfo, Node},
         crds_value,
         gossip_service::GossipService,
@@ -112,7 +112,7 @@ fn verify_reachable_ports(
         tcp_listeners.push((ip_echo.local_addr().unwrap().port(), ip_echo));
     }
 
-    safecoin_net_utils::verify_reachable_ports(
+    wickandbergamot_net_utils::verify_reachable_ports(
         &cluster_entrypoint.gossip,
         tcp_listeners,
         &udp_sockets,
@@ -493,7 +493,7 @@ pub fn rpc_bootstrap(
                 )
                 .unwrap_or_else(|err| {
                     // Consider failures here to be more likely due to user error (eg,
-                    // incorrect `safecoin-validator` command-line arguments) rather than the
+                    // incorrect `wickandbergamot-validator` command-line arguments) rather than the
                     // RPC node failing.
                     //
                     // Power users can always use the `--no-check-vote-account` option to
