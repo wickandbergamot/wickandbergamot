@@ -1,6 +1,6 @@
 use {
     super::*,
-    safe_token_2022::{
+    wickandbergamot_token_2024::{
         extension::cpi_guard::instruction::CpiGuardInstruction,
         instruction::decode_instruction_type,
     },
@@ -13,7 +13,7 @@ pub(in crate::parse_token) fn parse_cpi_guard_instruction(
 ) -> Result<ParsedInstructionEnum, ParseInstructionError> {
     check_num_token_accounts(account_indexes, 2)?;
     let instruction_type_str = match decode_instruction_type(instruction_data)
-        .map_err(|_| ParseInstructionError::InstructionNotParsable(ParsableProgram::SafeToken))?
+        .map_err(|_| ParseInstructionError::InstructionNotParsable(ParsableProgram::wickandbergamotToken))?
     {
         CpiGuardInstruction::Enable => "enable",
         CpiGuardInstruction::Disable => "disable",
@@ -42,7 +42,7 @@ mod test {
         super::*,
         crate::parse_token::test::*,
         solana_sdk::pubkey::Pubkey,
-        safe_token_2022::{
+        wickandbergamot_token_2024::{
             extension::cpi_guard::instruction::{disable_cpi_guard, enable_cpi_guard},
             solana_program::message::Message,
         },
@@ -55,7 +55,7 @@ mod test {
         // Enable, single owner
         let owner_pubkey = Pubkey::new_unique();
         let enable_cpi_guard_ix = enable_cpi_guard(
-            &safe_token_2022::id(),
+            &wickandbergamot_token_2024::id(),
             &convert_pubkey(account_pubkey),
             &convert_pubkey(owner_pubkey),
             &[],
@@ -83,7 +83,7 @@ mod test {
         let multisig_signer0 = Pubkey::new_unique();
         let multisig_signer1 = Pubkey::new_unique();
         let enable_cpi_guard_ix = enable_cpi_guard(
-            &safe_token_2022::id(),
+            &wickandbergamot_token_2024::id(),
             &convert_pubkey(account_pubkey),
             &convert_pubkey(multisig_pubkey),
             &[
@@ -115,7 +115,7 @@ mod test {
 
         // Disable, single owner
         let enable_cpi_guard_ix = disable_cpi_guard(
-            &safe_token_2022::id(),
+            &wickandbergamot_token_2024::id(),
             &convert_pubkey(account_pubkey),
             &convert_pubkey(owner_pubkey),
             &[],
@@ -143,7 +143,7 @@ mod test {
         let multisig_signer0 = Pubkey::new_unique();
         let multisig_signer1 = Pubkey::new_unique();
         let enable_cpi_guard_ix = disable_cpi_guard(
-            &safe_token_2022::id(),
+            &wickandbergamot_token_2024::id(),
             &convert_pubkey(account_pubkey),
             &convert_pubkey(multisig_pubkey),
             &[
