@@ -13,7 +13,7 @@ fi
 
 sh -c "$(curl -sSfL https://release.solana.com/edge/install)"
 PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
-safecoin --version
+wickandbergamot --version
 
 if [[ -n $GITHUB_ACTIONS ]]; then
   echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
