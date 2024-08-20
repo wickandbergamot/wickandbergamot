@@ -4,7 +4,7 @@ import chaiAsPromised from 'chai-as-promised';
 import {
   Keypair,
   Connection,
-  LAMPORTS_PER_SAFE,
+  LAMPORTS_PER_WICKANDBERGAMOT,
   Transaction,
   ComputeBudgetProgram,
   ComputeBudgetInstruction,
@@ -19,7 +19,7 @@ describe('ComputeBudgetProgram', () => {
   it('requestUnits', () => {
     const params = {
       units: 150000,
-      additionalFee: LAMPORTS_PER_SAFE,
+      additionalFee: LAMPORTS_PER_WICKANDBERGAMOT,
     };
     const ix = ComputeBudgetProgram.requestUnits(params);
     const decodedParams = ComputeBudgetInstruction.decodeRequestUnits(ix);
@@ -74,8 +74,8 @@ describe('ComputeBudgetProgram', () => {
   if (process.env.TEST_LIVE) {
     it('send live request units ix', async () => {
       const connection = new Connection(url, 'confirmed');
-      const FEE_AMOUNT = LAMPORTS_PER_SAFE;
-      const STARTING_AMOUNT = 2 * LAMPORTS_PER_SAFE;
+      const FEE_AMOUNT = LAMPORTS_PER_WICKANDBERGAMOT;
+      const STARTING_AMOUNT = 2 * LAMPORTS_PER_WICKANDBERGAMOT;
       const baseAccount = Keypair.generate();
       const basePubkey = baseAccount.publicKey;
       await helpers.airdrop({
@@ -119,7 +119,7 @@ describe('ComputeBudgetProgram', () => {
 
     it('send live request heap ix', async () => {
       const connection = new Connection(url, 'confirmed');
-      const STARTING_AMOUNT = 2 * LAMPORTS_PER_SAFE;
+      const STARTING_AMOUNT = 2 * LAMPORTS_PER_WICKANDBERGAMOT;
       const baseAccount = Keypair.generate();
       const basePubkey = baseAccount.publicKey;
       await helpers.airdrop({
@@ -162,8 +162,8 @@ describe('ComputeBudgetProgram', () => {
 
     it('send live compute unit ixs', async () => {
       const connection = new Connection(url, 'confirmed');
-      const FEE_AMOUNT = LAMPORTS_PER_SAFE;
-      const STARTING_AMOUNT = 2 * LAMPORTS_PER_SAFE;
+      const FEE_AMOUNT = LAMPORTS_PER_WICKANDBERGAMOT;
+      const STARTING_AMOUNT = 2 * LAMPORTS_PER_WICKANDBERGAMOT;
       const baseAccount = Keypair.generate();
       const basePubkey = baseAccount.publicKey;
       await helpers.airdrop({
@@ -172,7 +172,7 @@ describe('ComputeBudgetProgram', () => {
         amount: STARTING_AMOUNT,
       });
 
-      // lamport fee = 2B * 1M / 1M = 2 SAFE
+      // lamport fee = 2B * 1M / 1M = 2 WICKANDBERGAMOT
       const prioritizationFeeTooHighTransaction = new Transaction()
         .add(
           ComputeBudgetProgram.setComputeUnitPrice({
@@ -194,7 +194,7 @@ describe('ComputeBudgetProgram', () => {
         ),
       ).to.be.rejected;
 
-      // lamport fee = 1B * 1M / 1M = 1 SAFE
+      // lamport fee = 1B * 1M / 1M = 1 WICKANDBERGAMOT
       const validPrioritizationFeeTransaction = new Transaction()
         .add(
           ComputeBudgetProgram.setComputeUnitPrice({
