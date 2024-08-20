@@ -14,7 +14,7 @@ use {
         instruction::{AccountMeta, CompiledInstruction, Instruction},
         message::AccountKeys,
     },
-    wickandbergamot_token_2022::{
+    wickandbergamot_token_2024::{
         extension::ExtensionType,
         instruction::{AuthorityType, TokenInstruction},
         solana_program::{
@@ -722,7 +722,7 @@ mod test {
     use {
         super::*,
         solana_sdk::{instruction::CompiledInstruction, pubkey::Pubkey},
-        wickandbergamot_token_2022::{
+        wickandbergamot_token_2024::{
             instruction::*,
             solana_program::{
                 instruction::CompiledInstruction as WickandbergamotTokenCompiledInstruction, message::Message,
@@ -1718,15 +1718,15 @@ mod test {
 
     #[test]
     #[allow(clippy::same_item_push)]
-    fn test_parse_token_2022() {
-        test_parse_token(&wickandbergamot_token_2022::id());
+    fn test_parse_token_2024() {
+        test_parse_token(&wickandbergamot_token_2024::id());
     }
 
     #[test]
     fn test_create_native_mint() {
         let payer = Pubkey::new_unique();
         let create_native_mint_ix =
-            create_native_mint(&wickandbergamot_token_2022::id(), &convert_pubkey(payer)).unwrap();
+            create_native_mint(&wickandbergamot_token_2024::id(), &convert_pubkey(payer)).unwrap();
         let message = Message::new(&[create_native_mint_ix], None);
         let compiled_instruction = convert_compiled_instruction(&message.instructions[0]);
         assert_eq!(
@@ -1739,7 +1739,7 @@ mod test {
                 instruction_type: "createNativeMint".to_string(),
                 info: json!({
                    "payer": payer.to_string(),
-                   "nativeMint": wickandbergamot_token_2022::native_mint::id().to_string(),
+                   "nativeMint": wickandbergamot_token_2024::native_mint::id().to_string(),
                    "systemProgram": solana_sdk::system_program::id().to_string(),
                 })
             }
@@ -2232,7 +2232,7 @@ mod test {
 
     #[test]
     #[allow(clippy::same_item_push)]
-    fn test_not_enough_keys_token_2022() {
-        test_token_ix_not_enough_keys(&wickandbergamot_token_2022::id());
+    fn test_not_enough_keys_token_2024() {
+        test_token_ix_not_enough_keys(&wickandbergamot_token_2024::id());
     }
 }
