@@ -56,7 +56,7 @@ function analyze_packet_loss {
     done
 
     execution_step "Analyzing Packet Loss"
-    "${REPO_ROOT}"/solana-release/bin/safecoin-log-analyzer analyze -f ./iftop-logs/ | sort -k 2 -g
+    "${REPO_ROOT}"/solana-release/bin/wickandbergamot-log-analyzer analyze -f ./iftop-logs/ | sort -k 2 -g
   )
 }
 
@@ -71,7 +71,7 @@ function wait_for_max_stake {
 
   # shellcheck disable=SC2154
   # shellcheck disable=SC2029
-  ssh "${sshOptions[@]}" "${validatorIpList[0]}" "RUST_LOG=info \$HOME/.cargo/bin/safecoin wait-for-max-stake $max_stake --url http://127.0.0.1:8328"
+  ssh "${sshOptions[@]}" "${validatorIpList[0]}" "RUST_LOG=info \$HOME/.cargo/bin/wickandbergamot wait-for-max-stake $max_stake --url http://127.0.0.1:8328"
 }
 
 function wait_for_equal_stake {
@@ -87,7 +87,7 @@ function wait_for_equal_stake {
 function get_slot {
   source "${REPO_ROOT}"/net/common.sh
   loadConfigFile
-  ssh "${sshOptions[@]}" "${validatorIpList[0]}" '$HOME/.cargo/bin/safecoin --url http://127.0.0.1:8328 slot'
+  ssh "${sshOptions[@]}" "${validatorIpList[0]}" '$HOME/.cargo/bin/wickandbergamot --url http://127.0.0.1:8328 slot'
 }
 
 function get_bootstrap_validator_ip_address {
@@ -100,14 +100,14 @@ function get_active_stake {
   source "${REPO_ROOT}"/net/common.sh
   loadConfigFile
   ssh "${sshOptions[@]}" "${validatorIpList[0]}" \
-    '$HOME/.cargo/bin/safecoin --url http://127.0.0.1:8328 validators --output=json | grep -o "totalActiveStake\": [0-9]*" | cut -d: -f2'
+    '$HOME/.cargo/bin/wickandbergamot --url http://127.0.0.1:8328 validators --output=json | grep -o "totalActiveStake\": [0-9]*" | cut -d: -f2'
 }
 
 function get_current_stake {
   source "${REPO_ROOT}"/net/common.sh
   loadConfigFile
   ssh "${sshOptions[@]}" "${validatorIpList[0]}" \
-    '$HOME/.cargo/bin/safecoin --url http://127.0.0.1:8328 validators --output=json | grep -o "totalCurrentStake\": [0-9]*" | cut -d: -f2'
+    '$HOME/.cargo/bin/wickandbergamot --url http://127.0.0.1:8328 validators --output=json | grep -o "totalCurrentStake\": [0-9]*" | cut -d: -f2'
 }
 
 function get_validator_confirmation_time {
@@ -205,7 +205,7 @@ function upload_results_to_slack() {
 
   COMMIT=$(git rev-parse HEAD)
   COMMIT_BUTTON_TEXT="$(echo "$COMMIT" | head -c 8)"
-  COMMIT_URL="https://github.com/fair-exchange/safecoin/commit/${COMMIT}"
+  COMMIT_URL="https://github.com/wickandbergamot/wickandbergamot/commit/${COMMIT}"
 
   if [[ -n $BUILDKITE_BUILD_URL ]] ; then
     BUILD_BUTTON_TEXT="Build Kite Job"
@@ -214,7 +214,7 @@ function upload_results_to_slack() {
     BUILDKITE_BUILD_URL="https://buildkite.com/solana-labs/"
   fi
 
-  GRAFANA_URL="https://internal-metrics.safecoin.org:3000/d/monitor-${CHANNEL:-edge}/cluster-telemetry-${CHANNEL:-edge}?var-testnet=${TESTNET_TAG:-testnet-automation}&from=${TESTNET_START_UNIX_MSECS:-0}&to=${TESTNET_FINISH_UNIX_MSECS:-0}"
+  GRAFANA_URL="https://internal-metrics.wickandbergamot.org:3000/d/monitor-${CHANNEL:-edge}/cluster-telemetry-${CHANNEL:-edge}?var-testnet=${TESTNET_TAG:-testnet-automation}&from=${TESTNET_START_UNIX_MSECS:-0}&to=${TESTNET_FINISH_UNIX_MSECS:-0}"
 
   [[ -n $RESULT_DETAILS ]] || RESULT_DETAILS="Undefined"
   [[ -n $TEST_CONFIGURATION ]] || TEST_CONFIGURATION="Undefined"
