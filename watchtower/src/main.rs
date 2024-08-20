@@ -4,17 +4,17 @@
 use {
     clap::{crate_description, crate_name, value_t, value_t_or_exit, App, Arg},
     log::*,
-    safecoin_clap_utils::{
+    wickandbergamot_clap_utils::{
         input_parsers::pubkeys_of,
         input_validators::{is_parsable, is_pubkey_or_keypair, is_url},
     },
-    safecoin_cli_output::display::format_labeled_address,
-    safecoin_client::{client_error, rpc_client::RpcClient, rpc_response::RpcVoteAccountStatus},
+    wickandbergamot_cli_output::display::format_labeled_address,
+    wickandbergamot_client::{client_error, rpc_client::RpcClient, rpc_response::RpcVoteAccountStatus},
     solana_metrics::{datapoint_error, datapoint_info},
     solana_notifier::Notifier,
     solana_sdk::{
         hash::Hash,
-        native_token::{sol_to_lamports, Safe},
+        native_token::{sol_to_lamports, Wickandbergamot},
         pubkey::Pubkey,
     },
     std::{
@@ -41,10 +41,10 @@ struct Config {
 fn get_config() -> Config {
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(safecoin_version::version!())
+        .version(wickandbergamot_version::version!())
         .after_help("ADDITIONAL HELP:
         To receive a Slack, Discord and/or Telegram notification on sanity failure,
-        define environment variables before running `safecoin-watchtower`:
+        define environment variables before running `wickandbergamot-watchtower`:
 
         export SLACK_WEBHOOK=...
         export DISCORD_WEBHOOK=...
@@ -56,7 +56,7 @@ fn get_config() -> Config {
 
         To receive a Twilio SMS notification on failure, having a Twilio account,
         and a sending number owned by that account,
-        define environment variable before running `safecoin-watchtower`:
+        define environment variable before running `wickandbergamot-watchtower`:
 
         export TWILIO_CONFIG='ACCOUNT=<account>,TOKEN=<securityToken>,TO=<receivingNumber>,FROM=<sendingNumber>'")
         .arg({
@@ -67,7 +67,7 @@ fn get_config() -> Config {
                 .takes_value(true)
                 .global(true)
                 .help("Configuration file to use");
-            if let Some(ref config_file) = *safecoin_cli_config::CONFIG_FILE {
+            if let Some(ref config_file) = *wickandbergamot_cli_config::CONFIG_FILE {
                 arg.default_value(config_file)
             } else {
                 arg
@@ -117,11 +117,11 @@ fn get_config() -> Config {
         .arg(
             Arg::with_name("minimum_validator_identity_balance")
                 .long("minimum-validator-identity-balance")
-                .value_name("SAFE")
+                .value_name("WICKANDBERGAMOT")
                 .takes_value(true)
                 .default_value("10")
                 .validator(is_parsable::<f64>)
-                .help("Alert when the validator identity balance is less than this amount of SAFE")
+                .help("Alert when the validator identity balance is less than this amount of WICKANDBERGAMOT")
         )
         .arg(
             // Deprecated parameter, now always enabled
@@ -150,14 +150,14 @@ fn get_config() -> Config {
                 .value_name("SUFFIX")
                 .takes_value(true)
                 .default_value("")
-                .help("Add this string into all notification messages after \"safecoin-watchtower\"")
+                .help("Add this string into all notification messages after \"wickandbergamot-watchtower\"")
         )
         .get_matches();
 
     let config = if let Some(config_file) = matches.value_of("config_file") {
-        safecoin_cli_config::Config::load(config_file).unwrap_or_default()
+        wickandbergamot_cli_config::Config::load(config_file).unwrap_or_default()
     } else {
-        safecoin_cli_config::Config::default()
+        wickandbergamot_cli_config::Config::default()
     };
 
     let interval = Duration::from_secs(value_t_or_exit!(matches, "interval", u64));
@@ -269,9 +269,9 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 info!(
                     "Current stake: {:.2}% | Total stake: {}, current stake: {}, delinquent: {}",
                     current_stake_percent,
-                    Safe(total_stake),
-                    Safe(total_current_stake),
-                    Safe(total_delinquent_stake)
+                    Wickandbergamot(total_stake),
+                    Wickandbergamot(total_current_stake),
+                    Wickandbergamot(total_delinquent_stake)
                 );
 
                 if transaction_count > last_transaction_count {
@@ -327,7 +327,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                         if *balance < config.minimum_validator_identity_balance {
                             failures.push((
                                 "balance",
-                                format!("{} has {}", formatted_validator_identity, Safe(*balance)),
+                                format!("{} has {}", formatted_validator_identity, Wickandbergamot(*balance)),
                             ));
                         }
                     }
@@ -361,7 +361,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
         if let Some((failure_test_name, failure_error_message)) = &failure {
             let notification_msg = format!(
-                "safecoin-watchtower{}: Error: {}: {}",
+                "wickandbergamot-watchtower{}: Error: {}: {}",
                 config.name_suffix, failure_test_name, failure_error_message
             );
             num_consecutive_failures += 1;
@@ -395,7 +395,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 );
                 info!("{}", all_clear_msg);
                 notifier.send(&format!(
-                    "safecoin-watchtower{}: {}",
+                    "wickandbergamot-watchtower{}: {}",
                     config.name_suffix, all_clear_msg
                 ));
             }
