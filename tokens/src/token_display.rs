@@ -1,5 +1,5 @@
 use {
-    safecoin_account_decoder::parse_token::real_number_string_trimmed,
+    wickandbergamot_account_decoder::parse_token::real_number_string_trimmed,
     solana_sdk::native_token::lamports_to_sol,
     std::{
         fmt::{Debug, Display, Formatter, Result},
@@ -7,12 +7,12 @@ use {
     },
 };
 
-const SAFE_SYMBOL: &str = "◎";
+const WICKANDBERGAMOT_SYMBOL: &str = "◎";
 
 #[derive(PartialEq, Eq)]
 pub enum TokenType {
-    Safe,
-    SafeToken,
+    Wickandbergamot,
+    WickandbergamotToken,
 }
 
 pub struct Token {
@@ -24,11 +24,11 @@ pub struct Token {
 impl Token {
     fn write_with_symbol(&self, f: &mut Formatter) -> Result {
         match &self.token_type {
-            TokenType::Safe => {
+            TokenType::Wickandbergamot => {
                 let amount = lamports_to_sol(self.amount);
-                write!(f, "{}{}", SAFE_SYMBOL, amount)
+                write!(f, "{}{}", WICKANDBERGAMOT_SYMBOL, amount)
             }
-            TokenType::SafeToken => {
+            TokenType::WickandbergamotToken => {
                 let amount = real_number_string_trimmed(self.amount, self.decimals);
                 write!(f, "{} tokens", amount)
             }
@@ -39,15 +39,15 @@ impl Token {
         Self {
             amount,
             decimals: 9,
-            token_type: TokenType::Safe,
+            token_type: TokenType::Wickandbergamot,
         }
     }
 
-    pub fn safe_token(amount: u64, decimals: u8) -> Self {
+    pub fn wickandbergamot_token(amount: u64, decimals: u8) -> Self {
         Self {
             amount,
             decimals,
-            token_type: TokenType::SafeToken,
+            token_type: TokenType::WickandbergamotToken,
         }
     }
 }
