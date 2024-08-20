@@ -1,7 +1,7 @@
 # |source| this file
 
 set -ex
-safecoin --version
+wickandbergamot --version
 
 npm run clean
 npm run build
