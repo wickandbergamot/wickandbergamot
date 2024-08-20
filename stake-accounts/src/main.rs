@@ -10,8 +10,8 @@ use {
             resolve_command, AuthorizeArgs, Command, MoveArgs, NewArgs, RebaseArgs, SetLockupArgs,
         },
     },
-    safecoin_cli_config::Config,
-    safecoin_client::{client_error::ClientError, rpc_client::RpcClient},
+    wickandbergamot_cli_config::Config,
+    wickandbergamot_client::{client_error::ClientError, rpc_client::RpcClient},
     solana_sdk::{
         message::Message,
         native_token::lamports_to_sol,
