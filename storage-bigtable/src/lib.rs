@@ -15,7 +15,7 @@ use {
         transaction::{TransactionError, VersionedTransaction},
     },
     solana_storage_proto::convert::{generated, tx_by_addr},
-    safecoin_transaction_status::{
+    wickandbergamot_transaction_status::{
         extract_and_fmt_memos, ConfirmedBlock, ConfirmedTransactionStatusWithSignature,
         ConfirmedTransactionWithStatusMeta, Reward, TransactionByAddrInfo,
         TransactionConfirmationStatus, TransactionStatus, TransactionStatusMeta,
@@ -368,7 +368,7 @@ impl From<LegacyTransactionByAddrInfo> for TransactionByAddrInfo {
     }
 }
 
-pub const DEFAULT_INSTANCE_NAME: &str = "safecoin-ledger";
+pub const DEFAULT_INSTANCE_NAME: &str = "wickandbergamot-ledger";
 pub const DEFAULT_APP_PROFILE_ID: &str = "default";
 
 #[derive(Debug)]
