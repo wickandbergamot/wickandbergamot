@@ -1,6 +1,6 @@
 use {
     super::*,
-    safe_token_2022::extension::default_account_state::instruction::{
+    wickandbergamot_token_2024::extension::default_account_state::instruction::{
         decode_instruction, DefaultAccountStateInstruction,
     },
 };
@@ -12,7 +12,7 @@ pub(in crate::parse_token) fn parse_default_account_state_instruction(
 ) -> Result<ParsedInstructionEnum, ParseInstructionError> {
     let (default_account_state_instruction, account_state) = decode_instruction(instruction_data)
         .map_err(|_| {
-        ParseInstructionError::InstructionNotParsable(ParsableProgram::SafeToken)
+        ParseInstructionError::InstructionNotParsable(ParsableProgram::wickandbergamotToken)
     })?;
     let instruction_type = "DefaultAccountState";
     match default_account_state_instruction {
@@ -55,7 +55,7 @@ mod test {
         super::*,
         crate::parse_token::test::*,
         solana_sdk::pubkey::Pubkey,
-        safe_token_2022::{
+        wickandbergamot_token_2024::{
             extension::default_account_state::instruction::{
                 initialize_default_account_state, update_default_account_state,
             },
@@ -68,7 +68,7 @@ mod test {
     fn test_parse_default_account_state_instruction() {
         let mint_pubkey = Pubkey::new_unique();
         let init_default_account_state_ix = initialize_default_account_state(
-            &safe_token_2022::id(),
+            &wickandbergamot_token_2024::id(),
             &convert_pubkey(mint_pubkey),
             &AccountState::Frozen,
         )
@@ -93,7 +93,7 @@ mod test {
         // Single mint freeze_authority
         let mint_freeze_authority = Pubkey::new_unique();
         let update_default_account_state_ix = update_default_account_state(
-            &safe_token_2022::id(),
+            &wickandbergamot_token_2024::id(),
             &convert_pubkey(mint_pubkey),
             &convert_pubkey(mint_freeze_authority),
             &[],
@@ -123,7 +123,7 @@ mod test {
         let multisig_signer0 = Pubkey::new_unique();
         let multisig_signer1 = Pubkey::new_unique();
         let update_default_account_state_ix = update_default_account_state(
-            &safe_token_2022::id(),
+            &wickandbergamot_token_2024::id(),
             &convert_pubkey(mint_pubkey),
             &convert_pubkey(multisig_pubkey),
             &[
