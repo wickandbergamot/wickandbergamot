@@ -4,11 +4,11 @@ use {
     log::*,
     rand::{thread_rng, Rng},
     rayon::prelude::*,
-    safecoin_clap_utils::input_parsers::pubkey_of,
-    safecoin_cli::{cli::CliConfig, program::process_deploy},
-    safecoin_client::{rpc_client::RpcClient, transaction_executor::TransactionExecutor},
-    safecoin_faucet::faucet::{request_airdrop_transaction, FAUCET_PORT},
-    safecoin_gossip::gossip_service::discover,
+    wickandbergamot_clap_utils::input_parsers::pubkey_of,
+    wickandbergamot_cli::{cli::CliConfig, program::process_deploy},
+    wickandbergamot_client::{rpc_client::RpcClient, transaction_executor::TransactionExecutor},
+    wickandbergamot_faucet::faucet::{request_airdrop_transaction, FAUCET_PORT},
+    wickandbergamot_gossip::gossip_service::discover,
     solana_sdk::{
         commitment_config::CommitmentConfig,
         instruction::{AccountMeta, Instruction},
@@ -423,7 +423,7 @@ fn main() {
     solana_logger::setup_with_default("solana=info");
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(safecoin_version::version!())
+        .version(wickandbergamot_version::version!())
         .arg(
             Arg::with_name("entrypoint")
                 .long("entrypoint")
@@ -535,14 +535,14 @@ fn main() {
     let port = if skip_gossip { DEFAULT_RPC_PORT } else { 10015 };
     let mut entrypoint_addr = SocketAddr::from(([127, 0, 0, 1], port));
     if let Some(addr) = matches.value_of("entrypoint") {
-        entrypoint_addr = safecoin_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
+        entrypoint_addr = wickandbergamot_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
             eprintln!("failed to parse entrypoint address: {}", e);
             exit(1)
         });
     }
     let mut faucet_addr = SocketAddr::from(([127, 0, 0, 1], FAUCET_PORT));
     if let Some(addr) = matches.value_of("faucet_addr") {
-        faucet_addr = safecoin_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
+        faucet_addr = wickandbergamot_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
             eprintln!("failed to parse entrypoint address: {}", e);
             exit(1)
         });
@@ -631,11 +631,11 @@ pub mod test {
     use {
         super::*,
         solana_core::validator::ValidatorConfig,
-        safecoin_local_cluster::{
+        wickandbergamot_local_cluster::{
             local_cluster::{ClusterConfig, LocalCluster},
             validator_configs::make_identical_validator_configs,
         },
-        safecoin_measure::measure::Measure,
+        wickandbergamot_measure::measure::Measure,
         solana_sdk::poh_config::PohConfig,
     };
 
