@@ -4,7 +4,7 @@ import {Buffer} from 'buffer';
 import nacl from 'tweetnacl';
 import {sha256} from '@ethersproject/sha2';
 
-import {Struct, SAFECOIN_SCHEMA} from './util/borsh-schema';
+import {Struct, WICKANDBERGAMOT_SCHEMA} from './util/borsh-schema';
 import {toBuffer} from './util/to-buffer';
 
 /**
@@ -228,7 +228,7 @@ export class PublicKey extends Struct {
   }
 }
 
-SAFECOIN_SCHEMA.set(PublicKey, {
+WICKANDBERGAMOT_SCHEMA.set(PublicKey, {
   kind: 'struct',
   fields: [['_bn', 'u256']],
 });
