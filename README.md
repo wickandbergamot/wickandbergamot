@@ -41,7 +41,7 @@ $ sudo apt-get install libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang c
 ## **2. Download the source code.**
 
 ```bash
-$ git clone https://github.com/fair-exchange/wickandbergamot.git
+$ git clone https://github.com/wickandbergamot/wickandbergamot.git
 $ cd solana
 ```
 
