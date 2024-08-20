@@ -1,6 +1,6 @@
 use {
     super::*,
-    safe_token_2022::solana_program::{program_option::COption, pubkey::Pubkey},
+    wickandbergamot_token_2024::solana_program::{program_option::COption, pubkey::Pubkey},
 };
 
 pub(in crate::parse_token) fn parse_initialize_mint_close_authority_instruction(
@@ -25,7 +25,7 @@ mod test {
         crate::parse_token::test::*,
         serde_json::Value,
         solana_sdk::pubkey::Pubkey,
-        safe_token_2022::{instruction::*, solana_program::message::Message},
+        wickandbergamot_token_2024::{instruction::*, solana_program::message::Message},
     };
 
     #[test]
@@ -33,7 +33,7 @@ mod test {
         let mint_pubkey = Pubkey::new_unique();
         let close_authority = Pubkey::new_unique();
         let mint_close_authority_ix = initialize_mint_close_authority(
-            &safe_token_2022::id(),
+            &wickandbergamot_token_2024::id(),
             &convert_pubkey(mint_pubkey),
             Some(&convert_pubkey(close_authority)),
         )
@@ -56,7 +56,7 @@ mod test {
         );
 
         let mint_close_authority_ix = initialize_mint_close_authority(
-            &safe_token_2022::id(),
+            &wickandbergamot_token_2024::id(),
             &convert_pubkey(mint_pubkey),
             None,
         )
