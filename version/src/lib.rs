@@ -7,7 +7,7 @@ use {
     std::{convert::TryInto, fmt},
 };
 #[macro_use]
-extern crate safecoin_frozen_abi_macro;
+extern crate wickandbergamot_frozen_abi_macro;
 
 // Older version structure used earlier 1.3.x releases
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, AbiExample)]
