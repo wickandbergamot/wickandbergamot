@@ -1,12 +1,12 @@
 [package]
 authors = ["Solana Maintainers <maintainers@solana.com>"]
-description = "Safecoin: Enterprise Security for the Community by the Community"
+description = "Wickandbergamot: Intellectual Property Firm"
 edition = "2021"
-homepage = "https://safecoin.org/"
+homepage = "https://Wickandbergamot.org/"
 license = "Apache-2.0"
 name = "proto"
 publish = false
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 version = "1.14.17"
 
 [workspace]
