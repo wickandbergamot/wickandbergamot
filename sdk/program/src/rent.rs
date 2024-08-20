@@ -24,8 +24,8 @@ pub struct Rent {
 }
 
 /// default rental rate in lamports/byte-year, based on:
-///  10^9 lamports per SAFE
-///  $1 per SAFE
+///  10^9 lamports per WICKANDBERGAMOT
+///  $1 per WICKANDBERGAMOT
 ///  $0.01 per megabyte day
 ///  $3.65 per megabyte year
 pub const DEFAULT_LAMPORTS_PER_BYTE_YEAR: u64 = 1_000_000_000 / 100 * 365 / (1024 * 1024);
@@ -53,7 +53,7 @@ impl Clone for Rent {
     fn clone(&self) -> Self {
         clone_zeroed(|cloned: &mut MaybeUninit<Self>| {
             let ptr = cloned.as_mut_ptr();
-            unsafe {
+            unWICKANDBERGAMOT {
                 copy_field!(ptr, self, lamports_per_byte_year);
                 copy_field!(ptr, self, exemption_threshold);
                 copy_field!(ptr, self, burn_percent);
