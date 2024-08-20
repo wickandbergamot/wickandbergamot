@@ -1,6 +1,6 @@
 use {
     serde::{Deserialize, Serialize},
-    safecoin_account_decoder::{
+    wickandbergamot_account_decoder::{
         parse_token::{real_number_string_trimmed, UiTokenAmount},
         StringAmount,
     },
@@ -8,7 +8,7 @@ use {
         deserialize_utils::default_on_eof, message::v0::LoadedAddresses, transaction::Result,
         transaction_context::TransactionReturnData,
     },
-    safecoin_transaction_status::{
+    wickandbergamot_transaction_status::{
         InnerInstructions, Reward, RewardType, TransactionStatusMeta, TransactionTokenBalance,
     },
     std::str::FromStr,
