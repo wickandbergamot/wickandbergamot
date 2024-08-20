@@ -20,22 +20,22 @@ usage: $0 [cluster_rpc_url]
    CONFIG
 
  Required arguments:
-   cluster_rpc_url  - RPC URL and port for a running Safecoin cluster (ex: http://34.83.146.144:8328)
+   cluster_rpc_url  - RPC URL and port for a running wickandbergamot cluster (ex: http://34.83.146.144:8328)
 EOF
   exit $exitcode
 }
 
 function get_cluster_version {
-  clusterVersion="$(curl -s -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","id":1, "method":"getVersion"}' "$url" | jq '.result | ."safecoin-core" ')"
+  clusterVersion="$(curl -s -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","id":1, "method":"getVersion"}' "$url" | jq '.result | ."wickandbergamot-core" ')"
   echo Cluster software version: "$clusterVersion"
 }
 
 function get_token_capitalization {
   totalSupplyLamports="$(curl -s -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","id":1, "method":"getTotalSupply"}' "$url" | cut -d , -f 2 | cut -d : -f 2)"
-  totalSupplySafe=$((totalSupplyLamports / LAMPORTS_PER_SAFE))
+  totalSupplyWICKANDBERGAMOT=$((totalSupplyLamports / LAMPORTS_PER_WICKANDBERGAMOT))
 
   printf "\n--- Token Capitalization ---\n"
-  printf "Total token capitalization %'d SAFE\n" "$totalSupplySafe"
+  printf "Total token capitalization %'d WICKANDBERGAMOT\n" "$totalSupplyWickandbergamot"
   printf "Total token capitalization %'d Lamports\n" "$totalSupplyLamports"
 
 }
@@ -55,28 +55,28 @@ function get_program_account_balance_totals {
     totalAccountBalancesLamports=$((totalAccountBalancesLamports + account))
     numberOfAccounts=$((numberOfAccounts + 1))
   done
-  totalAccountBalancesSafe=$((totalAccountBalancesLamports / LAMPORTS_PER_SAFE))
+  totalAccountBalancesWickandbergamot=$((totalAccountBalancesLamports / LAMPORTS_PER_WICKANDBERGAMOT))
 
   printf "\n--- %s Account Balance Totals ---\n" "$PROGRAM_NAME"
   printf "Number of %s Program accounts: %'.f\n" "$PROGRAM_NAME" "$numberOfAccounts"
-  printf "Total token balance in all %s accounts: %'d SAFE\n" "$PROGRAM_NAME" "$totalAccountBalancesSafe"
+  printf "Total token balance in all %s accounts: %'d WICKANDBERGAMOT\n" "$PROGRAM_NAME" "$totalAccountBalancesWickandbergamot"
   printf "Total token balance in all %s accounts: %'d Lamports\n" "$PROGRAM_NAME" "$totalAccountBalancesLamports"
 
   case $PROGRAM_NAME in
     SYSTEM)
-      systemAccountBalanceTotalSafe=$totalAccountBalancesSafe
+      systemAccountBalanceTotalWickandbergamot=$totalAccountBalancesWickandbergamot
       systemAccountBalanceTotalLamports=$totalAccountBalancesLamports
       ;;
     STAKE)
-      stakeAccountBalanceTotalSafe=$totalAccountBalancesSafe
+      stakeAccountBalanceTotalWickandbergamot=$totalAccountBalancesWickandbergamot
       stakeAccountBalanceTotalLamports=$totalAccountBalancesLamports
       ;;
     VOTE)
-      voteAccountBalanceTotalSafe=$totalAccountBalancesSafe
+      voteAccountBalanceTotalWickandbergamot=$totalAccountBalancesWickandbergamot
       voteAccountBalanceTotalLamports=$totalAccountBalancesLamports
       ;;
     CONFIG)
-      configAccountBalanceTotalSafe=$totalAccountBalancesSafe
+      configAccountBalanceTotalWickandbergamot=$totalAccountBalancesWickandbergamot
       configAccountBalanceTotalLamports=$totalAccountBalancesLamports
       ;;
     *)
@@ -87,11 +87,11 @@ function get_program_account_balance_totals {
 }
 
 function sum_account_balances_totals {
-  grandTotalAccountBalancesSafe=$((systemAccountBalanceTotalSafe + stakeAccountBalanceTotalSafe + voteAccountBalanceTotalSafe + configAccountBalanceTotalSafe))
+  grandTotalAccountBalancesWickandbergamot=$((systemAccountBalanceTotalWickandbergamot + stakeAccountBalanceTotalWickandbergamot + voteAccountBalanceTotalWickandbergamot + configAccountBalanceTotalWickandbergamot))
   grandTotalAccountBalancesLamports=$((systemAccountBalanceTotalLamports + stakeAccountBalanceTotalLamports + voteAccountBalanceTotalLamports + configAccountBalanceTotalLamports))
 
   printf "\n--- Total Token Distribution in all Account Balances ---\n"
-  printf "Total SAFE in all Account Balances: %'d\n" "$grandTotalAccountBalancesSafe"
+  printf "Total WICKANDBERGAMOT in all Account Balances: %'d\n" "$grandTotalAccountBalancesWickandbergamot"
   printf "Total Lamports in all Account Balances: %'d\n" "$grandTotalAccountBalancesLamports"
 }
 
@@ -99,12 +99,12 @@ url=$1
 [[ -n $url ]] || usage "Missing required RPC URL"
 shift
 
-LAMPORTS_PER_SAFE=1000000000 # 1 billion
+LAMPORTS_PER_WICKANDBERGAMOT=1000000 # 1 Million
 
-stakeAccountBalanceTotalSafe=
-systemAccountBalanceTotalSafe=
-voteAccountBalanceTotalSafe=
-configAccountBalanceTotalSafe=
+stakeAccountBalanceTotalWickandbergamot=
+systemAccountBalanceTotalWickandbergamot=
+voteAccountBalanceTotalWickandbergamot=
+configAccountBalanceTotalWickandbergamot=
 
 stakeAccountBalanceTotalLamports=
 systemAccountBalanceTotalLamports=
