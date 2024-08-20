@@ -7,18 +7,18 @@ use {
         mint_close_authority::*, permanent_delegate::*, reallocate::*, transfer_fee::*,
     },
     serde_json::{json, Map, Value},
-    safecoin_account_decoder::parse_token::{
-        pubkey_from_safe_token, token_amount_to_ui_amount, UiAccountState,
+    wickandbergamot_account_decoder::parse_token::{
+        pubkey_from_wickandbergamot_token, token_amount_to_ui_amount, UiAccountState,
     },
     solana_sdk::{
         instruction::{AccountMeta, CompiledInstruction, Instruction},
         message::AccountKeys,
     },
-    safe_token_2022::{
+    wickandbergamot_token_2022::{
         extension::ExtensionType,
         instruction::{AuthorityType, TokenInstruction},
         solana_program::{
-            instruction::Instruction as SafeTokenInstruction, program_option::COption,
+            instruction::Instruction as wickandbergamotTokenInstruction, program_option::COption,
             pubkey::Pubkey,
         },
     },
@@ -31,13 +31,13 @@ pub fn parse_token(
     account_keys: &AccountKeys,
 ) -> Result<ParsedInstructionEnum, ParseInstructionError> {
     let token_instruction = TokenInstruction::unpack(&instruction.data)
-        .map_err(|_| ParseInstructionError::InstructionNotParsable(ParsableProgram::SafeToken))?;
+        .map_err(|_| ParseInstructionError::InstructionNotParsable(ParsableProgram::wickandbergamotToken))?;
     match instruction.accounts.iter().max() {
         Some(index) if (*index as usize) < account_keys.len() => {}
         _ => {
             // Runtime should prevent this from ever happening
             return Err(ParseInstructionError::InstructionKeyMismatch(
-                ParsableProgram::SafeToken,
+                ParsableProgram::WickandbergamotToken,
             ));
         }
     }
@@ -512,12 +512,12 @@ pub fn parse_token(
             )
         }
         TokenInstruction::ConfidentialTransferExtension => Err(
-            ParseInstructionError::InstructionNotParsable(ParsableProgram::SafeToken),
+            ParseInstructionError::InstructionNotParsable(ParsableProgram::WickandbergamotToken),
         ),
         TokenInstruction::DefaultAccountStateExtension => {
             if instruction.data.len() <= 2 {
                 return Err(ParseInstructionError::InstructionNotParsable(
-                    ParsableProgram::SafeToken,
+                    ParsableProgram::WickandbergamotToken,
                 ));
             }
             parse_default_account_state_instruction(
@@ -532,7 +532,7 @@ pub fn parse_token(
         TokenInstruction::MemoTransferExtension => {
             if instruction.data.len() < 2 {
                 return Err(ParseInstructionError::InstructionNotParsable(
-                    ParsableProgram::SafeToken,
+                    ParsableProgram::WickandbergamotToken,
                 ));
             }
             parse_memo_transfer_instruction(
@@ -564,7 +564,7 @@ pub fn parse_token(
         TokenInstruction::InterestBearingMintExtension => {
             if instruction.data.len() < 2 {
                 return Err(ParseInstructionError::InstructionNotParsable(
-                    ParsableProgram::SafeToken,
+                    ParsableProgram::WickandbergamotToken,
                 ));
             }
             parse_interest_bearing_mint_instruction(
@@ -576,7 +576,7 @@ pub fn parse_token(
         TokenInstruction::CpiGuardExtension => {
             if instruction.data.len() < 2 {
                 return Err(ParseInstructionError::InstructionNotParsable(
-                    ParsableProgram::SafeToken,
+                    ParsableProgram::WickandbergamotToken,
                 ));
             }
             parse_cpi_guard_instruction(&instruction.data[1..], &instruction.accounts, account_keys)
@@ -690,17 +690,17 @@ fn parse_signers(
 }
 
 fn check_num_token_accounts(accounts: &[u8], num: usize) -> Result<(), ParseInstructionError> {
-    check_num_accounts(accounts, num, ParsableProgram::SafeToken)
+    check_num_accounts(accounts, num, ParsableProgram::WickandbergamotToken)
 }
 
-pub fn safe_token_instruction(instruction: SafeTokenInstruction) -> Instruction {
+pub fn wickandbergamot_token_instruction(instruction: WickandbergamotTokenInstruction) -> Instruction {
     Instruction {
-        program_id: pubkey_from_safe_token(&instruction.program_id),
+        program_id: pubkey_from_wickandbergamot_token(&instruction.program_id),
         accounts: instruction
             .accounts
             .iter()
             .map(|meta| AccountMeta {
-                pubkey: pubkey_from_safe_token(&meta.pubkey),
+                pubkey: pubkey_from_wickandbergamot_token(&meta.pubkey),
                 is_signer: meta.is_signer,
                 is_writable: meta.is_writable,
             })
@@ -721,22 +721,22 @@ mod test {
     use {
         super::*,
         solana_sdk::{instruction::CompiledInstruction, pubkey::Pubkey},
-        safe_token_2022::{
+        wickandbergamot_token_2022::{
             instruction::*,
             solana_program::{
-                instruction::CompiledInstruction as SafeTokenCompiledInstruction, message::Message,
-                pubkey::Pubkey as SafeTokenPubkey,
+                instruction::CompiledInstruction as WickandbergamotTokenCompiledInstruction, message::Message,
+                pubkey::Pubkey as WickandbergamotTokenPubkey,
             },
         },
         std::str::FromStr,
     };
 
-    pub(super) fn convert_pubkey(pubkey: Pubkey) -> SafeTokenPubkey {
-        SafeTokenPubkey::from_str(&pubkey.to_string()).unwrap()
+    pub(super) fn convert_pubkey(pubkey: Pubkey) -> WickandbergamotTokenPubkey {
+        WickandbergamotTokenPubkey::from_str(&pubkey.to_string()).unwrap()
     }
 
     pub(super) fn convert_compiled_instruction(
-        instruction: &SafeTokenCompiledInstruction,
+        instruction: &WickandbergamotTokenCompiledInstruction,
     ) -> CompiledInstruction {
         CompiledInstruction {
             program_id_index: instruction.program_id_index,
@@ -749,11 +749,11 @@ mod test {
         message
             .account_keys
             .iter()
-            .map(pubkey_from_safe_token)
+            .map(pubkey_from_wickandbergamot_token)
             .collect()
     }
 
-    fn test_parse_token(program_id: &SafeTokenPubkey) {
+    fn test_parse_token(program_id: &WickandbergamotTokenPubkey) {
         let mint_pubkey = Pubkey::new_unique();
         let mint_authority = Pubkey::new_unique();
         let freeze_authority = Pubkey::new_unique();
@@ -1623,7 +1623,7 @@ mod test {
         let get_account_data_size_ix = get_account_data_size(
             program_id,
             &convert_pubkey(mint_pubkey),
-            &[], // This emulates the packed data of safe_token::instruction::get_account_data_size
+            &[], // This emulates the packed data of wickandbergamot_token::instruction::get_account_data_size
         )
         .unwrap();
         let message = Message::new(&[get_account_data_size_ix], None);
@@ -1712,20 +1712,20 @@ mod test {
     #[test]
     #[allow(clippy::same_item_push)]
     fn test_parse_token_v3() {
-        test_parse_token(&safe_token::id());
+        test_parse_token(&wickandbergamot_token::id());
     }
 
     #[test]
     #[allow(clippy::same_item_push)]
     fn test_parse_token_2022() {
-        test_parse_token(&safe_token_2022::id());
+        test_parse_token(&wickandbergamot_token_2022::id());
     }
 
     #[test]
     fn test_create_native_mint() {
         let payer = Pubkey::new_unique();
         let create_native_mint_ix =
-            create_native_mint(&safe_token_2022::id(), &convert_pubkey(payer)).unwrap();
+            create_native_mint(&wickandbergamot_token_2022::id(), &convert_pubkey(payer)).unwrap();
         let message = Message::new(&[create_native_mint_ix], None);
         let compiled_instruction = convert_compiled_instruction(&message.instructions[0]);
         assert_eq!(
@@ -1738,14 +1738,14 @@ mod test {
                 instruction_type: "createNativeMint".to_string(),
                 info: json!({
                    "payer": payer.to_string(),
-                   "nativeMint": safe_token_2022::native_mint::id().to_string(),
+                   "nativeMint": wickandbergamot_token_2022::native_mint::id().to_string(),
                    "systemProgram": solana_sdk::system_program::id().to_string(),
                 })
             }
         );
     }
 
-    fn test_token_ix_not_enough_keys(program_id: &SafeTokenPubkey) {
+    fn test_token_ix_not_enough_keys(program_id: &WickandbergamotTokenPubkey) {
         let mut keys: Vec<Pubkey> = vec![];
         for _ in 0..10 {
             keys.push(solana_sdk::pubkey::new_rand());
@@ -2226,12 +2226,12 @@ mod test {
     #[test]
     #[allow(clippy::same_item_push)]
     fn test_not_enough_keys_token_v3() {
-        test_token_ix_not_enough_keys(&safe_token::id());
+        test_token_ix_not_enough_keys(&wickandbergamot_token::id());
     }
 
     #[test]
     #[allow(clippy::same_item_push)]
     fn test_not_enough_keys_token_2022() {
-        test_token_ix_not_enough_keys(&safe_token_2022::id());
+        test_token_ix_not_enough_keys(&wickandbergamot_token_2022::id());
     }
 }
