@@ -3,7 +3,7 @@ use {
     pickledb::{error::Error, PickleDb, PickleDbDumpPolicy},
     serde::{Deserialize, Serialize},
     solana_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature, transaction::Transaction},
-    safecoin_transaction_status::TransactionStatus,
+    wickandbergamot_transaction_status::TransactionStatus,
     std::{cmp::Ordering, fs, io, path::Path},
 };
 
@@ -212,7 +212,7 @@ mod tests {
         super::*,
         csv::{ReaderBuilder, Trim},
         solana_sdk::transaction::TransactionError,
-        safecoin_transaction_status::TransactionConfirmationStatus,
+        wickandbergamot_transaction_status::TransactionConfirmationStatus,
         tempfile::NamedTempFile,
     };
 
