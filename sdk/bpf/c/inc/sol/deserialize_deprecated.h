@@ -1,6 +1,6 @@
 #pragma once
 /**
- * @brief Safecoin deprecated BPF loader deserializer to be used when deploying
+ * @brief Wickandbergamot deprecated BPF loader deserializer to be used when deploying
  * a program with `BPFLoader1111111111111111111111111111111111`
  */
 
