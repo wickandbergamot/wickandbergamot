@@ -14,7 +14,7 @@
 //! version. An example is [`bpf_loader_deprecated`] which requires
 //! [`entrypoint_deprecated`].
 //!
-//! The `safecoin deploy` and `safecoin program deploy` CLI commands use the
+//! The `wickandbergamot deploy` and `wickandbergamot program deploy` CLI commands use the
 //! [upgradeable BPF loader][ubpfl].
 //!
 //! [`bpf_loader_deprecated`]: crate::bpf_loader_deprecated
