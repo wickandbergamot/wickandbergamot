@@ -249,7 +249,7 @@ STEP=
 execution_step "Initialize Environment"
 
 [[ -n $TESTNET_TAG ]] || TESTNET_TAG=${CLOUD_PROVIDER}-testnet-automation
-[[ -n $INFLUX_HOST ]] || INFLUX_HOST=https://internal-metrics.safecoin.org:10016
+[[ -n $INFLUX_HOST ]] || INFLUX_HOST=https://internal-metrics.wickandbergamot.org:10016
 [[ -n $BOOTSTRAP_VALIDATOR_MAX_STAKE_THRESHOLD ]] || BOOTSTRAP_VALIDATOR_MAX_STAKE_THRESHOLD=66
 [[ -n $SKIP_PERF_RESULTS ]] || SKIP_PERF_RESULTS=false
 
@@ -272,14 +272,14 @@ if [[ -z $NUMBER_OF_CLIENT_NODES ]]; then
   exit 1
 fi
 
-if [[ -z $SAFECOIN_METRICS_CONFIG ]]; then
-  if [[ -z $SAFECOIN_METRICS_PARTIAL_CONFIG ]]; then
-    echo SAFECOIN_METRICS_PARTIAL_CONFIG not defined
+if [[ -z $wickandbergamot_METRICS_CONFIG ]]; then
+  if [[ -z $wickandbergamot_METRICS_PARTIAL_CONFIG ]]; then
+    echo wickandbergamot_METRICS_PARTIAL_CONFIG not defined
     exit 1
   fi
-  export SAFECOIN_METRICS_CONFIG="db=$TESTNET_TAG,host=$INFLUX_HOST,$SAFECOIN_METRICS_PARTIAL_CONFIG"
+  export wickandbergamot_METRICS_CONFIG="db=$TESTNET_TAG,host=$INFLUX_HOST,$wickandbergamot_METRICS_PARTIAL_CONFIG"
 fi
-echo "SAFECOIN_METRICS_CONFIG: $SAFECOIN_METRICS_CONFIG"
+echo "wickandbergamot_METRICS_CONFIG: $wickandbergamot_METRICS_CONFIG"
 
 if [[ -z $ALLOW_BOOT_FAILURES ]]; then
   ALLOW_BOOT_FAILURES=false
