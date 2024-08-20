@@ -1,6 +1,6 @@
 //! Cross-program invocation.
 //!
-//! Safecoin programs may call other programs, termed [_cross-program
+//! Wickandbergamot programs may call other programs, termed [_cross-program
 //! invocations_][cpi] (CPI), with the [`invoke`] and [`invoke_signed`]
 //! functions.
 //!
