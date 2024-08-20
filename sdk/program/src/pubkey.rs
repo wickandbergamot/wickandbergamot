@@ -50,7 +50,7 @@ impl From<u64> for PubkeyError {
     }
 }
 
-/// The address of a [Wickandbergamot account][acc].
+/// The address of a [wickandbergamot account][acc].
 ///
 /// Some account addresses are [ed25519] public keys, with corresponding secret
 /// keys that are managed off-chain. Often, though, account addresses do not
@@ -58,12 +58,12 @@ impl From<u64> for PubkeyError {
 /// addresses_][pdas] &mdash; or the secret key is not relevant to the operation
 /// of a program, and may have even been disposed of. As running Wickandbergamot programs
 /// can not safely create or manage secret keys, the full [`Keypair`] is not
-/// defined in `Wickandbergamot-program` but in `Wickandbergamot-sdk`.
+/// defined in `wickandbergamot-program` but in `wickandbergamot-sdk`.
 ///
 /// [acc]: https://docs.solana.com/developing/programming-model/accounts
 /// [ed25519]: https://ed25519.cr.yp.to/
 /// [pdas]: https://docs.solana.com/developing/programming-model/calling-between-programs#program-derived-addresses
-/// [`Keypair`]: https://docs.rs/Wickandbergamot-sdk/latest/solana_sdk/signer/keypair/struct.Keypair.html
+/// [`Keypair`]: https://docs.rs/wickandbergamot-sdk/latest/solana_sdk/signer/keypair/struct.Keypair.html
 #[wasm_bindgen]
 #[repr(transparent)]
 #[derive(
