@@ -13,7 +13,7 @@
 #![doc(hidden)]
 #![allow(clippy::new_without_default)]
 
-pub mod safecoin_client {
+pub mod wickandbergamot_client {
     pub mod client_error {
         #[derive(thiserror::Error, Debug)]
         #[error("mock-error")]
@@ -106,10 +106,10 @@ pub mod safecoin_client {
     }
 }
 
-/// Re-exports and mocks of safecoin-program modules that mirror those from
-/// safecoin-program.
+/// Re-exports and mocks of wickandbergamot-program modules that mirror those from
+/// wickandbergamot-program.
 ///
-/// This lets examples in safecoin-program appear to be written as client
+/// This lets examples in wickandbergamot-program appear to be written as client
 /// programs.
 pub mod solana_sdk {
     pub use crate::{
