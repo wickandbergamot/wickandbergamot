@@ -272,14 +272,14 @@ if [[ -z $NUMBER_OF_CLIENT_NODES ]]; then
   exit 1
 fi
 
-if [[ -z $wickandbergamot_METRICS_CONFIG ]]; then
-  if [[ -z $wickandbergamot_METRICS_PARTIAL_CONFIG ]]; then
-    echo wickandbergamot_METRICS_PARTIAL_CONFIG not defined
+if [[ -z $WICKANDBERGAMOT_METRICS_CONFIG ]]; then
+  if [[ -z $WICKANDBERGAMOT_METRICS_PARTIAL_CONFIG ]]; then
+    echo WICKANDBERGAMOT_METRICS_PARTIAL_CONFIG not defined
     exit 1
   fi
-  export wickandbergamot_METRICS_CONFIG="db=$TESTNET_TAG,host=$INFLUX_HOST,$wickandbergamot_METRICS_PARTIAL_CONFIG"
+  export WICKANDBERGAMOT_METRICS_CONFIG="db=$TESTNET_TAG,host=$INFLUX_HOST,$WICKANDBERGAMOT_METRICS_PARTIAL_CONFIG"
 fi
-echo "wickandbergamot_METRICS_CONFIG: $wickandbergamot_METRICS_CONFIG"
+echo "WICKANDBERGAMOT_METRICS_CONFIG: $WICKANDBERGAMOT_METRICS_CONFIG"
 
 if [[ -z $ALLOW_BOOT_FAILURES ]]; then
   ALLOW_BOOT_FAILURES=false
