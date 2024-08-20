@@ -1,4 +1,4 @@
-use {super::*, safe_token_2022::solana_program::pubkey::Pubkey};
+use {super::*, wickandbergamot_token_2024::solana_program::pubkey::Pubkey};
 
 pub(in crate::parse_token) fn parse_initialize_permanent_delegate_instruction(
     delegate: Pubkey,
@@ -21,7 +21,7 @@ mod test {
         super::*,
         crate::parse_token::test::*,
         solana_sdk::pubkey::Pubkey,
-        safe_token_2022::{instruction::*, solana_program::message::Message},
+        wickandbergamot_token_2024::{instruction::*, solana_program::message::Message},
     };
 
     #[test]
@@ -29,7 +29,7 @@ mod test {
         let mint_pubkey = Pubkey::new_unique();
         let delegate = Pubkey::new_unique();
         let permanent_delegate_ix = initialize_permanent_delegate(
-            &safe_token_2022::id(),
+            &wickandbergamot_token_2024::id(),
             &convert_pubkey(mint_pubkey),
             &convert_pubkey(delegate),
         )
