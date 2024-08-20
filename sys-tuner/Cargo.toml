@@ -1,21 +1,21 @@
 [package]
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 edition = "2021"
-name = "safecoin-sys-tuner"
-description = "The safecoin cluster system tuner daemon"
+name = "wickandbergamot-sys-tuner"
+description = "The wickandbergamot cluster system tuner daemon"
 version = "1.14.17"
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-sys-tuner"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-sys-tuner"
 publish = true
 
 [dependencies]
 clap = "2.33.1"
 libc = "0.2.126"
 log = "0.4.17"
-safecoin-logger = { path = "../logger", version = "=1.14.17" }
-safecoin-version = { path = "../version", version = "=1.14.17" }
+wickandbergamot-logger = { path = "../logger", version = "=1.14.17" }
+wickandbergamot-version = { path = "../version", version = "=1.14.17" }
 
 [target."cfg(unix)".dependencies]
 unix_socket2 = "0.5.4"
@@ -27,7 +27,7 @@ sysctl = "0.4.4"
 name = "solana_sys_tuner"
 
 [[bin]]
-name = "safecoin-sys-tuner"
+name = "wickandbergamot-sys-tuner"
 path = "src/main.rs"
 
 [package.metadata.docs.rs]
