@@ -1,4 +1,4 @@
-use {super::*, safe_token_2022::extension::ExtensionType};
+use {super::*, wickandbergamot_token_2022::extension::ExtensionType};
 
 pub(in crate::parse_token) fn parse_reallocate_instruction(
     extension_types: Vec<ExtensionType>,
@@ -33,7 +33,7 @@ mod test {
         super::*,
         crate::parse_token::test::*,
         solana_sdk::pubkey::Pubkey,
-        safe_token_2022::{instruction::reallocate, solana_program::message::Message},
+        wickandbergamot_token_2022::{instruction::reallocate, solana_program::message::Message},
     };
 
     #[test]
@@ -49,7 +49,7 @@ mod test {
         // Single owner
         let owner_pubkey = Pubkey::new_unique();
         let reallocate_ix = reallocate(
-            &safe_token_2022::id(),
+            &wickandbergamot_token_2022::id(),
             &convert_pubkey(account_pubkey),
             &convert_pubkey(payer_pubkey),
             &convert_pubkey(owner_pubkey),
@@ -82,7 +82,7 @@ mod test {
         let multisig_signer0 = Pubkey::new_unique();
         let multisig_signer1 = Pubkey::new_unique();
         let reallocate_ix = reallocate(
-            &safe_token_2022::id(),
+            &wickandbergamot_token_2022::id(),
             &convert_pubkey(account_pubkey),
             &convert_pubkey(payer_pubkey),
             &convert_pubkey(multisig_pubkey),
