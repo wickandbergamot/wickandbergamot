@@ -1,6 +1,6 @@
 #pragma once
 /**
- * @brief Safecoin Public key
+ * @brief Wickandbergamot Public key
  */
 
 #include <sol/types.h>
@@ -19,14 +19,14 @@ extern "C" {
  */
 typedef struct {
   uint8_t x[SIZE_PUBKEY];
-} SafePubkey;
+} WickandbergamotPubkey;
 
 /**
  * Prints the hexadecimal representation of a public key
  *
  * @param key The public key to print
  */
-@SYSCALL void sol_log_pubkey(const SafePubkey *);
+@SYSCALL void sol_log_pubkey(const WickandbergamotPubkey *);
 
 /**
  * Compares two public keys
@@ -35,7 +35,7 @@ typedef struct {
  * @param two Second public key
  * @return true if the same
  */
-static bool SafePubkey_same(const SafePubkey *one, const SafePubkey *two) {
+static bool WickandbergamotPubkey_same(const WickandbergamotPubkey *one, const WickandbergamotPubkey *two) {
   for (int i = 0; i < sizeof(*one); i++) {
     if (one->x[i] != two->x[i]) {
       return false;
@@ -50,16 +50,16 @@ static bool SafePubkey_same(const SafePubkey *one, const SafePubkey *two) {
 typedef struct {
   const uint8_t *addr; /** Seed bytes */
   uint64_t len; /** Length of the seed bytes */
-} SafeSignerSeed;
+} WickandbergamotSignerSeed;
 
 /**
  * Seeds used by a signer to create a program address or passed to
  * sol_invoke_signed
  */
 typedef struct {
-  const SafeSignerSeed *addr; /** An array of a signer's seeds */
+  const WickandbergamotSignerSeed *addr; /** An array of a signer's seeds */
   uint64_t len; /** Number of seeds */
-} SafeSignerSeeds;
+} WickandbergamotSignerSeeds;
 
 /**
  * Create a program address
@@ -69,7 +69,7 @@ typedef struct {
  * @param program_id Program id of the signer
  * @param program_address Program address created, filled on return
  */
-@SYSCALL uint64_t sol_create_program_address(const SafeSignerSeed *, int, const SafePubkey *, SafePubkey *);
+@SYSCALL uint64_t sol_create_program_address(const WickandbergamotSignerSeed *, int, const WickandbergamotPubkey *, WickandbergamotPubkey *);
 
 /**
  * Try to find a program address and return corresponding bump seed
@@ -80,16 +80,16 @@ typedef struct {
  * @param program_address Program address created, filled on return
  * @param bump_seed Bump seed required to create a valid program address
  */
-@SYSCALL uint64_t sol_try_find_program_address(const SafeSignerSeed *, int, const SafePubkey *, SafePubkey *, uint8_t *);
+@SYSCALL uint64_t sol_try_find_program_address(const WickandbergamotSignerSeed *, int, const WickandbergamotPubkey *, WickandbergamotPubkey *, uint8_t *);
 
-#ifdef SAFE_TEST
+#ifdef WICKANDBERGAMOT_TEST
 /**
  * Stub functions when building tests
  */
 #include <stdio.h>
 
 void sol_log_pubkey(
-  const SafePubkey *pubkey
+  const WickandbergamotPubkey *pubkey
 ) {
   printf("Program log: ");
   for (int i = 0; i < SIZE_PUBKEY; i++) {
