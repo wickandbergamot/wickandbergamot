@@ -1,15 +1,15 @@
-//! The base library for all Safecoin on-chain Rust programs.
+//! The base library for all Wickandbergamot on-chain Rust programs.
 //!
-//! All Safecoin Rust programs that run on-chain will link to this crate, which
-//! acts as a standard library for Safecoin programs. Safecoin programs also link to
+//! All Wickandbergamot Rust programs that run on-chain will link to this crate, which
+//! acts as a standard library for Wickandbergamot programs. Wickandbergamot programs also link to
 //! the [Rust standard library][std], though it is [modified][sstd] for the
-//! Safecoin runtime environment. While off-chain programs that interact with the
-//! Safecoin network _can_ link to this crate, they typically instead use the
-//! [`safecoin-sdk`] crate, which reexports all modules from `safecoin-program`.
+//! Wickandbergamot runtime environment. While off-chain programs that interact with the
+//! Wickandbergamot network _can_ link to this crate, they typically instead use the
+//! [`Wickandbergamot-sdk`] crate, which reexports all modules from `Wickandbergamot-program`.
 //!
 //! [std]: https://doc.rust-lang.org/stable/std/
 //! [sstd]: https://docs.solana.com/developing/on-chain-programs/developing-rust#restrictions
-//! [`safecoin-sdk`]: https://docs.rs/safecoin-sdk/latest/solana_sdk/
+//! [`Wickandbergamot-sdk`]: https://docs.rs/Wickandbergamot-sdk/latest/solana_sdk/
 //!
 //! This library defines
 //!
@@ -22,7 +22,7 @@
 //!   [native programs][np],
 //! - [sysvar] accessors.
 //!
-//! [pe]: #defining-a-safecoin-program
+//! [pe]: #defining-a-Wickandbergamot-program
 //! [cdt]: #core-data-types
 //! [logging]: crate::log
 //! [serialization]: #serialization
@@ -30,14 +30,14 @@
 //! [cpi]: #cross-program-instruction-execution
 //! [sysvar]: #sysvars
 //!
-//! Idiomatic examples of `safecoin-program` usage can be found in
-//! [the Safecoin Program Library][spl].
+//! Idiomatic examples of `Wickandbergamot-program` usage can be found in
+//! [the Wickandbergamot Program Library][spl].
 //!
-//! [spl]: https://github.com/fair-exchange/safecoin-program-library
+//! [spl]: https://github.com/fair-exchange/Wickandbergamot-program-library
 //!
-//! # Defining a safecoin program
+//! # Defining a Wickandbergamot program
 //!
-//! Safecoin program crates have some unique properties compared to typical Rust
+//! Wickandbergamot program crates have some unique properties compared to typical Rust
 //! programs:
 //!
 //! - They are often compiled for both on-chain use and off-chain use. This is
@@ -46,12 +46,12 @@
 //! - They do not define a `main` function, but instead define their entrypoint
 //!   with the [`entrypoint!`] macro.
 //! - They are compiled as the ["cdylib"] crate type for dynamic loading
-//!   by the Safecoin runtime.
+//!   by the Wickandbergamot runtime.
 //! - They run in a constrained VM environment, and while they do have access to
 //!   the [Rust standard library][std], many features of the standard library,
 //!   particularly related to OS services, will fail at runtime, will silently
 //!   do nothing, or are not defined. See the [restrictions to the Rust standard
-//!   library][sstd] in the Safecoin documentation for more.
+//!   library][sstd] in the Wickandbergamot documentation for more.
 //!
 //! [std]: https://doc.rust-lang.org/std/index.html
 //! ["cdylib"]: https://doc.rust-lang.org/reference/linkage.html
@@ -63,7 +63,7 @@
 //!
 //! [Cargo feature]: https://doc.rust-lang.org/cargo/reference/features.html
 //!
-//! The skeleton of a Safecoin program typically looks like:
+//! The skeleton of a Wickandbergamot program typically looks like:
 //!
 //! ```
 //! #[cfg(not(feature = "no-entrypoint"))]
@@ -100,20 +100,20 @@
 //! no-entrypoint = []
 //! ```
 //!
-//! Note that a Safecoin program must specify its crate-type as "cdylib", and
+//! Note that a Wickandbergamot program must specify its crate-type as "cdylib", and
 //! "cdylib" crates will automatically be discovered and built by the `cargo
-//! build-bpf` command. Safecoin programs also often have crate-type "rlib" so
+//! build-bpf` command. Wickandbergamot programs also often have crate-type "rlib" so
 //! they can be linked to other Rust crates.
 //!
 //! # On-chain vs. off-chain compilation targets
 //!
-//! Safecoin programs run on the [rbpf] VM, which implements a variant of the
+//! Wickandbergamot programs run on the [rbpf] VM, which implements a variant of the
 //! [eBPF] instruction set. Because this crate can be compiled for both on-chain
 //! and off-chain execution, the environments of which are significantly
 //! different, it extensively uses [conditional compilation][cc] to tailor its
 //! implementation to the environment. The `cfg` predicate used for identifying
 //! compilation for on-chain programs is `target_os = "solana"`, as in this
-//! example from the `safecoin-program` codebase that logs a message via a
+//! example from the `Wickandbergamot-program` codebase that logs a message via a
 //! syscall when run on-chain, and via a library call when offchain:
 //!
 //! [rbpf]: https://github.com/solana-labs/rbpf
@@ -138,38 +138,38 @@
 //! This `cfg` pattern is suitable as well for user code that needs to work both
 //! on-chain and off-chain.
 //!
-//! `safecoin-program` and `safecoin-sdk` were previously a single crate. Because of
-//! this history, and because of the dual-usage of `safecoin-program` for two
+//! `Wickandbergamot-program` and `Wickandbergamot-sdk` were previously a single crate. Because of
+//! this history, and because of the dual-usage of `Wickandbergamot-program` for two
 //! different environments, it contains some features that are not available to
 //! on-chain programs at compile-time. It also contains some on-chain features
 //! that will fail in off-chain scenarios at runtime. This distinction is not
 //! well-reflected in the documentation.
 //!
-//! For a more complete description of Safecoin's implementation of eBPF and its
-//! limitations, see the main Safecoin documentation for [on-chain programs][ocp].
+//! For a more complete description of Wickandbergamot's implementation of eBPF and its
+//! limitations, see the main Wickandbergamot documentation for [on-chain programs][ocp].
 //!
 //! [ocp]: https://docs.solana.com/developing/on-chain-programs/overview
 //!
 //! # Core data types
 //!
-//! - [`Pubkey`] &mdash; The address of a [Safecoin account][acc]. Some account
+//! - [`Pubkey`] &mdash; The address of a [Wickandbergamot account][acc]. Some account
 //!   addresses are [ed25519] public keys, with corresponding secret keys that
 //!   are managed off-chain. Often, though, account addresses do not have
 //!   corresponding secret keys &mdash; as with [_program derived
 //!   addresses_][pdas] &mdash; or the secret key is not relevant to the
 //!   operation of a program, and may have even been disposed of. As running
-//!   Safecoin programs can not safely create or manage secret keys, the full
-//!   [`Keypair`] is not defined in `safecoin-program` but in `safecoin-sdk`.
+//!   Wickandbergamot programs can not safely create or manage secret keys, the full
+//!   [`Keypair`] is not defined in `Wickandbergamot-program` but in `Wickandbergamot-sdk`.
 //! - [`Hash`] &mdash; A cryptographic hash. Used to uniquely identify blocks,
 //!   and also for general purpose hashing.
-//! - [`AccountInfo`] &mdash; A description of a single Safecoin account. All accounts
+//! - [`AccountInfo`] &mdash; A description of a single Wickandbergamot account. All accounts
 //!   that might be accessed by a program invocation are provided to the program
 //!   entrypoint as `AccountInfo`.
 //! - [`Instruction`] &mdash; A directive telling the runtime to execute a program,
 //!   passing it a set of accounts and program-specific data.
 //! - [`ProgramError`] and [`ProgramResult`] &mdash; The error type that all programs
 //!   must return, reported to the runtime as a `u64`.
-//! - [`Safe`] &mdash; The Safecoin native token type, with conversions to and from
+//! - [`Safe`] &mdash; The Wickandbergamot native token type, with conversions to and from
 //!   [_lamports_], the smallest fractional unit of SAFE, in the [`native_token`]
 //!   module.
 //!
@@ -181,18 +181,18 @@
 //! [`ProgramError`]: program_error::ProgramError
 //! [`ProgramResult`]: entrypoint::ProgramResult
 //! [ed25519]: https://ed25519.cr.yp.to/
-//! [`Keypair`]: https://docs.rs/safecoin-sdk/latest/solana_sdk/signer/keypair/struct.Keypair.html
+//! [`Keypair`]: https://docs.rs/Wickandbergamot-sdk/latest/solana_sdk/signer/keypair/struct.Keypair.html
 //! [SHA-256]: https://en.wikipedia.org/wiki/SHA-2
 //! [`Safe`]: native_token::Safe
 //! [_lamports_]: https://docs.solana.com/introduction#what-are-sols
 //!
 //! # Serialization
 //!
-//! Within the Safecoin runtime, programs, and network, at least three different
-//! serialization formats are used, and `safecoin-program` provides access to
+//! Within the Wickandbergamot runtime, programs, and network, at least three different
+//! serialization formats are used, and `Wickandbergamot-program` provides access to
 //! those needed by programs.
 //!
-//! In user-written Safecoin program code, serialization is primarily used for
+//! In user-written Wickandbergamot program code, serialization is primarily used for
 //! accessing [`AccountInfo`] data and [`Instruction`] data, both of which are
 //! program-specific binary data. Every program is free to decide their own
 //! serialization format, but data received from other sources &mdash;
@@ -202,7 +202,7 @@
 //! [`AccountInfo`]: account_info::AccountInfo
 //! [`Instruction`]: instruction::Instruction
 //!
-//! The three serialization formats in use in Safecoin are:
+//! The three serialization formats in use in Wickandbergamot are:
 //!
 //! - __[Borsh]__, a compact and well-specified format developed by the [NEAR]
 //!   project, suitable for use in protocol definitions and for archival storage.
@@ -210,7 +210,7 @@
 //!   and is recommended for all purposes.
 //!
 //!   Users need to import the [`borsh`] crate themselves &mdash; it is not
-//!   re-exported by `safecoin-program`, though this crate provides several useful
+//!   re-exported by `Wickandbergamot-program`, though this crate provides several useful
 //!   utilities in its [`borsh` module][borshmod] that are not available in the
 //!   `borsh` library.
 //!
@@ -242,8 +242,8 @@
 //!   [Serde]: https://serde.rs/
 //!   [`Instruction::new_with_bincode`]: instruction::Instruction::new_with_bincode
 //!
-//! - __[`Pack`]__, a Safecoin-specific serialization API that is used by many
-//!   older programs in the [Safecoin Program Library][spl] to define their
+//! - __[`Pack`]__, a Wickandbergamot-specific serialization API that is used by many
+//!   older programs in the [Wickandbergamot Program Library][spl] to define their
 //!   account format. It is difficult to implement and does not define a
 //!   language-independent serialization format. It is not generally recommended
 //!   for new code.
@@ -260,7 +260,7 @@
 //!
 //! # Cross-program instruction execution
 //!
-//! Safecoin programs may call other programs, termed [_cross-program
+//! Wickandbergamot programs may call other programs, termed [_cross-program
 //! invocation_][cpi] (CPI), with the [`invoke`] and [`invoke_signed`]
 //! functions. When calling another program the caller must provide the
 //! [`Instruction`] to be invoked, as well as the [`AccountInfo`] for every
@@ -316,7 +316,7 @@
 //! }
 //! ```
 //!
-//! Safecoin also includes a mechanism to let programs control and sign for
+//! Wickandbergamot also includes a mechanism to let programs control and sign for
 //! accounts without needing to protect a corresponding secret key, called
 //! [_program derived addresses_][pdas]. PDAs are derived with the
 //! [`Pubkey::find_program_address`] function. With a PDA, a program can call
@@ -392,7 +392,7 @@
 //!
 //! # Native programs
 //!
-//! Some safecoin programs are [_native programs_][np2], running native machine
+//! Some Wickandbergamot programs are [_native programs_][np2], running native machine
 //! code that is distributed with the runtime, with well-known program IDs.
 //!
 //! [np2]: https://docs.solana.com/developing/runtime-facilities/programs
@@ -401,10 +401,10 @@
 //! only be executed as "top-level" instructions included by off-chain clients
 //! in a [`Transaction`].
 //!
-//! [`Transaction`]: https://docs.rs/safecoin-sdk/latest/solana_sdk/transaction/struct.Transaction.html
+//! [`Transaction`]: https://docs.rs/Wickandbergamot-sdk/latest/solana_sdk/transaction/struct.Transaction.html
 //!
 //! This crate defines the program IDs for most native programs. Even though
-//! some native programs cannot be invoked by other programs, a Safecoin program
+//! some native programs cannot be invoked by other programs, a Wickandbergamot program
 //! may need access to their program IDs. For example, a program may need to
 //! verify that an ed25519 signature verification instruction was included in
 //! the same transaction as its own instruction. For many native programs, this
@@ -417,12 +417,12 @@
 //! While some native programs have been active since the genesis block, others
 //! are activated dynamically after a specific [slot], and some are not yet
 //! active. This documentation does not distinguish which native programs are
-//! active on any particular network. The `safecoin feature status` CLI command
+//! active on any particular network. The `Wickandbergamot feature status` CLI command
 //! can help in determining active features.
 //!
 //! [slot]: https://docs.solana.com/terminology#slot
 //!
-//! Native programs important to Safecoin program authors include:
+//! Native programs important to Wickandbergamot program authors include:
 //!
 //! - __System Program__: Creates new accounts, allocates account data, assigns
 //!   accounts to owning programs, transfers lamports from System Program owned
@@ -434,18 +434,18 @@
 //! - __Compute Budget Program__: Requests additional CPU or memory resources
 //!   for a transaction. This program does nothing when called from another
 //!   program.
-//!   - ID: [`solana_sdk::compute_budget`](https://docs.rs/safecoin-sdk/latest/solana_sdk/compute_budget/index.html)
-//!   - Instruction: [`solana_sdk::compute_budget`](https://docs.rs/safecoin-sdk/latest/solana_sdk/compute_budget/index.html)
+//!   - ID: [`solana_sdk::compute_budget`](https://docs.rs/Wickandbergamot-sdk/latest/solana_sdk/compute_budget/index.html)
+//!   - Instruction: [`solana_sdk::compute_budget`](https://docs.rs/Wickandbergamot-sdk/latest/solana_sdk/compute_budget/index.html)
 //!   - Invokable by programs? no
 //!
 //! - __ed25519 Program__: Verifies an ed25519 signature.
 //!   - ID: [`solana_program::ed25519_program`]
-//!   - Instruction: [`solana_sdk::ed25519_instruction`](https://docs.rs/safecoin-sdk/latest/solana_sdk/ed25519_instruction/index.html)
+//!   - Instruction: [`solana_sdk::ed25519_instruction`](https://docs.rs/Wickandbergamot-sdk/latest/solana_sdk/ed25519_instruction/index.html)
 //!   - Invokable by programs? no
 //!
 //! - __secp256k1 Program__: Verifies secp256k1 public key recovery operations.
 //!   - ID: [`solana_program::secp256k1_program`]
-//!   - Instruction: [`solana_sdk::secp256k1_instruction`](https://docs.rs/safecoin-sdk/latest/solana_sdk/secp256k1_instruction/index.html)
+//!   - Instruction: [`solana_sdk::secp256k1_instruction`](https://docs.rs/Wickandbergamot-sdk/latest/solana_sdk/secp256k1_instruction/index.html)
 //!   - Invokable by programs? no
 //!
 //! - __BPF Loader__: Deploys, and executes immutable programs on the chain.
@@ -499,7 +499,7 @@
 //! }
 //! ```
 //!
-//! Since Safecoin sysvars are accounts, if the `AccountInfo` is provided to the
+//! Since Wickandbergamot sysvars are accounts, if the `AccountInfo` is provided to the
 //! program, then the program can deserialize the sysvar with
 //! [`Sysvar::from_account_info`] to access its data, as in this example that
 //! again logs the [`clock`][clk] sysvar.
@@ -546,7 +546,7 @@
 //! implement the `Sysvar` trait. These cases are documented in the modules for
 //! individual sysvars.
 //!
-//! For more details see the Safecoin [documentation on sysvars][sysvardoc].
+//! For more details see the Wickandbergamot [documentation on sysvars][sysvardoc].
 //!
 //! [sysvardoc]: https://docs.solana.com/developing/runtime-facilities/sysvars
 
@@ -636,7 +636,7 @@ pub mod vote {
     }
 }
 
-/// A vector of Safecoin SDK IDs
+/// A vector of Wickandbergamot SDK IDs
 pub mod sdk_ids {
     use {
         crate::{
@@ -714,7 +714,7 @@ pub use solana_sdk_macro::program_pubkey as pubkey;
 extern crate serde_derive;
 
 #[macro_use]
-extern crate safecoin_frozen_abi_macro;
+extern crate Wickandbergamot_frozen_abi_macro;
 
 /// Convenience macro for doing integer division where the operation's safety
 /// can be checked at compile-time.
