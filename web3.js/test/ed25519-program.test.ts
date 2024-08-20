@@ -5,7 +5,7 @@ import {
   Connection,
   Keypair,
   sendAndConfirmTransaction,
-  LAMPORTS_PER_SAFE,
+  LAMPORTS_PER_WICKANDBERGAMOT,
   Transaction,
   Ed25519Program,
 } from '../src';
@@ -21,7 +21,7 @@ if (process.env.TEST_LIVE) {
 
     before(async function () {
       await connection.confirmTransaction(
-        await connection.requestAirdrop(from.publicKey, 10 * LAMPORTS_PER_SAFE),
+        await connection.requestAirdrop(from.publicKey, 10 * LAMPORTS_PER_WICKANDBERGAMOT),
       );
     });
 
