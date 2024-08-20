@@ -1,12 +1,12 @@
 [package]
-name = "safecoin-streamer"
+name = "wickandbergamot-streamer"
 version = "1.14.17"
-description = "Safecoin Streamer"
+description = "Wickandbergamot Streamer"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
 license = "Apache-2.0"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-streamer"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-streamer"
 edition = "2021"
 
 [dependencies]
@@ -25,15 +25,15 @@ quinn = "0.8.3"
 rand = "0.7.0"
 rcgen = "0.9.2"
 rustls = { version = "0.20.6", features = ["dangerous_configuration"] }
-safecoin-metrics = { path = "../metrics", version = "=1.14.17" }
-safecoin-perf = { path = "../perf", version = "=1.14.17" }
-safecoin-sdk = { path = "../sdk", version = "=1.14.17" }
+wickandbergamot-metrics = { path = "../metrics", version = "=1.14.17" }
+wickandbergamot-perf = { path = "../perf", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../sdk", version = "=1.14.17" }
 thiserror = "1.0"
 tokio = { version = "1", features = ["full"] }
 x509-parser = "0.14.0"
 
 [dev-dependencies]
-safecoin-logger = { path = "../logger", version = "=1.14.17" }
+wickandbergamot-logger = { path = "../logger", version = "=1.14.17" }
 
 [lib]
 crate-type = ["lib"]
