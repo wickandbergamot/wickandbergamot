@@ -4,7 +4,7 @@ use {
             BalancesArgs, DistributeTokensArgs, SenderStakeArgs, StakeArgs, TransactionLogArgs,
         },
         db::{self, TransactionInfo},
-        safe_token::*,
+        wickandbergamot_token::*,
         token_display::Token,
     },
     chrono::prelude::*,
@@ -14,10 +14,10 @@ use {
     indicatif::{ProgressBar, ProgressStyle},
     pickledb::PickleDb,
     serde::{Deserialize, Serialize},
-    safecoin_account_decoder::parse_token::{
-        pubkey_from_safe_token, real_number_string, safe_token_pubkey,
+    wickandbergamot_account_decoder::parse_token::{
+        pubkey_from_wickandbergamot_token, real_number_string, wickandbergamot_token_pubkey,
     },
-    safecoin_client::{
+    wickandbergamot_client::{
         client_error::{ClientError, Result as ClientResult},
         rpc_client::RpcClient,
         rpc_config::RpcSendTransactionConfig,
@@ -38,9 +38,9 @@ use {
         system_instruction,
         transaction::Transaction,
     },
-    safecoin_transaction_status::TransactionStatus,
-    safe_associated_token_account::get_associated_token_address,
-    safe_token::solana_program::program_error::ProgramError,
+    wickandbergamot_transaction_status::TransactionStatus,
+    wickandbergamot_associated_token_account::get_associated_token_address,
+    wickandbergamot_token::solana_program::program_error::ProgramError,
     std::{
         cmp::{self},
         io,
@@ -63,7 +63,7 @@ pub struct Allocation {
 #[derive(Debug, PartialEq, Eq)]
 pub enum FundingSource {
     FeePayer,
-    SafeTokenAccount,
+    WickandbergamotTokenAccount,
     StakeAccount,
     SystemAccount,
 }
@@ -183,8 +183,8 @@ fn distribution_instructions(
     lockup_date: Option<DateTime<Utc>>,
     do_create_associated_token_account: bool,
 ) -> Vec<Instruction> {
-    if args.safe_token_args.is_some() {
-        return build_safe_token_instructions(allocation, args, do_create_associated_token_account);
+    if args.wickandbergamot_token_args.is_some() {
+        return build_wickandbergamot_token_instructions(allocation, args, do_create_associated_token_account);
     }
 
     match &args.stake_args {
@@ -309,15 +309,15 @@ fn build_messages(
             Some(allocation.lockup_date.parse::<DateTime<Utc>>().unwrap())
         };
 
-        let do_create_associated_token_account = if let Some(safe_token_args) = &args.safe_token_args
+        let do_create_associated_token_account = if let Some(wickandbergamot_token_args) = &args.wickandbergamot_token_args
         {
             let wallet_address = allocation.recipient.parse().unwrap();
             let associated_token_address = get_associated_token_address(
                 &wallet_address,
-                &safe_token_pubkey(&safe_token_args.mint),
+                &wickandbergamot_token_pubkey(&wickandbergamot_token_args.mint),
             );
             let do_create_associated_token_account = client
-                .get_multiple_accounts(&[pubkey_from_safe_token(&associated_token_address)])?[0]
+                .get_multiple_accounts(&[pubkey_from_wickandbergamot_token(&associated_token_address)])?[0]
                 .is_none();
             if do_create_associated_token_account {
                 *created_accounts += 1;
@@ -325,7 +325,7 @@ fn build_messages(
             println!(
                 "{:<44}  {:>24}",
                 allocation.recipient,
-                real_number_string(allocation.amount, safe_token_args.decimals)
+                real_number_string(allocation.amount, wickandbergamot_token_args.decimals)
             );
             do_create_associated_token_account
         } else {
@@ -450,8 +450,8 @@ fn distribute_allocations(
         &mut created_accounts,
     )?;
 
-    if args.safe_token_args.is_some() {
-        check_safe_token_balances(&messages, allocations, client, args, created_accounts)?;
+    if args.wickandbergamot_token_args.is_some() {
+        check_wickandbergamot_token_balances(&messages, allocations, client, args, created_accounts)?;
     } else {
         check_payer_balances(&messages, allocations, client, args)?;
     }
@@ -544,12 +544,12 @@ pub fn process_allocations(
         &args.input_csv,
         args.transfer_amount,
         require_lockup_heading,
-        args.safe_token_args.is_some(),
+        args.wickandbergamot_token_args.is_some(),
     )?;
 
     let starting_total_tokens = allocations.iter().map(|x| x.amount).sum();
-    let starting_total_tokens = if let Some(safe_token_args) = &args.safe_token_args {
-        Token::safe_token(starting_total_tokens, safe_token_args.decimals)
+    let starting_total_tokens = if let Some(wickandbergamot_token_args) = &args.wickandbergamot_token_args {
+        Token::wickandbergamot_token(starting_total_tokens, wickandbergamot_token_args.decimals)
     } else {
         Token::sol(starting_total_tokens)
     };
@@ -575,10 +575,10 @@ pub fn process_allocations(
     let distributed_tokens = transaction_infos.iter().map(|x| x.amount).sum();
     let undistributed_tokens = allocations.iter().map(|x| x.amount).sum();
     let (distributed_tokens, undistributed_tokens) =
-        if let Some(safe_token_args) = &args.safe_token_args {
+        if let Some(wickandbergamot_token_args) = &args.wickandbergamot_token_args {
             (
-                Token::safe_token(distributed_tokens, safe_token_args.decimals),
-                Token::safe_token(undistributed_tokens, safe_token_args.decimals),
+                Token::wickandbergamot_token(distributed_tokens, wickandbergamot_token_args.decimals),
+                Token::wickandbergamot_token(undistributed_tokens, wickandbergamot_token_args.decimals),
             )
         } else {
             (
@@ -832,11 +832,11 @@ fn check_payer_balances(
 
 pub fn process_balances(client: &RpcClient, args: &BalancesArgs) -> Result<(), Error> {
     let allocations: Vec<Allocation> =
-        read_allocations(&args.input_csv, None, false, args.safe_token_args.is_some())?;
+        read_allocations(&args.input_csv, None, false, args.wickandbergamot_token_args.is_some())?;
     let allocations = merge_allocations(&allocations);
 
-    let token = if let Some(safe_token_args) = &args.safe_token_args {
-        safe_token_args.mint.to_string()
+    let token = if let Some(wickandbergamot_token_args) = &args.wickandbergamot_token_args {
+        wickandbergamot_token_args.mint.to_string()
     } else {
         "◎".to_string()
     };
@@ -852,8 +852,8 @@ pub fn process_balances(client: &RpcClient, args: &BalancesArgs) -> Result<(), E
     );
 
     for allocation in &allocations {
-        if let Some(safe_token_args) = &args.safe_token_args {
-            print_token_balances(client, allocation, safe_token_args)?;
+        if let Some(wickandbergamot_token_args) = &args.wickandbergamot_token_args {
+            print_token_balances(client, allocation, wickandbergamot_token_args)?;
         } else {
             let address: Pubkey = allocation.recipient.parse().unwrap();
             let expected = lamports_to_sol(allocation.amount);
@@ -940,7 +940,7 @@ pub fn test_process_distribute_tokens_with_client(
         transaction_db: transaction_db.clone(),
         output_path: Some(output_path.clone()),
         stake_args: None,
-        safe_token_args: None,
+        wickandbergamot_token_args: None,
         transfer_amount,
     };
     let confirmations = process_allocations(client, &args, exit.clone()).unwrap();
@@ -1046,7 +1046,7 @@ pub fn test_process_create_stake_with_client(client: &RpcClient, sender_keypair:
         transaction_db: transaction_db.clone(),
         output_path: Some(output_path.clone()),
         stake_args: Some(stake_args),
-        safe_token_args: None,
+        wickandbergamot_token_args: None,
         sender_keypair: Box::new(sender_keypair),
         transfer_amount: None,
     };
@@ -1174,7 +1174,7 @@ pub fn test_process_distribute_stake_with_client(client: &RpcClient, sender_keyp
         transaction_db: transaction_db.clone(),
         output_path: Some(output_path.clone()),
         stake_args: Some(stake_args),
-        safe_token_args: None,
+        wickandbergamot_token_args: None,
         sender_keypair: Box::new(sender_keypair),
         transfer_amount: None,
     };
@@ -1229,8 +1229,8 @@ mod tests {
             stake::instruction::StakeInstruction,
         },
         solana_streamer::socket::SocketAddrSpace,
-        safecoin_test_validator::TestValidator,
-        safecoin_transaction_status::TransactionConfirmationStatus,
+        wickandbergamot_test_validator::TestValidator,
+        wickandbergamot_transaction_status::TransactionConfirmationStatus,
     };
 
     fn one_signer_message(client: &RpcClient) -> Message {
@@ -1543,7 +1543,7 @@ mod tests {
             transaction_db: "".to_string(),
             output_path: None,
             stake_args: Some(stake_args),
-            safe_token_args: None,
+            wickandbergamot_token_args: None,
             sender_keypair: Box::new(Keypair::new()),
             transfer_amount: None,
         };
@@ -1593,7 +1593,7 @@ mod tests {
             transaction_db: "".to_string(),
             output_path: None,
             stake_args,
-            safe_token_args: None,
+            wickandbergamot_token_args: None,
             transfer_amount: None,
         };
         (allocations, args)
@@ -2069,7 +2069,7 @@ mod tests {
             transaction_db: "".to_string(),
             output_path: None,
             stake_args: None,
-            safe_token_args: None,
+            wickandbergamot_token_args: None,
             transfer_amount: None,
         };
         let allocation = Allocation {
@@ -2191,7 +2191,7 @@ mod tests {
             transaction_db: "".to_string(),
             output_path: None,
             stake_args: None,
-            safe_token_args: None,
+            wickandbergamot_token_args: None,
             transfer_amount: None,
         };
         let allocation = Allocation {
@@ -2307,7 +2307,7 @@ mod tests {
             transaction_db: "".to_string(),
             output_path: None,
             stake_args: None,
-            safe_token_args: None,
+            wickandbergamot_token_args: None,
             transfer_amount: None,
         };
 
