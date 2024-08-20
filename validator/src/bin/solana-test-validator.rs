@@ -2,17 +2,17 @@ use {
     clap::{crate_name, value_t, value_t_or_exit, values_t_or_exit, App, Arg},
     crossbeam_channel::unbounded,
     log::*,
-    safecoin_clap_utils::{
+    wickandbergamot_clap_utils::{
         input_parsers::{pubkey_of, pubkeys_of, value_of},
         input_validators::{
             is_parsable, is_pubkey, is_pubkey_or_keypair, is_slot, is_url_or_moniker,
             normalize_to_url_if_moniker,
         },
     },
-    safecoin_client::rpc_client::RpcClient,
+    wickandbergamot_client::rpc_client::RpcClient,
     solana_core::tower_storage::FileTowerStorage,
-    safecoin_faucet::faucet::{run_local_faucet_with_port, FAUCET_PORT},
-    safecoin_rpc::{
+    wickandbergamot_faucet::faucet::{run_local_faucet_with_port, FAUCET_PORT},
+    wickandbergamot_rpc::{
         rpc::{JsonRpcConfig, RpcBigtableConfig},
         rpc_pubsub_service::PubSubConfig,
     },
@@ -28,8 +28,8 @@ use {
         system_program,
     },
     solana_streamer::socket::SocketAddrSpace,
-    safecoin_test_validator::*,
-    safecoin_validator::{
+    wickandbergamot_test_validator::*,
+    wickandbergamot_validator::{
         admin_rpc_service, dashboard::Dashboard, ledger_lockfile, lock_ledger, println_name_value,
         redirect_stderr_to_file,
     },
@@ -46,11 +46,11 @@ use {
 
 /* 10,000 was derived empirically by watching the size
  * of the rocksdb/ directory self-limit itself to the
- * 40MB-150MB range when running `safecoin-test-validator`
+ * 40MB-150MB range when running `wickandbergamot-test-validator`
  */
 const DEFAULT_MAX_LEDGER_SHREDS: u64 = 10_000;
 
-const DEFAULT_FAUCET_SAFE: f64 = 1_000_000.;
+const DEFAULT_FAUCET_WICKANDBERGAMOT: f64 = 1_000_000.;
 
 #[derive(PartialEq, Eq)]
 enum Output {
@@ -63,11 +63,11 @@ fn main() {
     let default_rpc_port = rpc_port::DEFAULT_RPC_PORT.to_string();
     let default_faucet_port = FAUCET_PORT.to_string();
     let default_limit_ledger_size = DEFAULT_MAX_LEDGER_SHREDS.to_string();
-    let default_faucet_sol = DEFAULT_FAUCET_SAFE.to_string();
+    let default_faucet_sol = DEFAULT_FAUCET_WICKANDBERGAMOT.to_string();
 
-    let matches = App::new("safecoin-test-validator")
+    let matches = App::new("wickandbergamot-test-validator")
         .about("Test Validator")
-        .version(safecoin_version::version!())
+        .version(wickandbergamot_version::version!())
         .arg({
             let arg = Arg::with_name("config_file")
                 .short("C")
@@ -75,7 +75,7 @@ fn main() {
                 .value_name("PATH")
                 .takes_value(true)
                 .help("Configuration file to use");
-            if let Some(ref config_file) = *safecoin_cli_config::CONFIG_FILE {
+            if let Some(ref config_file) = *wickandbergamot_cli_config::CONFIG_FILE {
                 arg.default_value(config_file)
             } else {
                 arg
@@ -89,7 +89,7 @@ fn main() {
                 .takes_value(true)
                 .validator(is_url_or_moniker)
                 .help(
-                    "URL for Safecoin's JSON RPC or moniker (or their first letter): \
+                    "URL for wickandbergamot's JSON RPC or moniker (or their first letter): \
                    [mainnet-beta, testnet, devnet, localhost]",
                 ),
         )
@@ -146,7 +146,7 @@ fn main() {
                 .value_name("PORT")
                 .takes_value(true)
                 .default_value(&default_faucet_port)
-                .validator(safecoin_validator::port_validator)
+                .validator(wickandbergamot_validator::port_validator)
                 .help("Enable the faucet on this port"),
         )
         .arg(
@@ -155,7 +155,7 @@ fn main() {
                 .value_name("PORT")
                 .takes_value(true)
                 .default_value(&default_rpc_port)
-                .validator(safecoin_validator::port_validator)
+                .validator(wickandbergamot_validator::port_validator)
                 .help("Enable JSON RPC on this port, and the next port for the RPC websocket"),
         )
         .arg(
@@ -172,7 +172,7 @@ fn main() {
                 .value_name("INSTANCE_NAME")
                 .takes_value(true)
                 .hidden(true)
-                .default_value("safecoin-ledger")
+                .default_value("wickandbergamot-ledger")
                 .help("Name of BigTable instance to target"),
         )
         .arg(
@@ -212,7 +212,7 @@ fn main() {
                 .allow_hyphen_values(true)
                 .multiple(true)
                 .help(
-                    "Load an account from the provided JSON file (see `safecoin account --help` on how to dump \
+                    "Load an account from the provided JSON file (see `wickandbergamot account --help` on how to dump \
                         an account to file). Files are searched for relatively to CWD and tests/fixtures. \
                         If ADDRESS is omitted via the `-` placeholder, the one in the file will be used. \
                         If the ledger already exists then this parameter is silently ignored",
@@ -290,7 +290,7 @@ fn main() {
                 .long("gossip-host")
                 .value_name("HOST")
                 .takes_value(true)
-                .validator(safecoin_net_utils::is_host)
+                .validator(wickandbergamot_net_utils::is_host)
                 .help(
                     "Gossip DNS name or IP address for the validator to advertise in gossip \
                        [default: 127.0.0.1]",
@@ -301,7 +301,7 @@ fn main() {
                 .long("dynamic-port-range")
                 .value_name("MIN_PORT-MAX_PORT")
                 .takes_value(true)
-                .validator(safecoin_validator::port_range_validator)
+                .validator(wickandbergamot_validator::port_range_validator)
                 .help(
                     "Range to use for dynamically assigned ports \
                     [default: 1024-65535]",
@@ -312,7 +312,7 @@ fn main() {
                 .long("bind-address")
                 .value_name("HOST")
                 .takes_value(true)
-                .validator(safecoin_net_utils::is_host)
+                .validator(wickandbergamot_net_utils::is_host)
                 .default_value("0.0.0.0")
                 .help("IP address to bind the validator ports [default: 0.0.0.0]"),
         )
@@ -373,10 +373,10 @@ fn main() {
             Arg::with_name("faucet_sol")
                 .long("faucet-sol")
                 .takes_value(true)
-                .value_name("SAFE")
+                .value_name("WICKANDBERGAMOT")
                 .default_value(default_faucet_sol.as_str())
                 .help(
-                    "Give the faucet address this much SAFE in genesis. \
+                    "Give the faucet address this much WICKANDBERGAMOT in genesis. \
                      If the ledger already exists then this parameter is silently ignored",
                 ),
         )
@@ -475,16 +475,16 @@ fn main() {
     };
     let _logger_thread = redirect_stderr_to_file(logfile);
 
-    info!("{} {}", crate_name!(), safecoin_version::version!());
+    info!("{} {}", crate_name!(), wickandbergamot_version::version!());
     info!("Starting validator with: {:#?}", std::env::args_os());
     solana_core::validator::report_target_features();
 
     // TODO: Ideally test-validator should *only* allow private addresses.
     let socket_addr_space = SocketAddrSpace::new(/*allow_private_addr=*/ true);
     let cli_config = if let Some(config_file) = matches.value_of("config_file") {
-        safecoin_cli_config::Config::load(config_file).unwrap_or_default()
+        wickandbergamot_cli_config::Config::load(config_file).unwrap_or_default()
     } else {
-        safecoin_cli_config::Config::default()
+        wickandbergamot_cli_config::Config::default()
     };
 
     let cluster_rpc_client = value_t!(matches, "json_rpc_url", String)
@@ -505,20 +505,20 @@ fn main() {
     let ticks_per_slot = value_t!(matches, "ticks_per_slot", u64).ok();
     let slots_per_epoch = value_t!(matches, "slots_per_epoch", Slot).ok();
     let gossip_host = matches.value_of("gossip_host").map(|gossip_host| {
-        safecoin_net_utils::parse_host(gossip_host).unwrap_or_else(|err| {
+        wickandbergamot_net_utils::parse_host(gossip_host).unwrap_or_else(|err| {
             eprintln!("Failed to parse --gossip-host: {}", err);
             exit(1);
         })
     });
     let gossip_port = value_t!(matches, "gossip_port", u16).ok();
     let dynamic_port_range = matches.value_of("dynamic_port_range").map(|port_range| {
-        safecoin_net_utils::parse_port_range(port_range).unwrap_or_else(|| {
+        wickandbergamot_net_utils::parse_port_range(port_range).unwrap_or_else(|| {
             eprintln!("Failed to parse --dynamic-port-range");
             exit(1);
         })
     });
     let bind_address = matches.value_of("bind_address").map(|bind_address| {
-        safecoin_net_utils::parse_host(bind_address).unwrap_or_else(|err| {
+        wickandbergamot_net_utils::parse_host(bind_address).unwrap_or_else(|err| {
             eprintln!("Failed to parse --bind-address: {}", err);
             exit(1);
         })
@@ -673,7 +673,7 @@ fn main() {
     } else if random_mint {
         println_name_value(
             "\nNotice!",
-            "No wallet available. `safecoin airdrop` localnet SAFE after creating one\n",
+            "No wallet available. `wickandbergamot airdrop` localnet WICKANDBERGAMOT after creating one\n",
         );
     }
 
