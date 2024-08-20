@@ -27,7 +27,7 @@ import RpcClient from 'jayson/lib/client/browser';
 import {URL} from './util/url-impl';
 import {AgentManager} from './agent-manager';
 import {EpochSchedule} from './epoch-schedule';
-import {SendTransactionError, SafecoinJSONRPCError} from './errors';
+import {SendTransactionError, WickandbergamotJSONRPCError} from './errors';
 import fetchImpl, {Response} from './fetch-impl';
 import {NonceAccount} from './nonce-account';
 import {PublicKey} from './publickey';
@@ -717,13 +717,13 @@ const SignatureReceivedResult = literal('receivedSignature');
  * Version info for a node
  */
 export type Version = {
-  /** Version of safecoin-core */
-  'safecoin-core': string;
+  /** Version of wickandbergamot-core */
+  'wickandbergamot-core': string;
   'feature-set'?: number;
 };
 
 const VersionResult = pick({
-  'safecoin-core': string(),
+  'wickandbergamot-core': string(),
   'feature-set': optional(number()),
 });
 
@@ -800,7 +800,7 @@ export type TokenBalance = {
 /**
  * Metadata for a parsed confirmed transaction on the ledger
  *
- * @deprecated Deprecated since Safecoin v1.8.0. Please use {@link ParsedTransactionMeta} instead.
+ * @deprecated Deprecated since Wickandbergamot v1.8.0. Please use {@link ParsedTransactionMeta} instead.
  */
 export type ParsedConfirmedTransactionMeta = ParsedTransactionMeta;
 
@@ -947,7 +947,7 @@ export type ParsedTransaction = {
 /**
  * A parsed and confirmed transaction on the ledger
  *
- * @deprecated Deprecated since Safecoin v1.8.0. Please use {@link ParsedTransactionWithMeta} instead.
+ * @deprecated Deprecated since Wickandbergamot v1.8.0. Please use {@link ParsedTransactionWithMeta} instead.
  */
 export type ParsedConfirmedTransaction = ParsedTransactionWithMeta;
 
@@ -1880,7 +1880,7 @@ const GetBlockRpcResult = jsonRpcResult(
 /**
  * Expected JSON RPC response for the "getConfirmedBlock" message
  *
- * @deprecated Deprecated since Safecoin v1.8.0. Please use {@link GetBlockRpcResult} instead.
+ * @deprecated Deprecated since Wickandbergamot v1.8.0. Please use {@link GetBlockRpcResult} instead.
  */
 const GetConfirmedBlockRpcResult = jsonRpcResult(
   nullable(
@@ -1955,7 +1955,7 @@ const GetParsedTransactionRpcResult = jsonRpcResult(
 /**
  * Expected JSON RPC response for the "getRecentBlockhash" message
  *
- * @deprecated Deprecated since Safecoin v1.8.0. Please use {@link GetLatestBlockhashRpcResult} instead.
+ * @deprecated Deprecated since Wickandbergamot v1.8.0. Please use {@link GetLatestBlockhashRpcResult} instead.
  */
 const GetRecentBlockhashAndContextRpcResult = jsonRpcResultAndContext(
   pick({
@@ -2348,7 +2348,7 @@ export type HttpHeaders = {
   [header: string]: string;
 } & {
   // Prohibited headers; for internal use only.
-  'safecoin-client'?: never;
+  'wickandbergamot-client'?: never;
 };
 
 /**
@@ -2387,7 +2387,7 @@ export type ConnectionConfig = {
 
 /** @internal */
 const COMMON_HTTP_HEADERS = {
-  'safecoin-client': `js/${process.env.npm_package_version ?? 'UNKNOWN'}`,
+  'wickandbergamot-client': `js/${process.env.npm_package_version ?? 'UNKNOWN'}`,
 };
 
 /**
@@ -2456,7 +2456,7 @@ export class Connection {
    * clear out the subscription locally without telling the server).
    *
    * NOTE: There is a proposal to eliminate this special case, here:
-   * https://github.com/fair-exchange/safecoin/issues/18892
+   * https://github.com/wickandbergamot/wickandbergamot/issues/18892
    */
   /** @internal */ private _subscriptionsAutoDisposedByRpc: Set<ServerSubscriptionId> =
     new Set();
@@ -2576,7 +2576,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getBalance', args);
     const res = create(unsafeRes, jsonRpcResultAndContext(number()));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         `failed to get balance for ${publicKey.toBase58()}`,
       );
@@ -2607,7 +2607,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getBlockTime', [slot]);
     const res = create(unsafeRes, jsonRpcResult(nullable(number())));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         `failed to get block time for slot ${slot}`,
       );
@@ -2623,7 +2623,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('minimumLedgerSlot', []);
     const res = create(unsafeRes, jsonRpcResult(number()));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         'failed to get minimum ledger slot',
       );
@@ -2638,7 +2638,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getFirstAvailableBlock', []);
     const res = create(unsafeRes, SlotRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         'failed to get first available block',
       );
@@ -2669,7 +2669,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getSupply', [configArg]);
     const res = create(unsafeRes, GetSupplyRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get supply');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get supply');
     }
     return res.result;
   }
@@ -2685,7 +2685,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getTokenSupply', args);
     const res = create(unsafeRes, jsonRpcResultAndContext(TokenAmountResult));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get token supply');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get token supply');
     }
     return res.result;
   }
@@ -2701,7 +2701,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getTokenAccountBalance', args);
     const res = create(unsafeRes, jsonRpcResultAndContext(TokenAmountResult));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         'failed to get token account balance',
       );
@@ -2736,7 +2736,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getTokenAccountsByOwner', args);
     const res = create(unsafeRes, GetTokenAccountsByOwner);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         `failed to get token accounts owned by account ${ownerAddress.toBase58()}`,
       );
@@ -2769,7 +2769,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getTokenAccountsByOwner', args);
     const res = create(unsafeRes, GetParsedTokenAccountsByOwner);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         `failed to get token accounts owned by account ${ownerAddress.toBase58()}`,
       );
@@ -2791,7 +2791,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getLargestAccounts', args);
     const res = create(unsafeRes, GetLargestAccountsRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get largest accounts');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get largest accounts');
     }
     return res.result;
   }
@@ -2808,7 +2808,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getTokenLargestAccounts', args);
     const res = create(unsafeRes, GetTokenLargestAccountsResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         'failed to get token largest accounts',
       );
@@ -2837,7 +2837,7 @@ export class Connection {
       jsonRpcResultAndContext(nullable(AccountInfoResult)),
     );
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         `failed to get info about account ${publicKey.toBase58()}`,
       );
@@ -2865,7 +2865,7 @@ export class Connection {
       jsonRpcResultAndContext(nullable(ParsedAccountInfoResult)),
     );
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         `failed to get info about account ${publicKey.toBase58()}`,
       );
@@ -2910,7 +2910,7 @@ export class Connection {
       jsonRpcResultAndContext(array(nullable(AccountInfoResult))),
     );
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         `failed to get info for accounts ${keys}`,
       );
@@ -2955,7 +2955,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getStakeActivation', args);
     const res = create(unsafeRes, jsonRpcResult(StakeActivationResult));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         `failed to get Stake Activation ${publicKey.toBase58()}`,
       );
@@ -2984,7 +2984,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getProgramAccounts', args);
     const res = create(unsafeRes, jsonRpcResult(array(KeyedAccountInfoResult)));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         `failed to get accounts owned by program ${programId.toBase58()}`,
       );
@@ -3020,7 +3020,7 @@ export class Connection {
       jsonRpcResult(array(KeyedParsedAccountInfoResult)),
     );
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         `failed to get accounts owned by program ${programId.toBase58()}`,
       );
@@ -3176,7 +3176,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getClusterNodes', []);
     const res = create(unsafeRes, jsonRpcResult(array(ContactInfoResult)));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get cluster nodes');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get cluster nodes');
     }
     return res.result;
   }
@@ -3189,7 +3189,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getVoteAccounts', args);
     const res = create(unsafeRes, GetVoteAccounts);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get vote accounts');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get vote accounts');
     }
     return res.result;
   }
@@ -3211,7 +3211,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getSlot', args);
     const res = create(unsafeRes, jsonRpcResult(number()));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get slot');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get slot');
     }
     return res.result;
   }
@@ -3233,7 +3233,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getSlotLeader', args);
     const res = create(unsafeRes, jsonRpcResult(string()));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get slot leader');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get slot leader');
     }
     return res.result;
   }
@@ -3252,7 +3252,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getSlotLeaders', args);
     const res = create(unsafeRes, jsonRpcResult(array(PublicKeyFromString)));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get slot leaders');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get slot leaders');
     }
     return res.result;
   }
@@ -3287,7 +3287,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getSignatureStatuses', params);
     const res = create(unsafeRes, GetSignatureStatusesRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get signature status');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get signature status');
     }
     return res.result;
   }
@@ -3309,7 +3309,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getTransactionCount', args);
     const res = create(unsafeRes, jsonRpcResult(number()));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         'failed to get transaction count',
       );
@@ -3340,7 +3340,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getInflationGovernor', args);
     const res = create(unsafeRes, GetInflationGovernorRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get inflation');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get inflation');
     }
     return res.result;
   }
@@ -3367,7 +3367,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getInflationReward', args);
     const res = create(unsafeRes, GetInflationRewardResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get inflation reward');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get inflation reward');
     }
     return res.result;
   }
@@ -3389,7 +3389,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getEpochInfo', args);
     const res = create(unsafeRes, GetEpochInfoRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get epoch info');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get epoch info');
     }
     return res.result;
   }
@@ -3401,7 +3401,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getEpochSchedule', []);
     const res = create(unsafeRes, GetEpochScheduleRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get epoch schedule');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get epoch schedule');
     }
     const epochSchedule = res.result;
     return new EpochSchedule(
@@ -3421,7 +3421,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getLeaderSchedule', []);
     const res = create(unsafeRes, GetLeaderScheduleRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get leader schedule');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get leader schedule');
     }
     return res.result;
   }
@@ -3451,7 +3451,7 @@ export class Connection {
    * Fetch a recent blockhash from the cluster, return with context
    * @return {Promise<RpcResponseAndContext<{blockhash: Blockhash, feeCalculator: FeeCalculator}>>}
    *
-   * @deprecated Deprecated since Safecoin v1.8.0. Please use {@link getLatestBlockhash} instead.
+   * @deprecated Deprecated since Wickandbergamot v1.8.0. Please use {@link getLatestBlockhash} instead.
    */
   async getRecentBlockhashAndContext(
     commitment?: Commitment,
@@ -3462,7 +3462,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getRecentBlockhash', args);
     const res = create(unsafeRes, GetRecentBlockhashAndContextRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get recent blockhash');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get recent blockhash');
     }
     return res.result;
   }
@@ -3480,7 +3480,7 @@ export class Connection {
     );
     const res = create(unsafeRes, GetRecentPerformanceSamplesRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         'failed to get recent performance samples',
       );
@@ -3492,7 +3492,7 @@ export class Connection {
   /**
    * Fetch the fee calculator for a recent blockhash from the cluster, return with context
    *
-   * @deprecated Deprecated since Safecoin v1.8.0. Please use {@link getFeeForMessage} instead.
+   * @deprecated Deprecated since Wickandbergamot v1.8.0. Please use {@link getFeeForMessage} instead.
    */
   async getFeeCalculatorForBlockhash(
     blockhash: Blockhash,
@@ -3506,7 +3506,7 @@ export class Connection {
 
     const res = create(unsafeRes, GetFeeCalculatorRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get fee calculator');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get fee calculator');
     }
     const {context, value} = res.result;
     return {
@@ -3528,7 +3528,7 @@ export class Connection {
 
     const res = create(unsafeRes, jsonRpcResultAndContext(nullable(number())));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get slot');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get slot');
     }
     if (res.result === null) {
       throw new Error('invalid blockhash');
@@ -3540,7 +3540,7 @@ export class Connection {
    * Fetch a recent blockhash from the cluster
    * @return {Promise<{blockhash: Blockhash, feeCalculator: FeeCalculator}>}
    *
-   * @deprecated Deprecated since Safecoin v1.8.0. Please use {@link getLatestBlockhash} instead.
+   * @deprecated Deprecated since Wickandbergamot v1.8.0. Please use {@link getLatestBlockhash} instead.
    */
   async getRecentBlockhash(
     commitment?: Commitment,
@@ -3586,7 +3586,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getLatestBlockhash', args);
     const res = create(unsafeRes, GetLatestBlockhashRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get latest blockhash');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get latest blockhash');
     }
     return res.result;
   }
@@ -3598,7 +3598,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getVersion', []);
     const res = create(unsafeRes, jsonRpcResult(VersionResult));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get version');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get version');
     }
     return res.result;
   }
@@ -3610,7 +3610,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getGenesisHash', []);
     const res = create(unsafeRes, jsonRpcResult(string()));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get genesis hash');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get genesis hash');
     }
     return res.result;
   }
@@ -3633,7 +3633,7 @@ export class Connection {
     const res = create(unsafeRes, GetBlockRpcResult);
 
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get confirmed block');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get confirmed block');
     }
 
     const result = res.result;
@@ -3671,7 +3671,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getBlockHeight', args);
     const res = create(unsafeRes, jsonRpcResult(number()));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         'failed to get block height information',
       );
@@ -3701,7 +3701,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getBlockProduction', args);
     const res = create(unsafeRes, BlockProductionResponseStruct);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         'failed to get block production information',
       );
@@ -3727,7 +3727,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getTransaction', args);
     const res = create(unsafeRes, GetTransactionRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get transaction');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get transaction');
     }
 
     const result = res.result;
@@ -3760,7 +3760,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getTransaction', args);
     const res = create(unsafeRes, GetParsedTransactionRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get transaction');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get transaction');
     }
     return res.result;
   }
@@ -3791,7 +3791,7 @@ export class Connection {
     const res = unsafeRes.map((unsafeRes: any) => {
       const res = create(unsafeRes, GetParsedTransactionRpcResult);
       if ('error' in res) {
-        throw new SafecoinJSONRPCError(res.error, 'failed to get transactions');
+        throw new WickandbergamotJSONRPCError(res.error, 'failed to get transactions');
       }
       return res.result;
     });
@@ -3826,7 +3826,7 @@ export class Connection {
     const res = unsafeRes.map((unsafeRes: any) => {
       const res = create(unsafeRes, GetTransactionRpcResult);
       if ('error' in res) {
-        throw new SafecoinJSONRPCError(res.error, 'failed to get transactions');
+        throw new WickandbergamotJSONRPCError(res.error, 'failed to get transactions');
       }
       const result = res.result;
       if (!result) return result;
@@ -3858,7 +3858,7 @@ export class Connection {
     const res = create(unsafeRes, GetConfirmedBlockRpcResult);
 
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get confirmed block');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get confirmed block');
     }
 
     const result = res.result;
@@ -3909,7 +3909,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getBlocks', args);
     const res = create(unsafeRes, jsonRpcResult(array(number())));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get blocks');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get blocks');
     }
     return res.result;
   }
@@ -3933,7 +3933,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getBlock', args);
     const res = create(unsafeRes, GetBlockSignaturesRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get block');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get block');
     }
     const result = res.result;
     if (!result) {
@@ -3945,7 +3945,7 @@ export class Connection {
   /**
    * Fetch a list of Signatures from the cluster for a confirmed block, excluding rewards
    *
-   * @deprecated Deprecated since Safecoin v1.8.0. Please use {@link getBlockSignatures} instead.
+   * @deprecated Deprecated since Wickandbergamot v1.8.0. Please use {@link getBlockSignatures} instead.
    */
   async getConfirmedBlockSignatures(
     slot: number,
@@ -3963,7 +3963,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getConfirmedBlock', args);
     const res = create(unsafeRes, GetBlockSignaturesRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get confirmed block');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get confirmed block');
     }
     const result = res.result;
     if (!result) {
@@ -3975,7 +3975,7 @@ export class Connection {
   /**
    * Fetch a transaction details for a confirmed transaction
    *
-   * @deprecated Deprecated since Safecoin v1.8.0. Please use {@link getTransaction} instead.
+   * @deprecated Deprecated since Wickandbergamot v1.8.0. Please use {@link getTransaction} instead.
    */
   async getConfirmedTransaction(
     signature: TransactionSignature,
@@ -3985,7 +3985,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getConfirmedTransaction', args);
     const res = create(unsafeRes, GetTransactionRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(res.error, 'failed to get transaction');
+      throw new WickandbergamotJSONRPCError(res.error, 'failed to get transaction');
     }
 
     const result = res.result;
@@ -4002,7 +4002,7 @@ export class Connection {
   /**
    * Fetch parsed transaction details for a confirmed transaction
    *
-   * @deprecated Deprecated since Safecoin v1.8.0. Please use {@link getParsedTransaction} instead.
+   * @deprecated Deprecated since Wickandbergamot v1.8.0. Please use {@link getParsedTransaction} instead.
    */
   async getParsedConfirmedTransaction(
     signature: TransactionSignature,
@@ -4016,7 +4016,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getConfirmedTransaction', args);
     const res = create(unsafeRes, GetParsedTransactionRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         'failed to get confirmed transaction',
       );
@@ -4027,7 +4027,7 @@ export class Connection {
   /**
    * Fetch parsed transaction details for a batch of confirmed transactions
    *
-   * @deprecated Deprecated since Safecoin v1.8.0. Please use {@link getParsedTransactions} instead.
+   * @deprecated Deprecated since Wickandbergamot v1.8.0. Please use {@link getParsedTransactions} instead.
    */
   async getParsedConfirmedTransactions(
     signatures: TransactionSignature[],
@@ -4049,7 +4049,7 @@ export class Connection {
     const res = unsafeRes.map((unsafeRes: any) => {
       const res = create(unsafeRes, GetParsedTransactionRpcResult);
       if ('error' in res) {
-        throw new SafecoinJSONRPCError(
+        throw new WickandbergamotJSONRPCError(
           res.error,
           'failed to get confirmed transactions',
         );
@@ -4156,7 +4156,7 @@ export class Connection {
     );
     const res = create(unsafeRes, GetConfirmedSignaturesForAddress2RpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         'failed to get confirmed signatures for address',
       );
@@ -4186,7 +4186,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getSignaturesForAddress', args);
     const res = create(unsafeRes, GetSignaturesForAddressRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         'failed to get signatures for address',
       );
@@ -4240,10 +4240,10 @@ export class Connection {
    * Request an allocation of lamports to the specified address
    *
    * ```typescript
-   * import { Connection, PublicKey, LAMPORTS_PER_SAFE } from "@safecoin/web3.js";
+   * import { Connection, PublicKey, LAMPORTS_PER_SAFE } from "@wickandbergamot/web3.js";
    *
    * (async () => {
-   *   const connection = new Connection("https://api.testnet.safecoin.org", "confirmed");
+   *   const connection = new Connection("https://api.testnet.wickandbergamot.org", "confirmed");
    *   const myAddress = new PublicKey("2nr1bHFT86W9tGnyvmYW4vcHKsQB3sVQfnddasz4kExM");
    *   const signature = await connection.requestAirdrop(myAddress, LAMPORTS_PER_SAFE);
    *   await connection.confirmTransaction(signature);
@@ -4260,7 +4260,7 @@ export class Connection {
     ]);
     const res = create(unsafeRes, RequestAirdropRpcResult);
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         `airdrop to ${to.toBase58()} failed`,
       );
@@ -4336,7 +4336,7 @@ export class Connection {
     const unsafeRes = await this._rpcRequest('getStakeMinimumDelegation', args);
     const res = create(unsafeRes, jsonRpcResultAndContext(number()));
     if ('error' in res) {
-      throw new SafecoinJSONRPCError(
+      throw new WickandbergamotJSONRPCError(
         res.error,
         `failed to get stake minimum delegation`,
       );
@@ -4736,7 +4736,7 @@ export class Connection {
                    * tear down the subscription here.
                    *
                    * NOTE: There is a proposal to eliminate this special case, here:
-                   * https://github.com/fair-exchange/safecoin/issues/18892
+                   * https://github.com/wickandbergamot/wickandbergamot/issues/18892
                    */
                   this._subscriptionsAutoDisposedByRpc.delete(
                     serverSubscriptionId,
@@ -5207,7 +5207,7 @@ export class Connection {
        * clear out the subscription locally without telling the server).
        *
        * NOTE: There is a proposal to eliminate this special case, here:
-       * https://github.com/fair-exchange/safecoin/issues/18892
+       * https://github.com/wickandbergamot/wickandbergamot/issues/18892
        */
       this._subscriptionsAutoDisposedByRpc.add(subscription);
     }
