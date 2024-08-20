@@ -1,6 +1,6 @@
 #pragma once
 /**
- * @brief Safecoin logging utilities
+ * @brief Wickandbergamot logging utilities
  */
 
 #include <sol/types.h>
@@ -43,14 +43,14 @@ static void sol_log_array(const uint8_t *array, int len) {
 /**
  * Print the base64 representation of some arrays.
  */
-@SYSCALL void sol_log_data(SafeBytes *, uint64_t);
+@SYSCALL void sol_log_data(WickandbergamotBytes *, uint64_t);
 
 /**
  * Prints the program's input parameters
  *
- * @param params Pointer to a SafeParameters structure
+ * @param params Pointer to a WickandbergamotParameters structure
  */
-static void sol_log_params(const SafeParameters *params) {
+static void sol_log_params(const WickandbergamotParameters *params) {
   sol_log("- Program identifier:");
   sol_log_pubkey(params->program_id);
 
@@ -78,7 +78,7 @@ static void sol_log_params(const SafeParameters *params) {
   sol_log_array(params->data, params->data_len);
 }
 
-#ifdef SAFE_TEST
+#ifdef WICKANDBERGAMOT_TEST
 /**
  * Stub functions when building tests
  */
