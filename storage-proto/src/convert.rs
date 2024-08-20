@@ -1,6 +1,6 @@
 use {
     crate::{StoredExtendedRewards, StoredTransactionStatusMeta},
-    safecoin_account_decoder::parse_token::{real_number_string_trimmed, UiTokenAmount},
+    wickandbergamot_account_decoder::parse_token::{real_number_string_trimmed, UiTokenAmount},
     solana_sdk::{
         hash::Hash,
         instruction::{CompiledInstruction, InstructionError},
@@ -14,7 +14,7 @@ use {
         transaction::{Transaction, TransactionError, VersionedTransaction},
         transaction_context::TransactionReturnData,
     },
-    safecoin_transaction_status::{
+    wickandbergamot_transaction_status::{
         ConfirmedBlock, InnerInstructions, Reward, RewardType, TransactionByAddrInfo,
         TransactionStatusMeta, TransactionTokenBalance, TransactionWithStatusMeta,
         VersionedConfirmedBlock, VersionedTransactionWithStatusMeta,
