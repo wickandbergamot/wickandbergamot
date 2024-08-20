@@ -5,7 +5,7 @@
 
 set -e
 
-instance=safecoin-ledger
+instance=wickandbergamot-ledger
 
 cbt=(
   cbt
