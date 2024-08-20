@@ -854,7 +854,7 @@ mod tests {
             transaction::VersionedTransaction, transaction_context::TransactionReturnData,
         },
         solana_storage_proto::convert::generated,
-        safecoin_transaction_status::{
+        wickandbergamot_transaction_status::{
             ConfirmedBlock, TransactionStatusMeta, TransactionWithStatusMeta,
             VersionedTransactionWithStatusMeta,
         },
