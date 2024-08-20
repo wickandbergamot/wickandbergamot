@@ -10,13 +10,13 @@ describe('Cluster Util', () => {
   });
 
   it('devnet', () => {
-    expect(clusterApiUrl()).to.eq('https://api.devnet.safecoin.org');
-    expect(clusterApiUrl('devnet')).to.eq('https://api.devnet.safecoin.org');
+    expect(clusterApiUrl()).to.eq('https://api.devnet.wickandbergamot.org');
+    expect(clusterApiUrl('devnet')).to.eq('https://api.devnet.wickandbergamot.org');
     expect(clusterApiUrl('devnet', true)).to.eq(
-      'https://api.devnet.safecoin.org',
+      'https://api.devnet.wickandbergamot.org',
     );
     expect(clusterApiUrl('devnet', false)).to.eq(
-      'http://api.devnet.safecoin.org',
+      'http://api.devnet.wickandbergamot.org',
     );
   });
 });
