@@ -1,7 +1,7 @@
-//! The original and current Safecoin message format.
+//! The original and current Wickandbergamot message format.
 //!
 //! This crate defines two versions of `Message` in their own modules:
-//! [`legacy`] and [`v0`]. `legacy` is the current version as of Safecoin 1.10.0.
+//! [`legacy`] and [`v0`]. `legacy` is the current version as of Wickandbergamot 1.10.0.
 //! `v0` is a [future message format] that encodes more account keys into a
 //! transaction than the legacy format.
 //!
@@ -87,7 +87,7 @@ fn compile_instructions(ixs: &[Instruction], keys: &[Pubkey]) -> Vec<CompiledIns
     ixs.iter().map(|ix| compile_instruction(ix, keys)).collect()
 }
 
-/// A Safecoin transaction message (legacy).
+/// A wickandbergamot transaction message (legacy).
 ///
 /// See the [`message`] module documentation for further description.
 ///
@@ -169,18 +169,18 @@ impl Message {
     ///
     /// # Examples
     ///
-    /// This example uses the [`solana_sdk`], [`safecoin_client`] and [`anyhow`] crates.
+    /// This example uses the [`solana_sdk`], [`wickandbergamot_client`] and [`anyhow`] crates.
     ///
-    /// [`solana_sdk`]: https://docs.rs/safecoin-sdk
-    /// [`safecoin_client`]: https://docs.rs/safecoin-client
+    /// [`solana_sdk`]: https://docs.rs/wickandbergamot-sdk
+    /// [`wickandbergamot_client`]: https://docs.rs/wickandbergamot-client
     /// [`anyhow`]: https://docs.rs/anyhow
     ///
     /// ```
     /// # use solana_program::example_mocks::solana_sdk;
-    /// # use solana_program::example_mocks::safecoin_client;
+    /// # use solana_program::example_mocks::wickandbergamot_client;
     /// use anyhow::Result;
     /// use borsh::{BorshSerialize, BorshDeserialize};
-    /// use safecoin_client::rpc_client::RpcClient;
+    /// use wickandbergamot_client::rpc_client::RpcClient;
     /// use solana_sdk::{
     ///     instruction::Instruction,
     ///     message::Message,
@@ -240,18 +240,18 @@ impl Message {
     ///
     /// # Examples
     ///
-    /// This example uses the [`solana_sdk`], [`safecoin_client`] and [`anyhow`] crates.
+    /// This example uses the [`solana_sdk`], [`wickandbergamot_client`] and [`anyhow`] crates.
     ///
-    /// [`solana_sdk`]: https://docs.rs/safecoin-sdk
-    /// [`safecoin_client`]: https://docs.rs/safecoin-client
+    /// [`solana_sdk`]: https://docs.rs/wickandbergamot-sdk
+    /// [`wickandbergamot_client`]: https://docs.rs/wickandbergamot-client
     /// [`anyhow`]: https://docs.rs/anyhow
     ///
     /// ```
     /// # use solana_program::example_mocks::solana_sdk;
-    /// # use solana_program::example_mocks::safecoin_client;
+    /// # use solana_program::example_mocks::wickandbergamot_client;
     /// use anyhow::Result;
     /// use borsh::{BorshSerialize, BorshDeserialize};
-    /// use safecoin_client::rpc_client::RpcClient;
+    /// use wickandbergamot_client::rpc_client::RpcClient;
     /// use solana_sdk::{
     ///     instruction::Instruction,
     ///     message::Message,
@@ -336,18 +336,18 @@ impl Message {
     ///
     /// # Examples
     ///
-    /// This example uses the [`solana_sdk`], [`safecoin_client`] and [`anyhow`] crates.
+    /// This example uses the [`solana_sdk`], [`wickandbergamot_client`] and [`anyhow`] crates.
     ///
-    /// [`solana_sdk`]: https://docs.rs/safecoin-sdk
-    /// [`safecoin_client`]: https://docs.rs/safecoin-client
+    /// [`solana_sdk`]: https://docs.rs/wickandbergamot-sdk
+    /// [`wickandbergamot_client`]: https://docs.rs/wickandbergamot-client
     /// [`anyhow`]: https://docs.rs/anyhow
     ///
     /// ```
     /// # use solana_program::example_mocks::solana_sdk;
-    /// # use solana_program::example_mocks::safecoin_client;
+    /// # use solana_program::example_mocks::wickandbergamot_client;
     /// use anyhow::Result;
     /// use borsh::{BorshSerialize, BorshDeserialize};
-    /// use safecoin_client::rpc_client::RpcClient;
+    /// use wickandbergamot_client::rpc_client::RpcClient;
     /// use solana_sdk::{
     ///     hash::Hash,
     ///     instruction::Instruction,
