@@ -5,13 +5,13 @@ use {
     borsh::BorshDeserialize,
     serde_json::json,
     solana_sdk::{instruction::CompiledInstruction, message::AccountKeys, pubkey::Pubkey},
-    safe_associated_token_account::instruction::AssociatedTokenAccountInstruction,
+    wickandbergamot_associated_token_account::instruction::AssociatedTokenAccountInstruction,
 };
 
-// A helper function to convert safe_associated_token_account::id() as spl_sdk::pubkey::Pubkey
+// A helper function to convert wickandbergamot_associated_token_account::id() as spl_sdk::pubkey::Pubkey
 // to solana_sdk::pubkey::Pubkey
 pub fn spl_associated_token_id() -> Pubkey {
-    Pubkey::new_from_array(safe_associated_token_account::id().to_bytes())
+    Pubkey::new_from_array(wickandbergamot_associated_token_account::id().to_bytes())
 }
 
 pub fn parse_associated_token(
@@ -23,7 +23,7 @@ pub fn parse_associated_token(
         _ => {
             // Runtime should prevent this from ever happening
             return Err(ParseInstructionError::InstructionKeyMismatch(
-                ParsableProgram::SafeAssociatedTokenAccount,
+                ParsableProgram::WickandbergamotAssociatedTokenAccount,
             ));
         }
     }
@@ -31,7 +31,7 @@ pub fn parse_associated_token(
         AssociatedTokenAccountInstruction::Create
     } else {
         AssociatedTokenAccountInstruction::try_from_slice(&instruction.data)
-            .map_err(|_| ParseInstructionError::InstructionNotParsable(ParsableProgram::SafeToken))?
+            .map_err(|_| ParseInstructionError::InstructionNotParsable(ParsableProgram::WickandbergamotToken))?
     };
 
     match ata_instruction {
@@ -85,17 +85,17 @@ fn check_num_associated_token_accounts(
     accounts: &[u8],
     num: usize,
 ) -> Result<(), ParseInstructionError> {
-    check_num_accounts(accounts, num, ParsableProgram::SafeAssociatedTokenAccount)
+    check_num_accounts(accounts, num, ParsableProgram::WickandbergamotAssociatedTokenAccount)
 }
 
 #[cfg(test)]
 mod test {
     #[allow(deprecated)]
-    use safe_associated_token_account::create_associated_token_account as create_associated_token_account_deprecated;
+    use wickandbergamot_associated_token_account::create_associated_token_account as create_associated_token_account_deprecated;
     use {
         super::*,
-        safecoin_account_decoder::parse_token::pubkey_from_safe_token,
-        safe_associated_token_account::{
+        wickandbergamotcoin_account_decoder::parse_token::pubkey_from_wickandbergamot_token,
+        wickandbergamot_associated_token_account::{
             get_associated_token_address, get_associated_token_address_with_program_id,
             instruction::{
                 create_associated_token_account, create_associated_token_account_idempotent,
@@ -126,7 +126,7 @@ mod test {
         message
             .account_keys
             .iter()
-            .map(pubkey_from_safe_token)
+            .map(pubkey_from_wickandbergamot_token)
             .collect()
     }
 
@@ -153,7 +153,7 @@ mod test {
                 "wallet": wallet_address.to_string(),
                 "mint": mint.to_string(),
                 "systemProgram": solana_sdk::system_program::id().to_string(),
-                "tokenProgram": safe_token::id().to_string(),
+                "tokenProgram": wickandbergamot_token::id().to_string(),
             }),
         };
         assert_eq!(
