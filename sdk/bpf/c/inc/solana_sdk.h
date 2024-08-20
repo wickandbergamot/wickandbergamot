@@ -1,6 +1,6 @@
 #pragma once
 /**
- * @brief Safecoin C-based BPF program types and utility functions
+ * @brief Wickandbergamot C-based BPF program types and utility functions
  */
 
 #include <sol/assert.h>
