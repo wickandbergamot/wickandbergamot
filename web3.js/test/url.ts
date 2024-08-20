@@ -11,5 +11,5 @@ export const wsUrl = process.env.TEST_LIVE
   ? 'ws://localhost:8329/'
   : 'ws://localhost:9999/';
 
-//export const url = 'https://api.devnet.safecoin.org/';
-//export const url = 'http://api.devnet.safecoin.org/';
+//export const url = 'https://api.devnet.wickandbergamot.org/';
+//export const url = 'http://api.devnet.wickandbergamot.org/';
