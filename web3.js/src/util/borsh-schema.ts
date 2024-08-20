@@ -8,15 +8,15 @@ export class Struct {
   }
 
   encode(): Buffer {
-    return Buffer.from(serialize(SAFECOIN_SCHEMA, this));
+    return Buffer.from(serialize(WICKANDBERGAMOT_SCHEMA, this));
   }
 
   static decode(data: Buffer): any {
-    return deserialize(SAFECOIN_SCHEMA, this, data);
+    return deserialize(WICKANDBERGAMOT_SCHEMA, this, data);
   }
 
   static decodeUnchecked(data: Buffer): any {
-    return deserializeUnchecked(SAFECOIN_SCHEMA, this, data);
+    return deserializeUnchecked(WICKANDBERGAMOT_SCHEMA, this, data);
   }
 }
 
@@ -35,4 +35,4 @@ export class Enum extends Struct {
   }
 }
 
-export const SAFECOIN_SCHEMA: Map<Function, any> = new Map();
+export const WICKANDBERGAMOT_SCHEMA: Map<Function, any> = new Map();
