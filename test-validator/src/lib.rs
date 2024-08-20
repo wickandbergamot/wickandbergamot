@@ -1,8 +1,8 @@
 #![allow(clippy::integer_arithmetic)]
 use {
     log::*,
-    safecoin_cli_output::CliAccount,
-    safecoin_client::{
+    wickandbergamot_cli_output::CliAccount,
+    wickandbergamot_client::{
         connection_cache::{
             DEFAULT_TPU_CONNECTION_POOL_SIZE, DEFAULT_TPU_ENABLE_UDP, DEFAULT_TPU_USE_QUIC,
         },
@@ -14,7 +14,7 @@ use {
         tower_storage::TowerStorage,
         validator::{Validator, ValidatorConfig, ValidatorStartProgress},
     },
-    safecoin_gossip::{
+    wickandbergamot_gossip::{
         cluster_info::{ClusterInfo, Node},
         gossip_service::discover_cluster,
         socketaddr,
@@ -23,9 +23,9 @@ use {
         blockstore::create_new_ledger, blockstore_options::LedgerColumnOptions,
         create_new_tmp_ledger,
     },
-    safecoin_net_utils::PortRange,
+    wickandbergamot_net_utils::PortRange,
     solana_program_runtime::compute_budget::ComputeBudget,
-    safecoin_rpc::{rpc::JsonRpcConfig, rpc_pubsub_service::PubSubConfig},
+    wickandbergamot_rpc::{rpc::JsonRpcConfig, rpc_pubsub_service::PubSubConfig},
     solana_runtime::{
         accounts_db::AccountsDbConfig, accounts_index::AccountsIndexConfig, bank_forks::BankForks,
         genesis_utils::create_genesis_config_with_leader_ex,
