@@ -182,7 +182,7 @@ describe('PublicKey', function () {
       ),
     ).to.be.rejectedWith('Max seed length exceeded');
 
-    // https://github.com/fair-exchange/safecoin/issues/11950
+    // https://github.com/wickandbergamot/wickandbergamot/issues/11950
     {
       let seeds = [
         new PublicKey(
