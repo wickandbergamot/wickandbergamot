@@ -1,4 +1,4 @@
-//! Safecoin account addresses.
+//! Wickandbergamot account addresses.
 
 #![allow(clippy::integer_arithmetic)]
 use {
@@ -50,20 +50,20 @@ impl From<u64> for PubkeyError {
     }
 }
 
-/// The address of a [Safecoin account][acc].
+/// The address of a [Wickandbergamot account][acc].
 ///
 /// Some account addresses are [ed25519] public keys, with corresponding secret
 /// keys that are managed off-chain. Often, though, account addresses do not
 /// have corresponding secret keys &mdash; as with [_program derived
 /// addresses_][pdas] &mdash; or the secret key is not relevant to the operation
-/// of a program, and may have even been disposed of. As running Safecoin programs
+/// of a program, and may have even been disposed of. As running Wickandbergamot programs
 /// can not safely create or manage secret keys, the full [`Keypair`] is not
-/// defined in `safecoin-program` but in `safecoin-sdk`.
+/// defined in `Wickandbergamot-program` but in `Wickandbergamot-sdk`.
 ///
 /// [acc]: https://docs.solana.com/developing/programming-model/accounts
 /// [ed25519]: https://ed25519.cr.yp.to/
 /// [pdas]: https://docs.solana.com/developing/programming-model/calling-between-programs#program-derived-addresses
-/// [`Keypair`]: https://docs.rs/safecoin-sdk/latest/solana_sdk/signer/keypair/struct.Keypair.html
+/// [`Keypair`]: https://docs.rs/Wickandbergamot-sdk/latest/solana_sdk/signer/keypair/struct.Keypair.html
 #[wasm_bindgen]
 #[repr(transparent)]
 #[derive(
@@ -228,7 +228,7 @@ impl Pubkey {
     ///
     /// Program derived addresses (PDAs) are account keys that only the program,
     /// `program_id`, has the authority to sign. The address is of the same form
-    /// as a Safecoin `Pubkey`, except they are ensured to not be on the ed25519
+    /// as a Wickandbergamot `Pubkey`, except they are ensured to not be on the ed25519
     /// curve and thus have no associated private key. When performing
     /// cross-program invocations the program can "sign" for the key by calling
     /// [`invoke_signed`] and passing the same seeds used to generate the
@@ -260,7 +260,7 @@ impl Pubkey {
     /// there is a chance that the program's budget may be occasionally
     /// and unpredictably exceeded.
     ///
-    /// As all account addresses accessed by an on-chain Safecoin program must be
+    /// As all account addresses accessed by an on-chain Wickandbergamot program must be
     /// explicitly passed to the program, it is typical for the PDAs to be
     /// derived in off-chain client programs, avoiding the compute cost of
     /// generating the address on-chain. The address may or may not then be
@@ -298,16 +298,16 @@ impl Pubkey {
     /// This example illustrates a simple case of creating a "vault" account
     /// which is derived from the payer account, but owned by an on-chain
     /// program. The program derived address is derived in an off-chain client
-    /// program, which invokes an on-chain Safecoin program that uses the address
+    /// program, which invokes an on-chain Wickandbergamot program that uses the address
     /// to create a new account owned and controlled by the program itself.
     ///
     /// By convention, the on-chain program will be compiled for use in two
     /// different contexts: both on-chain, to interpret a custom program
-    /// instruction as a Safecoin transaction; and off-chain, as a library, so
+    /// instruction as a Wickandbergamot transaction; and off-chain, as a library, so
     /// that clients can share the instruction data structure, constructors, and
     /// other common code.
     ///
-    /// First the on-chain Safecoin program:
+    /// First the on-chain Wickandbergamot program:
     ///
     /// ```
     /// # use borsh::{BorshSerialize, BorshDeserialize};
@@ -390,7 +390,7 @@ impl Pubkey {
     ///
     /// ```
     /// # use borsh::{BorshSerialize, BorshDeserialize};
-    /// # use solana_program::example_mocks::{solana_sdk, safecoin_client};
+    /// # use solana_program::example_mocks::{solana_sdk, Wickandbergamot_client};
     /// # use solana_program::{
     /// #     pubkey::Pubkey,
     /// #     instruction::Instruction,
@@ -403,7 +403,7 @@ impl Pubkey {
     /// #     signature::{Signer, Signature},
     /// #     transaction::Transaction,
     /// # };
-    /// # use safecoin_client::rpc_client::RpcClient;
+    /// # use Wickandbergamot_client::rpc_client::RpcClient;
     /// # use std::convert::TryFrom;
     /// # use anyhow::Result;
     /// #
