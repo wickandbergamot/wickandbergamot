@@ -8,8 +8,8 @@
 //! upgradeable programs which still have a functioning authority. For more
 //! information refer to the [`loader_upgradeable_instruction`] module.
 //!
-//! The `safecoin deploy` and `safecoin program deploy` CLI commands use the
-//! upgradeable BPF loader. Calling `safecoin program deploy --final` deploys a
+//! The `wickandbergamot deploy` and `wickandbergamot program deploy` CLI commands use the
+//! upgradeable BPF loader. Calling `wickandbergamot program deploy --final` deploys a
 //! program that cannot be upgraded, but it does so by revoking the authority to
 //! upgrade, not by using the non-upgradeable loader.
 //!
