@@ -1,11 +1,11 @@
 [package]
-name = "safecoin-transaction-status"
+name = "wickandbergamot-transaction-status"
 version = "1.14.17"
-description = "Safecoin transaction status types"
+description = "Wickandbergamot transaction status types"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-transaction-status"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-transaction-status"
 license = "Apache-2.0"
 edition = "2021"
 
@@ -20,16 +20,16 @@ log = "0.4.17"
 serde = "1.0.138"
 serde_derive = "1.0.103"
 serde_json = "1.0.81"
-safecoin-account-decoder = { path = "../account-decoder", version = "=1.14.17" }
-safecoin-address-lookup-table-program = { path = "../programs/address-lookup-table", version = "=1.14.17" }
-safecoin-measure = { path = "../measure", version = "=1.14.17" }
-safecoin-metrics = { path = "../metrics", version = "=1.14.17" }
-safecoin-sdk = { path = "../sdk", version = "=1.14.17" }
-safecoin-vote-program = { path = "../programs/vote", version = "=1.14.17" }
-safe-associated-token-account = { version = "=1.1.2",  features = ["no-entrypoint"] }
-safe-memo = {  version = "=3.0.9", features = ["no-entrypoint"] }
-safe-token = { version = "=3.5.1",  features = ["no-entrypoint"] }
-safe-token-2022 = { version = "=0.5.0",  features = ["no-entrypoint"] }
+wickandbergamot-account-decoder = { path = "../account-decoder", version = "=1.14.17" }
+wickandbergamot-address-lookup-table-program = { path = "../programs/address-lookup-table", version = "=1.14.17" }
+wickandbergamot-measure = { path = "../measure", version = "=1.14.17" }
+wickandbergamot-metrics = { path = "../metrics", version = "=1.14.17" }
+wickandbergamot-sdk = { path = "../sdk", version = "=1.14.17" }
+wickandbergamot-vote-program = { path = "../programs/vote", version = "=1.14.17" }
+wickandbergamot-associated-token-account = { version = "=1.1.2",  features = ["no-entrypoint"] }
+wickandbergamot-memo = {  version = "=3.0.9", features = ["no-entrypoint"] }
+wickandbergamot-token = { version = "=3.5.1",  features = ["no-entrypoint"] }
+wickandbergamot-token-2024 = { version = "=0.5.0",  features = ["no-entrypoint"] }
 thiserror = "1.0"
 
 [package.metadata.docs.rs]
