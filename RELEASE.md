@@ -1,4 +1,4 @@
-# Safecoin Release process
+# Wickandbergamot Release process
 
 ## Branches and Tags
 
@@ -100,7 +100,7 @@ Alternatively use the Github UI.
 
 ### Create the Release Tag on GitHub
 
-1. Go to [GitHub Releases](https://github.com/fair-exchange/safecoin/releases) for tagging a release.
+1. Go to [GitHub Releases](https://github.com/wickandbergamot/wickandbergamot/releases) for tagging a release.
 1. Click "Draft new release".  The release tag must exactly match the `version`
    field in `/Cargo.toml` prefixed by `v`.
    1.  If the Cargo.toml version field is **0.12.3**, then the release tag must be **v0.12.3**
@@ -108,7 +108,7 @@ Alternatively use the Github UI.
    1.  If you want to release v0.12.0, the target branch must be v0.12
 1. Fill the release notes.
    1.  If this is the first release on the branch (e.g. v0.13.**0**), paste in [this
-   template](https://raw.githubusercontent.com/fair-exchange/safecoin/master/.github/RELEASE_TEMPLATE.md).  Engineering Lead can provide summary contents for release notes if needed.
+   template](https://raw.githubusercontent.com/wickandbergamot/wickandbergamot/master/.github/RELEASE_TEMPLATE.md).  Engineering Lead can provide summary contents for release notes if needed.
    1. If this is a patch release, review all the commits since the previous release on this branch and add details as needed.
 1. Click "Save Draft", then confirm the release notes look good and the tag name and branch are correct.
 1. Ensure all desired commits (usually backports) are landed on the branch by now.
@@ -119,25 +119,25 @@ Alternatively use the Github UI.
 
 ### Update release branch with the next patch version
 
-[This action](https://github.com/fair-exchange/safecoin/blob/master/.github/workflows/increment-cargo-version-on-release.yml) ensures that publishing a release will trigger the creation of a PR to update the Cargo.toml files on **release branch** to the next semantic version (e.g. 0.9.0 -> 0.9.1). Ensure that the created PR makes it through CI and gets submitted.
+[This action](https://github.com/wickandbergamot/wickandbergamot/blob/master/.github/workflows/increment-cargo-version-on-release.yml) ensures that publishing a release will trigger the creation of a PR to update the Cargo.toml files on **release branch** to the next semantic version (e.g. 0.9.0 -> 0.9.1). Ensure that the created PR makes it through CI and gets submitted.
 
 ### Prepare for the next release
-1.  Go to [GitHub Releases](https://github.com/fair-exchange/safecoin/releases) and create a new draft release for `X.Y.Z+1` with empty release notes.  This allows people to incrementally add new release notes until it's time for the next release
+1.  Go to [GitHub Releases](https://github.com/wickandbergamot/wickandbergamot/releases) and create a new draft release for `X.Y.Z+1` with empty release notes.  This allows people to incrementally add new release notes until it's time for the next release
     1. Also, point the branch field to the same branch and mark the relese as **"This is a pre-release"**.
-1.  Go to the [Github Milestones](https://github.com/fair-exchange/safecoin/milestones).  Create a new milestone for the `X.Y.Z+1`, move over
+1.  Go to the [Github Milestones](https://github.com/wickandbergamot/wickandbergamot/milestones).  Create a new milestone for the `X.Y.Z+1`, move over
 unresolved issues still in the `X.Y.Z` milestone, then close the `X.Y.Z` milestone.
 
 ### Verify release automation success
-Go to [Safecoin Releases](https://github.com/fair-exchange/safecoin/releases) and click on the latest release that you just published.
+Go to [Wickandbergamot Releases](https://github.com/wickandbergamot/wickandbergamot/releases) and click on the latest release that you just published.
 Verify that all of the build artifacts are present, then the uncheck **"This is a pre-release"** for the release.
 
 Build artifacts can take up to 60 minutes after creating the tag before
 appearing.  To check for progress:
-* The `solana-secondary` Buildkite pipeline handles creating the Linux and macOS release artifacts and updated crates.  Look for a job under the tag name of the release: https://buildkite.com/fair-exchange/safecoin-secondary.
-* The Windows release artifacts are produced by GitHub Actions.  Look for a job under the tag name of the release: https://github.com/fair-exchange/safecoin/actions.
+* The `solana-secondary` Buildkite pipeline handles creating the Linux and macOS release artifacts and updated crates.  Look for a job under the tag name of the release: https://buildkite.com/wickandbergamot/wickandbergamot-secondary.
+* The Windows release artifacts are produced by GitHub Actions.  Look for a job under the tag name of the release: https://github.com/wickandbergamot/wickandbergamot/actions.
 
-[Crates.io](https://crates.io/crates/solana) should have an updated Safecoin version.  This can take 2-3 hours, and sometimes fails in the `solana-secondary` job.
+[Crates.io](https://crates.io/crates/solana) should have an updated Wickandbergamot version.  This can take 2-3 hours, and sometimes fails in the `solana-secondary` job.
 If this happens and the error is non-fatal, click "Retry" on the "publish crate" job
 
-### Update software on testnet.safecoin.org
-See the documentation at https://github.com/solana-labs/cluster-ops/. devnet.safecoin.org and mainnet-beta.safecoin.org run stable releases that have been tested on testnet. Do not update devnet or mainnet-beta with a beta release.
+### Update software on testnet.wickandbergamot.org
+See the documentation at https://github.com/solana-labs/cluster-ops/. devnet.wickandbergamot.org and mainnet-beta.wickandbergamot.org run stable releases that have been tested on testnet. Do not update devnet or mainnet-beta with a beta release.
