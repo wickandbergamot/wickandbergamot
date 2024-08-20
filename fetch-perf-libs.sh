@@ -23,18 +23,18 @@ if [[ $VERSION != "$(cat target/perf-libs/.version 2> /dev/null)" ]]; then
     set -x
     cd target/perf-libs
 
-    if [[ -r ~/.cache/safecoin-perf-$PERF_LIBS_VERSION.tgz ]]; then
-      cp ~/.cache/safecoin-perf-$PERF_LIBS_VERSION.tgz safecoin-perf.tgz
+    if [[ -r ~/.cache/wickandbergamot-perf-$PERF_LIBS_VERSION.tgz ]]; then
+      cp ~/.cache/wickandbergamot-perf-$PERF_LIBS_VERSION.tgz wickandbergamot-perf.tgz
     else
-      curl -L --retry 5 --retry-delay 2 --retry-connrefused -o safecoin-perf.tgz \
-        https://github.com/fair-exchange/safecoin-perf-libs/releases/download/$PERF_LIBS_VERSION/safecoin-perf.tgz
+      curl -L --retry 5 --retry-delay 2 --retry-connrefused -o wickandbergamot-perf.tgz \
+        https://github.com/wickandbergamot/wickandbergamot-perf-libs/releases/download/$PERF_LIBS_VERSION/wickandbergamot-perf.tgz
     fi
-    tar zxvf safecoin-perf.tgz
+    tar zxvf wickandbergamot-perf.tgz
 
-    if [[ ! -r ~/.cache/safecoin-perf-$PERF_LIBS_VERSION.tgz ]]; then
+    if [[ ! -r ~/.cache/wickandbergamot-perf-$PERF_LIBS_VERSION.tgz ]]; then
       # Save it for next time
       mkdir -p ~/.cache
-      mv safecoin-perf.tgz ~/.cache/safecoin-perf-$PERF_LIBS_VERSION.tgz
+      mv wickandbergamot-perf.tgz ~/.cache/wickandbergamot-perf-$PERF_LIBS_VERSION.tgz
     fi
     echo "$VERSION" > .version
   )
