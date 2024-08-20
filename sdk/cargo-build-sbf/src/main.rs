@@ -3,7 +3,7 @@ use {
     clap::{crate_description, crate_name, crate_version, Arg},
     log::*,
     regex::Regex,
-    safecoin_download_utils::download_file,
+    wickandbergamot_download_utils::download_file,
     solana_sdk::signature::{write_keypair_file, Keypair},
     std::{
         borrow::Cow,
@@ -453,7 +453,7 @@ fn build_sbf_package(config: &Config, target_directory: &Path, package: &cargo_m
         }
     };
 
-    let legacy_program_feature_present = package.name == "safecoin-sdk";
+    let legacy_program_feature_present = package.name == "wickandbergamot-sdk";
     let root_package_dir = &package.manifest_path.parent().unwrap_or_else(|| {
         error!("Unable to get directory of {}", package.manifest_path);
         exit(1);
@@ -592,13 +592,13 @@ fn build_sbf_package(config: &Config, target_directory: &Path, package: &cargo_m
         env::remove_var("RUSTC")
     }
 
-    let mut target_rustflags = env::var("CARGO_TARGET_SBF_SAFECOIN_SAFECOIN_RUSTFLAGS")
+    let mut target_rustflags = env::var("CARGO_TARGET_SBF_WICKANDBERGAMOT_WICKANDBERGAMOT_RUSTFLAGS")
         .ok()
         .unwrap_or_default();
     if config.arch == "sbfv2" {
         target_rustflags = format!("{} {}", "-C target_cpu=sbfv2", target_rustflags);
         env::set_var(
-            "CARGO_TARGET_SBF_SAFECOIN_SAFECOIN_RUSTFLAGS",
+            "CARGO_TARGET_SBF_WICKANDBERGAMOT_WICKANDBERGAMOT_RUSTFLAGS",
             &target_rustflags,
         );
     }
@@ -759,7 +759,7 @@ fn build_sbf_package(config: &Config, target_directory: &Path, package: &cargo_m
         check_undefined_symbols(config, &program_so);
 
         info!("To deploy this program:");
-        info!("  $ safecoin program deploy {}", program_so.display());
+        info!("  $ wickandbergamot program deploy {}", program_so.display());
         info!("The program address will default to this keypair (override with --program-id):");
         info!("  {}", program_keypair.display());
     } else if config.dump {
@@ -844,7 +844,7 @@ fn main() {
                 .value_name("PATH")
                 .takes_value(true)
                 .default_value(&default_sbf_sdk)
-                .help("Path to the Safecoin SBF SDK"),
+                .help("Path to the wickandbergamot SBF SDK"),
         )
         .arg(
             Arg::new("cargo_args")
