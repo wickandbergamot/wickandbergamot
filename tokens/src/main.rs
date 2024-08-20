@@ -1,7 +1,7 @@
 use {
-    safecoin_cli_config::{Config, CONFIG_FILE},
-    safecoin_client::rpc_client::RpcClient,
-    safecoin_tokens::{arg_parser::parse_args, args::Command, commands, safe_token},
+    wickandbergamot_cli_config::{Config, CONFIG_FILE},
+    wickandbergamot_client::rpc_client::RpcClient,
+    wickandbergamot_tokens::{arg_parser::parse_args, args::Command, commands, wickandbergamot_token},
     std::{
         env,
         error::Error,
@@ -39,11 +39,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match command_args.command {
         Command::DistributeTokens(mut args) => {
-            safe_token::update_token_args(&client, &mut args.safe_token_args)?;
+            wickandbergamot_token::update_token_args(&client, &mut args.wickandbergamot_token_args)?;
             commands::process_allocations(&client, &args, exit)?;
         }
         Command::Balances(mut args) => {
-            safe_token::update_decimals(&client, &mut args.safe_token_args)?;
+            wickandbergamot_token::update_decimals(&client, &mut args.wickandbergamot_token_args)?;
             commands::process_balances(&client, &args)?;
         }
         Command::TransactionLog(args) => {
