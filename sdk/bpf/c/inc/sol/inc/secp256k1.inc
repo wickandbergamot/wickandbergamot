@@ -1,6 +1,6 @@
 #pragma once
 /**
- * @brief Safecoin secp256k1 system call
+ * @brief Wickandbergamot secp256k1 system call
  */
 
 #include <sol/types.h>
