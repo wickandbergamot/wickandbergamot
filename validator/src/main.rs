@@ -9,7 +9,7 @@ use {
     console::style,
     log::*,
     rand::{seq::SliceRandom, thread_rng},
-    safecoin_clap_utils::{
+    wickandbergamot_clap_utils::{
         input_parsers::{keypair_of, keypairs_of, pubkey_of, value_of},
         input_validators::{
             is_keypair, is_keypair_or_ask_keyword, is_niceness_adjustment_valid, is_parsable,
@@ -18,7 +18,7 @@ use {
         },
         keypair::SKIP_SEED_PHRASE_VALIDATION_ARG,
     },
-    safecoin_client::{
+    wickandbergamot_client::{
         connection_cache::{DEFAULT_TPU_CONNECTION_POOL_SIZE, DEFAULT_TPU_ENABLE_UDP},
         rpc_client::RpcClient,
         rpc_config::RpcLeaderScheduleConfig,
@@ -31,15 +31,15 @@ use {
         tpu::DEFAULT_TPU_COALESCE_MS,
         validator::{is_snapshot_config_valid, Validator, ValidatorConfig, ValidatorStartProgress},
     },
-    safecoin_gossip::{cluster_info::Node, legacy_contact_info::LegacyContactInfo as ContactInfo},
+    wickandbergamot_gossip::{cluster_info::Node, legacy_contact_info::LegacyContactInfo as ContactInfo},
     solana_ledger::blockstore_options::{
         BlockstoreCompressionType, BlockstoreRecoveryMode, LedgerColumnOptions, ShredStorageType,
         DEFAULT_ROCKS_FIFO_SHRED_STORAGE_SIZE_BYTES,
     },
-    safecoin_net_utils::VALIDATOR_PORT_RANGE,
+    wickandbergamot_net_utils::VALIDATOR_PORT_RANGE,
     solana_perf::recycler::enable_recycler_warming,
-    safecoin_poh::poh_service,
-    safecoin_rpc::{
+    wickandbergamot_poh::poh_service,
+    wickandbergamot_rpc::{
         rpc::{JsonRpcConfig, RpcBigtableConfig},
         rpc_pubsub_service::PubSubConfig,
     },
@@ -70,11 +70,11 @@ use {
         pubkey::Pubkey,
         signature::{read_keypair, Keypair, Signer},
     },
-    safecoin_send_transaction_service::send_transaction_service::{
+    wickandbergamot_send_transaction_service::send_transaction_service::{
         self, MAX_BATCH_SEND_RATE_MS, MAX_TRANSACTION_BATCH_SIZE,
     },
     solana_streamer::socket::SocketAddrSpace,
-    safecoin_validator::{
+    wickandbergamot_validator::{
         admin_rpc_service, bootstrap, dashboard::Dashboard, ledger_lockfile, lock_ledger,
         new_spinner_progress_bar, println_name_value, redirect_stderr_to_file,
     },
@@ -428,7 +428,7 @@ fn get_cluster_shred_version(entrypoints: &[SocketAddr]) -> Option<u16> {
         index.into_iter().map(|i| &entrypoints[i])
     };
     for entrypoint in entrypoints {
-        match safecoin_net_utils::get_cluster_shred_version(entrypoint) {
+        match wickandbergamot_net_utils::get_cluster_shred_version(entrypoint) {
             Err(err) => eprintln!("get_cluster_shred_version failed: {}, {}", entrypoint, err),
             Ok(0) => eprintln!("zero shred-version from entrypoint: {}", entrypoint),
             Ok(shred_version) => {
@@ -491,7 +491,7 @@ pub fn main() {
     let default_tpu_connection_pool_size = &DEFAULT_TPU_CONNECTION_POOL_SIZE.to_string();
 
     let matches = App::new(crate_name!()).about(crate_description!())
-        .version(safecoin_version::version!())
+        .version(wickandbergamot_version::version!())
         .setting(AppSettings::VersionlessSubcommands)
         .setting(AppSettings::InferSubcommands)
         .arg(
@@ -557,7 +557,7 @@ pub fn main() {
                 .value_name("HOST:PORT")
                 .takes_value(true)
                 .multiple(true)
-                .validator(safecoin_net_utils::is_host_port)
+                .validator(wickandbergamot_net_utils::is_host_port)
                 .help("Rendezvous with the cluster at this gossip entrypoint"),
         )
         .arg(
@@ -621,7 +621,7 @@ pub fn main() {
                 .long("rpc-port")
                 .value_name("PORT")
                 .takes_value(true)
-                .validator(safecoin_validator::port_validator)
+                .validator(wickandbergamot_validator::port_validator)
                 .help("Enable JSON RPC on this port, and the next port for the RPC websocket"),
         )
         .arg(
@@ -724,7 +724,7 @@ pub fn main() {
                 .long("rpc-faucet-address")
                 .value_name("HOST:PORT")
                 .takes_value(true)
-                .validator(safecoin_net_utils::is_host_port)
+                .validator(wickandbergamot_net_utils::is_host_port)
                 .help("Enable the JSON RPC 'requestAirdrop' API with this faucet address."),
         )
         .arg(
@@ -780,7 +780,7 @@ pub fn main() {
                 .value_name("HOST:PORT")
                 .takes_value(true)
                 .multiple(true)
-                .validator(safecoin_net_utils::is_host_port)
+                .validator(wickandbergamot_net_utils::is_host_port)
                 .help("etcd gRPC endpoint to connect with")
         )
         .arg(
@@ -828,7 +828,7 @@ pub fn main() {
                 .long("gossip-host")
                 .value_name("HOST")
                 .takes_value(true)
-                .validator(safecoin_net_utils::is_host)
+                .validator(wickandbergamot_net_utils::is_host)
                 .help("Gossip DNS name or IP address for the validator to advertise in gossip \
                        [default: ask --entrypoint, or 127.0.0.1 when --entrypoint is not provided]"),
         )
@@ -837,7 +837,7 @@ pub fn main() {
                 .long("tpu-host-addr")
                 .value_name("HOST:PORT")
                 .takes_value(true)
-                .validator(safecoin_net_utils::is_host_port)
+                .validator(wickandbergamot_net_utils::is_host_port)
                 .help("Specify TPU address to advertise in gossip [default: ask --entrypoint or localhost\
                     when --entrypoint is not provided]"),
 
@@ -848,7 +848,7 @@ pub fn main() {
                 .value_name("HOST:PORT")
                 .takes_value(true)
                 .conflicts_with("private_rpc")
-                .validator(safecoin_net_utils::is_host_port)
+                .validator(wickandbergamot_net_utils::is_host_port)
                 .help("RPC address for the validator to advertise publicly in gossip. \
                       Useful for validators running behind a load balancer or proxy \
                       [default: use --rpc-bind-address / --rpc-port]"),
@@ -859,7 +859,7 @@ pub fn main() {
                 .value_name("MIN_PORT-MAX_PORT")
                 .takes_value(true)
                 .default_value(default_dynamic_port_range)
-                .validator(safecoin_validator::port_range_validator)
+                .validator(wickandbergamot_validator::port_range_validator)
                 .help("Range to use for dynamically assigned ports"),
         )
         .arg(
@@ -1286,7 +1286,7 @@ pub fn main() {
                 .long("bind-address")
                 .value_name("HOST")
                 .takes_value(true)
-                .validator(safecoin_net_utils::is_host)
+                .validator(wickandbergamot_net_utils::is_host)
                 .default_value("0.0.0.0")
                 .help("IP address to bind the validator ports"),
         )
@@ -1295,7 +1295,7 @@ pub fn main() {
                 .long("rpc-bind-address")
                 .value_name("HOST")
                 .takes_value(true)
-                .validator(safecoin_net_utils::is_host)
+                .validator(wickandbergamot_net_utils::is_host)
                 .help("IP address to bind the RPC port [default: 127.0.0.1 if --private-rpc is present, otherwise use --bind-address]"),
         )
         .arg(
@@ -1519,7 +1519,7 @@ pub fn main() {
                 .long("accountsdb-repl-bind-address")
                 .value_name("HOST")
                 .takes_value(true)
-                .validator(safecoin_net_utils::is_host)
+                .validator(wickandbergamot_net_utils::is_host)
                 .hidden(true)
                 .help("IP address to bind the AccountsDb Replication port [default: use --bind-address]"),
         )
@@ -1528,7 +1528,7 @@ pub fn main() {
                 .long("accountsdb-repl-port")
                 .value_name("PORT")
                 .takes_value(true)
-                .validator(safecoin_validator::port_validator)
+                .validator(wickandbergamot_validator::port_validator)
                 .hidden(true)
                 .help("Enable AccountsDb Replication Service on this port"),
         )
@@ -1562,7 +1562,7 @@ pub fn main() {
         .arg(
             Arg::with_name("snapshot_archive_format")
                 .long("snapshot-archive-format")
-                .alias("snapshot-compression") // Legacy name used by Safecoin v1.5.x and older
+                .alias("snapshot-compression") // Legacy name used by wickandbergamot v1.5.x and older
                 .possible_values(SUPPORTED_ARCHIVE_COMPRESSION)
                 .default_value(DEFAULT_ARCHIVE_COMPRESSION)
                 .value_name("ARCHIVE_TYPE")
@@ -1642,7 +1642,7 @@ pub fn main() {
                 .long("account-index")
                 .takes_value(true)
                 .multiple(true)
-                .possible_values(&["program-id", "safe-token-owner", "safe-token-mint"])
+                .possible_values(&["program-id", "wickandbergamot-token-owner", "wickandbergamot-token-mint"])
                 .value_name("INDEX")
                 .help("Enable an accounts index, indexed by the selected account field"),
         )
@@ -2236,7 +2236,7 @@ pub fn main() {
         let logfile = matches
             .value_of("logfile")
             .map(|s| s.into())
-            .unwrap_or_else(|| format!("safecoin-validator-{}.log", identity_keypair.pubkey()));
+            .unwrap_or_else(|| format!("wickandbergamot-validator-{}.log", identity_keypair.pubkey()));
 
         if logfile == "-" {
             None
@@ -2248,7 +2248,7 @@ pub fn main() {
     let use_progress_bar = logfile.is_none();
     let _logger_thread = redirect_stderr_to_file(logfile);
 
-    info!("{} {}", crate_name!(), safecoin_version::version!());
+    info!("{} {}", crate_name!(), wickandbergamot_version::version!());
     info!("Starting validator with: {:#?}", std::env::args_os());
 
     let cuda = matches.is_present("cuda");
@@ -2336,13 +2336,13 @@ pub fn main() {
         "--gossip-validator",
     );
 
-    let bind_address = safecoin_net_utils::parse_host(matches.value_of("bind_address").unwrap())
+    let bind_address = wickandbergamot_net_utils::parse_host(matches.value_of("bind_address").unwrap())
         .expect("invalid bind_address");
     let rpc_bind_address = if matches.is_present("rpc_bind_address") {
-        safecoin_net_utils::parse_host(matches.value_of("rpc_bind_address").unwrap())
+        wickandbergamot_net_utils::parse_host(matches.value_of("rpc_bind_address").unwrap())
             .expect("invalid rpc_bind_address")
     } else if private_rpc {
-        safecoin_net_utils::parse_host("127.0.0.1").unwrap()
+        wickandbergamot_net_utils::parse_host("127.0.0.1").unwrap()
     } else {
         bind_address
     };
@@ -2381,7 +2381,7 @@ pub fn main() {
         .unwrap_or_default()
         .into_iter()
         .map(|entrypoint| {
-            safecoin_net_utils::parse_host_port(&entrypoint).unwrap_or_else(|e| {
+            wickandbergamot_net_utils::parse_host_port(&entrypoint).unwrap_or_else(|e| {
                 eprintln!("failed to parse entrypoint address: {}", e);
                 exit(1);
             })
@@ -2606,7 +2606,7 @@ pub fn main() {
                 || matches.is_present("enable_extended_tx_metadata_storage"),
             rpc_bigtable_config,
             faucet_addr: matches.value_of("rpc_faucet_addr").map(|address| {
-                safecoin_net_utils::parse_host_port(address).expect("failed to parse faucet address")
+                wickandbergamot_net_utils::parse_host_port(address).expect("failed to parse faucet address")
             }),
             full_api,
             obsolete_v1_7_api: matches.is_present("obsolete_v1_7_rpc_api"),
@@ -2632,7 +2632,7 @@ pub fn main() {
                 SocketAddr::new(rpc_bind_address, rpc_port + 1),
                 // If additional ports are added, +2 needs to be skipped to avoid a conflict with
                 // the websocket port (which is +2) in web3.js This odd port shifting is tracked at
-                // https://github.com/fair-exchange/safecoin/issues/12250
+                // https://github.com/fair-exchange/wickandbergamot/issues/12250
             )
         }),
         pubsub_config: PubSubConfig {
@@ -2728,7 +2728,7 @@ pub fn main() {
     });
 
     let dynamic_port_range =
-        safecoin_net_utils::parse_port_range(matches.value_of("dynamic_port_range").unwrap())
+        wickandbergamot_net_utils::parse_port_range(matches.value_of("dynamic_port_range").unwrap())
             .expect("invalid dynamic_port_range");
 
     let account_paths: Vec<PathBuf> =
@@ -2956,7 +2956,7 @@ pub fn main() {
     }
 
     let public_rpc_addr = matches.value_of("public_rpc_addr").map(|addr| {
-        safecoin_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
+        wickandbergamot_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
             eprintln!("failed to parse public rpc address: {}", e);
             exit(1);
         })
@@ -2992,7 +2992,7 @@ pub fn main() {
     let gossip_host: IpAddr = matches
         .value_of("gossip_host")
         .map(|gossip_host| {
-            safecoin_net_utils::parse_host(gossip_host).unwrap_or_else(|err| {
+            wickandbergamot_net_utils::parse_host(gossip_host).unwrap_or_else(|err| {
                 eprintln!("Failed to parse --gossip-host: {}", err);
                 exit(1);
             })
@@ -3008,7 +3008,7 @@ pub fn main() {
                         "Contacting {} to determine the validator's public IP address",
                         entrypoint_addr
                     );
-                    safecoin_net_utils::get_public_ip_addr(entrypoint_addr).map_or_else(
+                    wickandbergamot_net_utils::get_public_ip_addr(entrypoint_addr).map_or_else(
                         |err| {
                             eprintln!(
                                 "Failed to contact cluster entrypoint {}: {}",
@@ -3032,7 +3032,7 @@ pub fn main() {
     let gossip_addr = SocketAddr::new(
         gossip_host,
         value_t!(matches, "gossip_port", u16).unwrap_or_else(|_| {
-            safecoin_net_utils::find_available_port_in_range(bind_address, (0, 1)).unwrap_or_else(
+            wickandbergamot_net_utils::find_available_port_in_range(bind_address, (0, 1)).unwrap_or_else(
                 |err| {
                     eprintln!("Unable to find an available gossip port: {}", err);
                     exit(1);
@@ -3042,7 +3042,7 @@ pub fn main() {
     );
 
     let overwrite_tpu_addr = matches.value_of("tpu_host_addr").map(|tpu_addr| {
-        safecoin_net_utils::parse_host_port(tpu_addr).unwrap_or_else(|err| {
+        wickandbergamot_net_utils::parse_host_port(tpu_addr).unwrap_or_else(|err| {
             eprintln!("Failed to parse --overwrite-tpu-addr: {}", err);
             exit(1);
         })
@@ -3088,10 +3088,10 @@ pub fn main() {
 
     solana_metrics::set_host_id(identity_keypair.pubkey().to_string());
     solana_metrics::set_panic_hook("validator", {
-        let version = format!("{:?}", safecoin_version::version!());
+        let version = format!("{:?}", wickandbergamot_version::version!());
         Some(version)
     });
-    safecoin_entry::entry::init_poh();
+    wickandbergamot_entry::entry::init_poh();
     snapshot_utils::remove_tmp_snapshot_archives(&full_snapshot_archives_dir);
     snapshot_utils::remove_tmp_snapshot_archives(&incremental_snapshot_archives_dir);
 
@@ -3166,8 +3166,8 @@ fn process_account_indexes(matches: &ArgMatches) -> AccountSecondaryIndexes {
         .unwrap_or_default()
         .map(|value| match value {
             "program-id" => AccountIndex::ProgramId,
-            "safe-token-mint" => AccountIndex::SafeTokenMint,
-            "safe-token-owner" => AccountIndex::SafeTokenOwner,
+            "wickandbergamot-token-mint" => AccountIndex::WickandbergamotTokenMint,
+            "wickandbergamot-token-owner" => AccountIndex::WickandbergamotTokenOwner,
             _ => unreachable!(),
         })
         .collect();
