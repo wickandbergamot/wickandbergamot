@@ -519,14 +519,14 @@ pub fn create_nonce_account_with_seed(
 /// This function produces a vector of [`Instruction`]s which must be submitted
 /// in a [`Transaction`] or [invoked] to take effect.
 ///
-/// [`Transaction`]: https://docs.rs/safecoin-sdk/latest/solana_sdk/transaction/struct.Transaction.html
+/// [`Transaction`]: https://docs.rs/wickandbergamot-sdk/latest/solana_sdk/transaction/struct.Transaction.html
 /// [invoked]: crate::program::invoke
 ///
 /// A [durable transaction nonce][dtn] is a special account that enables
 /// execution of transactions that have been signed in the past.
 ///
-/// Standard Safecoin transactions include a [recent blockhash][rbh] (sometimes
-/// referred to as a _[nonce]_). During execution the Safecoin runtime verifies
+/// Standard Wickandbergamot transactions include a [recent blockhash][rbh] (sometimes
+/// referred to as a _[nonce]_). During execution the Wickandbergamot runtime verifies
 /// the recent blockhash is approximately less than two minutes old, and that in
 /// those two minutes no other identical transaction with the same blockhash has
 /// been executed. These checks prevent accidental replay of transactions.
@@ -581,8 +581,8 @@ pub fn create_nonce_account_with_seed(
 ///
 /// ```
 /// # use solana_program::example_mocks::solana_sdk;
-/// # use solana_program::example_mocks::safecoin_client;
-/// use safecoin_client::rpc_client::RpcClient;
+/// # use solana_program::example_mocks::wickandbergamot_client;
+/// use wickandbergamot_client::rpc_client::RpcClient;
 /// use solana_sdk::{
 /// #   pubkey::Pubkey,
 ///     signature::{Keypair, Signer},
@@ -655,13 +655,13 @@ pub fn create_nonce_account(
 /// This function produces an [`Instruction`] which must be submitted in a
 /// [`Transaction`] or [invoked] to take effect.
 ///
-/// [`Transaction`]: https://docs.rs/safecoin-sdk/latest/solana_sdk/transaction/struct.Transaction.html
+/// [`Transaction`]: https://docs.rs/wickandbergamot-sdk/latest/solana_sdk/transaction/struct.Transaction.html
 /// [invoked]: crate::program::invoke
 ///
 /// Every transaction that relies on a durable transaction nonce must contain a
 /// [`SystemInstruction::AdvanceNonceAccount`] instruction as the first
 /// instruction in the [`Message`], as created by this function. When included
-/// in the first position, the Safecoin runtime recognizes the transaction as one
+/// in the first position, the Wickandbergamot runtime recognizes the transaction as one
 /// that relies on a durable transaction nonce and processes it accordingly. The
 /// [`Message::new_with_nonce`] function can be used to construct a `Message` in
 /// the correct format without calling `advance_nonce_account` directly.
@@ -671,7 +671,7 @@ pub fn create_nonce_account(
 /// setting it to a recent blockhash, the value of the nonce must be retreived
 /// and deserialized from the nonce account, and that value specified as the
 /// "recent blockhash". A nonce account can be deserialized with the
-/// [`safecoin_client::nonce_utils::data_from_account`][dfa] function.
+/// [`wickandbergamot_client::nonce_utils::data_from_account`][dfa] function.
 ///
 /// For further description of durable transaction nonces see
 /// [`create_nonce_account`].
@@ -679,7 +679,7 @@ pub fn create_nonce_account(
 /// [`Message`]: crate::message::Message
 /// [`Message::new_with_nonce`]: crate::message::Message::new_with_nonce
 /// [`recent_blockhash`]: crate::message::Message::recent_blockhash
-/// [dfa]: https://docs.rs/safecoin-client/latest/safecoin_client/nonce_utils/fn.data_from_account.html
+/// [dfa]: https://docs.rs/wickandbergamot-client/latest/wickandbergamot_client/nonce_utils/fn.data_from_account.html
 ///
 /// # Required signers
 ///
@@ -691,8 +691,8 @@ pub fn create_nonce_account(
 ///
 /// ```
 /// # use solana_program::example_mocks::solana_sdk;
-/// # use solana_program::example_mocks::safecoin_client;
-/// use safecoin_client::{
+/// # use solana_program::example_mocks::wickandbergamot_client;
+/// use wickandbergamot_client::{
 ///     rpc_client::RpcClient,
 ///     nonce_utils,
 /// };
@@ -793,7 +793,7 @@ pub fn advance_nonce_account(nonce_pubkey: &Pubkey, authorized_pubkey: &Pubkey) 
 /// This function produces an [`Instruction`] which must be submitted in a
 /// [`Transaction`] or [invoked] to take effect.
 ///
-/// [`Transaction`]: https://docs.rs/safecoin-sdk/latest/solana_sdk/transaction/struct.Transaction.html
+/// [`Transaction`]: https://docs.rs/wickandbergamot-sdk/latest/solana_sdk/transaction/struct.Transaction.html
 /// [invoked]: crate::program::invoke
 ///
 /// Withdrawing the entire balance of a nonce account will cause the runtime to
@@ -817,8 +817,8 @@ pub fn advance_nonce_account(nonce_pubkey: &Pubkey, authorized_pubkey: &Pubkey) 
 ///
 /// ```
 /// # use solana_program::example_mocks::solana_sdk;
-/// # use solana_program::example_mocks::safecoin_client;
-/// use safecoin_client::rpc_client::RpcClient;
+/// # use solana_program::example_mocks::wickandbergamot_client;
+/// use wickandbergamot_client::rpc_client::RpcClient;
 /// use solana_sdk::{
 ///     pubkey::Pubkey,
 ///     signature::{Keypair, Signer},
@@ -885,7 +885,7 @@ pub fn withdraw_nonce_account(
 /// This function produces an [`Instruction`] which must be submitted in a
 /// [`Transaction`] or [invoked] to take effect.
 ///
-/// [`Transaction`]: https://docs.rs/safecoin-sdk/latest/solana_sdk/transaction/struct.Transaction.html
+/// [`Transaction`]: https://docs.rs/wickandbergamot-sdk/latest/solana_sdk/transaction/struct.Transaction.html
 /// [invoked]: crate::program::invoke
 ///
 /// This constructor creates a [`SystemInstruction::AuthorizeNonceAccount`]
@@ -899,8 +899,8 @@ pub fn withdraw_nonce_account(
 ///
 /// ```
 /// # use solana_program::example_mocks::solana_sdk;
-/// # use solana_program::example_mocks::safecoin_client;
-/// use safecoin_client::rpc_client::RpcClient;
+/// # use solana_program::example_mocks::wickandbergamot_client;
+/// use wickandbergamot_client::rpc_client::RpcClient;
 /// use solana_sdk::{
 ///     pubkey::Pubkey,
 ///     signature::{Keypair, Signer},
