@@ -9,7 +9,7 @@ use {
     solana_core::{
         consensus::Tower, tower_storage::TowerStorage, validator::ValidatorStartProgress,
     },
-    safecoin_gossip::{
+    wickandbergamot_gossip::{
         cluster_info::ClusterInfo, legacy_contact_info::LegacyContactInfo as ContactInfo,
     },
     solana_runtime::bank_forks::BankForks,
