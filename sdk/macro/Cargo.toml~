@@ -1,11 +1,11 @@
 [package]
-name = "safecoin-sdk-macro"
+name = "wickandbergamot-sdk-macro"
 version = "1.14.17"
-description = "Safecoin SDK Macro"
+description = "Wickandbergamot SDK Macro"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
-homepage = "https://safecoin.org/"
-documentation = "https://docs.rs/safecoin-sdk-macro"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
+homepage = "https://wickandbergamot.org/"
+documentation = "https://docs.rs/wickandbergamot-sdk-macro"
 license = "Apache-2.0"
 edition = "2021"
 
