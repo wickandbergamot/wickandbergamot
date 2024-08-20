@@ -6,13 +6,13 @@ use {
     clap::{
         crate_description, crate_name, value_t, value_t_or_exit, App, Arg, ArgMatches, SubCommand,
     },
-    safecoin_clap_utils::{
+    wickandbergamot_clap_utils::{
         input_parsers::{pubkey_of_signer, value_of},
         input_validators::{is_amount, is_valid_pubkey, is_valid_signer},
         keypair::{pubkey_from_path, signer_from_path},
     },
-    safecoin_cli_config::CONFIG_FILE,
-    safecoin_remote_wallet::remote_wallet::maybe_wallet_manager,
+    wickandbergamot_cli_config::CONFIG_FILE,
+    wickandbergamot_remote_wallet::remote_wallet::maybe_wallet_manager,
     solana_sdk::native_token::sol_to_lamports,
     std::{error::Error, ffi::OsString, process::exit},
 };
@@ -25,7 +25,7 @@ where
     let default_config_file = CONFIG_FILE.as_ref().unwrap();
     App::new(crate_name!())
         .about(crate_description!())
-        .version(safecoin_version::version!())
+        .version(wickandbergamot_version::version!())
         .arg(
             Arg::with_name("config_file")
                 .long("config")
@@ -40,7 +40,7 @@ where
                 .global(true)
                 .takes_value(true)
                 .value_name("URL")
-                .help("RPC entrypoint address. i.e. http://api.devnet.safecoin.org"),
+                .help("RPC entrypoint address. i.e. http://api.devnet.wickandbergamot.org"),
         )
         .subcommand(
             SubCommand::with_name("distribute-tokens")
