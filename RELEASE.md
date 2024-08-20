@@ -1,4 +1,4 @@
-# Wickandbergamot Release process
+# Wick and Bergamot Release process
 
 ## Branches and Tags
 
