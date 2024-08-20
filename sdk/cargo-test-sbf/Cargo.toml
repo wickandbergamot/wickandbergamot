@@ -1,10 +1,10 @@
 [package]
-name = "safecoin-cargo-test-sbf"
+name = "wickandbergamot-cargo-test-sbf"
 version = "1.14.17"
-description = "Execute all unit and integration tests after building with the Safecoin SBF SDK"
+description = "Execute all unit and integration tests after building with the wickandbergamot SBF SDK"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/fair-exchange/safecoin"
-homepage = "https://safecoin.org/"
+repository = "https://github.com/wickandbergamot/wickandbergamot"
+homepage = "https://wickandbergamot.org/"
 license = "Apache-2.0"
 edition = "2021"
 publish = false
