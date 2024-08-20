@@ -1,9 +1,9 @@
 use {
-    safecoin_client::rpc_client::RpcClient,
+    wickandbergamot_client::rpc_client::RpcClient,
     solana_sdk::signature::{Keypair, Signer},
     solana_streamer::socket::SocketAddrSpace,
-    safecoin_test_validator::TestValidator,
-    safecoin_tokens::commands::test_process_distribute_tokens_with_client,
+    wickandbergamot_test_validator::TestValidator,
+    wickandbergamot_tokens::commands::test_process_distribute_tokens_with_client,
 };
 
 #[test]
